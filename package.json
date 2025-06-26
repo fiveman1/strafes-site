@@ -1,0 +1,18 @@
+{
+    "name": "strafes-site",
+    "license": "MIT",
+    "private": true,
+    "workspaces": [
+        "client",
+        "server"
+    ],
+    "devDependencies": {
+        "concurrently": "^9.2.0"
+    },
+    "scripts": {
+        "dev:frontend": "yarn workspace client start",
+        "dev:backend": "yarn workspace server run dev",
+        "dev": "concurrently -n \"FRONTEND,BACKEND\" -c \"red,blue\" -p \"[{name}]\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
+        "start": "yarn workspace client run build && yarn workspace server run build && yarn workspace server run start"
+    }
+}
