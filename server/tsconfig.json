@@ -1,9 +1,20 @@
 {
-  "extends": "@tsconfig/node21/tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./"
-  },
-  "include": ["**/*.ts"],
-  "exclude": ["dist"]
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "paths": {"shared/*": ["../shared"]},
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "noFallthroughCasesInSwitch": true,
+        "module": "esnext",
+        "moduleResolution": "node",
+    },
+    "include": [
+        "**/*.ts"
+    ],
+    "exclude": [
+        "dist"
+    ]
 }

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { User } from "../../../shared/interfaces";
 
 async function tryGetRequest(url: string, params?: any) {
     try {
@@ -8,14 +9,6 @@ async function tryGetRequest(url: string, params?: any) {
         console.log(err);
         return undefined;
     }
-}
-
-export interface User {
-    displayName: string,
-    id: number,
-    username: string,
-    joinedOn: string,
-    thumbUrl: string
 }
 
 export async function getUserIdFromName(username: string): Promise<number | undefined> {

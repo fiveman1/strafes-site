@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import { IconButton, Paper, TextField, Typography } from "@mui/material";
 import Search from "@mui/icons-material/Search";
-import { getUserData, getUserIdFromName, User } from "../api/api";
+import { getUserData, getUserIdFromName } from "../api/api";
+import { User } from "../../../shared/interfaces";
 import UserCard from "./UserCard";
 import { useNavigate, useParams } from "react-router";
 

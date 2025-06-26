@@ -1,6 +1,6 @@
 import { Avatar, Box, LinearProgress, Link, Paper, Typography } from "@mui/material";
-import { User } from "../api/api";
 import { grey } from "@mui/material/colors";
+import { User } from "../../../shared/interfaces";
 
 export interface IUserCardProps {
     user?: User

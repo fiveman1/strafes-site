@@ -2,12 +2,14 @@ import axios from "axios";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { User } from "shared/interfaces";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
 const dirname = path.dirname(fileURLToPath(import.meta.url))
+const buildDir = "../../client/build/";
 
-app.use("/static", express.static(path.join(dirname, "../../client/build/static")));
+app.use("/static", express.static(path.join(dirname, buildDir, "/static")));
 
 app.get("/api/username", async (req, res) => {
     const username = req.query.username;
@@ -43,20 +45,12 @@ app.get("/api/user/:id", async (req, res) => {
 });
 
 app.get("*splat", (req, res) => {
-    res.sendFile("index.html", {root: path.join(dirname, "../../client/build/")})
+    res.sendFile("index.html", {root: path.join(dirname, buildDir)})
 })
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
-
-interface User {
-    displayName: string,
-    id: number,
-    username: string,
-    joinedOn: string,
-    thumbUrl: string
-}
 
 async function getUserId(username: string): Promise<undefined | User> {
     const res = await tryPostRequest("https://users.roblox.com/v1/usernames/users", {
