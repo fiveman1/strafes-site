@@ -1,0 +1,30 @@
+{
+  "name": "strafes-site-server",
+  "version": "1.0.0",
+  "description": "Server for strafes.fiveman1.net",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --watch --env-file .env src/index.ts",
+    "start": "node --env-file .env dist/index.js"
+  },
+  "keywords": [],
+  "author": "fiveman1",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@tsconfig/node21": "^21.0.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.4",
+    "eslint": "^9.29.0",
+    "eslint-plugin-perfectionist": "^4.15.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.0"
+  }
+}
