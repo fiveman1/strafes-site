@@ -6,10 +6,10 @@ import { User } from "shared/interfaces";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
-const dirname = path.dirname(fileURLToPath(import.meta.url))
-const buildDir = "../../client/build/";
+const dirName = path.dirname(fileURLToPath(import.meta.url))
+const buildDir = path.join(dirName, "../../client/build/");
 
-app.use("/static", express.static(path.join(dirname, buildDir, "/static")));
+app.use("/static", express.static(path.join(buildDir, "/static")));
 
 app.get("/api/username", async (req, res) => {
     const username = req.query.username;
@@ -45,7 +45,7 @@ app.get("/api/user/:id", async (req, res) => {
 });
 
 app.get("*splat", (req, res) => {
-    res.sendFile("index.html", {root: path.join(dirname, buildDir)})
+    res.sendFile("index.html", {root: buildDir})
 })
 
 app.listen(port, () => {
