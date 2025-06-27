@@ -80,9 +80,9 @@ app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
 
     const rankRes = await tryGetStrafes(`user/${userId}/rank`, {
         id: userId,
-        gameId: game,
-        styleId: style,
-        modeId: 0
+        "game_id": game,
+        "style_id": style,
+        "mode_id": 0
     });
 
     if (!rankRes) {
