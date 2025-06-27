@@ -3,9 +3,10 @@ import Box from "@mui/material/Box";
 import { IconButton, Paper, TextField, Typography } from "@mui/material";
 import Search from "@mui/icons-material/Search";
 import { getUserData, getUserIdFromName } from "../api/api";
-import { User } from "../../../shared/interfaces";
+import { User } from "../api/interfaces";
 import UserCard from "./UserCard";
 import { useNavigate, useParams } from "react-router";
+import ProfileCard from "./ProfileCard";
 
 function Users() {
     const { id } = useParams();
@@ -72,7 +73,8 @@ function Users() {
         });
     }
 
-    return <Box padding={2} flexGrow={1}>
+    return (
+    <Box padding={2} flexGrow={1}>
         <Typography variant="h4" padding={1}>
             Users
         </Typography>
@@ -80,7 +82,7 @@ function Users() {
             Select a user to load information about them.
         </Typography>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
-            <Box minWidth={320} padding={1} flexBasis="65%" flexGrow={1}>
+            <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
                 <Paper elevation={2} sx={{padding: 3, minHeight: 200, display:"flex", alignItems: "center"}}>
                     <Box width="100%">
                         <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
@@ -90,11 +92,15 @@ function Users() {
                     </Box>
                 </Paper>
             </Box>
-            <Box minWidth={320} padding={1} flexBasis="35%" flexGrow={1}>
+            <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
                 <UserCard user={userInfo} loading={isLoading} minHeight={200}/>
             </Box>
         </Box>
+        <Box padding={1}>
+            <ProfileCard userId={userInfo?.id} />
+        </Box>
     </Box>
+    );
 }
 
 export default Users;

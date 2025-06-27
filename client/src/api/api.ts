@@ -1,5 +1,5 @@
 import axios from "axios";
-import { User } from "../../../shared/interfaces";
+import { Game, RankData, Style, User } from "./interfaces";
 
 async function tryGetRequest(url: string, params?: any) {
     try {
@@ -11,7 +11,7 @@ async function tryGetRequest(url: string, params?: any) {
     }
 }
 
-export async function getUserIdFromName(username: string): Promise<number | undefined> {
+export async function getUserIdFromName(username: string): Promise<string | undefined> {
     const params = {
         username: username
     };
@@ -25,6 +25,16 @@ export async function getUserIdFromName(username: string): Promise<number | unde
 export async function getUserData(userId: string): Promise<User | undefined> {
     const res = await tryGetRequest("user/" + userId);
     if (!res) return undefined;
-
+    
     return res.data as User;
+}
+
+export async function getRankData(userId: string): Promise<RankData | undefined> {
+    const res = await tryGetRequest("user/rank/" + userId, {
+        game: Game.bhop,
+        style: Style.autohop
+    });
+    if (!res) return undefined;
+
+    return res.data as RankData;
 }

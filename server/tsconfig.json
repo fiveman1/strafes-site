@@ -2,7 +2,6 @@
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
-        "paths": {"shared/*": ["../shared"]},
         "skipLibCheck": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,

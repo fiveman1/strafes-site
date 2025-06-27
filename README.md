@@ -7,7 +7,7 @@
 Make a `.env` in the root directory (this folder) with the following
 
 ```sh
-STRAFES_API=<your key>
+STRAFES_KEY=<your key>
 ```
 
 ## Run dev server
