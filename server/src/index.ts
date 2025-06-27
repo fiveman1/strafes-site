@@ -1,3 +1,4 @@
+import apicache from "apicache";
 import axios from "axios";
 import express from "express";
 import path from "path";
@@ -7,6 +8,7 @@ import { exit } from "process";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
+const cache = apicache.middleware;
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -19,7 +21,7 @@ const buildDir = path.join(dirName, "../../client/build/");
 
 app.use("/static", express.static(path.join(buildDir, "/static")));
 
-app.get("/api/username", async (req, res) => {
+app.get("/api/username", cache("1 hour"), async (req, res) => {
     const username = req.query.username;
     
     if (!username || typeof username !== "string" || username.length > 50) {
@@ -40,7 +42,7 @@ function validateUserId(userId: string) {
     return !isNaN(+userId) && +userId > 0;
 }
 
-app.get("/api/user/:id", async (req, res) => {
+app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     const userId = req.params.id;
     if (!validateUserId(userId)) {
         res.status(400).json({error: "Invalid user ID"});
@@ -56,7 +58,7 @@ app.get("/api/user/:id", async (req, res) => {
     res.status(200).json(user);
 });
 
-app.get("/api/user/rank/:id", async (req, res) => {
+app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;

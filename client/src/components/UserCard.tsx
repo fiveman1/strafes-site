@@ -1,27 +1,48 @@
-import { Avatar, Box, LinearProgress, Link, Paper, Typography } from "@mui/material";
+import { Avatar, Box, Link, Paper, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
+import CircularProgress from '@mui/material/CircularProgress';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import { getUserData } from "../api/api";
 
 export interface IUserCardProps {
-    user?: User
-    loading?: boolean
+    userId?: string
     minHeight?: number
 }
 
 function UserCard(props: IUserCardProps) {
-    const { user, loading, minHeight } = props;
+    const { userId, minHeight } = props;
 
-    if (loading) {
-        return <Paper elevation={2} sx={{minHeight: minHeight}}>
-            <LinearProgress sx={{marginBottom: "auto"}}></LinearProgress>
-        </Paper>
-    }
+    const navigate = useNavigate();
+
+    const [loading, setIsLoading] = useState<boolean>(false);
+    const [user, setUserInfo] = useState<User | undefined>(undefined);
+
+    useEffect(() => {
+        if (!userId) {
+            setUserInfo(undefined);
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        getUserData(userId).then((userData) => {
+            if (!userData) {
+                // Fail safe
+                navigate("/users");
+                navigate(0);
+                return;
+            }
+            setIsLoading(false);
+            setUserInfo(userData);
+        });
+    }, [userId, navigate]);
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
-        {user ? <>
+        {user && !loading ? <>
         <Box display="flex" flexDirection="column" minWidth="0" sx={{overflowWrap: "break-word"}}>
-            <Box display="flex" flexDirection="column" flexGrow={1}>
+            <Box display="flex" flexDirection="column" flexGrow={1} justifyContent="flex-start">
                 <Typography variant="h4">
                     {user.displayName}
                 </Typography>
@@ -42,8 +63,13 @@ function UserCard(props: IUserCardProps) {
             <Avatar sx={{height: 120, width: 120, bgcolor: grey[100]}} alt={user.displayName} src={user.thumbUrl} />
         </Box>
         </> : 
-        <Box display="flex" alignItems="center" justifyItems="center" width="100%">
-            <PermIdentityIcon sx={{ fontSize: 72, flexGrow: 1 }}></PermIdentityIcon>
+        <Box display="flex" alignItems="center" width="100%">
+            {loading ? 
+            <Box flexGrow={1} display="flex" justifyContent="center">
+                <CircularProgress size="72px" />
+            </Box>
+            : 
+            <PermIdentityIcon sx={{ fontSize: 72, flexGrow: 1 }} />}
         </Box>}
     </Paper>
 }
