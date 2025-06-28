@@ -1,9 +1,9 @@
 import apicache from "apicache";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { Game, RankData, Style, User } from "./interfaces";
+import { Game, Pagination, RankData, Style, Time, User } from "./interfaces";
 import { exit } from "process";
 
 const app = express();
@@ -80,9 +80,9 @@ app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
 
     const rankRes = await tryGetStrafes(`user/${userId}/rank`, {
         id: userId,
-        "game_id": game,
-        "style_id": style,
-        "mode_id": 0
+        game_id: game,
+        style_id: style,
+        mode_id: 0
     });
 
     if (!rankRes) {
@@ -104,11 +104,104 @@ app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
     res.status(200).json(rankData);
 });
 
+app.get("/api/user/times/:id", cache("1 hour"), async (req, res) => {
+    const userId = req.params.id;
+    const game = req.query.game;
+    const style = req.query.style;
+
+    if (!validateUserId(userId)) {
+        res.status(400).json({error: "Invalid user ID"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const firstTimeRes = await tryGetStrafes("time", {
+        user_id: userId,
+        game_id: game,
+        style_id: style,
+        mode_id: 0,
+        page_number: 1,
+        page_size: 100,
+        sort_by: 3
+    });
+
+    if (!firstTimeRes) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    const firstTimes = firstTimeRes.data.data;
+    const pageInfo = firstTimeRes.data.pagination;
+    const pagination: Pagination = {
+        page: pageInfo.page,
+        pageSize: pageInfo.page_size,
+        totalItems: pageInfo.total_items,
+        totalPages: pageInfo.total_pages
+    }
+
+    const promises: Promise<AxiosResponse | undefined>[] = [];
+    for (let i = 2; i <= pagination.totalPages; ++i) {
+        promises.push(tryGetStrafes("time", {
+            user_id: userId,
+            game_id: game,
+            style_id: style,
+            mode_id: 0,
+            page_number: i,
+            page_size: 100,
+            sort_by: 3
+        }));
+    }
+    const responses = await Promise.all(promises);
+
+    const timeArr: Time[] = [];
+    for (const time of firstTimes) {
+        timeArr.push({
+            map: time.map.display_name,
+            time: time.time,
+            date: time.date,
+            game: time.game_id,
+            style: time.style_id
+        });
+    }
+    
+    for (const timeRes of responses) {
+        if (!timeRes) {
+            res.status(404).json({error: "Not found"});
+            return;
+        }
+        const times = timeRes.data.data;
+        for (const time of times) {
+            timeArr.push({
+                map: time.map.display_name,
+                time: time.time,
+                date: time.date,
+                game: time.game_id,
+                style: time.style_id
+            });
+        }
+    }
+
+    res.status(200).json({
+        data: timeArr,
+        pagination: pagination
+    });
+});
+
 app.get("*splat", (req, res) => {
     res.sendFile("index.html", {root: buildDir})
-})
+});
 
 app.listen(port, () => {
+    apicache.clear();
     console.log(`Example app listening on port ${port}`);
 });
 
@@ -165,7 +258,7 @@ async function tryGetRequest(url: string, params?: any, headers?: any) {
         return await axios.get(url, {params: params, headers: headers, timeout: 5000});
     } 
     catch (err) {
-        console.log(err);
+        //console.log(err);
         return undefined;
     }
 }
@@ -175,7 +268,7 @@ async function tryPostRequest(url: string, params?: any) {
         return await axios.post(url, params, {timeout: 5000});
     } 
     catch (err) {
-        console.log(err);
+        //console.log(err);
         return undefined;
     }
 }

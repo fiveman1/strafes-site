@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
-import { RankData } from "../api/interfaces";
+import { Game, RankData, Style } from "../api/interfaces";
 import { getRankData } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 
 export interface IProfileCardProps {
     userId?: string
+    game: Game
+    style: Style
 }
 
 function ProfileCard(props: IProfileCardProps) {
-    const { userId } = props;
+    const { userId, game, style } = props;
 
     const [rank, setRank] = useState<RankData | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(false);
@@ -20,7 +22,7 @@ function ProfileCard(props: IProfileCardProps) {
             return;
         }
         setLoading(true);
-        getRankData(userId).then((rankData) => {
+        getRankData(userId, game, style).then((rankData) => {
             if (!rankData) {
                 setRank(undefined);
                 setLoading(false);
@@ -31,7 +33,7 @@ function ProfileCard(props: IProfileCardProps) {
                 setRank(rankData);
             }
         });
-    }, [userId])
+    }, [userId, game, style])
     
     let rankFormatted = "n/a";
     let skillFormatted = "n/a";

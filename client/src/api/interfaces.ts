@@ -29,3 +29,18 @@ export interface RankData {
     skill: number,
     userId: string
 }
+
+export interface Time {
+    map: string
+    time: string,
+    date: string,
+    game: Game,
+    style: Style
+}
+
+export interface Pagination {
+    page: number,
+    pageSize: number,
+    totalItems: number,
+    totalPages: number
+}
