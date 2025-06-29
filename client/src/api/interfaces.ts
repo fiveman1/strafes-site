@@ -38,6 +38,7 @@ export interface Time {
     game: Game
     style: Style
     updatedAt: string
+    id: number
 }
 
 export interface Pagination {

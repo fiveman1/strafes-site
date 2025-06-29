@@ -12,6 +12,7 @@ const app = express();
 const port = process.env.PORT ?? "8080";
 const cache = apicache.middleware;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 15, validate: {xForwardedForHeader: false} });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} })
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -41,13 +42,13 @@ app.get("/api/username", cache("1 hour"), async (req, res) => {
     res.status(200).json({id: userId});
 });
 
-function validateRobloxId(userId: string) {
+function validatePositiveInt(userId: any) {
     return !isNaN(+userId) && +userId > 0;
 }
 
 app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     const userId = req.params.id;
-    if (!validateRobloxId(userId)) {
+    if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -66,7 +67,7 @@ app.get("/api/user/rank/:id", cache("1 hour"), rateLimitSettings, async (req, re
     const game = req.query.game;
     const style = req.query.style;
 
-    if (!validateRobloxId(userId)) {
+    if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -107,14 +108,26 @@ app.get("/api/user/rank/:id", cache("1 hour"), rateLimitSettings, async (req, re
     res.status(200).json(rankData);
 });
 
-app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
+app.get("/api/user/times/:id", cache("1 hour"), pagedRateLimitSettings, async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
     const onlyWR = req.query.onlyWR ? req.query.onlyWR === "true" : false;
+    const start = req.query.start;
+    const end = req.query.end;
 
-    if (!validateRobloxId(userId)) {
+    if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
+        return;
+    }
+
+    if (start === undefined || isNaN(+start) || +start < 0) {
+        res.status(400).json({error: "Invalid start"});
+        return;
+    }
+
+    if (end === undefined || isNaN(+end) || +end < 0) {
+        res.status(400).json({error: "Invalid end"});
         return;
     }
 
@@ -128,12 +141,17 @@ app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, r
         return;
     }
 
+    const page = Math.floor(+start / 100) + 1;
+    if (+start >= +end) {
+        res.status(400).json({error: "Start must be higher than end"});
+    }
+
     const firstTimeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
         game_id: game,
         style_id: style,
         mode_id: 0,
-        page_number: 1,
+        page_number: page,
         page_size: 100,
         sort_by: 3
     });
@@ -143,10 +161,13 @@ app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, r
         return;
     }
 
+    const pageStart = (+start % 100)
+    const pageEnd = (+end % 100)
     const firstTimes = firstTimeRes.data.data;
 
     const timeArr: Time[] = [];
-    for (const time of firstTimes) {
+    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
+        const time = firstTimes[i];
         timeArr.push({
             map: time.map.display_name,
             username: time.user.username,
@@ -154,9 +175,22 @@ app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, r
             date: time.date,
             game: time.game_id,
             style: time.style_id,
-            updatedAt: time.updated_at
+            updatedAt: time.updated_at,
+            id: time.id
         });
     }
+    // for (const time of firstTimes) {
+    //     timeArr.push({
+    //         map: time.map.display_name,
+    //         username: time.user.username,
+    //         time: time.time,
+    //         date: time.date,
+    //         game: time.game_id,
+    //         style: time.style_id,
+    //         updatedAt: time.updated_at,
+    //         id: time.id
+    //     });
+    // }
 
     const pageInfo = firstTimeRes.data.pagination;
     const pagination: Pagination = {
@@ -166,40 +200,41 @@ app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, r
         totalPages: onlyWR ? 1 : pageInfo.total_pages
     };
 
-    if (!onlyWR) {
-        const promises: Promise<AxiosResponse | undefined>[] = [];
-        for (let i = 2; i <= pagination.totalPages; ++i) {
-            promises.push(tryGetStrafes("time", {
-                user_id: userId,
-                game_id: game,
-                style_id: style,
-                mode_id: 0,
-                page_number: i,
-                page_size: 100,
-                sort_by: 3
-            }));
-        }
-        const responses = await Promise.all(promises);
+    // if (!onlyWR) {
+    //     const promises: Promise<AxiosResponse | undefined>[] = [];
+    //     for (let i = 2; i <= pagination.totalPages; ++i) {
+    //         promises.push(tryGetStrafes("time", {
+    //             user_id: userId,
+    //             game_id: game,
+    //             style_id: style,
+    //             mode_id: 0,
+    //             page_number: i,
+    //             page_size: 100,
+    //             sort_by: 3
+    //         }));
+    //     }
+    //     const responses = await Promise.all(promises);
         
-        for (const timeRes of responses) {
-            if (!timeRes) {
-                res.status(404).json({error: "Not found"});
-                return;
-            }
-            const times = timeRes.data.data;
-            for (const time of times) {
-                timeArr.push({
-                    map: time.map.display_name,
-                    username: time.user.username,
-                    time: time.time,
-                    date: time.date,
-                    game: time.game_id,
-                    style: time.style_id,
-                    updatedAt: time.updated_at
-                });
-            }
-        }
-    }
+    //     for (const timeRes of responses) {
+    //         if (!timeRes) {
+    //             res.status(404).json({error: "Not found"});
+    //             return;
+    //         }
+    //         const times = timeRes.data.data;
+    //         for (const time of times) {
+    //             timeArr.push({
+    //                 map: time.map.display_name,
+    //                 username: time.user.username,
+    //                 time: time.time,
+    //                 date: time.date,
+    //                 game: time.game_id,
+    //                 style: time.style_id,
+    //                 updatedAt: time.updated_at,
+    //                 id: time.id
+    //             });
+    //         }
+    //     }
+    // }
 
     res.status(200).json({
         data: timeArr,
@@ -207,13 +242,25 @@ app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, r
     });
 });
 
-app.get("/api/map/times/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
+app.get("/api/map/times/:id", cache("1 hour"), pagedRateLimitSettings, async (req, res) => {
     const mapId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
+    const start = req.query.start;
+    const end = req.query.end;
 
-    if (!validateRobloxId(mapId)) {
+    if (!validatePositiveInt(mapId)) {
         res.status(400).json({error: "Invalid map ID"});
+        return;
+    }
+
+    if (start === undefined || isNaN(+start) || +start < 0) {
+        res.status(400).json({error: "Invalid start"});
+        return;
+    }
+
+    if (end === undefined || isNaN(+end) || +end < 0) {
+        res.status(400).json({error: "Invalid end"});
         return;
     }
 
@@ -227,11 +274,17 @@ app.get("/api/map/times/:id", cache("1 hour"), rateLimitSettings, async (req, re
         return;
     }
 
+    const page = Math.floor(+start / 100) + 1;
+    if (+start >= +end) {
+        res.status(400).json({error: "Start must be higher than end"});
+    }
+
     const firstTimeRes = await tryGetStrafes("time", {
         map_id: mapId,
+        game_id: game,
         style_id: style,
         mode_id: 0,
-        page_number: 1,
+        page_number: page,
         page_size: 100,
         sort_by: 0
     });
@@ -241,10 +294,13 @@ app.get("/api/map/times/:id", cache("1 hour"), rateLimitSettings, async (req, re
         return;
     }
 
+    const pageStart = (+start % 100)
+    const pageEnd = (+end % 100)
     const firstTimes = firstTimeRes.data.data;
 
     const timeArr: Time[] = [];
-    for (const time of firstTimes) {
+    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
+        const time = firstTimes[i];
         timeArr.push({
             map: time.map.display_name,
             username: time.user.username,
@@ -252,7 +308,8 @@ app.get("/api/map/times/:id", cache("1 hour"), rateLimitSettings, async (req, re
             date: time.date,
             game: time.game_id,
             style: time.style_id,
-            updatedAt: time.updated_at
+            updatedAt: time.updated_at,
+            id: time.id
         });
     }
 

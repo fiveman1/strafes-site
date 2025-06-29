@@ -43,10 +43,12 @@ export async function getRankData(userId: string, game: Game, style: Style): Pro
     return res.data as RankData;
 }
 
-export async function getTimeData(game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+export async function getTimeData(start: number | string, end: number | string, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
     let res: AxiosResponse | undefined;
     if (userId) {
         res = await tryGetRequest("user/times/" + userId, {
+            start: start,
+            end: end,
             game: game,
             style: style,
             onlyWR: !!onlyWR
@@ -54,6 +56,8 @@ export async function getTimeData(game?: Game, style?: Style, userId?: string, m
     }
     else if (map) {
         res = await tryGetRequest("map/times/" + map.id, {
+            start: start,
+            end: end,
             game: game,
             style: style
         });

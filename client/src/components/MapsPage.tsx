@@ -11,15 +11,15 @@ import TimesCard from "./TimesCard";
 
 const CARD_SIZE = 180;
 
-function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: Map, setSelectedMap: (val: Map) => void}, index: number, style: any}) {
+function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: Map}, index: number, style: any}) {
     const { data, index, style } = props;
-    const { maps, itemsPerRow, selectedMap, setSelectedMap } = data;
+    const { maps, itemsPerRow, selectedMap } = data;
 
     const rowMaps: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, maps.length);
     for (let i = fromIndex; i < toIndex; ++i) {
-        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selectedMap?.id === maps[i].id} setSelectedMap={setSelectedMap} />);
+        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selectedMap?.id === maps[i].id} />);
     }
 
     return (
@@ -29,8 +29,8 @@ function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: M
     );
 }
 
-function MapCard(props: {map: Map, selected?: boolean, setSelectedMap: (val: Map) => void}) {
-    const { map, selected, setSelectedMap } = props;
+function MapCard(props: {map: Map, selected?: boolean}) {
+    const { map, selected } = props;
     const theme = useTheme();
     const navigate = useNavigate();
 
@@ -48,7 +48,6 @@ function MapCard(props: {map: Map, selected?: boolean, setSelectedMap: (val: Map
                 ":hover": {boxShadow: 10}}}>
             <CardActionArea 
                 onClick={() => {
-                    //setSelectedMap(map);
                     navigate("/maps/" + map.id, {replace: true});
                 }} 
                 sx={{ 
@@ -77,7 +76,6 @@ function MapCard(props: {map: Map, selected?: boolean, setSelectedMap: (val: Map
 function MapsPage() {
     const { id } = useParams();
     const { maps, sortedMaps } = useOutletContext() as ContextParams;
-    const navigate = useNavigate();
 
     const [searchText, setSearchText] = useState<string>("");
     const [selectedMap, setSelectedMap] = useState<Map>();
@@ -90,7 +88,6 @@ function MapsPage() {
             setSelectedMap(map);
         }
     }, [selectedMap, id, maps]);
-    
 
     const onSearchTextChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchText(event.target.value);
@@ -101,14 +98,28 @@ function MapsPage() {
         filteredMaps = [];
         const validMaps = new Set<number>();
         const search = searchText.toLowerCase();
-        // Show exact matches first
+        // Show exact map name matches first
         for (const map of sortedMaps) {
             if (map.name.toLowerCase().startsWith(search)) {
                 filteredMaps.push(map);
                 validMaps.add(map.id);
             }
         }
-        // Show near matches last
+        // Show near map name matches last
+        for (const map of sortedMaps) {
+            if (!validMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
+                filteredMaps.push(map);
+                validMaps.add(map.id);
+            }
+        }
+        // Exact creator matches
+        for (const map of sortedMaps) {
+            if (!validMaps.has(map.id) && map.creator.toLowerCase().startsWith(search)) {
+                filteredMaps.push(map);
+                validMaps.add(map.id);
+            }
+        }
+        // Near creator matches
         for (const map of sortedMaps) {
             if (!validMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
                 filteredMaps.push(map);
@@ -133,16 +144,16 @@ function MapsPage() {
                 </Box>
             </Paper>
         </Box>
-        <Grid container height={CARD_SIZE * 3} sx={{scrollbarWidth: "thin"}}>
+        <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
             {({ width }) => {
                 const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
                 const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
                 return (
                     <FixedSizeList 
-                        style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 3} width={width} 
+                        style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
                         itemCount={rowCount} itemSize={CARD_SIZE} 
-                        itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, setSelectedMap: setSelectedMap}}
+                        itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap}}
                     >
                         {MapRow}
                     </FixedSizeList>
