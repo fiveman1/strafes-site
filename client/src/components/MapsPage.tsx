@@ -167,7 +167,7 @@ function MapsPage() {
             </Box>
         </Box>
         <Box padding={1}>
-            <TimesCard map={selectedMap} game={selectedMap?.game} style={style} hideMap />
+            <TimesCard map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
         </Box>
     </Box>
     );

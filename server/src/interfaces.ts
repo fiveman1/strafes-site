@@ -39,6 +39,7 @@ export interface Time {
     style: Style
     updatedAt: string
     id: number
+    placement?: number
 }
 
 export interface Pagination {

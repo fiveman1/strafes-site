@@ -1,9 +1,9 @@
 import apicache from "apicache";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import express from "express";
 import path from "path";
-import pMemoize from "p-memoize";
-import { rateLimit } from 'express-rate-limit'
+import memoize from 'memoize';
+import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import { Game, Map, Pagination, RankData, Style, Time, User } from "./interfaces.js";
 import { exit } from "process";
@@ -62,7 +62,7 @@ app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     res.status(200).json(user);
 });
 
-app.get("/api/user/rank/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
+app.get("/api/user/rank/:id", cache("5 minutes"), rateLimitSettings, async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
@@ -108,7 +108,7 @@ app.get("/api/user/rank/:id", cache("1 hour"), rateLimitSettings, async (req, re
     res.status(200).json(rankData);
 });
 
-app.get("/api/user/times/:id", cache("1 hour"), pagedRateLimitSettings, async (req, res) => {
+app.get("/api/user/times/:id", cache("5 minutes"), pagedRateLimitSettings, async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
@@ -179,18 +179,6 @@ app.get("/api/user/times/:id", cache("1 hour"), pagedRateLimitSettings, async (r
             id: time.id
         });
     }
-    // for (const time of firstTimes) {
-    //     timeArr.push({
-    //         map: time.map.display_name,
-    //         username: time.user.username,
-    //         time: time.time,
-    //         date: time.date,
-    //         game: time.game_id,
-    //         style: time.style_id,
-    //         updatedAt: time.updated_at,
-    //         id: time.id
-    //     });
-    // }
 
     const pageInfo = firstTimeRes.data.pagination;
     const pagination: Pagination = {
@@ -200,49 +188,13 @@ app.get("/api/user/times/:id", cache("1 hour"), pagedRateLimitSettings, async (r
         totalPages: onlyWR ? 1 : pageInfo.total_pages
     };
 
-    // if (!onlyWR) {
-    //     const promises: Promise<AxiosResponse | undefined>[] = [];
-    //     for (let i = 2; i <= pagination.totalPages; ++i) {
-    //         promises.push(tryGetStrafes("time", {
-    //             user_id: userId,
-    //             game_id: game,
-    //             style_id: style,
-    //             mode_id: 0,
-    //             page_number: i,
-    //             page_size: 100,
-    //             sort_by: 3
-    //         }));
-    //     }
-    //     const responses = await Promise.all(promises);
-        
-    //     for (const timeRes of responses) {
-    //         if (!timeRes) {
-    //             res.status(404).json({error: "Not found"});
-    //             return;
-    //         }
-    //         const times = timeRes.data.data;
-    //         for (const time of times) {
-    //             timeArr.push({
-    //                 map: time.map.display_name,
-    //                 username: time.user.username,
-    //                 time: time.time,
-    //                 date: time.date,
-    //                 game: time.game_id,
-    //                 style: time.style_id,
-    //                 updatedAt: time.updated_at,
-    //                 id: time.id
-    //             });
-    //         }
-    //     }
-    // }
-
     res.status(200).json({
         data: timeArr,
         pagination: pagination
     });
 });
 
-app.get("/api/map/times/:id", cache("1 hour"), pagedRateLimitSettings, async (req, res) => {
+app.get("/api/map/times/:id", cache("5 minutes"), pagedRateLimitSettings, async (req, res) => {
     const mapId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
@@ -274,7 +226,7 @@ app.get("/api/map/times/:id", cache("1 hour"), pagedRateLimitSettings, async (re
         return;
     }
 
-    const page = Math.floor(+start / 100) + 1;
+    const page = Math.floor(+start / 100);
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
     }
@@ -284,7 +236,7 @@ app.get("/api/map/times/:id", cache("1 hour"), pagedRateLimitSettings, async (re
         game_id: game,
         style_id: style,
         mode_id: 0,
-        page_number: page,
+        page_number: page + 1,
         page_size: 100,
         sort_by: 0
     });
@@ -309,7 +261,8 @@ app.get("/api/map/times/:id", cache("1 hour"), pagedRateLimitSettings, async (re
             game: time.game_id,
             style: time.style_id,
             updatedAt: time.updated_at,
-            id: time.id
+            id: time.id,
+            placement: (page * 100) + i + 1
         });
     }
 
@@ -409,7 +362,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
     };
 }
 
-const tryGetStrafes = pMemoize(tryGetStrafesCore, {cacheKey: JSON.stringify});
+const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 60 * 1000});
 async function tryGetStrafesCore(end_of_url: string, params?: any) {
     const headers = {
         "X-API-Key": STRAFES_KEY

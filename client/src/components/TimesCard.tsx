@@ -24,17 +24,28 @@ export interface ITimesCardProps {
     onlyWRs?: boolean
     hideUser?: boolean
     hideMap?: boolean
+    showPlacement?: boolean
 }
 
-function makeColumns(hideUser?: boolean, hideMap?: boolean) {
+function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean) {
     const cols: GridColDef[] = [];
+
+    if (showPlacement) {
+        cols.push({
+            type: "number",
+            field: "placement",
+            headerName: "#",
+            width: 64
+        });
+    }
 
     if (!hideUser) {
         cols.push({
             type: "string",
             field: "username",
             headerName: "User",
-            flex: 300
+            flex: 300,
+            minWidth: 100
         });
     }
 
@@ -43,7 +54,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
             type: "string",
             field: "map",
             headerName: "Map",
-            flex: 450
+            flex: 450,
+            minWidth: 100
         });
     }
 
@@ -52,6 +64,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
         field: "time",
         headerName: "Time",
         flex: 150,
+        minWidth: 100,
         valueFormatter: formatTime
     });
 
@@ -60,6 +73,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
         field: "date",
         headerName: "Date",
         flex: 170,
+        minWidth: 100,
         renderCell: (params: GridRenderCellParams<any, string>) => {
             if (!params.value) {
                 return <></>
@@ -80,6 +94,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
         field: "game",
         headerName: "Game",
         flex: 110,
+        minWidth: 70,
         valueFormatter: formatGame
     });
 
@@ -88,6 +103,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
         field: "style",
         headerName: "Style",
         flex: 210,
+        minWidth: 100,
         valueFormatter: formatStyle
     });
     
@@ -95,7 +111,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean) {
 }
 
 function TimesCard(props: ITimesCardProps) {
-    const { userId, map, game, style, onlyWRs, hideUser, hideMap } = props;
+    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement } = props;
 
     const dataSource: GridDataSource = React.useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
@@ -118,7 +134,8 @@ function TimesCard(props: ITimesCardProps) {
             </Typography>
         </Box>
         <DataGrid
-            columns={makeColumns(hideUser, hideMap)}
+
+            columns={makeColumns(hideUser, hideMap, showPlacement)}
             pagination
             dataSource={dataSource}
             pageSizeOptions={[10, 25, 50]}
