@@ -1,8 +1,8 @@
 export interface User {
-    displayName: string,
-    id: string,
-    username: string,
-    joinedOn: string,
+    displayName: string
+    id: string
+    username: string
+    joinedOn: string
     thumbUrl: string
 }
 
@@ -23,24 +23,34 @@ export enum Style {
 }
 
 export interface RankData {
-    style: Style,
-    game: Game,
-    rank: number,
-    skill: number,
+    style: Style
+    game: Game
+    rank: number
+    skill: number
     userId: string
 }
 
 export interface Time {
     map: string
-    time: string,
-    date: string,
-    game: Game,
+    username: string
+    time: string
+    date: string
+    game: Game
     style: Style
+    updatedAt: string
 }
 
 export interface Pagination {
-    page: number,
-    pageSize: number,
-    totalItems: number,
+    page: number
+    pageSize: number
+    totalItems: number
     totalPages: number
+}
+
+export interface Map {
+    id: number
+    name: string
+    creator: string
+    game: Game
+    date: string
 }

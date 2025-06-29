@@ -5,12 +5,12 @@ import { useNavigate } from "react-router";
 import { getUserIdFromName } from "../api/api";
 
 function UserSearch(props: { minHeight: number, setUserId: (value?: string) => void; }) {
+    const { minHeight, setUserId } = props;
+
     const navigate = useNavigate();
 
     const [userText, setUserText] = useState<string>("");
     const [hasError, setHasError] = useState<boolean>(false);
-
-    const { minHeight, setUserId } = props;
 
     const onSearch = async () => {
         setHasError(false);
@@ -47,7 +47,8 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
                 <TextField error={hasError} helperText={hasError ? "Invalid username." : ""} onKeyDown={onSearchKeyDown} 
                         onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" 
-                        slotProps={{htmlInput: {maxLength: 50}, input: {endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} />
+                        slotProps={{htmlInput: {maxLength: 50}, input: {endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
+                />
             </Box>
         </Paper>
     </>)

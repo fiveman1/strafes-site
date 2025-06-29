@@ -1,4 +1,5 @@
-import { Game, Style } from "../api/interfaces";
+import { Maps } from "../api/api";
+import { Game, Map, Style } from "../api/interfaces";
 
 export function formatGame(game: Game) {
     switch (game) {
@@ -55,4 +56,9 @@ export function formatTime(timeStr: string) {
         return minutes + ":" + seconds + "." + millis
     }
     return hours + ":" + minutes + ":" + seconds
+}
+
+export interface ContextParams {
+    maps: Maps,
+    sortedMaps: Map[]
 }

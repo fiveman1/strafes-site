@@ -2,13 +2,16 @@ import apicache from "apicache";
 import axios, { AxiosResponse } from "axios";
 import express from "express";
 import path from "path";
+import pMemoize from "p-memoize";
+import { rateLimit } from 'express-rate-limit'
 import { fileURLToPath } from "url";
-import { Game, Pagination, RankData, Style, Time, User } from "./interfaces";
+import { Game, Map, Pagination, RankData, Style, Time, User } from "./interfaces.js";
 import { exit } from "process";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
 const cache = apicache.middleware;
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 15, validate: {xForwardedForHeader: false} });
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -38,13 +41,13 @@ app.get("/api/username", cache("1 hour"), async (req, res) => {
     res.status(200).json({id: userId});
 });
 
-function validateUserId(userId: string) {
+function validateRobloxId(userId: string) {
     return !isNaN(+userId) && +userId > 0;
 }
 
 app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     const userId = req.params.id;
-    if (!validateUserId(userId)) {
+    if (!validateRobloxId(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -58,12 +61,12 @@ app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     res.status(200).json(user);
 });
 
-app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
+app.get("/api/user/rank/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
 
-    if (!validateUserId(userId)) {
+    if (!validateRobloxId(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -104,12 +107,13 @@ app.get("/api/user/rank/:id", cache("1 hour"), async (req, res) => {
     res.status(200).json(rankData);
 });
 
-app.get("/api/user/times/:id", cache("1 hour"), async (req, res) => {
+app.get("/api/user/times/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
+    const onlyWR = req.query.onlyWR ? req.query.onlyWR === "true" : false;
 
-    if (!validateUserId(userId)) {
+    if (!validateRobloxId(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -124,7 +128,7 @@ app.get("/api/user/times/:id", cache("1 hour"), async (req, res) => {
         return;
     }
 
-    const firstTimeRes = await tryGetStrafes("time", {
+    const firstTimeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
         game_id: game,
         style_id: style,
@@ -140,53 +144,60 @@ app.get("/api/user/times/:id", cache("1 hour"), async (req, res) => {
     }
 
     const firstTimes = firstTimeRes.data.data;
-    const pageInfo = firstTimeRes.data.pagination;
-    const pagination: Pagination = {
-        page: pageInfo.page,
-        pageSize: pageInfo.page_size,
-        totalItems: pageInfo.total_items,
-        totalPages: pageInfo.total_pages
-    }
-
-    const promises: Promise<AxiosResponse | undefined>[] = [];
-    for (let i = 2; i <= pagination.totalPages; ++i) {
-        promises.push(tryGetStrafes("time", {
-            user_id: userId,
-            game_id: game,
-            style_id: style,
-            mode_id: 0,
-            page_number: i,
-            page_size: 100,
-            sort_by: 3
-        }));
-    }
-    const responses = await Promise.all(promises);
 
     const timeArr: Time[] = [];
     for (const time of firstTimes) {
         timeArr.push({
             map: time.map.display_name,
+            username: time.user.username,
             time: time.time,
             date: time.date,
             game: time.game_id,
-            style: time.style_id
+            style: time.style_id,
+            updatedAt: time.updated_at
         });
     }
-    
-    for (const timeRes of responses) {
-        if (!timeRes) {
-            res.status(404).json({error: "Not found"});
-            return;
+
+    const pageInfo = firstTimeRes.data.pagination;
+    const pagination: Pagination = {
+        page: pageInfo.page,
+        pageSize: pageInfo.page_size,
+        totalItems: onlyWR ? timeArr.length : pageInfo.total_items,
+        totalPages: onlyWR ? 1 : pageInfo.total_pages
+    };
+
+    if (!onlyWR) {
+        const promises: Promise<AxiosResponse | undefined>[] = [];
+        for (let i = 2; i <= pagination.totalPages; ++i) {
+            promises.push(tryGetStrafes("time", {
+                user_id: userId,
+                game_id: game,
+                style_id: style,
+                mode_id: 0,
+                page_number: i,
+                page_size: 100,
+                sort_by: 3
+            }));
         }
-        const times = timeRes.data.data;
-        for (const time of times) {
-            timeArr.push({
-                map: time.map.display_name,
-                time: time.time,
-                date: time.date,
-                game: time.game_id,
-                style: time.style_id
-            });
+        const responses = await Promise.all(promises);
+        
+        for (const timeRes of responses) {
+            if (!timeRes) {
+                res.status(404).json({error: "Not found"});
+                return;
+            }
+            const times = timeRes.data.data;
+            for (const time of times) {
+                timeArr.push({
+                    map: time.map.display_name,
+                    username: time.user.username,
+                    time: time.time,
+                    date: time.date,
+                    game: time.game_id,
+                    style: time.style_id,
+                    updatedAt: time.updated_at
+                });
+            }
         }
     }
 
@@ -196,12 +207,107 @@ app.get("/api/user/times/:id", cache("1 hour"), async (req, res) => {
     });
 });
 
+app.get("/api/map/times/:id", cache("1 hour"), rateLimitSettings, async (req, res) => {
+    const mapId = req.params.id;
+    const game = req.query.game;
+    const style = req.query.style;
+
+    if (!validateRobloxId(mapId)) {
+        res.status(400).json({error: "Invalid map ID"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const firstTimeRes = await tryGetStrafes("time", {
+        map_id: mapId,
+        style_id: style,
+        mode_id: 0,
+        page_number: 1,
+        page_size: 100,
+        sort_by: 0
+    });
+
+    if (!firstTimeRes) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    const firstTimes = firstTimeRes.data.data;
+
+    const timeArr: Time[] = [];
+    for (const time of firstTimes) {
+        timeArr.push({
+            map: time.map.display_name,
+            username: time.user.username,
+            time: time.time,
+            date: time.date,
+            game: time.game_id,
+            style: time.style_id,
+            updatedAt: time.updated_at
+        });
+    }
+
+    const pageInfo = firstTimeRes.data.pagination;
+    const pagination: Pagination = {
+        page: pageInfo.page,
+        pageSize: pageInfo.page_size,
+        totalItems: pageInfo.total_items,
+        totalPages: pageInfo.total_pages
+    };
+
+    res.status(200).json({
+        data: timeArr,
+        pagination: pagination
+    });
+});
+
+app.get("/api/maps", cache("1 hour"), rateLimitSettings, async (req, res) => {
+    let i = 1;
+    const maps: Map[] = [];
+    while (true) {
+        const mapRes = await tryGetStrafes("map", {
+            page_number: i,
+            page_size: 100
+        });
+        ++i;
+        if (!mapRes) {
+            res.status(404).json({error: "Not found"});
+            return;
+        }
+        const data = mapRes.data.data as any[];
+        if (data.length < 1) {
+            break;
+        }
+        for (const map of data) {
+            maps.push({
+                id: map.id,
+                name: map.display_name,
+                creator: map.creator,
+                game: map.game_id,
+                date: map.date
+            });
+        }
+    }
+
+    res.status(200).json({
+        data: maps
+    });
+});
+
 app.get("*splat", (req, res) => {
     res.sendFile("index.html", {root: buildDir})
 });
 
 app.listen(port, () => {
-    apicache.clear();
     console.log(`Example app listening on port ${port}`);
 });
 
@@ -246,7 +352,8 @@ async function getUserData(userId: string): Promise<undefined | User> {
     };
 }
 
-async function tryGetStrafes(end_of_url: string, params?: any) {
+const tryGetStrafes = pMemoize(tryGetStrafesCore, {cacheKey: JSON.stringify});
+async function tryGetStrafesCore(end_of_url: string, params?: any) {
     const headers = {
         "X-API-Key": STRAFES_KEY
     };

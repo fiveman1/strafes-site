@@ -1,5 +1,5 @@
-import axios from "axios";
-import { Game, Pagination, RankData, Style, Time, User } from "./interfaces";
+import axios, { AxiosResponse } from "axios";
+import { Game, Map, Pagination, RankData, Style, Time, User } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -43,15 +43,45 @@ export async function getRankData(userId: string, game: Game, style: Style): Pro
     return res.data as RankData;
 }
 
-export async function getTimeData(userId: string, game: Game, style: Style): Promise<{ times: Time[], pagination: Pagination } | undefined> {
-    const res = await tryGetRequest("user/times/" + userId, {
-        game: game,
-        style: style
-    });
+export async function getTimeData(game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+    let res: AxiosResponse | undefined;
+    if (userId) {
+        res = await tryGetRequest("user/times/" + userId, {
+            game: game,
+            style: style,
+            onlyWR: !!onlyWR
+        });
+    }
+    else if (map) {
+        res = await tryGetRequest("map/times/" + map.id, {
+            game: game,
+            style: style
+        });
+    }
+    else {
+        return undefined;
+    }
+    
     if (!res) return undefined;
 
     return {
         times: res.data.data,
         pagination: res.data.pagination
     };
+}
+
+export interface Maps {
+    [id: number]: Map
+}
+
+export async function getMaps(): Promise<Maps> {
+    const res = await tryGetRequest("maps");
+    if (!res) return {};
+
+    const maps: Maps = {};
+    const data = res.data.data as Map[];
+    for (const map of data) {
+        maps[map.id] = map;
+    }
+    return maps;
 }

@@ -1,6 +1,5 @@
 import React from "react";
-import { Box, Paper, Typography } from "@mui/material";
-import { Link } from "@mui/material";
+import { Box, Card, CardActionArea, CardContent, Typography } from "@mui/material";
 
 export interface IHomeCardProps {
     title: string
@@ -12,19 +11,21 @@ export interface IHomeCardProps {
 function HomeCard(props: IHomeCardProps) {
     const { title, icon, description, href } = props;
     return (
-    <Link href={href} underline="none">
-        <Paper sx={{width: "200px", height: "200px", padding: 2, ":hover": {boxShadow: 20}}} elevation={3}>
-            <Box display="flex" alignItems="center">
-                {icon}
-                <Typography marginLeft={0.75} variant="h6">
-                    {title}
+    <Card sx={{width: "200px", height: "200px", ":hover": {boxShadow: 20}}} elevation={3}>
+        <CardActionArea href={href} sx={{height: "100%"}}>
+            <CardContent sx={{height: "100%"}}>
+                <Box display="flex" alignItems="center">
+                    {icon}
+                    <Typography marginLeft={0.75} variant="h6">
+                        {title}
+                    </Typography>
+                </Box>
+                <Typography padding={0.5} variant="subtitle1">
+                    {description}
                 </Typography>
-            </Box>
-            <Typography padding={0.5} variant="subtitle1">
-                {description}
-            </Typography>
-        </Paper>
-    </Link>
+            </CardContent>
+        </CardActionArea>
+    </Card>
     );
 }
 

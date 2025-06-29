@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainAppBar from "./components/MainAppBar";
@@ -7,6 +7,8 @@ import { pink, lightBlue } from "@mui/material/colors";
 import { Outlet } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import { LinkProps } from '@mui/material/Link';
+import { getMaps, Maps } from "./api/api";
+import { ContextParams } from "./util/format";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -20,6 +22,11 @@ const LinkBehavior = React.forwardRef<
 function App() {
     const storedTheme = localStorage.getItem("theme") as PaletteMode || "dark";
     const [themeMode, setThemeMode] = useState(storedTheme);
+    const [maps, setMaps] = useState<Maps>({});
+
+    useEffect(() => {
+        getMaps().then(setMaps);
+    }, []);
 
     const theme = createTheme({
         palette: {
@@ -42,12 +49,17 @@ function App() {
         },
     });
 
+    const contextParams: ContextParams = {
+        maps: maps,
+        sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1)
+    };
+
     return (
         <ThemeProvider theme={theme}>
-            <CssBaseline />
+            <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
                 <MainAppBar themeMode={themeMode} setThemeMode={setThemeMode} />
-                <Outlet />
+                <Outlet context={contextParams}/>
             </Box>
         </ThemeProvider>
     );

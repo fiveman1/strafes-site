@@ -14,7 +14,9 @@ interface IMainAppBarProps extends IThemeSelectorProps {
 export enum NavigatorPage {
     Home = "Home",
     Users = "Users",
-    Maps = "Maps"
+    Maps = "Maps",
+    Gloabls = "Globals",
+    Ranks = "Ranks"
 }
 
 function getCurrentPage(path: string) {
@@ -23,6 +25,12 @@ function getCurrentPage(path: string) {
     }
     else if (path.startsWith("/maps")) {
         return NavigatorPage.Maps;
+    }
+    else if (path.startsWith("/rank")) {
+        return NavigatorPage.Ranks;
+    }
+    else if (path.startsWith("/globals")) {
+        return NavigatorPage.Gloabls;
     }
     else {
         return NavigatorPage.Home;
@@ -66,9 +74,19 @@ function MainAppBar(props: IMainAppBarProps) {
                                 {NavigatorPage.Users}
                             </MenuItem>
                         </Link>
+                        <Link href="/globals" variant="inherit" color="inherit" underline="none">
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Gloabls} >
+                                {NavigatorPage.Gloabls}
+                            </MenuItem>
+                        </Link>
                         <Link href="/maps" variant="inherit" color="inherit" underline="none">
                             <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Maps} >
                                 {NavigatorPage.Maps}
+                            </MenuItem>
+                        </Link>
+                        <Link href="/ranks" variant="inherit" color="inherit" underline="none">
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
+                                {NavigatorPage.Ranks}
                             </MenuItem>
                         </Link>
                     </Menu>

@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { Box, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TablePagination, TableRow, Tooltip, Typography } from "@mui/material";
-import { Game, Style, Time } from "../api/interfaces";
+import { Game, Map, Style, Time } from "../api/interfaces";
 import { formatGame, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 
-export interface ITimesCardProps {
-    userId?: string
-    game: Game
-    style: Style
+interface ITimeRowProps {
+    time: Time
+    index: number
+    dateFormat: Intl.DateTimeFormat
+    timeFormat: Intl.DateTimeFormat
+    hideUser?: boolean
+    hideMap?: boolean
 }
 
-function TimeRow(props: { time: Time, index: number, dateFormat: Intl.DateTimeFormat, timeFormat: Intl.DateTimeFormat }) {
-    const { time, index, dateFormat, timeFormat } = props;
+function TimeRow(props: ITimeRowProps) {
+    const { time, index, dateFormat, timeFormat, hideUser, hideMap } = props;
     const dateValue = new Date(time.date);
     return (
     <TableRow hover>
-        <TableCell sx={{color: "GrayText"}} >{index}</TableCell>
-        <TableCell>{time.map}</TableCell>
+        <TableCell sx={{color: "GrayText", maxWidth: "48px"}} >{index}</TableCell>
+        {!hideUser ? <TableCell>{time.username}</TableCell> : <></>}
+        {!hideMap ? <TableCell>{time.map}</TableCell> : <></>}
         <TableCell>{formatTime(time.time)}</TableCell>
         <TableCell>
             <Tooltip placement="right" title={timeFormat.format(dateValue)}>
@@ -32,34 +36,44 @@ function TimeRow(props: { time: Time, index: number, dateFormat: Intl.DateTimeFo
 }
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
-        year: "numeric",
-        day: "2-digit",
-        month: "2-digit"
-    });
+    year: "numeric",
+    day: "2-digit",
+    month: "2-digit"
+});
 
 const timeFormat = Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit"
 });
 
+export interface ITimesCardProps {
+    userId?: string
+    map?: Map
+    game?: Game
+    style: Style
+    onlyWRs?: boolean
+    hideUser?: boolean
+    hideMap?: boolean
+}
+
 function TimesCard(props: ITimesCardProps) {
-    const { userId, game, style } = props;
+    const { userId, map, game, style, onlyWRs, hideUser, hideMap } = props;
     const [times, setTimes] = useState<Time[]>([]);
-    const [gridTimes, setGridTimes] = useState<Time[]>();
+    const [gridTimes, setGridTimes] = useState<Time[]>([]);
     const [page, setPage] = useState(0);
     const [numTimes, setNumTimes] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [loading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!userId) {
+        if (!userId && !map) {
             setTimes([]);
             setPage(0);
             setNumTimes(0);
             return;
         }
         setIsLoading(true);
-        getTimeData(userId, game, style).then((times) => {
+        getTimeData(game, style, userId, map, onlyWRs).then((times) => {
             if (!times) {
                 setTimes([]);
                 setNumTimes(0);
@@ -71,7 +85,7 @@ function TimesCard(props: ITimesCardProps) {
             setPage(0);
             setIsLoading(false);
         });
-    }, [userId, game, style]);
+    }, [userId, map, game, style, onlyWRs]);
 
     useEffect(() => {
         const sliced = times.slice(page * rowsPerPage, (page * rowsPerPage) + rowsPerPage);
@@ -87,6 +101,10 @@ function TimesCard(props: ITimesCardProps) {
         setPage(0);
     };
 
+    let numCols = 5;
+    if (!hideUser) ++numCols;
+    if (!hideMap) ++numCols;
+
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
         <Box display="flex">
@@ -94,11 +112,12 @@ function TimesCard(props: ITimesCardProps) {
                 Times
             </Typography>
         </Box>
-        <TableContainer sx={{maxHeight: 800, overflow: "auto"}} elevation={1} component={Paper}>
+        <TableContainer elevation={1} component={Paper}>
             <Table size="small" stickyHeader>
                 <colgroup>
-                    <col width="32px"></col>
-                    <col width="450px"></col>
+                    <col width="48px"></col>
+                    {!hideUser ? <col width="300px"></col> : <></>}
+                    {!hideMap ? <col width="450px"></col> : <></>}
                     <col width="150px"></col>
                     <col width="170px"></col>
                     <col width="110px"></col>
@@ -106,8 +125,9 @@ function TimesCard(props: ITimesCardProps) {
                 </colgroup>
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{color: "GrayText"}}>#</TableCell>
-                        <TableCell>Map</TableCell>
+                        <TableCell sx={{color: "GrayText", maxWidth: "48px"}}>#</TableCell>
+                        {!hideUser ? <TableCell>User</TableCell> : <></>}
+                        {!hideMap ? <TableCell>Map</TableCell> : <></>}
                         <TableCell>Time</TableCell>
                         <TableCell>Date</TableCell>
                         <TableCell>Game</TableCell>
@@ -115,15 +135,23 @@ function TimesCard(props: ITimesCardProps) {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {gridTimes?.map((time, index) => (
-                        <TimeRow key={index} index={index + (page * rowsPerPage) + 1} time={time} dateFormat={dateFormat} timeFormat={timeFormat} />
+                    {gridTimes.map((time, index) => (
+                        <TimeRow 
+                            key={index} 
+                            index={index + (page * rowsPerPage) + 1} 
+                            time={time} 
+                            dateFormat={dateFormat} 
+                            timeFormat={timeFormat}
+                            hideUser={hideUser}
+                            hideMap={hideMap}
+                        />
                     ))}
                 </TableBody>
                 <TableFooter>
                     <TableRow>
                         <TablePagination
                             rowsPerPageOptions={[10, 25, 50, 100]}
-                            colSpan={6}
+                            colSpan={numCols}
                             count={numTimes}
                             rowsPerPage={rowsPerPage}
                             page={page}
