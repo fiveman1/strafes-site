@@ -143,7 +143,7 @@ function MapsPage() {
         <Box padding={1} marginBottom={1}>
             <Paper elevation={2} sx={{padding: 3, display:"flex", alignItems: "center"}}>
                 <Box width="100%">
-                    <Typography variant="subtitle1" marginBottom={2}>Search by map name as you type</Typography>
+                    <Typography variant="subtitle1" marginBottom={2}>Search by map name or creator as you type</Typography>
                     <TextField onChange={onSearchTextChanged} fullWidth label="Name" variant="outlined" />
                 </Box>
             </Paper>
