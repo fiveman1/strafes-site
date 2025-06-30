@@ -57,7 +57,7 @@ function MainAppBar(props: IMainAppBarProps) {
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: "space-between" }}>
                 <Link href="/" variant="h6" color="inherit" underline="hover" >
-                    Strafes
+                    strafes
                 </Link>
                 <Box>
                     <Button sx={{width: navMenuWidth}} size="large" variant="outlined" color="inherit" endIcon={open ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />} onClick={openNavMenu} >

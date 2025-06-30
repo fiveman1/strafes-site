@@ -80,6 +80,10 @@ function MapsPage() {
     const [searchText, setSearchText] = useState<string>("");
     const [selectedMap, setSelectedMap] = useState<Map>();
     const [style, setStyle] = useState<Style>(Style.autohop);
+
+    useEffect(() => {
+        document.title = "strafes - maps"
+    }, []);
     
     useEffect(() => {
         const mapId = id && !isNaN(+id) ? +id : undefined;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { Checkbox, FormControlLabel, FormGroup, FormHelperText, Typography } from "@mui/material";
 import UserCard from "./UserCard";
@@ -16,6 +16,10 @@ function Users() {
     const [game, setGame] = useState<Game>(Game.bhop);
     const [style, setStyle] = useState<Style>(Style.autohop);
     const [onlyWRs, setOnlyWRs] = useState<boolean>(false);
+
+    useEffect(() => {
+        document.title = "strafes - users"
+    }, []);
 
     if (id !== userId) {
         setUserId(id);

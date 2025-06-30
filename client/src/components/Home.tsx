@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
 import { Grid, Typography } from "@mui/material";
 import HomeCard from "./HomeCard";
@@ -8,6 +8,10 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
 
 function Home() {
+    useEffect(() => {
+        document.title = "strafes - home"
+    }, []);
+
     return (
     <Box display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
         <Typography padding={2} variant="h3">Go to...</Typography>
