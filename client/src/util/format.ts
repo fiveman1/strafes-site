@@ -46,7 +46,14 @@ function formatTimeHelper(time: number, digits: number) {
 export function formatTime(timeStr: string) {
     const time = +timeStr;
     if (time > 86400000) {
-         return ">1 day"
+        const days = Math.floor(time / 86400000);
+        if (days > 999) {
+            return ">999 days";
+        }
+        if (days === 1) {
+            return "~1 day";
+        }
+        return `~${days} days`;
     }
     const millis = formatTimeHelper(time % 1000, 3)
     const seconds = formatTimeHelper(Math.floor(time / 1000) % 60, 2)
