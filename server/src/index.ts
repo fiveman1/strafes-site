@@ -23,7 +23,7 @@ if (!STRAFES_KEY) {
 const dirName = path.dirname(fileURLToPath(import.meta.url))
 const buildDir = path.join(dirName, "../../client/build/");
 
-app.use("/static", express.static(path.join(buildDir, "/static")));
+app.use(express.static(buildDir));
 
 app.get("/api/username", cache("1 hour"), async (req, res) => {
     const username = req.query.username;
