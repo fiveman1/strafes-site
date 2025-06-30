@@ -125,7 +125,7 @@ function MapsPage() {
         }
         // Near creator matches
         for (const map of sortedMaps) {
-            if (!validMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
+            if (!validMaps.has(map.id) && map.creator.toLowerCase().includes(search)) {
                 filteredMaps.push(map);
                 validMaps.add(map.id);
             }

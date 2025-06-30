@@ -11,7 +11,7 @@ import { exit } from "process";
 const app = express();
 const port = process.env.PORT ?? "8080";
 const cache = apicache.middleware;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 15, validate: {xForwardedForHeader: false} });
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} })
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
@@ -62,7 +62,7 @@ app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
     res.status(200).json(user);
 });
 
-app.get("/api/user/rank/:id", cache("5 minutes"), rateLimitSettings, async (req, res) => {
+app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
@@ -108,7 +108,7 @@ app.get("/api/user/rank/:id", cache("5 minutes"), rateLimitSettings, async (req,
     res.status(200).json(rankData);
 });
 
-app.get("/api/user/times/:id", cache("5 minutes"), pagedRateLimitSettings, async (req, res) => {
+app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
@@ -194,7 +194,7 @@ app.get("/api/user/times/:id", cache("5 minutes"), pagedRateLimitSettings, async
     });
 });
 
-app.get("/api/map/times/:id", cache("5 minutes"), pagedRateLimitSettings, async (req, res) => {
+app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const mapId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;

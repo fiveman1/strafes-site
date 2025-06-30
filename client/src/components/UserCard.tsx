@@ -28,12 +28,6 @@ function UserCard(props: IUserCardProps) {
         }
         setIsLoading(true);
         getUserData(userId).then((userData) => {
-            if (!userData) {
-                // Fail safe
-                navigate("/users");
-                navigate(0);
-                return;
-            }
             setIsLoading(false);
             setUserInfo(userData);
         });
