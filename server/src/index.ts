@@ -25,7 +25,7 @@ const buildDir = path.join(dirName, "../../client/build/");
 
 app.use(express.static(buildDir));
 
-app.get("/api/username", cache("1 hour"), async (req, res) => {
+app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
     
     if (!username || typeof username !== "string" || username.length > 50) {
@@ -46,7 +46,7 @@ function validatePositiveInt(userId: any) {
     return !isNaN(+userId) && +userId > 0;
 }
 
-app.get("/api/user/:id", cache("1 hour"), async (req, res) => {
+app.get("/api/user/:id", cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
