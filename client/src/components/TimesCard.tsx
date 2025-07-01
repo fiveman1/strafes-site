@@ -1,9 +1,10 @@
-import React from "react";
-import { Box, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, Map, Style } from "../api/interfaces";
+import React, { useEffect, useMemo } from "react";
+import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
+import { Game, Map, SortBy, Style, Time } from "../api/interfaces";
 import { formatGame, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
+import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -16,18 +17,7 @@ const timeFormat = Intl.DateTimeFormat(undefined, {
     minute: "2-digit"
 });
 
-export interface ITimesCardProps {
-    userId?: string
-    map?: Map
-    game?: Game
-    style: Style
-    onlyWRs?: boolean
-    hideUser?: boolean
-    hideMap?: boolean
-    showPlacement?: boolean
-}
-
-function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean) {
+function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
 
     if (showPlacement) {
@@ -35,7 +25,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             type: "number",
             field: "placement",
             headerName: "#",
-            width: 64
+            width: 64,
+            sortable: false
         });
     }
 
@@ -45,7 +36,16 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             field: "username",
             headerName: "User",
             flex: 300,
-            minWidth: 100
+            minWidth: 160,
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<Time, string>) => {
+                const time = params.row;
+                return (
+                    <Link href={`/users/${time.userId}`} underline="hover">
+                        {time.username}
+                    </Link>
+                );
+            }
         });
     }
 
@@ -54,8 +54,17 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             type: "string",
             field: "map",
             headerName: "Map",
-            flex: 450,
-            minWidth: 100
+            flex: 300,
+            minWidth: 160,
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<Time, string>) => {
+                const time = params.row;
+                return (
+                    <Link href={`/maps/${time.mapId}`} underline="hover">
+                        {time.map}
+                    </Link>
+                );
+            }
         });
     }
 
@@ -65,7 +74,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         headerName: "Time",
         flex: 150,
         minWidth: 100,
-        valueFormatter: formatTime
+        valueFormatter: formatTime,
+        sortable: !notSortable
     });
 
     cols.push({
@@ -74,7 +84,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         headerName: "Date",
         flex: 170,
         minWidth: 100,
-        renderCell: (params: GridRenderCellParams<any, string>) => {
+        sortable: !notSortable,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
             if (!params.value) {
                 return <></>
             }
@@ -95,7 +106,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         headerName: "Game",
         flex: 110,
         minWidth: 70,
-        valueFormatter: formatGame
+        valueFormatter: formatGame,
+        sortable: false
     });
 
     cols.push({
@@ -104,18 +116,56 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         headerName: "Style",
         flex: 210,
         minWidth: 100,
-        valueFormatter: formatStyle
+        valueFormatter: formatStyle,
+        sortable: false
     });
     
     return cols;
 }
 
-function TimesCard(props: ITimesCardProps) {
-    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement } = props;
+export interface ITimesCardProps {
+    userId?: string
+    map?: Map
+    game?: Game
+    style: Style
+    onlyWRs?: boolean
+    hideUser?: boolean
+    hideMap?: boolean
+    showPlacement?: boolean
+    defaultSort: SortBy
+}
 
-    const dataSource: GridDataSource = React.useMemo(() => ({
+function TimesCard(props: ITimesCardProps) {
+    return (
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 600}}>
+        <Box display="flex">
+            <Typography variant="caption" marginBottom={1}>
+                Times
+            </Typography>
+        </Box>
+        <TimesGrid {...props} />
+    </Paper>
+    );
+}
+
+function TimesGrid(props: ITimesCardProps) {
+    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort } = props;
+    const apiRef = useGridApiRef();
+
+    const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
-            const timeData = await getTimeData(params.start, params.end, game, style, userId, map, onlyWRs);
+            const sort = params.sortModel.at(0);
+            let sortBy = defaultSort;
+            if (sort) {
+                if (sort.field === "time") {
+                    sortBy = sort.sort === "asc" ? SortBy.TimeAsc : SortBy.TimeDesc;
+                }
+                else if (sort.field === "date") {
+                    sortBy = sort.sort === "asc" ? SortBy.DateAsc : SortBy.DateDesc;
+                }
+            }
+
+            const timeData = await getTimeData(params.start, params.end, sortBy, game, style, userId, map, onlyWRs);
             if (!timeData) {
                 return { rows: [], rowCount: 0 }
             }
@@ -124,31 +174,48 @@ function TimesCard(props: ITimesCardProps) {
                 rowCount: timeData.pagination.totalItems
             }
         }
-    }), [game, map, onlyWRs, style, userId])
+    }), [game, map, onlyWRs, style, userId, defaultSort])
+
+    useEffect(() => {
+        if (onlyWRs) {
+            apiRef.current?.sortColumn("date", "desc");
+        }
+    }, [onlyWRs, apiRef]);
+
+    let sort: GridSortModel;
+    switch (defaultSort) {
+        case SortBy.TimeAsc:
+            sort = [{ field: "time", sort: "asc" }];
+            break;
+        case SortBy.TimeDesc:
+            sort = [{ field: "time", sort: "desc" }];
+            break;
+        case SortBy.DateAsc:
+            sort = [{ field: "date", sort: "asc" }];
+            break;
+        case SortBy.DateDesc:
+            sort = [{ field: "date", sort: "desc" }];
+            break;
+    }
 
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 600}}>
-        <Box display="flex">
-            <Typography variant="caption" marginBottom={1}>
-                Times
-            </Typography>
-        </Box>
-        <DataGrid
-
-            columns={makeColumns(hideUser, hideMap, showPlacement)}
-            pagination
-            dataSource={dataSource}
-            pageSizeOptions={[10, 25, 50]}
-            initialState={{
-                pagination: { 
-                    paginationModel: { pageSize: 10 },
-                },
-            }}
-            disableColumnFilter
-            disableColumnSorting
-            density="compact"
-        />
-    </Paper>
+    <DataGrid
+        columns={makeColumns(hideUser, hideMap, showPlacement, onlyWRs)}
+        apiRef={apiRef}
+        pagination
+        dataSource={dataSource}
+        pageSizeOptions={[10, 25, 50]}
+        initialState={{
+            pagination: { 
+                paginationModel: { pageSize: 10 },
+            },
+            sorting: {
+                sortModel: sort,
+            }
+        }}
+        disableColumnFilter
+        density="compact"
+    />
     );
 }
 

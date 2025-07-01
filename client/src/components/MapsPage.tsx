@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame } from "../util/format";
-import { Map, Style } from "../api/interfaces";
+import { Map, SortBy, Style } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import StyleSelector from "./StyleSelector";
@@ -11,7 +11,7 @@ import TimesCard from "./TimesCard";
 
 const CARD_SIZE = 180;
 
-function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: Map}, index: number, style: any}) {
+function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: Map}, index: number, style: CSSProperties}) {
     const { data, index, style } = props;
     const { maps, itemsPerRow, selectedMap } = data;
 
@@ -19,7 +19,8 @@ function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: M
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, maps.length);
     for (let i = fromIndex; i < toIndex; ++i) {
-        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selectedMap?.id === maps[i].id} />);
+        const selected = selectedMap?.id === maps[i].id;
+        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} />);
     }
 
     return (
@@ -42,7 +43,7 @@ function MapCard(props: {map: Map, selected?: boolean}) {
 
     return (
     <Box padding="8px">
-        <Card elevation={2} 
+        <Card elevation={2} id={"mapCard" + map.id}
             sx={{width: CARD_SIZE - 16, 
                 height: CARD_SIZE - 16, 
                 ":hover": {boxShadow: 10}}}>
@@ -73,16 +74,40 @@ function MapCard(props: {map: Map, selected?: boolean}) {
     );
 }
 
+function MapList(props: {width: number, filteredMaps: Map[], selectedMap?: Map}) {
+    const { width, filteredMaps, selectedMap } = props;
+    const listRef = useRef<FixedSizeList>(null);
+
+    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
+    const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
+
+    useEffect(() => {
+        if (selectedMap) {
+            listRef.current?.scrollToItem(0);
+        }
+    }, [selectedMap, listRef])
+    
+    return (
+        <FixedSizeList 
+            style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
+            itemCount={rowCount} itemSize={CARD_SIZE} ref={listRef}
+            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap}}
+        >
+            {MapRow}
+        </FixedSizeList>
+    );
+}
+
 function MapsPage() {
     const { id } = useParams();
     const { maps, sortedMaps } = useOutletContext() as ContextParams;
 
-    const [searchText, setSearchText] = useState<string>("");
+    const [searchText, setSearchText] = useState("");
     const [selectedMap, setSelectedMap] = useState<Map>();
-    const [style, setStyle] = useState<Style>(Style.autohop);
+    const [style, setStyle] = useState(Style.autohop);
 
     useEffect(() => {
-        document.title = "strafes - maps"
+        document.title = "strafes - maps";
     }, []);
     
     useEffect(() => {
@@ -97,14 +122,18 @@ function MapsPage() {
         setSearchText(event.target.value);
     }
 
-    let filteredMaps: Map[];
+    let filteredMaps: Map[] = [];
     if (searchText) {
-        filteredMaps = [];
         const validMaps = new Set<number>();
+        if (selectedMap) {
+            // Always put selected map first
+            filteredMaps.push(selectedMap);
+            validMaps.add(selectedMap.id);
+        }
         const search = searchText.toLowerCase();
         // Show exact map name matches first
         for (const map of sortedMaps) {
-            if (map.name.toLowerCase().startsWith(search)) {
+            if (!validMaps.has(map.id) && map.name.toLowerCase().startsWith(search)) {
                 filteredMaps.push(map);
                 validMaps.add(map.id);
             }
@@ -132,7 +161,18 @@ function MapsPage() {
         }
     }
     else {
-        filteredMaps = sortedMaps;
+        if (selectedMap) {
+            // Always put selected map first
+            filteredMaps.push(selectedMap);
+            for (const map of sortedMaps) {
+                if (map.id !== selectedMap?.id) {
+                    filteredMaps.push(map);
+                }
+            }
+        }
+        else {
+            filteredMaps = sortedMaps;
+        }
     }
 
     return (
@@ -150,19 +190,7 @@ function MapsPage() {
         </Box>
         <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
-            {({ width }) => {
-                const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
-                const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
-                return (
-                    <FixedSizeList 
-                        style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
-                        itemCount={rowCount} itemSize={CARD_SIZE} 
-                        itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap}}
-                    >
-                        {MapRow}
-                    </FixedSizeList>
-                );
-            }}
+            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} selectedMap={selectedMap} />}
             </AutoSizer>
         </Grid>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
@@ -171,7 +199,7 @@ function MapsPage() {
             </Box>
         </Box>
         <Box padding={1}>
-            <TimesCard map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
+            <TimesCard defaultSort={SortBy.TimeAsc} map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
         </Box>
     </Box>
     );

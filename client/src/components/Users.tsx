@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
 import UserSearch from "./UserSearch";
-import { Game, Style } from "../api/interfaces";
+import { Game, SortBy, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 
@@ -58,7 +58,7 @@ function Users() {
             <ProfileCard userId={userId} game={game} style={style} />
         </Box>
         <Box padding={1}>
-            <TimesCard userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />
+            <TimesCard defaultSort={SortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />
         </Box>
     </Box>
     );

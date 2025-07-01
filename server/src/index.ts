@@ -5,7 +5,7 @@ import path from "path";
 import memoize from 'memoize';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map, Pagination, RankData, Style, Time, User } from "./interfaces.js";
+import { Game, Map, Pagination, RankData, SortBy, Style, Time, User } from "./interfaces.js";
 import { exit } from "process";
 
 const app = express();
@@ -95,7 +95,7 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     }
 
     const data = rankRes.data.data;
-    const rank = 1 + Math.floor((1 - data.rank) * 19);
+    const rank = Math.floor((1 - data.rank) * 20);
 
     const rankData : RankData = {
         style: +style,
@@ -115,6 +115,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const onlyWR = req.query.onlyWR ? req.query.onlyWR === "true" : false;
     const start = req.query.start;
     const end = req.query.end;
+    const sort = req.query.sort;
 
     if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
@@ -141,6 +142,11 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         return;
     }
 
+    if (!sort || isNaN(+sort) || SortBy[+sort] === undefined) {
+        res.status(400).json({error: "Invalid sort by"});
+        return;
+    }
+
     const page = Math.floor(+start / 100) + 1;
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
@@ -153,7 +159,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         mode_id: 0,
         page_number: page,
         page_size: 100,
-        sort_by: 3
+        sort_by: +sort
     });
 
     if (!firstTimeRes) {
@@ -170,7 +176,9 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         const time = firstTimes[i];
         timeArr.push({
             map: time.map.display_name,
+            mapId: time.map.id,
             username: time.user.username,
+            userId: time.user.id,
             time: time.time,
             date: time.date,
             game: time.game_id,
@@ -184,7 +192,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const pagination: Pagination = {
         page: pageInfo.page,
         pageSize: pageInfo.page_size,
-        totalItems: onlyWR ? timeArr.length : pageInfo.total_items,
+        totalItems: onlyWR ? firstTimes.length : pageInfo.total_items,
         totalPages: onlyWR ? 1 : pageInfo.total_pages
     };
 
@@ -200,6 +208,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const style = req.query.style;
     const start = req.query.start;
     const end = req.query.end;
+    const sort = req.query.sort;
 
     if (!validatePositiveInt(mapId)) {
         res.status(400).json({error: "Invalid map ID"});
@@ -226,6 +235,11 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
+    if (!sort || isNaN(+sort) || SortBy[+sort] === undefined) {
+        res.status(400).json({error: "Invalid sort by"});
+        return;
+    }
+
     const page = Math.floor(+start / 100);
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
@@ -238,7 +252,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         mode_id: 0,
         page_number: page + 1,
         page_size: 100,
-        sort_by: 0
+        sort_by: +sort
     });
 
     if (!firstTimeRes) {
@@ -250,22 +264,6 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const pageEnd = (+end % 100)
     const firstTimes = firstTimeRes.data.data;
 
-    const timeArr: Time[] = [];
-    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
-        const time = firstTimes[i];
-        timeArr.push({
-            map: time.map.display_name,
-            username: time.user.username,
-            time: time.time,
-            date: time.date,
-            game: time.game_id,
-            style: time.style_id,
-            updatedAt: time.updated_at,
-            id: time.id,
-            placement: (page * 100) + i + 1
-        });
-    }
-
     const pageInfo = firstTimeRes.data.pagination;
     const pagination: Pagination = {
         page: pageInfo.page,
@@ -273,6 +271,31 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         totalItems: pageInfo.total_items,
         totalPages: pageInfo.total_pages
     };
+
+    const timeArr: Time[] = [];
+    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
+        const time = firstTimes[i];
+        let placement: number | undefined;
+        if (+sort === SortBy.TimeAsc) {
+            placement = (page * 100) + i + 1;
+        }
+        else if (+sort === SortBy.TimeDesc) {
+            placement =  pageInfo.total_items - ((page * 100) + i);
+        }
+        timeArr.push({
+            map: time.map.display_name,
+            mapId: time.map.id,
+            username: time.user.username,
+            userId: time.user.id,
+            time: time.time,
+            date: time.date,
+            game: time.game_id,
+            style: time.style_id,
+            updatedAt: time.updated_at,
+            id: time.id,
+            placement: placement
+        });
+    }
 
     res.status(200).json({
         data: timeArr,

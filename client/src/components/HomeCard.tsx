@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Card, CardActionArea, CardContent, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, CardContent, Typography, useMediaQuery } from "@mui/material";
 
 export interface IHomeCardProps {
     title: string
@@ -10,8 +10,12 @@ export interface IHomeCardProps {
 
 function HomeCard(props: IHomeCardProps) {
     const { title, icon, description, href } = props;
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const size = smallScreen ? "150px" : "200px";
+
     return (
-    <Card sx={{width: "200px", height: "200px", ":hover": {boxShadow: 20}}} elevation={3}>
+    <Card sx={{width: size, height: size, ":hover": {boxShadow: 20}}} elevation={3}>
         <CardActionArea href={href} sx={{height: "100%"}}>
             <CardContent sx={{height: "100%"}}>
                 <Box display="flex" alignItems="center">

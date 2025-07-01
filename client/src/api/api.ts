@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, RankData, Style, Time, User } from "./interfaces";
+import { Game, Map, Pagination, RankData, SortBy, Style, Time, User } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -43,12 +43,13 @@ export async function getRankData(userId: string, game: Game, style: Style): Pro
     return res.data as RankData;
 }
 
-export async function getTimeData(start: number | string, end: number | string, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+export async function getTimeData(start: number | string, end: number | string, sortBy: SortBy, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
     let res: AxiosResponse | undefined;
     if (userId) {
         res = await tryGetRequest("user/times/" + userId, {
             start: start,
             end: end,
+            sort: sortBy,
             game: game,
             style: style,
             onlyWR: !!onlyWR
@@ -58,6 +59,7 @@ export async function getTimeData(start: number | string, end: number | string, 
         res = await tryGetRequest("map/times/" + map.id, {
             start: start,
             end: end,
+            sort: sortBy,
             game: game,
             style: style
         });

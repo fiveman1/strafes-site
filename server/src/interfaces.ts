@@ -32,7 +32,9 @@ export interface RankData {
 
 export interface Time {
     map: string
+    mapId: number
     username: string
+    userId: number
     time: string
     date: string
     game: Game
@@ -55,4 +57,11 @@ export interface Map {
     creator: string
     game: Game
     date: string
+}
+
+export enum SortBy {
+    TimeAsc = 0,
+    TimeDesc = 1,
+    DateAsc = 2,
+    DateDesc = 3
 }
