@@ -54,8 +54,8 @@ function ProfileCard(props: IProfileCardProps) {
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Rank
-                        <Tooltip sx={{marginLeft: "4px"}} color="info" title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
-                            <InfoOutlineIcon fontSize="inherit" />
+                        <Tooltip sx={{marginLeft: "4px"}} title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
+                            <InfoOutlineIcon fontSize="inherit" color="info" />
                         </Tooltip>
                     </Typography>
                     {loading ? <CircularProgress size="32px" /> : 
@@ -68,8 +68,8 @@ function ProfileCard(props: IProfileCardProps) {
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Skill
-                        <Tooltip sx={{marginLeft: "4px"}} color="info" title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
-                            <InfoOutlineIcon fontSize="inherit" />
+                        <Tooltip sx={{marginLeft: "4px"}} title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
+                            <InfoOutlineIcon fontSize="inherit" color="info" />
                         </Tooltip>
                     </Typography>
                     {loading ? <CircularProgress size="32px" /> : 

@@ -41,7 +41,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link href={`/users/${time.userId}`} underline="hover">
+                    <Link href={`/users/${time.userId}`} underline="hover" fontWeight="bold">
                         {time.username}
                     </Link>
                 );
@@ -60,7 +60,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link href={`/maps/${time.mapId}`} underline="hover">
+                    <Link href={`/maps/${time.mapId}`} underline="hover" fontWeight="bold">
                         {time.map}
                     </Link>
                 );
