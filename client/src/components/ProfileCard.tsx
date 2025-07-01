@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, RankData, Style } from "../api/interfaces";
 import { getRankData } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 export interface IProfileCardProps {
     userId?: string
@@ -51,8 +52,11 @@ function ProfileCard(props: IProfileCardProps) {
         <Box display="flex" padding={1}>
             <Box flexGrow={1}>
                 <Box display="flex" flexDirection="column">
-                    <Typography>
+                    <Typography variant="subtitle1">
                         Rank
+                        <Tooltip sx={{marginLeft: "4px"}} color="info" title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
+                            <InfoOutlineIcon fontSize="inherit" />
+                        </Tooltip>
                     </Typography>
                     {loading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
@@ -62,8 +66,11 @@ function ProfileCard(props: IProfileCardProps) {
             </Box>
             <Box flexGrow={1}>
                 <Box display="flex" flexDirection="column">
-                    <Typography>
+                    <Typography variant="subtitle1">
                         Skill
+                        <Tooltip sx={{marginLeft: "4px"}} color="info" title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
+                            <InfoOutlineIcon fontSize="inherit" />
+                        </Tooltip>
                     </Typography>
                     {loading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
