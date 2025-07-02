@@ -23,7 +23,6 @@ function StyleSelector(props: IStyleSelectorProps) {
     }
 
     const styles = Object.values(Style).filter(value => typeof value === "number" && (game === Game.bhop || value !== Style.scroll)) as Style[];
-    styles.sort((a, b) => (formatStyle(a) > formatStyle(b) ? 1 : -1))
 
     return (
         <Box padding={smallScreen ? 0.5 : 1.5}>
