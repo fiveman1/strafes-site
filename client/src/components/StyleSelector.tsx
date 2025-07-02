@@ -1,5 +1,5 @@
 import React from "react";
-import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
 import { Game, Style } from "../api/interfaces";
 import { formatStyle } from "../util/format";
 
@@ -11,6 +11,8 @@ export interface IStyleSelectorProps {
 
 function StyleSelector(props: IStyleSelectorProps) {
     const { game, style, setStyle } = props;
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
         setStyle(event.target.value);
@@ -24,16 +26,18 @@ function StyleSelector(props: IStyleSelectorProps) {
     styles.sort((a, b) => (formatStyle(a) > formatStyle(b) ? 1 : -1))
 
     return (
-        <FormControl sx={{ width: "150px" }}>
-            <InputLabel>Style</InputLabel>
-            <Select
-                value={style}
-                label="Style"
-                onChange={handleChangeStyle}
-            >
-                {styles.map((style) => <MenuItem value={style}>{formatStyle(style)}</MenuItem>)}
-            </Select>
-        </FormControl>
+        <Box padding={smallScreen ? 0.5 : 1.5}>
+            <FormControl sx={{ width: "150px" }}>
+                <InputLabel>Style</InputLabel>
+                <Select
+                    value={style}
+                    label="Style"
+                    onChange={handleChangeStyle}
+                >
+                    {styles.map((style) => <MenuItem value={style}>{formatStyle(style)}</MenuItem>)}
+                </Select>
+            </FormControl>
+        </Box>
     );
 }
 

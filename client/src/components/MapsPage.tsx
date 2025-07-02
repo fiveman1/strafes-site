@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame } from "../util/format";
-import { Map, SortBy, Style } from "../api/interfaces";
+import { Map, TimeSortBy, Style } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import StyleSelector from "./StyleSelector";
@@ -199,7 +199,7 @@ function MapsPage() {
             </Box>
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={SortBy.TimeAsc} map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
+            <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
         </Box>
     </Box>
     );

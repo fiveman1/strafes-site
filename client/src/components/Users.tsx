@@ -6,16 +6,16 @@ import { useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
 import UserSearch from "./UserSearch";
-import { Game, SortBy, Style } from "../api/interfaces";
+import { Game, TimeSortBy, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 
 function Users() {
     const { id } = useParams();
     const [userId, setUserId] = useState<string>();
-    const [game, setGame] = useState<Game>(Game.bhop);
-    const [style, setStyle] = useState<Style>(Style.autohop);
-    const [onlyWRs, setOnlyWRs] = useState<boolean>(false);
+    const [game, setGame] = useState(Game.bhop);
+    const [style, setStyle] = useState(Style.autohop);
+    const [onlyWRs, setOnlyWRs] = useState(false);
 
     useEffect(() => {
         document.title = "strafes - users"
@@ -39,12 +39,8 @@ function Users() {
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <Box padding={1.5}>
-                <GameSelector game={game} setGame={setGame} />
-            </Box>
-            <Box padding={1.5}>
-                <StyleSelector game={game} style={style} setStyle={setStyle} />
-            </Box>
+            <GameSelector game={game} setGame={setGame} />
+            <StyleSelector game={game} style={style} setStyle={setStyle} />
             <Box padding={1.5}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs (first 100)" control={
@@ -58,7 +54,7 @@ function Users() {
             <ProfileCard userId={userId} game={game} style={style} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={SortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />
+            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />
         </Box>
     </Box>
     );

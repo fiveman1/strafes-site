@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, RankData, Style } from "../api/interfaces";
-import { getRankData } from "../api/api";
+import { Game, Rank, Style } from "../api/interfaces";
+import { getUserRank } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import { formatRank, formatSkill } from "../util/format";
 
 export interface IProfileCardProps {
     userId?: string
@@ -14,7 +15,7 @@ export interface IProfileCardProps {
 function ProfileCard(props: IProfileCardProps) {
     const { userId, game, style } = props;
 
-    const [rank, setRank] = useState<RankData | undefined>(undefined);
+    const [rank, setRank] = useState<Rank | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
@@ -23,7 +24,7 @@ function ProfileCard(props: IProfileCardProps) {
             return;
         }
         setLoading(true);
-        getRankData(userId, game, style).then((rankData) => {
+        getUserRank(userId, game, style).then((rankData) => {
             if (!rankData) {
                 setRank(undefined);
                 setLoading(false);
@@ -39,9 +40,8 @@ function ProfileCard(props: IProfileCardProps) {
     let rankFormatted = "n/a";
     let skillFormatted = "n/a";
     if (rank) {
-        const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"];
-        rankFormatted = `${ranks[rank.rank - 1]} (${rank.rank})`;
-        skillFormatted = `${(rank.skill * 100).toFixed(3)}%`;
+        rankFormatted = formatRank(rank.rank);
+        skillFormatted = formatSkill(rank.skill);
     }
 
     return (

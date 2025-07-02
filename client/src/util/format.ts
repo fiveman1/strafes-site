@@ -65,6 +65,16 @@ export function formatTime(timeStr: string) {
     return hours + ":" + minutes + ":" + seconds
 }
 
+const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"];
+
+export function formatRank(rank: number) {
+    return `${ranks[rank - 1]} (${rank})`;
+}
+
+export function formatSkill(skill: number) {
+    return `${(skill * 100).toFixed(3)}%`
+}
+
 export interface ContextParams {
     maps: Maps,
     sortedMaps: Map[]

@@ -9,7 +9,7 @@ function Globals() {
 
     return (
     <Box padding={2} flexGrow={1}>
-        <Typography variant="h4" padding={1}>
+        <Typography variant="h2" padding={1}>
             Globals
         </Typography>
         <Typography variant="body1" padding={1}>

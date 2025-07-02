@@ -22,12 +22,15 @@ export enum Style {
     faste = 8
 }
 
-export interface RankData {
+export interface Rank {
+    id: number
     style: Style
     game: Game
     rank: number
     skill: number
+    username: string
     userId: string
+    placement?: number
 }
 
 export interface Time {
@@ -59,9 +62,14 @@ export interface Map {
     date: string
 }
 
-export enum SortBy {
+export enum TimeSortBy {
     TimeAsc = 0,
     TimeDesc = 1,
     DateAsc = 2,
     DateDesc = 3
+}
+
+export enum RankSortBy {
+    RankAsc = 1,
+    SkillAsc = 2
 }

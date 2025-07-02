@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo } from "react";
 import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, Map, SortBy, Style, Time } from "../api/interfaces";
+import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
 import { formatGame, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
+import UserLink from "./UserLink";
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -41,9 +42,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link href={`/users/${time.userId}`} underline="hover" fontWeight="bold">
-                        {time.username}
-                    </Link>
+                    <UserLink userId={time.userId} username={time.username} />
                 );
             }
         });
@@ -75,6 +74,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         flex: 150,
         minWidth: 100,
         valueFormatter: formatTime,
+        sortingOrder: notSortable ? [] : ["asc", "desc"],
         sortable: !notSortable
     });
 
@@ -84,6 +84,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         headerName: "Date",
         flex: 170,
         minWidth: 100,
+        sortingOrder: notSortable ? [] : ["desc", "asc"],
         sortable: !notSortable,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             if (!params.value) {
@@ -132,17 +133,15 @@ export interface ITimesCardProps {
     hideUser?: boolean
     hideMap?: boolean
     showPlacement?: boolean
-    defaultSort: SortBy
+    defaultSort: TimeSortBy
 }
 
 function TimesCard(props: ITimesCardProps) {
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 600}}>
-        <Box display="flex">
-            <Typography variant="caption" marginBottom={1}>
-                Times
-            </Typography>
-        </Box>
+        <Typography variant="caption" marginBottom={1}>
+            Times
+        </Typography>
         <TimesGrid {...props} />
     </Paper>
     );
@@ -158,10 +157,10 @@ function TimesGrid(props: ITimesCardProps) {
             let sortBy = defaultSort;
             if (sort) {
                 if (sort.field === "time") {
-                    sortBy = sort.sort === "asc" ? SortBy.TimeAsc : SortBy.TimeDesc;
+                    sortBy = sort.sort === "asc" ? TimeSortBy.TimeAsc : TimeSortBy.TimeDesc;
                 }
                 else if (sort.field === "date") {
-                    sortBy = sort.sort === "asc" ? SortBy.DateAsc : SortBy.DateDesc;
+                    sortBy = sort.sort === "asc" ? TimeSortBy.DateAsc : TimeSortBy.DateDesc;
                 }
             }
 
@@ -184,16 +183,16 @@ function TimesGrid(props: ITimesCardProps) {
 
     let sort: GridSortModel;
     switch (defaultSort) {
-        case SortBy.TimeAsc:
+        case TimeSortBy.TimeAsc:
             sort = [{ field: "time", sort: "asc" }];
             break;
-        case SortBy.TimeDesc:
+        case TimeSortBy.TimeDesc:
             sort = [{ field: "time", sort: "desc" }];
             break;
-        case SortBy.DateAsc:
+        case TimeSortBy.DateAsc:
             sort = [{ field: "date", sort: "asc" }];
             break;
-        case SortBy.DateDesc:
+        case TimeSortBy.DateDesc:
             sort = [{ field: "date", sort: "desc" }];
             break;
     }

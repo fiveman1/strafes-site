@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, RankData, SortBy, Style, Time, User } from "./interfaces";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -33,17 +33,30 @@ export async function getUserData(userId: string): Promise<User | undefined> {
     return res.data as User;
 }
 
-export async function getRankData(userId: string, game: Game, style: Style): Promise<RankData | undefined> {
+export async function getUserRank(userId: string, game: Game, style: Style): Promise<Rank | undefined> {
     const res = await tryGetRequest("user/rank/" + userId, {
         game: game,
         style: style
     });
     if (!res) return undefined;
 
-    return res.data as RankData;
+    return res.data as Rank;
 }
 
-export async function getTimeData(start: number | string, end: number | string, sortBy: SortBy, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+export async function getRanks(start: number | string, end: number | string, sortBy: RankSortBy, game: Game, style: Style): Promise<Rank[] | undefined>  {
+    const res = await tryGetRequest("ranks", {
+        start: start,
+        end: end,
+        sort: sortBy,
+        game: game,
+        style: style
+    });
+    if (!res) return undefined;
+
+    return res.data as Rank[]
+}
+
+export async function getTimeData(start: number | string, end: number | string, sortBy: TimeSortBy, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
     let res: AxiosResponse | undefined;
     if (userId) {
         res = await tryGetRequest("user/times/" + userId, {

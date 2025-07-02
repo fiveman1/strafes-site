@@ -5,7 +5,7 @@ import path from "path";
 import memoize from 'memoize';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map, Pagination, RankData, SortBy, Style, Time, User } from "./interfaces.js";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces.js";
 import { exit } from "process";
 
 const app = express();
@@ -97,15 +97,90 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     const data = rankRes.data.data;
     const rank = Math.floor((1 - data.rank) * 20);
 
-    const rankData : RankData = {
+    const rankData : Rank = {
+        id: data.id,
         style: +style,
         game: +game,
         rank: rank,
         skill: data.skill,
-        userId: userId
+        userId: userId,
+        username: data.user.username,
     };
 
     res.status(200).json(rankData);
+});
+
+app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const game = req.query.game;
+    const style = req.query.style;
+    const start = req.query.start;
+    const end = req.query.end;
+    const sort = req.query.sort;
+
+    if (start === undefined || isNaN(+start) || +start < 0) {
+        res.status(400).json({error: "Invalid start"});
+        return;
+    }
+
+    if (end === undefined || isNaN(+end) || +end < 0) {
+        res.status(400).json({error: "Invalid end"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    if (!sort || isNaN(+sort) || RankSortBy[+sort] === undefined) {
+        res.status(400).json({error: "Invalid sort by"});
+        return;
+    }
+
+    const page = Math.floor(+start / 100) + 1;
+    if (+start >= +end) {
+        res.status(400).json({error: "Start must be higher than end"});
+    }
+
+    const ranksRes = await tryGetStrafes("rank", {
+        game_id: game,
+        style_id: style,
+        mode_id: 0,
+        page_number: page,
+        page_size: 100,
+        sort_by: +sort
+    });
+
+    if (!ranksRes) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    const pageStart = (+start % 100)
+    const pageEnd = (+end % 100)
+    const ranks = ranksRes.data.data as any[];
+    const rankArr: Rank[] = [];
+    for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
+        const data = ranks[i];
+        const rank = Math.floor((1 - data.rank) * 20);
+        rankArr.push({
+            id: data.id,
+            style: +style,
+            game: +game,
+            rank: rank,
+            skill: data.skill,
+            userId: data.user.id,
+            username: data.user.username,
+            placement: ((page - 1) * 100) + i + 1
+        });
+    }
+
+    res.status(200).json(rankArr);
 });
 
 app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -142,7 +217,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         return;
     }
 
-    if (!sort || isNaN(+sort) || SortBy[+sort] === undefined) {
+    if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
         res.status(400).json({error: "Invalid sort by"});
         return;
     }
@@ -235,7 +310,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
-    if (!sort || isNaN(+sort) || SortBy[+sort] === undefined) {
+    if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
         res.status(400).json({error: "Invalid sort by"});
         return;
     }
@@ -276,10 +351,10 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
         const time = firstTimes[i];
         let placement: number | undefined;
-        if (+sort === SortBy.TimeAsc) {
+        if (+sort === TimeSortBy.TimeAsc) {
             placement = (page * 100) + i + 1;
         }
-        else if (+sort === SortBy.TimeDesc) {
+        else if (+sort === TimeSortBy.TimeDesc) {
             placement =  pageInfo.total_items - ((page * 100) + i);
         }
         timeArr.push({
