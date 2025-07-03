@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
 import UserSearch from "./UserSearch";
-import { Game, TimeSortBy, Style } from "../api/interfaces";
+import { Game, TimeSortBy, Style, User } from "../api/interfaces";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 
@@ -16,6 +16,8 @@ function Users() {
     const [game, setGame] = useState(Game.bhop);
     const [style, setStyle] = useState(Style.autohop);
     const [onlyWRs, setOnlyWRs] = useState(false);
+    const [user, setUserInfo] = useState<User>();
+    const [userLoading, setIsUserLoading] = useState<boolean>(false);
 
     useEffect(() => {
         document.title = "strafes - users"
@@ -35,7 +37,7 @@ function Users() {
                 <UserSearch setUserId={setUserId} minHeight={200} />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard userId={userId} minHeight={200}/>
+                <UserCard userId={userId} user={user} setUserInfo={setUserInfo} loading={userLoading} setIsLoading={setIsUserLoading} minHeight={200}/>
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
@@ -51,7 +53,7 @@ function Users() {
             </Box>
         </Box>
         <Box padding={1}>
-            <ProfileCard userId={userId} game={game} style={style} />
+            <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
         </Box>
         <Box padding={1}>
             <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />

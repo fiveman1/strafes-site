@@ -46,7 +46,7 @@ function validatePositiveInt(userId: any) {
     return !isNaN(+userId) && +userId > 0;
 }
 
-app.get("/api/user/:id", cache("5 minutes"), async (req, res) => {
+app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     if (!validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
@@ -439,24 +439,39 @@ async function getUserData(userId: string): Promise<undefined | User> {
         size: "180x180",
         format: "Png",
         isCircular: false
-    })
+    });
+    const strafesUserReq = tryGetStrafes("user/" + userId);
 
     const userRes = await userReq;
     if (!userRes) return undefined;
-    const user = userRes.data
+    const user = userRes.data;
 
     let url = "";
     const thumbRes = await thumbReq;
     if (thumbRes) {
-        url = thumbRes.data.data[0].imageUrl
+        url = thumbRes.data.data[0].imageUrl;
     }
+
+    const strafesUserRes = await strafesUserReq;
+    if (!strafesUserRes) {
+        return {
+            displayName: user.displayName,
+            id: userId,
+            username: user.name,
+            joinedOn: user.created,
+            thumbUrl: url
+        };
+    }
+    const strafesData = strafesUserRes.data.data;
 
     return {
         displayName: user.displayName,
         id: userId,
         username: user.name,
         joinedOn: user.created,
-        thumbUrl: url
+        thumbUrl: url,
+        status: strafesData.state_id,
+        muted: strafesData.muted
     };
 }
 

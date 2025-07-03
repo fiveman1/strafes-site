@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, Rank, Style } from "../api/interfaces";
+import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
 import { getUserRank } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
@@ -10,28 +10,30 @@ export interface IProfileCardProps {
     userId?: string
     game: Game
     style: Style
+    user?: User
+    userLoading: boolean
 }
 
 function ProfileCard(props: IProfileCardProps) {
-    const { userId, game, style } = props;
+    const { userId, game, style, user, userLoading } = props;
 
-    const [rank, setRank] = useState<Rank | undefined>(undefined);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [rank, setRank] = useState<Rank>();
+    const [rankLoading, setRankLoading] = useState(false);
 
     useEffect(() => {
         if (!userId) {
             setRank(undefined);
             return;
         }
-        setLoading(true);
+        setRankLoading(true);
         getUserRank(userId, game, style).then((rankData) => {
             if (!rankData) {
                 setRank(undefined);
-                setLoading(false);
+                setRankLoading(false);
                 return;
             }
             if (rankData.userId === userId) {
-                setLoading(false);
+                setRankLoading(false);
                 setRank(rankData);
             }
         });
@@ -44,13 +46,30 @@ function ProfileCard(props: IProfileCardProps) {
         skillFormatted = formatSkill(rank.skill);
     }
 
+    const formattedStatus = user?.status !== undefined ? ModerationStatus[user.status]: "n/a";
+    let tooltip = "";
+    switch (user?.status) {
+        case ModerationStatus.Blacklisted:
+            tooltip = "This status means that a user's times will not appear on the in-game leaderboards.";
+            break;
+        case ModerationStatus.Default:
+            tooltip = "This is the status that every user starts with. Users with this status can get times like normal, but if they get a world record, their status will be set to Pending to be reviewed by the in-game moderation team.";
+            break;
+        case ModerationStatus.Pending:
+            tooltip = "This status means that the user is pending review from the in-game moderation team. This usually happens after getting a world record for the first time. A moderator will update the status when they are done reviewing.";
+            break;
+        case ModerationStatus.Whitelisted:
+            tooltip = "This staus means that the user was approved by the in-game moderation team, and is allowed to hold world records on the in-game leaderboards.";
+            break;
+    }
+
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
         <Typography variant="caption">
             Profile
         </Typography>
-        <Box display="flex" padding={1}>
-            <Box flexGrow={1}>
+        <Box display="flex" flexWrap="wrap">
+            <Box flexGrow={1} padding={1}>
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Rank
@@ -58,13 +77,13 @@ function ProfileCard(props: IProfileCardProps) {
                             <InfoOutlineIcon fontSize="inherit" color="info" />
                         </Tooltip>
                     </Typography>
-                    {loading ? <CircularProgress size="32px" /> : 
+                    {rankLoading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
                         {rankFormatted}
                     </Typography>}
                 </Box>
             </Box>
-            <Box flexGrow={1}>
+            <Box flexGrow={1} padding={1}>
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Skill
@@ -72,12 +91,42 @@ function ProfileCard(props: IProfileCardProps) {
                             <InfoOutlineIcon fontSize="inherit" color="info" />
                         </Tooltip>
                     </Typography>
-                    {loading ? <CircularProgress size="32px" /> : 
+                    {rankLoading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
                         {skillFormatted}
                     </Typography>}
                 </Box>
             </Box>
+            <Box flexGrow={1} padding={1}>
+                <Box display="flex" flexDirection="column">
+                    <Typography variant="subtitle1">
+                        Moderation status
+                    </Typography>
+                    {userLoading ? <CircularProgress size="32px" /> : 
+                    tooltip ? 
+                    <Tooltip 
+                        title={tooltip} 
+                        arrow 
+                        placement="bottom-start" 
+                        sx={{marginRight: "auto"}}>
+                    {
+                        <Typography variant="h6">{formattedStatus}</Typography>
+                    }
+                    </Tooltip> : 
+                    <Typography variant="h6">{formattedStatus}</Typography>}
+                </Box>
+            </Box>
+            {/* <Box flexGrow={1} padding={1}>
+                <Box display="flex" flexDirection="column">
+                    <Typography variant="subtitle1">
+                        Chat muted?
+                    </Typography>
+                    {userLoading ? <CircularProgress size="32px" /> : 
+                    <Typography variant="h6">
+                        {user?.muted !== undefined ? (user.muted ? "Yes" : "No") : "n/a"}
+                    </Typography>}
+                </Box>
+            </Box> */}
         </Box>
     </Paper>
     );

@@ -4,6 +4,8 @@ export interface User {
     username: string
     joinedOn: string
     thumbUrl: string
+    status?: ModerationStatus
+    muted?: boolean
 }
 
 export enum Game {
@@ -72,4 +74,12 @@ export enum TimeSortBy {
 export enum RankSortBy {
     RankAsc = 1,
     SkillAsc = 2
+}
+
+export enum ModerationStatus {
+    Default = 0,
+    Whitelisted = 1,
+    Blacklisted = 2,
+    Pending = 3,
+    Hidden = 4
 }

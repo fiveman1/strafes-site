@@ -3,22 +3,23 @@ import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { getUserData } from "../api/api";
 
 export interface IUserCardProps {
     userId?: string
     minHeight?: number
+    loading: boolean
+    setIsLoading: (loading: boolean) => void
+    user?: User
+    setUserInfo: (user?: User) => void
 }
 
 function UserCard(props: IUserCardProps) {
-    const { userId, minHeight } = props;
+    const { userId, minHeight, loading, setIsLoading, user, setUserInfo } = props;
 
     const navigate = useNavigate();
-
-    const [loading, setIsLoading] = useState<boolean>(false);
-    const [user, setUserInfo] = useState<User | undefined>(undefined);
 
     useEffect(() => {
         if (!userId) {
@@ -31,7 +32,7 @@ function UserCard(props: IUserCardProps) {
             setIsLoading(false);
             setUserInfo(userData);
         });
-    }, [userId, navigate]);
+    }, [userId, setIsLoading, navigate, setUserInfo]);
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
         {user && !loading ? <>

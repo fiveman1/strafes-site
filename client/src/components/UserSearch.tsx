@@ -38,6 +38,7 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
     const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {
             onSearch();
+            event.currentTarget.blur();
         }
     }
 
@@ -46,7 +47,7 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
             <Box width="100%">
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
                 <TextField error={hasError} helperText={hasError ? "Invalid username." : ""} onKeyDown={onSearchKeyDown} 
-                        onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" 
+                        onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" inputMode="search"
                         slotProps={{htmlInput: {maxLength: 50}, input: {endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
                 />
             </Box>

@@ -68,6 +68,9 @@ function App() {
                     <Link href="https://www.roblox.com/games/5315066937/surf">
                         surf
                     </Link>
+                    <Link href="https://discord.gg/Fw8E75X">
+                        discord
+                    </Link>
                     <Link href="https://github.com/fiveman1/strafes-site">
                         github
                     </Link>
