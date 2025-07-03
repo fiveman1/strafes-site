@@ -71,12 +71,12 @@ function ProfileCard(props: IProfileCardProps) {
         <Box display="flex" flexWrap="wrap">
             <Box flexGrow={1} padding={1}>
                 <Box display="flex" flexDirection="column">
-                    <Typography variant="subtitle1">
-                        Rank
-                        <Tooltip sx={{marginLeft: "4px"}} title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
-                            <InfoOutlineIcon fontSize="inherit" color="info" />
-                        </Tooltip>
-                    </Typography>
+                    <Tooltip sx={{marginRight: "auto"}} arrow title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
+                        <Typography variant="subtitle1">
+                            Rank
+                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="info" />
+                        </Typography>
+                    </Tooltip>
                     {rankLoading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
                         {rankFormatted}
@@ -85,12 +85,12 @@ function ProfileCard(props: IProfileCardProps) {
             </Box>
             <Box flexGrow={1} padding={1}>
                 <Box display="flex" flexDirection="column">
-                    <Typography variant="subtitle1">
-                        Skill
-                        <Tooltip sx={{marginLeft: "4px"}} title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
-                            <InfoOutlineIcon fontSize="inherit" color="info" />
-                        </Tooltip>
-                    </Typography>
+                    <Tooltip sx={{marginRight: "auto"}} arrow title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
+                        <Typography variant="subtitle1">
+                            Skill
+                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="info" />
+                        </Typography>
+                    </Tooltip>
                     {rankLoading ? <CircularProgress size="32px" /> : 
                     <Typography variant="h6">
                         {skillFormatted}
@@ -110,7 +110,10 @@ function ProfileCard(props: IProfileCardProps) {
                         placement="bottom-start" 
                         sx={{marginRight: "auto"}}>
                     {
-                        <Typography variant="h6">{formattedStatus}</Typography>
+                        <Typography variant="h6">
+                            {formattedStatus}
+                            <InfoOutlineIcon sx={{marginLeft: "6px"}} fontSize="inherit" color="info" />
+                        </Typography>
                     }
                     </Tooltip> : 
                     <Typography variant="h6">{formattedStatus}</Typography>}
