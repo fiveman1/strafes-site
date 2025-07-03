@@ -56,7 +56,7 @@ function MainAppBar(props: IMainAppBarProps) {
     return (
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: "space-between" }}>
-                <Link href="/" variant="h6" color="inherit" underline="hover" >
+                <Link href="/" variant="h6" color="inherit" underline="hover" minWidth={84} >
                     strafes
                 </Link>
                 <Box>
