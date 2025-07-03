@@ -130,11 +130,10 @@ function Ranks() {
             Ranks
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            
             <GameSelector game={game} setGame={setGame} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
-        <Box padding={1} flexGrow={1} minHeight={600}>
+        <Box padding={1} flexGrow={1} minHeight={590}>
             <AutoSizer disableWidth>
                 {({ height }) => <RanksCard game={game} style={style} height={height} />}
             </AutoSizer>
