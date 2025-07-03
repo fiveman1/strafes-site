@@ -222,10 +222,68 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         return;
     }
 
-    const page = Math.floor(+start / 100) + 1;
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
     }
+
+    const timeInfo = await getTimesPaged(+start, +end, +sort, onlyWR, userId, +game, +style);
+    
+    if (!timeInfo) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    res.status(200).json(timeInfo);
+});
+
+app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const game = req.query.game;
+    const style = req.query.style;
+    const start = req.query.start;
+    const end = req.query.end;
+    const sort = req.query.sort;
+
+    if (start === undefined || isNaN(+start) || +start < 0) {
+        res.status(400).json({error: "Invalid start"});
+        return;
+    }
+
+    if (end === undefined || isNaN(+end) || +end < 0) {
+        res.status(400).json({error: "Invalid end"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
+        res.status(400).json({error: "Invalid sort by"});
+        return;
+    }
+
+    if (+start >= +end) {
+        res.status(400).json({error: "Start must be higher than end"});
+    }
+
+    const timeInfo = await getTimesPaged(+start, +end, +sort, true, undefined, +game, +style);
+    
+    if (!timeInfo) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    res.status(200).json(timeInfo);
+});
+
+async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
+    const page = Math.floor(+start / 100) + 1;
 
     const firstTimeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
@@ -238,8 +296,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     });
 
     if (!firstTimeRes) {
-        res.status(404).json({error: "Not found"});
-        return;
+        return undefined;
     }
 
     const pageStart = (+start % 100)
@@ -267,15 +324,15 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const pagination: Pagination = {
         page: pageInfo.page,
         pageSize: pageInfo.page_size,
-        totalItems: onlyWR ? firstTimes.length : pageInfo.total_items,
-        totalPages: onlyWR ? 1 : pageInfo.total_pages
+        totalItems: onlyWR ? -1 : pageInfo.total_items,
+        totalPages: onlyWR ? -1 : pageInfo.total_pages
     };
 
-    res.status(200).json({
+    return {
         data: timeArr,
         pagination: pagination
-    });
-});
+    };
+}
 
 app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const mapId = req.params.id;

@@ -34,10 +34,10 @@ function Users() {
         </Typography>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch setUserId={setUserId} minHeight={200} />
+                <UserSearch setUserId={setUserId} minHeight={185} />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard userId={userId} user={user} setUserInfo={setUserInfo} loading={userLoading} setIsLoading={setIsUserLoading} minHeight={200}/>
+                <UserCard userId={userId} user={user} setUserInfo={setUserInfo} loading={userLoading} setIsLoading={setIsUserLoading} minHeight={185}/>
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
@@ -45,7 +45,7 @@ function Users() {
             <StyleSelector game={game} style={style} setStyle={setStyle} />
             <Box padding={1.5}>
                 <FormGroup>
-                    <FormControlLabel label="Only WRs (first 100)" control={
+                    <FormControlLabel label="Only WRs" control={
                         <Checkbox checked={onlyWRs} onChange={(event, checked) => setOnlyWRs(checked)} />}  
                     />
                 </FormGroup>

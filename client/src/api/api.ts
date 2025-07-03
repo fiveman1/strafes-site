@@ -77,6 +77,16 @@ export async function getTimeData(start: number | string, end: number | string, 
             style: style
         });
     }
+    else if (onlyWR) {
+        res = await tryGetRequest("wrs", {
+            start: start,
+            end: end,
+            sort: sortBy,
+            game: game,
+            style: style,
+            onlyWR: true
+        });
+    }
     else {
         return undefined;
     }

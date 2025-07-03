@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
 import { formatGame, formatStyle, formatTime } from "../util/format";
@@ -83,7 +83,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         field: "date",
         headerName: "Date",
         flex: 170,
-        minWidth: 100,
+        minWidth: 105,
         sortingOrder: notSortable ? [] : ["desc", "asc"],
         sortable: !notSortable,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
@@ -91,10 +91,13 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
                 return <></>
             }
             const dateValue = new Date(params.value);
+            const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+            const lessThanOneDay = dateValue.getTime() > oneDayAgo;
             return (
                 <Tooltip placement="right" title={timeFormat.format(dateValue)}>
                     <Box display="inline-block">
                         {dateFormat.format(dateValue)}
+                        {lessThanOneDay ? <Typography color="info" variant="inherit" display="inline-block" marginLeft="1px">*</Typography> : undefined}
                     </Box>
                 </Tooltip>
             );
@@ -115,8 +118,8 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         type: "string",
         field: "style",
         headerName: "Style",
-        flex: 210,
-        minWidth: 100,
+        flex: 150,
+        minWidth: 110,
         valueFormatter: formatStyle,
         sortable: false
     });
@@ -134,14 +137,22 @@ export interface ITimesCardProps {
     hideMap?: boolean
     showPlacement?: boolean
     defaultSort: TimeSortBy
+    height?: number
+    title?: string
 }
 
 function TimesCard(props: ITimesCardProps) {
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 600}}>
-        <Typography variant="caption" marginBottom={1}>
-            Times
-        </Typography>
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 600}}>
+        <Box marginBottom={1} display="flex">
+            <Typography variant="caption" flexGrow={1} marginRight={2}>
+                {props.title ?? "Times"}
+            </Typography>
+            <Typography color="info" variant="body2" display="inline-block" marginRight="2px">*</Typography>
+            <Typography variant="caption">
+                = less than 24 hours ago
+            </Typography>
+        </Box>
         <TimesGrid {...props} />
     </Paper>
     );
@@ -150,6 +161,13 @@ function TimesCard(props: ITimesCardProps) {
 function TimesGrid(props: ITimesCardProps) {
     const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort } = props;
     const apiRef = useGridApiRef();
+    const [rowCount, setRowCount] = useState(-1);
+
+    useEffect(() => {
+        if (onlyWRs) {
+            setRowCount(-1);
+        }
+    }, [onlyWRs]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
@@ -165,15 +183,33 @@ function TimesGrid(props: ITimesCardProps) {
             }
 
             const timeData = await getTimeData(params.start, params.end, sortBy, game, style, userId, map, onlyWRs);
-            if (!timeData) {
-                return { rows: [], rowCount: 0 }
+            if (onlyWRs) {
+                if (!timeData) {
+                    return { rows: [], pageInfo: { hasNextPage: false } }
+                }
+                const times = timeData.times;
+                const hasMore = times.length >= (params.end - +params.start);
+                if (rowCount === -1 && !hasMore) {
+                    setRowCount(+params.start + times.length);
+                }
+                return {
+                    rows: times,
+                    pageInfo: {hasNextPage: hasMore}
+                }
             }
-            return {
-                rows: timeData.times,
-                rowCount: timeData.pagination.totalItems
+            else {
+                if (!timeData) {
+                    setRowCount(0);
+                    return { rows: [], rowCount: 0 }
+                }
+                setRowCount(timeData.pagination.totalItems);
+                return {
+                    rows: timeData.times,
+                    rowCount: timeData.pagination.totalItems
+                }
             }
         }
-    }), [game, map, onlyWRs, style, userId, defaultSort])
+    }), [game, map, onlyWRs, style, userId, defaultSort, rowCount])
 
     useEffect(() => {
         if (onlyWRs) {
@@ -204,6 +240,7 @@ function TimesGrid(props: ITimesCardProps) {
         pagination
         dataSource={dataSource}
         pageSizeOptions={[10, 25, 50]}
+        rowCount={rowCount}
         initialState={{
             pagination: { 
                 paginationModel: { pageSize: 10 },

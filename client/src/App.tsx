@@ -61,7 +61,8 @@ function App() {
             <Box height="100%" display="flex" flexDirection="column">
                 <MainAppBar themeMode={themeMode} setThemeMode={setThemeMode} />
                 <Outlet context={contextParams}/>
-                <Breadcrumbs sx={{display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", padding: 2}}>
+                <Box marginTop="auto">
+                <Breadcrumbs sx={{display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", marginBottom: 2}}>
                     <Link href="https://www.roblox.com/games/5315046213/bhop">
                         bhop
                     </Link>
@@ -75,6 +76,7 @@ function App() {
                         github
                     </Link>
                 </Breadcrumbs>
+                </Box>
             </Box>
         </ThemeProvider>
     );
