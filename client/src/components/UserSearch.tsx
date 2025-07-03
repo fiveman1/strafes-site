@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Box, IconButton, Paper, TextField, Typography } from "@mui/material";
 import Search from "@mui/icons-material/Search";
 import { useNavigate } from "react-router";
@@ -11,6 +11,7 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
 
     const [userText, setUserText] = useState<string>("");
     const [hasError, setHasError] = useState<boolean>(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const onSearch = async () => {
         setHasError(false);
@@ -35,10 +36,10 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
         setHasError(false);
     }
 
-    const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const onSearchKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {
             onSearch();
-            event.currentTarget.blur();
+            inputRef.current?.blur();
         }
     }
 
@@ -46,9 +47,9 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
         <Paper elevation={2} sx={{padding: 3, minHeight: minHeight, display:"flex", alignItems: "center"}}>
             <Box width="100%">
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
-                <TextField error={hasError} helperText={hasError ? "Invalid username." : ""} onKeyDown={onSearchKeyDown} 
-                        onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" inputMode="search"
-                        slotProps={{htmlInput: {maxLength: 50}, input: {endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
+                <TextField error={hasError} helperText={hasError ? "Invalid username." : ""} onKeyUp={onSearchKeyUp}
+                        onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" inputRef={inputRef}
+                        slotProps={{htmlInput: {maxLength: 50}, input: {inputMode: "search", endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
                 />
             </Box>
         </Paper>
