@@ -1,7 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
 import { Game, Style } from "../api/interfaces";
 import { formatStyle } from "../util/format";
+import { useLocation, useNavigate } from "react-router";
+
+export function useStyle() {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    let paramStyle = Style.autohop;
+    const styleParam = queryParams.get("style");
+    if (styleParam !== null && !isNaN(+styleParam) && Style[+styleParam] !== undefined) {
+        paramStyle = +styleParam;
+    }
+    return useState(paramStyle);
+}
 
 export interface IStyleSelectorProps {
     game?: Game
@@ -11,25 +23,36 @@ export interface IStyleSelectorProps {
 
 function StyleSelector(props: IStyleSelectorProps) {
     const { game, style, setStyle } = props;
-
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (game === Game.surf && style === Style.scroll) {
+            const queryParams = new URLSearchParams(location.search);
+            queryParams.set("style", Style.autohop.toString());
+            navigate({ search: queryParams.toString() }, { replace: true });
+            setStyle(Style.autohop);
+        }
+    }, [game, style, setStyle, location.search, navigate]);
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
-        setStyle(event.target.value);
+        const value = event.target.value;
+        const queryParams = new URLSearchParams(location.search);
+        queryParams.set("style", value.toString());
+        navigate({ search: queryParams.toString() }, { replace: true });
+        setStyle(value);
     };
 
-    if (game === Game.surf && style === Style.scroll) {
-        setStyle(Style.autohop);
-    }
-
-    const styles = Object.values(Style).filter(value => typeof value === "number" && (game === Game.bhop || value !== Style.scroll)) as Style[];
+    const styles = Object.values(Style).filter(value => typeof value === "number" && (game === undefined || game === Game.bhop || value !== Style.scroll)) as Style[];
+    const realStyle = game === Game.surf && style === Style.scroll ? Style.autohop : style;
 
     return (
         <Box padding={smallScreen ? 0.5 : 1.5}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Style</InputLabel>
                 <Select
-                    value={style}
+                    value={realStyle}
                     label="Style"
                     onChange={handleChangeStyle}
                 >

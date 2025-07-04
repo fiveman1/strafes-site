@@ -2,15 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
-import GameSelector from "./GameSelector";
-import StyleSelector from "./StyleSelector";
+import GameSelector, { useGame } from "./GameSelector";
+import StyleSelector, { useStyle } from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
 import UserLink from "./UserLink";
 import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 
-function makeColumns() {
+function makeColumns(game: Game, style: Style) {
     const cols: GridColDef[] = [];
 
     cols.push({
@@ -31,7 +31,7 @@ function makeColumns() {
         renderCell: (params: GridRenderCellParams<Rank, string>) => {
             const rank = params.row;
             return (
-                <UserLink userId={rank.userId} username={rank.username} />
+                <UserLink userId={rank.userId} username={rank.username} game={game} style={style} />
             );
         }
     });
@@ -69,13 +69,17 @@ function RanksCard(props: IRanksCardProps) {
     const { game, style, height } = props;
 
     const [rowCount, setRowCount] = useState(-1);
+    const [isLoading, setIsLoading] = useState(false);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
             const sort = params.sortModel.at(0);
             const sortBy = sort?.field === "skill" ? RankSortBy.SkillAsc : RankSortBy.RankAsc;
 
+            setIsLoading(true);
             const ranks = await getRanks(params.start, params.end, sortBy, game, style);
+            setIsLoading(false);
+
             if (ranks === undefined) {
                 return { rows: [], pageInfo: {hasNextPage: false} }
             }
@@ -96,7 +100,9 @@ function RanksCard(props: IRanksCardProps) {
             Ranks
         </Typography>
         <DataGrid
-            columns={makeColumns()}
+            columns={makeColumns(game, style)}
+            key={`${game},${style}`}
+            loading={isLoading}
             pagination
             dataSource={dataSource}
             pageSizeOptions={[10, 25, 50]}
@@ -117,8 +123,8 @@ function RanksCard(props: IRanksCardProps) {
 }
 
 function Ranks() {
-    const [game, setGame] = useState(Game.bhop);
-    const [style, setStyle] = useState(Style.autohop);
+    const [game, setGame] = useGame();
+    const [style, setStyle] = useStyle();
     
     useEffect(() => {
         document.title = "strafes - ranks"
@@ -130,7 +136,7 @@ function Ranks() {
             Ranks
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} setGame={setGame} />
+            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1} flexGrow={1} minHeight={550}>

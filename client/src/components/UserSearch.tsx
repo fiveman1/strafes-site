@@ -1,12 +1,13 @@
 import React, { useRef, useState } from "react";
 import { Box, IconButton, Paper, TextField, Typography } from "@mui/material";
 import Search from "@mui/icons-material/Search";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName } from "../api/api";
 
 function UserSearch(props: { minHeight: number, setUserId: (value?: string) => void; }) {
     const { minHeight, setUserId } = props;
 
+    const location = useLocation();
     const navigate = useNavigate();
 
     const [userText, setUserText] = useState<string>("");
@@ -24,7 +25,7 @@ function UserSearch(props: { minHeight: number, setUserId: (value?: string) => v
 
         const userId = await getUserIdFromName(userText);
         if (userId !== undefined) {
-            navigate("/users/" + userId, {replace: true});
+            navigate({pathname: `/users/${userId}`, search: new URLSearchParams(location.search).toString()});
         }
         else {
             setHasError(true);

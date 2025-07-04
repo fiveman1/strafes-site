@@ -1,26 +1,26 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
-import { useNavigate, useOutletContext, useParams } from "react-router";
+import { useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame } from "../util/format";
-import { Map, TimeSortBy, Style } from "../api/interfaces";
+import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
-import StyleSelector from "./StyleSelector";
+import StyleSelector, { useStyle } from "./StyleSelector";
 import TimesCard from "./TimesCard";
 
 const CARD_SIZE = 180;
 
-function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: Map}, index: number, style: CSSProperties}) {
+function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style, selectedMap?: Map}, index: number, style: CSSProperties}) {
     const { data, index, style } = props;
-    const { maps, itemsPerRow, selectedMap } = data;
+    const { maps, itemsPerRow, mapStyle, selectedMap } = data;
 
     const rowMaps: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, maps.length);
     for (let i = fromIndex; i < toIndex; ++i) {
         const selected = selectedMap?.id === maps[i].id;
-        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} />);
+        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} style={mapStyle} />);
     }
 
     return (
@@ -30,10 +30,9 @@ function MapRow(props: {data: {itemsPerRow: number, maps: Map[], selectedMap?: M
     );
 }
 
-function MapCard(props: {map: Map, selected?: boolean}) {
-    const { map, selected } = props;
+function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
+    const { map, selected, style } = props;
     const theme = useTheme();
-    const navigate = useNavigate();
 
     const isLightMode = theme.palette.mode === "light";
     const creatorColor = selected ? (isLightMode ? colors.grey[50] : colors.grey[200]) : theme.palette.text.secondary;
@@ -47,10 +46,8 @@ function MapCard(props: {map: Map, selected?: boolean}) {
             sx={{width: CARD_SIZE - 16, 
                 height: CARD_SIZE - 16, 
                 ":hover": {boxShadow: 10}}}>
-            <CardActionArea 
-                onClick={() => {
-                    navigate("/maps/" + map.id, {replace: true});
-                }} 
+            <CardActionArea
+                href={`/maps/${map.id}?style=${style !== Style.scroll || map.game === Game.bhop ? style : Style.autohop}`}
                 sx={{ 
                 height: "100%",
                 backgroundColor: bgColor,
@@ -74,8 +71,8 @@ function MapCard(props: {map: Map, selected?: boolean}) {
     );
 }
 
-function MapList(props: {width: number, filteredMaps: Map[], selectedMap?: Map}) {
-    const { width, filteredMaps, selectedMap } = props;
+function MapList(props: {width: number, filteredMaps: Map[], style: Style, selectedMap?: Map}) {
+    const { width, filteredMaps, style, selectedMap } = props;
     const listRef = useRef<FixedSizeList>(null);
 
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
@@ -91,7 +88,7 @@ function MapList(props: {width: number, filteredMaps: Map[], selectedMap?: Map})
         <FixedSizeList 
             style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
             itemCount={rowCount} itemSize={CARD_SIZE} ref={listRef}
-            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap}}
+            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, mapStyle: style}}
         >
             {MapRow}
         </FixedSizeList>
@@ -104,7 +101,7 @@ function MapsPage() {
 
     const [searchText, setSearchText] = useState("");
     const [selectedMap, setSelectedMap] = useState<Map>();
-    const [style, setStyle] = useState(Style.autohop);
+    const [style, setStyle] = useStyle();
 
     useEffect(() => {
         document.title = "strafes - maps";
@@ -190,7 +187,7 @@ function MapsPage() {
         </Box>
         <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
-            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} selectedMap={selectedMap} />}
+            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} selectedMap={selectedMap} />}
             </AutoSizer>
         </Grid>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">

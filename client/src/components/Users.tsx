@@ -2,22 +2,32 @@ import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { Checkbox, FormControlLabel, FormGroup, FormHelperText, Typography } from "@mui/material";
 import UserCard from "./UserCard";
-import { useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
 import UserSearch from "./UserSearch";
-import { Game, TimeSortBy, Style, User } from "../api/interfaces";
-import GameSelector from "./GameSelector";
-import StyleSelector from "./StyleSelector";
+import { TimeSortBy, User } from "../api/interfaces";
+import GameSelector, { useGame } from "./GameSelector";
+import StyleSelector, { useStyle } from "./StyleSelector";
 
 function Users() {
     const { id } = useParams();
     const [userId, setUserId] = useState<string>();
-    const [game, setGame] = useState(Game.bhop);
-    const [style, setStyle] = useState(Style.autohop);
-    const [onlyWRs, setOnlyWRs] = useState(false);
+    const [game, setGame] = useGame();
+    const [style, setStyle] = useStyle();
+    
     const [user, setUserInfo] = useState<User>();
     const [userLoading, setIsUserLoading] = useState<boolean>(false);
+
+    const location = useLocation();
+    const navigate = useNavigate();
+    
+    const queryParams = new URLSearchParams(location.search);
+    let paramWRs = false;
+    if (queryParams.get("wrs") === "true") {
+        paramWRs = true;
+    }
+    const [onlyWRs, setOnlyWRs] = useState(paramWRs);
 
     useEffect(() => {
         document.title = "strafes - users"
@@ -26,6 +36,13 @@ function Users() {
     if (id !== userId) {
         setUserId(id);
     }
+
+    const handleChangeOnlyWRs = (checked: boolean) => {
+        const queryParams = new URLSearchParams(location.search);
+        queryParams.set("wrs", checked ? "true" : "false");
+        navigate({ search: queryParams.toString() }, { replace: true });
+        setOnlyWRs(checked);
+    };
 
     return (
     <Box padding={2} flexGrow={1}>
@@ -41,12 +58,12 @@ function Users() {
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} setGame={setGame} />
+            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
             <Box padding={1.5}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={
-                        <Checkbox checked={onlyWRs} onChange={(event, checked) => setOnlyWRs(checked)} />}  
+                        <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  
                     />
                 </FormGroup>
                 <FormHelperText>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>

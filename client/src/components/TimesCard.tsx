@@ -5,6 +5,7 @@ import { formatGame, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
+import { Link as RouterLink } from "react-router";
 import UserLink from "./UserLink";
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -18,7 +19,7 @@ const timeFormat = Intl.DateTimeFormat(undefined, {
     minute: "2-digit"
 });
 
-function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
+function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
 
     if (showPlacement) {
@@ -42,7 +43,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <UserLink userId={time.userId} username={time.username} />
+                    <UserLink userId={time.userId} username={time.username} game={game} style={style} />
                 );
             }
         });
@@ -59,7 +60,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link href={`/maps/${time.mapId}`} underline="hover" fontWeight="bold">
+                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${style}`}} component={RouterLink} underline="hover" fontWeight="bold">
                         {time.map}
                     </Link>
                 );
@@ -139,6 +140,7 @@ export interface ITimesCardProps {
     defaultSort: TimeSortBy
     height?: number
     title?: string
+    allowOnlyWRs?: boolean
 }
 
 function TimesCard(props: ITimesCardProps) {
@@ -159,9 +161,10 @@ function TimesCard(props: ITimesCardProps) {
 }
 
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort } = props;
+    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs } = props;
     const apiRef = useGridApiRef();
     const [rowCount, setRowCount] = useState(-1);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (onlyWRs) {
@@ -171,6 +174,8 @@ function TimesGrid(props: ITimesCardProps) {
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
+            if (!allowOnlyWRs && !userId && !map) return { rows: [], rowCount: 0 }
+            
             const sort = params.sortModel.at(0);
             let sortBy = defaultSort;
             if (sort) {
@@ -181,8 +186,10 @@ function TimesGrid(props: ITimesCardProps) {
                     sortBy = sort.sort === "asc" ? TimeSortBy.DateAsc : TimeSortBy.DateDesc;
                 }
             }
-
+            setIsLoading(true);
             const timeData = await getTimeData(params.start, params.end, sortBy, game, style, userId, map, onlyWRs);
+            setIsLoading(false);
+
             if (onlyWRs) {
                 if (!timeData) {
                     return { rows: [], pageInfo: { hasNextPage: false } }
@@ -209,7 +216,7 @@ function TimesGrid(props: ITimesCardProps) {
                 }
             }
         }
-    }), [game, map, onlyWRs, style, userId, defaultSort, rowCount])
+    }), [game, map, onlyWRs, style, userId, defaultSort, rowCount, allowOnlyWRs])
 
     useEffect(() => {
         if (onlyWRs) {
@@ -235,8 +242,10 @@ function TimesGrid(props: ITimesCardProps) {
 
     return (
     <DataGrid
-        columns={makeColumns(hideUser, hideMap, showPlacement, onlyWRs)}
+        columns={makeColumns(game ?? Game.bhop, style, hideUser, hideMap, showPlacement, onlyWRs)}
+        key={`${userId ?? ""},${map ?? ""},${game},${style},${onlyWRs ?? false}`}
         apiRef={apiRef}
+        loading={isLoading}
         pagination
         dataSource={dataSource}
         pageSizeOptions={[10, 25, 50]}
