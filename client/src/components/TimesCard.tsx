@@ -145,7 +145,7 @@ export interface ITimesCardProps {
 
 function TimesCard(props: ITimesCardProps) {
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 600}}>
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 590}}>
         <Box marginBottom={1} display="flex">
             <Typography variant="caption" flexGrow={1} marginRight={2}>
                 {props.title ?? "Times"}
@@ -163,7 +163,7 @@ function TimesCard(props: ITimesCardProps) {
 function TimesGrid(props: ITimesCardProps) {
     const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs } = props;
     const apiRef = useGridApiRef();
-    const [rowCount, setRowCount] = useState(-1);
+    const [rowCount, setRowCount] = useState(onlyWRs ? -1 : 0);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
