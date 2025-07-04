@@ -59,7 +59,7 @@ function ProfileCard(props: IProfileCardProps) {
             tooltip = "This status means that the user is pending review from the in-game moderation team. This usually happens after getting a world record for the first time. A moderator will update the status when they are done reviewing.";
             break;
         case ModerationStatus.Whitelisted:
-            tooltip = "This staus means that the user was approved by the in-game moderation team, and is allowed to hold world records on the in-game leaderboards.";
+            tooltip = "This status means that the user was approved by the in-game moderation team, and is allowed to hold world records on the in-game leaderboards.";
             break;
     }
 
