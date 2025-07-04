@@ -95,7 +95,7 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     }
 
     const data = rankRes.data.data;
-    const rank = Math.floor((1 - data.rank) * 20);
+    const rank = Math.floor((1 - data.rank) * 19) + 1;
 
     const rankData : Rank = {
         id: data.id,
