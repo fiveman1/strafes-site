@@ -104,7 +104,7 @@ export interface Maps {
 }
 
 export async function getMaps(): Promise<Maps> {
-    const res = await tryGetRequest("maps4");
+    const res = await tryGetRequest("maps");
     if (!res) return {};
 
     const maps: Maps = {};
