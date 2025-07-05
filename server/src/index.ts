@@ -18,7 +18,7 @@ if (!STRAFES_KEY) {
 const app = express();
 const port = process.env.PORT ?? "8080";
 const isDebug = process.env.DEBUG === "true";
-const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : undefined).middleware as (duration?: string | number) => any;
+const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} });
 
