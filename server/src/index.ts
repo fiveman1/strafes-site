@@ -462,7 +462,7 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 assetIds.push(assetId);
             }
         }
-        const largeReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {
+        const largeReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "420x420",
             "format": "Webp"
