@@ -30,8 +30,8 @@ function Users() {
     const [onlyWRs, setOnlyWRs] = useState(paramWRs);
 
     useEffect(() => {
-        document.title = "strafes - users"
-    }, []);
+        document.title = user ? `strafes - users - @${user.username}` : "strafes - users";
+    }, [user]);
 
     if (id !== userId) {
         setUserId(id);

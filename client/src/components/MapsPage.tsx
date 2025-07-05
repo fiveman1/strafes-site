@@ -89,9 +89,24 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, selec
     const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
 
     useEffect(() => {
-        if (selectedMap) {
-            listRef.current?.scrollToItem(0);
+        if (selectedMap && listRef.current) {
+            let selectedIndex = -1;
+            for (let i = 0; i < filteredMaps.length; ++i) {
+                const map = filteredMaps[i];
+                if (map.id === selectedMap.id) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+            if (selectedIndex !== -1) {
+                const selectedRow = Math.floor(selectedIndex / itemsPerRow);
+                listRef.current.scrollToItem(selectedRow);
+            }
         }
+    // Not including itemsPerRow or filteredMaps as deps because I only want to scroll to the selected row when:
+    // 1. Loading a map for the first time (from a direct link), or
+    // 2. Clicking on a map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMap, listRef])
     
     return (
@@ -114,8 +129,8 @@ function MapsPage() {
     const [style, setStyle] = useStyle();
 
     useEffect(() => {
-        document.title = "strafes - maps";
-    }, []);
+        document.title = selectedMap ? `strafes - maps - ${selectedMap.name}` : "strafes - maps";
+    }, [selectedMap]);
     
     useEffect(() => {
         const mapId = id && !isNaN(+id) ? +id : undefined;
@@ -132,11 +147,6 @@ function MapsPage() {
     let filteredMaps: Map[] = [];
     if (searchText) {
         const validMaps = new Set<number>();
-        if (selectedMap) {
-            // Always put selected map first
-            filteredMaps.push(selectedMap);
-            validMaps.add(selectedMap.id);
-        }
         const search = searchText.toLowerCase();
         // Show exact map name matches first
         for (const map of sortedMaps) {
@@ -166,20 +176,13 @@ function MapsPage() {
                 validMaps.add(map.id);
             }
         }
+        // Always make sure selected map exists
+        if (selectedMap && !validMaps.has(selectedMap.id)) {
+            filteredMaps.push(selectedMap);
+        }
     }
     else {
-        if (selectedMap) {
-            // Always put selected map first
-            filteredMaps.push(selectedMap);
-            for (const map of sortedMaps) {
-                if (map.id !== selectedMap?.id) {
-                    filteredMaps.push(map);
-                }
-            }
-        }
-        else {
-            filteredMaps = sortedMaps;
-        }
+        filteredMaps = sortedMaps;
     }
 
     return (

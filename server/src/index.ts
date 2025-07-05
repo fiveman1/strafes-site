@@ -9,17 +9,18 @@ import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, Use
 import { exit } from "process";
 import { MapToAsset } from "./util.js";
 
-const app = express();
-const port = process.env.PORT ?? "8080";
-const cache = apicache.middleware;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
-const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} })
-
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
     console.error("Missing StrafesNET API key");
     exit(1);
 }
+
+const app = express();
+const port = process.env.PORT ?? "8080";
+const isDebug = process.env.DEBUG === "true";
+const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : undefined).middleware as (duration?: string | number) => any;
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url))
 const buildDir = path.join(dirName, "../../client/build/");
