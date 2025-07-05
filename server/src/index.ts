@@ -594,7 +594,7 @@ async function tryGetRequest(url: string, params?: any, headers?: any) {
         return await axios.get(url, {params: params, headers: headers, timeout: 5000});
     } 
     catch (err) {
-        //console.log(err);
+        console.log(err);
         return undefined;
     }
 }
