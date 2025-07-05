@@ -25,6 +25,10 @@ const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, valid
 const dirName = path.dirname(fileURLToPath(import.meta.url))
 const buildDir = path.join(dirName, "../../client/build/");
 
+function calcRank(rank: number) {
+    return Math.floor((1 - rank) * 19) + 1;;
+}
+
 app.use(express.static(buildDir));
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
@@ -97,7 +101,7 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     }
 
     const data = rankRes.data.data;
-    const rank = Math.floor((1 - data.rank) * 19) + 1;
+    const rank = calcRank(data.rank);
 
     const rankData : Rank = {
         id: data.id,
@@ -169,7 +173,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     const rankArr: Rank[] = [];
     for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
         const data = ranks[i];
-        const rank = Math.floor((1 - data.rank) * 20);
+        const rank = calcRank(data.rank);
         rankArr.push({
             id: data.id,
             style: +style,
