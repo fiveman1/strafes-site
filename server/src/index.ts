@@ -468,27 +468,27 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
             "format": "Webp"
         }});
         
-        const smallReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {params: {
-            "assetIds": assetIds,
-            "size": "75x75",
-            "format": "Webp"
-        }});
+        // const smallReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {params: {
+        //     "assetIds": assetIds,
+        //     "size": "75x75",
+        //     "format": "Webp"
+        // }});
 
         const largeReq = await largeReqPromise;
-        const smallReq = await smallReqPromise;
+        //const smallReq = await smallReqPromise;
 
-        if (smallReq && largeReq) {
+        if (largeReq) {
             for (const assetInfo of largeReq.data.data) {
                 const targetId = assetInfo.targetId;
                 const url = assetInfo.imageUrl;
                 assetToThumb.set(targetId, new Map<string, string>([["large", url]]));
             }
 
-            for (const assetInfo of smallReq.data.data) {
-                const targetId = assetInfo.targetId;
-                const url = assetInfo.imageUrl;
-                assetToThumb.get(targetId)!.set("small", url);
-            }
+            // for (const assetInfo of smallReq.data.data) {
+            //     const targetId = assetInfo.targetId;
+            //     const url = assetInfo.imageUrl;
+            //     assetToThumb.get(targetId)!.set("small", url);
+            // }
         }
 
         for (const map of data) {
