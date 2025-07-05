@@ -436,7 +436,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     });
 });
 
-app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
+app.get("/api/maps4", rateLimitSettings, cache("1 hour"), async (req, res) => {
     let i = 1;
     const maps: StrafesMap[] = [];
     while (true) {
