@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
-import { Card, CardActionArea, CardContent, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
+import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
@@ -8,6 +8,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import TimesCard from "./TimesCard";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 
 const CARD_SIZE = 180;
 
@@ -39,20 +40,25 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
     const bgColor = selected ? (theme.palette.primary[isLightMode ? 400 : 600]) : undefined;
     const hoverColor = selected ? (theme.palette.primary[isLightMode ? 300 : 500]) : undefined;
     const titleColor = isLightMode && selected ? "common.white" : undefined;
+    const real_height = CARD_SIZE - 16;
 
     return (
     <Box padding="8px">
         <Card elevation={2} id={"mapCard" + map.id}
-            sx={{width: CARD_SIZE - 16, 
-                height: CARD_SIZE - 16, 
+            sx={{width: real_height * 2, 
+                height: real_height, 
+                display: "flex",
+                flexDirection: "row",
                 ":hover": {boxShadow: 10}}}>
             <CardActionArea
                 href={`/maps/${map.id}?style=${style !== Style.scroll || map.game === Game.bhop ? style : Style.autohop}`}
                 sx={{ 
                 height: "100%",
                 backgroundColor: bgColor,
+                display: "flex",
+                flexDirection: "row",
                 ":hover": { backgroundColor: hoverColor }}}>
-                <CardContent sx={{height: "100%", display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
+                <CardContent sx={{height: "100%", width: real_height, display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
                     <Box flexGrow={1}>
                         <Typography maxHeight="64px" variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor}>
                             {map.name}
@@ -65,7 +71,11 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
                         {formatGame(map.game)}
                     </Typography>
                 </CardContent>
+                {map.largeThumb ? 
+                <CardMedia component="img" sx={{width: real_height, height: real_height}} image={map.largeThumb}/>
+                : <QuestionMarkIcon sx={{ fontSize: real_height, }} />}
             </CardActionArea>
+            
         </Card>
     </Box>
     );
@@ -75,7 +85,7 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, selec
     const { width, filteredMaps, style, selectedMap } = props;
     const listRef = useRef<FixedSizeList>(null);
 
-    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
+    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE * 2)) || 1;
     const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
 
     useEffect(() => {

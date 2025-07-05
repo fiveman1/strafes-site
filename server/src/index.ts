@@ -5,8 +5,9 @@ import path from "path";
 import memoize from 'memoize';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces.js";
+import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces.js";
 import { exit } from "process";
+import { MapToAsset } from "./util.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -435,9 +436,9 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     });
 });
 
-app.get("/api/maps", cache("1 hour"), rateLimitSettings, async (req, res) => {
+app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
     let i = 1;
-    const maps: Map[] = [];
+    const maps: StrafesMap[] = [];
     while (true) {
         const mapRes = await tryGetStrafes("map", {
             page_number: i,
@@ -452,13 +453,59 @@ app.get("/api/maps", cache("1 hour"), rateLimitSettings, async (req, res) => {
         if (data.length < 1) {
             break;
         }
+
+        const assetToThumb = new Map<number, Map<string, string>>();
+        const assetIds: number[] = [];
         for (const map of data) {
+            const assetId = MapToAsset[map.id];
+            if (assetId) {
+                assetIds.push(assetId);
+            }
+        }
+        const largeReqPromise = axios.get("https://thumbnails.roblox.com/v1/assets", {params: {
+            "assetIds": assetIds,
+            "size": "420x420",
+            "format": "Webp"
+        }});
+        
+        const smallReqPromise = axios.get("https://thumbnails.roblox.com/v1/assets", {params: {
+            "assetIds": assetIds,
+            "size": "75x75",
+            "format": "Webp"
+        }});
+
+        const largeReq = await largeReqPromise;
+        const smallReq = await smallReqPromise;
+
+        for (const assetInfo of largeReq.data.data) {
+            const targetId = assetInfo.targetId;
+            const url = assetInfo.imageUrl;
+            assetToThumb.set(targetId, new Map<string, string>([["large", url]]));
+        }
+
+        for (const assetInfo of smallReq.data.data) {
+            const targetId = assetInfo.targetId;
+            const url = assetInfo.imageUrl;
+            assetToThumb.get(targetId)!.set("small", url);
+        }
+
+        for (const map of data) {
+            const assetId = MapToAsset[map.id];
+            let small, large;
+            if (assetId) {
+                const urls = assetToThumb.get(assetId);
+                small = urls?.get("small");
+                large = urls?.get("large");
+            }
+           
             maps.push({
                 id: map.id,
                 name: map.display_name,
                 creator: map.creator,
                 game: map.game_id,
-                date: map.date
+                date: map.date,
+                smallThumb: small,
+                largeThumb: large
             });
         }
     }

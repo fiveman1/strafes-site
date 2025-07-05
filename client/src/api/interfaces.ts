@@ -62,6 +62,8 @@ export interface Map {
     creator: string
     game: Game
     date: string
+    smallThumb?: string
+    largeThumb?: string
 }
 
 export enum TimeSortBy {
