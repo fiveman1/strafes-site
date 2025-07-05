@@ -462,11 +462,11 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 assetIds.push(assetId);
             }
         }
-        const largeReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {params: {
+        const largeReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {
             "assetIds": assetIds,
             "size": "420x420",
             "format": "Webp"
-        }});
+        });
         
         // const smallReqPromise = tryGetRequest("https://thumbnails.roblox.com/v1/assets", {params: {
         //     "assetIds": assetIds,
