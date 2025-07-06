@@ -16,7 +16,7 @@ function Globals() {
     }, []);
 
     return (
-    <Box padding={2} flexGrow={1}>
+    <Box padding={2} flexGrow={1} display="flex" flexDirection="column">
         <Typography variant="h2" padding={1}>
             Globals
         </Typography>

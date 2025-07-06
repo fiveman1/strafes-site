@@ -144,6 +144,7 @@ export interface ITimesCardProps {
 }
 
 function TimesCard(props: ITimesCardProps) {
+    console.log(props.height);
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 590}}>
         <Box marginBottom={1} display="flex">
