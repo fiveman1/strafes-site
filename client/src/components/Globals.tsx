@@ -24,8 +24,8 @@ function Globals() {
             Each record in the list below is a world record (1st place). This list gets updated hourly.
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
-            <StyleSelector game={game} style={style} setStyle={setStyle} />
+            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
+            <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
         </Box>
         <Box padding={1} flexGrow={1} minHeight={540}>
             <AutoSizer disableWidth>

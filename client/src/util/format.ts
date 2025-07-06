@@ -9,6 +9,8 @@ export function formatGame(game: Game) {
             return "surf";
         case Game.fly_trials:
             return "fly trials";
+        case Game.all:
+            return "all";
         default:
             return "unknown";
     }
@@ -42,6 +44,8 @@ export function formatStyle(style: Style) {
             return "rocket strafe";
         case Style.strafe_3d:
             return "3d strafe";
+        case Style.all:
+            return "all";
         default:
             return "unknown";
     }
@@ -100,6 +104,8 @@ export function getAllowedStyles(game: Game) {
             return surf_styles;
         case Game.fly_trials:
             return fly_trials_styles;
+        case Game.all:
+            return surf_styles;
         default:
             return [];
     }

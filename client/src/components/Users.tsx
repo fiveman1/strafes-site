@@ -58,8 +58,8 @@ function Users() {
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
-            <StyleSelector game={game} style={style} setStyle={setStyle} />
+            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
+            <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
             <Box padding={1.5}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={

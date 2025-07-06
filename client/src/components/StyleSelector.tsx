@@ -19,10 +19,11 @@ export interface IStyleSelectorProps {
     game?: Game
     style: Style
     setStyle: (style: Style) => void
+    allowSelectAll?: boolean
 }
 
 function StyleSelector(props: IStyleSelectorProps) {
-    const { game, style, setStyle } = props;
+    const { game, style, setStyle, allowSelectAll } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
     const navigate = useNavigate();
@@ -32,14 +33,14 @@ function StyleSelector(props: IStyleSelectorProps) {
             return;
         }
         const allowedStyles = getAllowedStyles(game);
-        if (!allowedStyles.includes(style)) {
+        if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
             const defaultStyle = allowedStyles[0];
             const queryParams = new URLSearchParams(location.search);
             queryParams.set("style", defaultStyle.toString());
             navigate({ search: queryParams.toString() }, { replace: true });
             setStyle(defaultStyle);
         }
-    }, [game, style, setStyle, location.search, navigate]);
+    }, [game, style, setStyle, location.search, navigate, allowSelectAll]);
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
         const style = event.target.value;
@@ -49,7 +50,10 @@ function StyleSelector(props: IStyleSelectorProps) {
         setStyle(style);
     };
 
-    const styles = game === undefined ? bhop_styles : getAllowedStyles(game);
+    const styles = game === undefined ? [...bhop_styles] : [...getAllowedStyles(game)];
+    if (allowSelectAll) {
+        styles.push(Style.all);
+    }
     const realStyle = styles.includes(style) ? style : styles[0];
 
     return (

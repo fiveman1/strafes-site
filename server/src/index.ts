@@ -18,7 +18,7 @@ if (!STRAFES_KEY) {
 const app = express();
 const port = process.env.PORT ?? "8080";
 const isDebug = process.env.DEBUG === "true";
-const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
+const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}, respectCacheControl: false} : {}).middleware as (duration?: string | number) => any;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} });
 
@@ -78,12 +78,12 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
         return;
     }
 
-    if (!game || isNaN(+game) || Game[+game] === undefined) {
+    if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         res.status(400).json({error: "Invalid game"});
         return;
     }
 
-    if (!style || isNaN(+style) || Style[+style] === undefined) {
+    if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
         res.status(400).json({error: "Invalid style"});
         return;
     }
@@ -154,8 +154,8 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     }
 
     const ranksRes = await tryGetStrafes("rank", {
-        game_id: game,
-        style_id: style,
+        game_id: +game === Game.all ? undefined : +game,
+        style_id: +style === Style.all ? undefined : +style,
         mode_id: 0,
         page_number: page,
         page_size: 100,
@@ -293,8 +293,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyW
 
     const firstTimeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
-        game_id: game,
-        style_id: style,
+        game_id: game === Game.all ? undefined : game,
+        style_id: style === Style.all ? undefined : style,
         mode_id: 0,
         page_number: page,
         page_size: 100,
@@ -363,12 +363,12 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
-    if (!game || isNaN(+game) || Game[+game] === undefined) {
+    if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         res.status(400).json({error: "Invalid game"});
         return;
     }
 
-    if (!style || isNaN(+style) || Style[+style] === undefined) {
+    if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
         res.status(400).json({error: "Invalid style"});
         return;
     }

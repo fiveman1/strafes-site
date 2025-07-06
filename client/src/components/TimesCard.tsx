@@ -19,7 +19,7 @@ const timeFormat = Intl.DateTimeFormat(undefined, {
     minute: "2-digit"
 });
 
-function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
+function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
 
     if (showPlacement) {
@@ -43,7 +43,7 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <UserLink userId={time.userId} username={time.username} game={game} style={style} />
+                    <UserLink userId={time.userId} username={time.username} game={time.game} style={time.style} />
                 );
             }
         });
@@ -60,7 +60,7 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${style}&game=${game}`}} component={RouterLink} underline="hover" fontWeight="bold">
+                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${time.style}&game=${time.game}`}} component={RouterLink} underline="hover" fontWeight="bold">
                         {time.map}
                     </Link>
                 );
@@ -110,7 +110,7 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
         field: "game",
         headerName: "Game",
         flex: 110,
-        minWidth: 70,
+        minWidth: 75,
         valueFormatter: formatGame,
         sortable: false
     });
@@ -166,11 +166,12 @@ function TimesGrid(props: ITimesCardProps) {
     const [rowCount, setRowCount] = useState(onlyWRs ? -1 : 0);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Reset row count to unknown when in only WRs mode after changing game or style
     useEffect(() => {
         if (onlyWRs) {
             setRowCount(-1);
         }
-    }, [onlyWRs]);
+    }, [onlyWRs, game, style]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
@@ -242,7 +243,7 @@ function TimesGrid(props: ITimesCardProps) {
 
     return (
     <DataGrid
-        columns={makeColumns(game ?? Game.bhop, style, hideUser, hideMap, showPlacement, onlyWRs)}
+        columns={makeColumns(hideUser, hideMap, showPlacement, onlyWRs)}
         key={`${userId ?? ""},${map ?? ""},${game},${style},${onlyWRs ?? false}`}
         apiRef={apiRef}
         loading={isLoading}

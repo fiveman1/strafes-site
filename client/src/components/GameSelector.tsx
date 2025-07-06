@@ -21,27 +21,28 @@ export interface IGameSelectorProps {
     style: Style
     setStyle: (style: Style) => void
     allowedGames?: Game[]
+    allowSelectAll?: boolean
 }
 
 function GameSelector(props: IGameSelectorProps) {
-    const { game, setGame, style, setStyle, allowedGames } = props;
+    const { game, setGame, style, setStyle, allowedGames, allowSelectAll } = props;
     const location = useLocation();
     const navigate = useNavigate();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
         const allowedStyles = getAllowedStyles(game);
-        if (!allowedStyles.includes(style)) {
+        if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
             const defaultStyle = allowedStyles[0];
             setStyle(defaultStyle);
         }
-    }, [game, style, setStyle]);
+    }, [game, style, setStyle, allowSelectAll]);
 
     const handleChangeGame = (event: SelectChangeEvent<Game>) => {
         const game = event.target.value;
         const queryParams = new URLSearchParams(location.search);
         const allowedStyles = getAllowedStyles(game);
-        if (!allowedStyles.includes(style)) {
+        if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
             const defaultStyle = allowedStyles[0];
             queryParams.set("style", defaultStyle.toString());
             setStyle(defaultStyle);
@@ -51,14 +52,18 @@ function GameSelector(props: IGameSelectorProps) {
         setGame(game);
     };
 
-    const games = allowedGames ? allowedGames : Object.values(Game).filter(value => typeof value === "number") as Game[];
+    const games = allowedGames ? allowedGames : [Game.bhop, Game.surf, Game.fly_trials];
+    if (!allowedGames && allowSelectAll) {
+        games.push(Game.all);
+    }
+    const realGame = games.includes(game) ? game : games[0];
 
     return (
         <Box padding={smallScreen ? 0.5 : 1.5}>
             <FormControl sx={{ width: "150px" }} disabled={games.length <= 1}>
                 <InputLabel>Game</InputLabel>
                 <Select
-                    value={game}
+                    value={realGame}
                     label="Game"
                     onChange={handleChangeGame}
                 >

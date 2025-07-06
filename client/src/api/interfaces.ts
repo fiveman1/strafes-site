@@ -11,7 +11,8 @@ export interface User {
 export enum Game {
     bhop = 1,
     surf = 2,
-    fly_trials = 5
+    fly_trials = 5,
+    all = 999
 }
 
 export enum Style {
@@ -27,7 +28,8 @@ export enum Style {
     fly_sustain = 502,
     rocket = 503,
     strafe_3d = 504,
-    rocket_strafe = 505
+    rocket_strafe = 505,
+    all = 999
 }
 
 export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste];

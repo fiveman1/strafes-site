@@ -21,7 +21,7 @@ function ProfileCard(props: IProfileCardProps) {
     const [rankLoading, setRankLoading] = useState(false);
 
     useEffect(() => {
-        if (!userId) {
+        if (!userId || game === Game.all) {
             setRank(undefined);
             return;
         }
