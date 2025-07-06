@@ -1,5 +1,5 @@
 import { Maps } from "../api/api";
-import { Game, Map, Style } from "../api/interfaces";
+import { bhop_styles, fly_trials_styles, Game, Map, Style, surf_styles } from "../api/interfaces";
 
 export function formatGame(game: Game) {
     switch (game) {
@@ -7,6 +7,8 @@ export function formatGame(game: Game) {
             return "bhop";
         case Game.surf:
             return "surf";
+        case Game.fly_trials:
+            return "fly trials";
         default:
             return "unknown";
     }
@@ -30,6 +32,16 @@ export function formatStyle(style: Style) {
             return "sideways";
         case Style.wonly:
             return "w-only";
+        case Style.fly:
+            return "fly";
+        case Style.fly_sustain:
+            return "fly sustain";
+        case Style.rocket:
+            return "rocket";
+        case Style.rocket_strafe:
+            return "rocket strafe";
+        case Style.strafe_3d:
+            return "3d strafe";
         default:
             return "unknown";
     }
@@ -78,4 +90,17 @@ export function formatSkill(skill: number) {
 export interface ContextParams {
     maps: Maps,
     sortedMaps: Map[]
+}
+
+export function getAllowedStyles(game: Game) {
+    switch (game) {
+        case Game.bhop:
+            return bhop_styles;
+        case Game.surf:
+            return surf_styles;
+        case Game.fly_trials:
+            return fly_trials_styles;
+        default:
+            return [];
+    }
 }

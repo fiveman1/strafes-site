@@ -1,27 +1,28 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
-import { useOutletContext, useParams } from "react-router";
-import { ContextParams, formatGame } from "../util/format";
+import { useLocation, useOutletContext, useParams } from "react-router";
+import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import GameSelector, { useGame } from "./GameSelector";
 
 const CARD_SIZE = 180;
 
-function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style, selectedMap?: Map}, index: number, style: CSSProperties}) {
+function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style, game: Game, selectedMap?: Map}, index: number, style: CSSProperties}) {
     const { data, index, style } = props;
-    const { maps, itemsPerRow, mapStyle, selectedMap } = data;
+    const { maps, itemsPerRow, mapStyle, game, selectedMap } = data;
 
     const rowMaps: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, maps.length);
     for (let i = fromIndex; i < toIndex; ++i) {
         const selected = selectedMap?.id === maps[i].id;
-        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} style={mapStyle} />);
+        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} style={mapStyle} game={game} />);
     }
 
     return (
@@ -31,8 +32,8 @@ function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style
     );
 }
 
-function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
-    const { map, selected, style } = props;
+function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}) {
+    const { map, selected, style, game } = props;
     const theme = useTheme();
 
     const isLightMode = theme.palette.mode === "light";
@@ -41,6 +42,13 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
     const hoverColor = selected ? (theme.palette.primary[isLightMode ? 300 : 500]) : undefined;
     const titleColor = isLightMode && selected ? "common.white" : undefined;
     const real_height = CARD_SIZE - 16;
+    
+    let allowedGame = map.game;
+    if (game === Game.fly_trials) {
+        allowedGame = Game.fly_trials;
+    }
+    const allowedStyles = getAllowedStyles(allowedGame);
+    const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
 
     return (
     <Box padding="8px">
@@ -51,7 +59,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
                 flexDirection: "row",
                 ":hover": {boxShadow: 10}}}>
             <CardActionArea
-                href={`/maps/${map.id}?style=${style !== Style.scroll || map.game === Game.bhop ? style : Style.autohop}`}
+                href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}`}
                 sx={{ 
                 height: "100%",
                 backgroundColor: bgColor,
@@ -81,8 +89,8 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style}) {
     );
 }
 
-function MapList(props: {width: number, filteredMaps: Map[], style: Style, selectedMap?: Map}) {
-    const { width, filteredMaps, style, selectedMap } = props;
+function MapList(props: {width: number, filteredMaps: Map[], style: Style, game: Game, selectedMap?: Map}) {
+    const { width, filteredMaps, style, game, selectedMap } = props;
     const listRef = useRef<FixedSizeList>(null);
 
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE * 2)) || 1;
@@ -113,7 +121,7 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, selec
         <FixedSizeList 
             style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
             itemCount={rowCount} itemSize={CARD_SIZE} ref={listRef}
-            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, mapStyle: style}}
+            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, mapStyle: style, game: game}}
         >
             {MapRow}
         </FixedSizeList>
@@ -126,7 +134,9 @@ function MapsPage() {
 
     const [searchText, setSearchText] = useState("");
     const [selectedMap, setSelectedMap] = useState<Map>();
+    const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
+    const location = useLocation();
 
     useEffect(() => {
         document.title = selectedMap ? `strafes - maps - ${selectedMap.name}` : "strafes - maps";
@@ -137,8 +147,13 @@ function MapsPage() {
         if (mapId) {
             const map = maps[mapId];
             setSelectedMap(map);
+            const queryParams = new URLSearchParams(location.search);
+            const gameParam = queryParams.get("game");
+            if (gameParam) {
+                setGame(+gameParam);
+            }
         }
-    }, [selectedMap, id, maps]);
+    }, [selectedMap, id, maps, setGame, location.search]);
 
     const onSearchTextChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchText(event.target.value);
@@ -185,6 +200,16 @@ function MapsPage() {
         filteredMaps = sortedMaps;
     }
 
+    let allowedGames: Game[] | undefined;
+    if (selectedMap) {
+        if (selectedMap.game === Game.fly_trials) {
+            allowedGames = [Game.fly_trials];
+        }
+        else {
+            allowedGames = [selectedMap.game, Game.fly_trials];
+        }
+    }
+
     return (
     <Box padding={2} flexGrow={1}>
         <Typography variant="h2" padding={1}>
@@ -200,16 +225,15 @@ function MapsPage() {
         </Box>
         <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
-            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} selectedMap={selectedMap} />}
+            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} game={game} selectedMap={selectedMap} />}
             </AutoSizer>
         </Grid>
-        <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <Box padding={1.5}>
-                <StyleSelector game={selectedMap?.game} style={style} setStyle={setStyle} />
-            </Box>
+        <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
+            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowedGames={allowedGames} />
+            <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={selectedMap?.game} style={style} hideMap showPlacement />
+            <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} hideMap showPlacement />
         </Box>
     </Box>
     );

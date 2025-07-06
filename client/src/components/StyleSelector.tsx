@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { Game, Style } from "../api/interfaces";
-import { formatStyle } from "../util/format";
+import { bhop_styles, Game, Style } from "../api/interfaces";
+import { formatStyle, getAllowedStyles } from "../util/format";
 import { useLocation, useNavigate } from "react-router";
 
 export function useStyle() {
@@ -28,24 +28,29 @@ function StyleSelector(props: IStyleSelectorProps) {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (game === Game.surf && style === Style.scroll) {
+        if (game === undefined) {
+            return;
+        }
+        const allowedStyles = getAllowedStyles(game);
+        if (!allowedStyles.includes(style)) {
+            const defaultStyle = allowedStyles[0];
             const queryParams = new URLSearchParams(location.search);
-            queryParams.set("style", Style.autohop.toString());
+            queryParams.set("style", defaultStyle.toString());
             navigate({ search: queryParams.toString() }, { replace: true });
-            setStyle(Style.autohop);
+            setStyle(defaultStyle);
         }
     }, [game, style, setStyle, location.search, navigate]);
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
-        const value = event.target.value;
+        const style = event.target.value;
         const queryParams = new URLSearchParams(location.search);
-        queryParams.set("style", value.toString());
+        queryParams.set("style", style.toString());
         navigate({ search: queryParams.toString() }, { replace: true });
-        setStyle(value);
+        setStyle(style);
     };
 
-    const styles = Object.values(Style).filter(value => typeof value === "number" && (game === undefined || game === Game.bhop || value !== Style.scroll)) as Style[];
-    const realStyle = game === Game.surf && style === Style.scroll ? Style.autohop : style;
+    const styles = game === undefined ? bhop_styles : getAllowedStyles(game);
+    const realStyle = styles.includes(style) ? style : styles[0];
 
     return (
         <Box padding={smallScreen ? 0.5 : 1.5}>

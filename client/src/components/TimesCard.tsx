@@ -60,7 +60,7 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${style}`}} component={RouterLink} underline="hover" fontWeight="bold">
+                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${style}&game=${game}`}} component={RouterLink} underline="hover" fontWeight="bold">
                         {time.map}
                     </Link>
                 );
@@ -144,7 +144,6 @@ export interface ITimesCardProps {
 }
 
 function TimesCard(props: ITimesCardProps) {
-    console.log(props.height);
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 590}}>
         <Box marginBottom={1} display="flex">

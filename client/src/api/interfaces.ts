@@ -10,7 +10,8 @@ export interface User {
 
 export enum Game {
     bhop = 1,
-    surf = 2
+    surf = 2,
+    fly_trials = 5
 }
 
 export enum Style {
@@ -21,8 +22,17 @@ export enum Style {
     wonly = 5,
     aonly = 6,
     backwards = 7,
-    faste = 8
+    faste = 8,
+    fly = 501,
+    fly_sustain = 502,
+    rocket = 503,
+    strafe_3d = 504,
+    rocket_strafe = 505
 }
+
+export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste];
+export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste];
+export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe];
 
 export interface Rank {
     id: number
