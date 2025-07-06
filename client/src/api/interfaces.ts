@@ -24,6 +24,7 @@ export enum Style {
     aonly = 6,
     backwards = 7,
     faste = 8,
+    low_gravity = 14,
     fly = 501,
     fly_sustain = 502,
     rocket = 503,
@@ -32,8 +33,8 @@ export enum Style {
     all = 999
 }
 
-export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste];
-export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste];
+export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity];
+export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity];
 export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe];
 
 export interface Rank {

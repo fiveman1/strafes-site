@@ -34,6 +34,8 @@ export function formatStyle(style: Style) {
             return "sideways";
         case Style.wonly:
             return "w-only";
+        case Style.low_gravity:
+            return "low gravity";
         case Style.fly:
             return "fly";
         case Style.fly_sustain:
