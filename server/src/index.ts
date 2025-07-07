@@ -239,8 +239,31 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         return;
     }
 
+    if (!onlyWR) {
+        await setTimePlacements(timeInfo.data);
+    }
+
     res.status(200).json(timeInfo);
 });
+
+async function setTimePlacements(times: Time[]) {
+    const timeIds: string[] = [];
+    for (const time of times) {
+        timeIds.push(time.id);
+    }
+    const placementRes = await tryGetStrafes("time/placement", {
+        ids: timeIds.join(",")
+    });
+    const idToPlacement = new Map<string, number>();
+    if (placementRes) {
+        for (const placementInfo of placementRes.data.data) {
+            idToPlacement.set(placementInfo.id, placementInfo.placement);
+        }
+    }
+    for (const time of times) {
+        time.placement = idToPlacement.get(time.id);
+    }
+}
 
 app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const game = req.query.game;
@@ -433,6 +456,10 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             id: time.id,
             placement: placement
         });
+    }
+
+    if (+sort === TimeSortBy.DateAsc || +sort == TimeSortBy.DateDesc) {
+        await setTimePlacements(timeArr);
     }
 
     res.status(200).json({

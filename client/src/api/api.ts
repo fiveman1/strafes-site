@@ -83,8 +83,7 @@ export async function getTimeData(start: number | string, end: number | string, 
             end: end,
             sort: sortBy,
             game: game,
-            style: style,
-            onlyWR: true
+            style: style
         });
     }
     else {

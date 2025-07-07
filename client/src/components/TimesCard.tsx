@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { formatGame, formatStyle, formatTime } from "../util/format";
+import { formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
 import { Link as RouterLink } from "react-router";
 import UserLink from "./UserLink";
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { brown, grey, yellow } from "@mui/material/colors";
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -19,10 +21,10 @@ const timeFormat = Intl.DateTimeFormat(undefined, {
     minute: "2-digit"
 });
 
-function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, notSortable?: boolean) {
+function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, showPlacementOrdinals?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
 
-    if (showPlacement) {
+    if (showPlacement && !showPlacementOrdinals) {
         cols.push({
             type: "number",
             field: "placement",
@@ -68,6 +70,42 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         });
     }
 
+    if (showPlacement && showPlacementOrdinals) {
+        cols.push({
+            type: "number",
+            field: "placement",
+            headerName: "Placement",
+            width: 100,
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<Time, string>) => {
+                const time = params.row;
+                const placement = time.placement;
+                let iconColor = "";
+                switch (placement) {
+                    case 1:
+                        iconColor = yellow[800];
+                        break;
+                    case 2:
+                        iconColor = grey[500];
+                        break;
+                    case 3:
+                        iconColor = brown[400];
+                        break;
+                }
+                return (
+                    <Box display="flex" flexDirection="row" alignItems="center">
+                        <Box flexGrow={1} display="flex" flexDirection="row" alignItems="center" justifyContent="left">
+                        {iconColor ? <EmojiEventsIcon htmlColor={iconColor} sx={{fontSize: "24px", marginLeft: "4px"}} /> : <></>}
+                        </Box>
+                        <Typography variant="inherit" fontFamily="monospace">
+                            {formatPlacement(placement)}
+                        </Typography>
+                    </Box>
+                );
+            }
+        });
+    }
+
     cols.push({
         type: "string",
         field: "time",
@@ -105,25 +143,29 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
         }
     });
 
-    cols.push({
-        type: "string",
-        field: "game",
-        headerName: "Game",
-        flex: 110,
-        minWidth: 75,
-        valueFormatter: formatGame,
-        sortable: false
-    });
+    if (game === Game.all) {
+        cols.push({
+            type: "string",
+            field: "game",
+            headerName: "Game",
+            flex: 110,
+            minWidth: 75,
+            valueFormatter: formatGame,
+            sortable: false
+        });
+    }
 
-    cols.push({
-        type: "string",
-        field: "style",
-        headerName: "Style",
-        flex: 150,
-        minWidth: 110,
-        valueFormatter: formatStyle,
-        sortable: false
-    });
+    if (style === Style.all) {
+        cols.push({
+            type: "string",
+            field: "style",
+            headerName: "Style",
+            flex: 150,
+            minWidth: 110,
+            valueFormatter: formatStyle,
+            sortable: false
+        });
+    }
     
     return cols;
 }
@@ -131,7 +173,7 @@ function makeColumns(hideUser?: boolean, hideMap?: boolean, showPlacement?: bool
 export interface ITimesCardProps {
     userId?: string
     map?: Map
-    game?: Game
+    game: Game
     style: Style
     onlyWRs?: boolean
     hideUser?: boolean
@@ -141,6 +183,7 @@ export interface ITimesCardProps {
     height?: number
     title?: string
     allowOnlyWRs?: boolean
+    showPlacementOrdinals?: boolean
 }
 
 function TimesCard(props: ITimesCardProps) {
@@ -161,7 +204,7 @@ function TimesCard(props: ITimesCardProps) {
 }
 
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs } = props;
+    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals } = props;
     const apiRef = useGridApiRef();
     const [rowCount, setRowCount] = useState(onlyWRs ? -1 : 0);
     const [isLoading, setIsLoading] = useState(false);
@@ -243,17 +286,17 @@ function TimesGrid(props: ITimesCardProps) {
 
     return (
     <DataGrid
-        columns={makeColumns(hideUser, hideMap, showPlacement, onlyWRs)}
+        columns={makeColumns(game, style, hideUser, hideMap, showPlacement && !onlyWRs, showPlacementOrdinals, onlyWRs)}
         key={`${userId ?? ""},${map ?? ""},${game},${style},${onlyWRs ?? false}`}
         apiRef={apiRef}
         loading={isLoading}
         pagination
         dataSource={dataSource}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[25]}
         rowCount={rowCount}
         initialState={{
             pagination: { 
-                paginationModel: { pageSize: 10 },
+                paginationModel: { pageSize: 25 },
             },
             sorting: {
                 sortModel: sort,

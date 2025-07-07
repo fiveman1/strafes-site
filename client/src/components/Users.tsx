@@ -73,7 +73,7 @@ function Users() {
             <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser />
+            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser showPlacement showPlacementOrdinals />
         </Box>
     </Box>
     );

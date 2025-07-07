@@ -58,7 +58,7 @@ export interface Time {
     game: Game
     style: Style
     updatedAt: string
-    id: number
+    id: string
     placement?: number
 }
 

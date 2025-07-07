@@ -112,3 +112,19 @@ export function getAllowedStyles(game: Game) {
             return [];
     }
 }
+
+function getOrdinal(num: number) {
+    const remainder = num % 100;
+    if (remainder > 13 || remainder < 11) {
+        const n = remainder % 10;
+        if (n === 1) return "st";
+        else if (n === 2) return "nd";
+        else if (n === 3) return "rd";
+    }
+    return "th";
+}
+
+export function formatPlacement(placement?: number) {
+    if (placement === undefined) return "-";
+    return `${placement}${getOrdinal(placement)}`;
+}
