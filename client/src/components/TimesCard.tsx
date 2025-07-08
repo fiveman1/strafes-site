@@ -36,6 +36,7 @@ function MapLink(props: IMapLinkProps) {
             underline="hover" 
             fontWeight="bold" 
             display="inline-block"
+            maxWidth="100%"
         >
             <Box display="flex" flexDirection="row" alignItems="center">
             {
