@@ -83,23 +83,6 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
         });
     }
 
-    if (!hideUser) {
-        cols.push({
-            type: "string",
-            field: "username",
-            headerName: "User",
-            flex: 300,
-            minWidth: 160,
-            sortable: false,
-            renderCell: (params: GridRenderCellParams<Time, string>) => {
-                const time = params.row;
-                return (
-                    <UserLink userId={time.userId} username={time.username} game={time.game} style={time.style} />
-                );
-            }
-        });
-    }
-
     if (!hideMap) {
         cols.push({
             type: "string",
@@ -112,6 +95,23 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
                 const time = params.row;
                 return (
                     <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} />
+                );
+            }
+        });
+    }
+
+    if (!hideUser) {
+        cols.push({
+            type: "string",
+            field: "username",
+            headerName: "User",
+            flex: 300,
+            minWidth: 160,
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<Time, string>) => {
+                const time = params.row;
+                return (
+                    <UserLink userId={time.userId} username={time.username} game={time.game} style={time.style} />
                 );
             }
         });

@@ -57,7 +57,9 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                 height: real_height, 
                 display: "flex",
                 flexDirection: "row",
-                ":hover": {boxShadow: 10}}}>
+                ":hover": { boxShadow: 10 }
+            }}
+        >
             <CardActionArea
                 href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}`}
                 sx={{ 
@@ -65,6 +67,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                     backgroundColor: bgColor,
                     display: "flex",
                     flexDirection: "row",
+                    transition: "background-color .3s ease",
                     ":hover": { backgroundColor: hoverColor, "& img": { transform: "scale(1.15)" } }
                 }}
             >
@@ -90,7 +93,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                         sx={{
                             width: real_height, 
                             height: real_height, 
-                            transition: "transform .5s ease"
+                            transition: "transform .3s ease"
                         }} 
                     />
                 </Box>
