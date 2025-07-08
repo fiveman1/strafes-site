@@ -1,14 +1,63 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
+import { ContextParams, formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
-import { Link as RouterLink } from "react-router";
+import { Link as RouterLink, useOutletContext } from "react-router";
 import UserLink from "./UserLink";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+
+const MAP_THUMB_SIZE = 50;
+
+interface IMapLinkProps {
+    id: number
+    name: string
+    style: Style
+    game: Game
+}
+
+function MapLink(props: IMapLinkProps) {
+    const { id, name, style, game } = props;
+    const { maps } = useOutletContext() as ContextParams;
+    const mapInfo = maps[id];
+    
+    let thumb = "";
+    if (mapInfo?.smallThumb) {
+        thumb = mapInfo.smallThumb;
+    }
+    
+    return (
+        <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}`}} 
+            component={RouterLink} 
+            underline="hover" 
+            fontWeight="bold" 
+            display="inline-block"
+        >
+            <Box display="flex" flexDirection="row" alignItems="center">
+            {
+                thumb ? 
+                <Box 
+                    component="img" 
+                    height={MAP_THUMB_SIZE} 
+                    width={MAP_THUMB_SIZE} 
+                    src={thumb} 
+                    alt={name} 
+                    marginRight="10px"
+                />
+                : 
+                <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE, marginRight: "10px" }} />
+            }
+                <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                    {name}
+                </Typography>
+            </Box>
+        </Link>
+    );
+}
 
 const dateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -56,15 +105,13 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
             type: "string",
             field: "map",
             headerName: "Map",
-            flex: 300,
-            minWidth: 160,
+            flex: 350,
+            minWidth: 215,
             sortable: false,
             renderCell: (params: GridRenderCellParams<Time, string>) => {
                 const time = params.row;
                 return (
-                    <Link to={{pathname: `/maps/${time.mapId}`, search: `?style=${time.style}&game=${time.game}`}} component={RouterLink} underline="hover" fontWeight="bold">
-                        {time.map}
-                    </Link>
+                    <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} />
                 );
             }
         });
@@ -294,6 +341,7 @@ function TimesGrid(props: ITimesCardProps) {
         dataSource={dataSource}
         pageSizeOptions={[25]}
         rowCount={rowCount}
+        rowHeight={hideMap ? undefined : Math.round(MAP_THUMB_SIZE * 1.6667)}
         initialState={{
             pagination: { 
                 paginationModel: { pageSize: 25 },

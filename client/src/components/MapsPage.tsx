@@ -61,11 +61,13 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
             <CardActionArea
                 href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}`}
                 sx={{ 
-                height: "100%",
-                backgroundColor: bgColor,
-                display: "flex",
-                flexDirection: "row",
-                ":hover": { backgroundColor: hoverColor }}}>
+                    height: "100%",
+                    backgroundColor: bgColor,
+                    display: "flex",
+                    flexDirection: "row",
+                    ":hover": { backgroundColor: hoverColor, "& img": { transform: "scale(1.15)" } }
+                }}
+            >
                 <CardContent sx={{height: "100%", width: real_height, display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
                     <Box flexGrow={1}>
                         <Typography maxHeight="64px" variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor}>
@@ -80,8 +82,19 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                     </Typography>
                 </CardContent>
                 {map.largeThumb ? 
-                <CardMedia component="img" sx={{width: real_height, height: real_height}} image={map.largeThumb}/>
-                : <QuestionMarkIcon sx={{ fontSize: real_height, }} />}
+                <Box width={real_height} height={real_height} overflow="hidden">
+                    <CardMedia 
+                        component="img" 
+                        image={map.largeThumb} 
+                        alt={map.name} 
+                        sx={{
+                            width: real_height, 
+                            height: real_height, 
+                            transition: "transform .5s ease"
+                        }} 
+                    />
+                </Box>
+                : <QuestionMarkIcon sx={{ fontSize: real_height }} />}
             </CardActionArea>
             
         </Card>
