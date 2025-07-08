@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
 import { ContextParams, formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
@@ -263,10 +263,56 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [onlyWRs, game, style]);
 
+    useEffect(() => {
+        if (onlyWRs) {
+            apiRef.current?.sortColumn("date", "desc");
+        }
+    }, [onlyWRs, apiRef]);
+    
+    const gridCols = useMemo(() => {
+        return makeColumns(game, style, hideUser, hideMap, showPlacement && !onlyWRs, showPlacementOrdinals, onlyWRs);
+    }, [game, hideMap, hideUser, onlyWRs, showPlacement, showPlacementOrdinals, style]);
+
+    const gridKey = useMemo(() => {
+        return `${userId ?? ""},${map ?? ""},${game},${style},${!!onlyWRs}`;
+    }, [game, map, onlyWRs, style, userId]);
+
+    const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
+        if (!allowOnlyWRs && !userId && !map) return { rows: [], rowCount: 0 }
+        
+        setIsLoading(true);
+        const timeData = await getTimeData(start, end, sortBy, game, style, userId, map, onlyWRs);
+        setIsLoading(false);
+
+        if (onlyWRs) {
+            if (!timeData) {
+                return { rows: [], pageInfo: { hasNextPage: false } }
+            }
+            const times = timeData.times;
+            const hasMore = times.length >= (end - start);
+            if (!hasMore) {
+                setRowCount(start + times.length);
+            }
+            return {
+                rows: times,
+                pageInfo: {hasNextPage: hasMore}
+            }
+        }
+        else {
+            if (!timeData) {
+                setRowCount(0);
+                return { rows: [], rowCount: 0 }
+            }
+            setRowCount(timeData.pagination.totalItems);
+            return {
+                rows: timeData.times,
+                rowCount: timeData.pagination.totalItems
+            }
+        }
+    }, [allowOnlyWRs, game, map, onlyWRs, style, userId]);
+
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
-            if (!allowOnlyWRs && !userId && !map) return { rows: [], rowCount: 0 }
-            
             const sort = params.sortModel.at(0);
             let sortBy = defaultSort;
             if (sort) {
@@ -277,43 +323,9 @@ function TimesGrid(props: ITimesCardProps) {
                     sortBy = sort.sort === "asc" ? TimeSortBy.DateAsc : TimeSortBy.DateDesc;
                 }
             }
-            setIsLoading(true);
-            const timeData = await getTimeData(params.start, params.end, sortBy, game, style, userId, map, onlyWRs);
-            setIsLoading(false);
-
-            if (onlyWRs) {
-                if (!timeData) {
-                    return { rows: [], pageInfo: { hasNextPage: false } }
-                }
-                const times = timeData.times;
-                const hasMore = times.length >= (params.end - +params.start);
-                if (rowCount === -1 && !hasMore) {
-                    setRowCount(+params.start + times.length);
-                }
-                return {
-                    rows: times,
-                    pageInfo: {hasNextPage: hasMore}
-                }
-            }
-            else {
-                if (!timeData) {
-                    setRowCount(0);
-                    return { rows: [], rowCount: 0 }
-                }
-                setRowCount(timeData.pagination.totalItems);
-                return {
-                    rows: timeData.times,
-                    rowCount: timeData.pagination.totalItems
-                }
-            }
+            return await updateRowData(+params.start, params.end, sortBy);
         }
-    }), [game, map, onlyWRs, style, userId, defaultSort, rowCount, allowOnlyWRs])
-
-    useEffect(() => {
-        if (onlyWRs) {
-            apiRef.current?.sortColumn("date", "desc");
-        }
-    }, [onlyWRs, apiRef]);
+    }), [defaultSort, updateRowData]);
 
     let sort: GridSortModel;
     switch (defaultSort) {
@@ -333,8 +345,8 @@ function TimesGrid(props: ITimesCardProps) {
 
     return (
     <DataGrid
-        columns={makeColumns(game, style, hideUser, hideMap, showPlacement && !onlyWRs, showPlacementOrdinals, onlyWRs)}
-        key={`${userId ?? ""},${map ?? ""},${game},${style},${onlyWRs ?? false}`}
+        columns={gridCols}
+        key={gridKey}
         apiRef={apiRef}
         loading={isLoading}
         pagination

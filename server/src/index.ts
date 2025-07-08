@@ -247,6 +247,10 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
 });
 
 async function setTimePlacements(times: Time[]) {
+    if (times.length < 1) {
+        return;
+    }
+    
     const timeIds: string[] = [];
     for (const time of times) {
         timeIds.push(time.id);

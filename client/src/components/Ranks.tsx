@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
@@ -71,28 +71,39 @@ function RanksCard(props: IRanksCardProps) {
     const [rowCount, setRowCount] = useState(-1);
     const [isLoading, setIsLoading] = useState(false);
 
+    const gridCols = useMemo(() => {
+        return makeColumns(game, style);
+    }, [game, style]);
+
+    const gridKey = useMemo(() => {
+        return `${game},${style}`;
+    }, [game, style]);
+
+    const updateRowData = useCallback(async (start: number, end: number, sortBy: RankSortBy) => {
+        setIsLoading(true);
+        const ranks = await getRanks(start, end, sortBy, game, style);
+        setIsLoading(false);
+
+        if (ranks === undefined) {
+            return { rows: [], pageInfo: {hasNextPage: false} }
+        }
+        const hasMore = ranks.length >= (end - start);
+        if (!hasMore) {
+            setRowCount(start + ranks.length);
+        }
+        return {
+            rows: ranks,
+            pageInfo: {hasNextPage: hasMore}
+        }
+    }, [game, style]);
+
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
             const sort = params.sortModel.at(0);
             const sortBy = sort?.field === "skill" ? RankSortBy.SkillAsc : RankSortBy.RankAsc;
-
-            setIsLoading(true);
-            const ranks = await getRanks(params.start, params.end, sortBy, game, style);
-            setIsLoading(false);
-
-            if (ranks === undefined) {
-                return { rows: [], pageInfo: {hasNextPage: false} }
-            }
-            const hasMore = ranks.length >= (params.end - +params.start);
-            if (rowCount === -1 && !hasMore) {
-                setRowCount(+params.start + ranks.length);
-            }
-            return {
-                rows: ranks,
-                pageInfo: {hasNextPage: hasMore}
-            }
+            return await updateRowData(+params.start, params.end, sortBy);
         }
-    }), [game, style, rowCount]);
+    }), [updateRowData]);
 
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: height }}>
@@ -100,8 +111,8 @@ function RanksCard(props: IRanksCardProps) {
             Ranks
         </Typography>
         <DataGrid
-            columns={makeColumns(game, style)}
-            key={`${game},${style}`}
+            columns={gridCols}
+            key={gridKey}
             loading={isLoading}
             pagination
             dataSource={dataSource}
