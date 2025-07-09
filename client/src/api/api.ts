@@ -56,7 +56,17 @@ export async function getRanks(start: number | string, end: number | string, sor
     return res.data as Rank[]
 }
 
-export async function getTimeData(start: number | string, end: number | string, sortBy: TimeSortBy, game?: Game, style?: Style, userId?: string, map?: Map, onlyWR?: boolean): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+export async function getTimeData(
+    start: number | string, 
+    end: number | string, 
+    sortBy: TimeSortBy, 
+    game?: Game, 
+    style?: Style, 
+    userId?: string, 
+    map?: Map, 
+    onlyWR?: boolean
+): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+    
     let res: AxiosResponse | undefined;
     if (userId) {
         res = await tryGetRequest("user/times/" + userId, {
@@ -96,6 +106,17 @@ export async function getTimeData(start: number | string, end: number | string, 
         times: res.data.data,
         pagination: res.data.pagination
     };
+}
+
+export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | undefined> {
+    const res = await tryGetRequest("user/times/all/" + userId, {
+        game: game,
+        style: style
+    });
+
+    if (!res) return undefined;
+
+    return res.data.data;
 }
 
 export interface Maps {

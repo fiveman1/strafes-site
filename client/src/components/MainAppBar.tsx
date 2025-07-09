@@ -16,7 +16,8 @@ export enum NavigatorPage {
     Users = "Users",
     Maps = "Maps",
     Gloabls = "Globals",
-    Ranks = "Ranks"
+    Ranks = "Ranks",
+    Compare = "Compare"
 }
 
 function getCurrentPage(path: string) {
@@ -31,6 +32,9 @@ function getCurrentPage(path: string) {
     }
     else if (path.startsWith("/globals")) {
         return NavigatorPage.Gloabls;
+    }
+    else if (path.startsWith("/compare")) {
+        return NavigatorPage.Compare;
     }
     else {
         return NavigatorPage.Home;
@@ -87,6 +91,11 @@ function MainAppBar(props: IMainAppBarProps) {
                         <Link href="/ranks" variant="inherit" color="inherit" underline="none">
                             <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
                                 {NavigatorPage.Ranks}
+                            </MenuItem>
+                        </Link>
+                        <Link href="/compare" variant="inherit" color="inherit" underline="none">
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Compare} >
+                                {NavigatorPage.Compare}
                             </MenuItem>
                         </Link>
                     </Menu>

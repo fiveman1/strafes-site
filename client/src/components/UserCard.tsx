@@ -4,7 +4,6 @@ import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useEffect } from "react";
-import { useNavigate } from "react-router";
 import { getUserData } from "../api/api";
 
 export interface IUserCardProps {
@@ -19,8 +18,6 @@ export interface IUserCardProps {
 function UserCard(props: IUserCardProps) {
     const { userId, minHeight, loading, setIsLoading, user, setUserInfo } = props;
 
-    const navigate = useNavigate();
-
     useEffect(() => {
         if (!userId) {
             setUserInfo(undefined);
@@ -32,7 +29,7 @@ function UserCard(props: IUserCardProps) {
             setIsLoading(false);
             setUserInfo(userData);
         });
-    }, [userId, setIsLoading, navigate, setUserInfo]);
+    }, [userId, setIsLoading, setUserInfo]);
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
         {user && !loading ? <>

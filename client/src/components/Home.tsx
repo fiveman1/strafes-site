@@ -6,6 +6,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import LayersIcon from '@mui/icons-material/Layers';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
 function Home() {
     useEffect(() => {
@@ -27,6 +28,9 @@ function Home() {
             </Grid>
             <Grid>
                 <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the top ranks by game and style" />
+            </Grid>
+            <Grid>
+                <HomeCard href="/compare" title="Compare" icon={<CompareArrowsIcon />} description="Compare users head-to-head" />
             </Grid>
         </Grid>
     </Box>

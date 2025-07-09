@@ -18,6 +18,7 @@ function Users() {
     
     const [user, setUserInfo] = useState<User>();
     const [userLoading, setIsUserLoading] = useState<boolean>(false);
+    const [userText, setUserText] = useState<string>("");
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ function Users() {
         </Typography>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch setUserId={setUserId} minHeight={185} />
+                <UserSearch setUserId={setUserId} minHeight={185} userText={userText} setUserText={setUserText}/>
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
                 <UserCard userId={userId} user={user} setUserInfo={setUserInfo} loading={userLoading} setIsLoading={setIsUserLoading} minHeight={185}/>

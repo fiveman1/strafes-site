@@ -1,11 +1,18 @@
-import { Link } from "@mui/material";
+import { Link, LinkProps } from "@mui/material";
 import { Link as RouterLink } from "react-router";
 import { Game, Style } from "../api/interfaces";
 
-function UserLink(props: {userId: string | number, username: string, game: Game, style: Style}) {
-    const {userId, username, game, style}  = props;
+export interface IUserLinkProps extends LinkProps {
+    userId: string | number
+    username: string
+    game: Game
+    strafesStyle: Style
+}
+
+function UserLink(props: IUserLinkProps) {
+    const {userId, username, game, strafesStyle, ...linkProps}  = props;
     return (
-    <Link to={{pathname: `/users/${userId}`, search: `?style=${style}&game=${game}`}} component={RouterLink} underline="hover" fontWeight="bold">
+    <Link {...linkProps} to={{pathname: `/users/${userId}`, search: `?style=${strafesStyle}&game=${game}`}} component={RouterLink}>
         {username}
     </Link>
     );

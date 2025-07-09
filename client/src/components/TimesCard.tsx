@@ -1,75 +1,64 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Link, Paper, Tooltip, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { ContextParams, formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
+import { formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
-import { Link as RouterLink, useOutletContext } from "react-router";
 import UserLink from "./UserLink";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import MapLink, { MAP_THUMB_SIZE } from "./MapLink";
+import DateDisplay from "./DateDisplay";
 
-const MAP_THUMB_SIZE = 50;
-
-interface IMapLinkProps {
-    id: number
-    name: string
-    style: Style
-    game: Game
-}
-
-function MapLink(props: IMapLinkProps) {
-    const { id, name, style, game } = props;
-    const { maps } = useOutletContext() as ContextParams;
-    const mapInfo = maps[id];
-    
-    let thumb = "";
-    if (mapInfo?.smallThumb) {
-        thumb = mapInfo.smallThumb;
+export function makeMapColumn(): GridColDef {
+    return {
+        type: "string",
+        field: "map",
+        headerName: "Map",
+        flex: 350,
+        minWidth: 215,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            const time = params.row;
+            return (
+                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} />
+            );
+        }
     }
-    
-    return (
-        <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}`}} 
-            component={RouterLink} 
-            underline="hover" 
-            fontWeight="bold" 
-            display="inline-block"
-            maxWidth="100%"
-        >
-            <Box display="flex" flexDirection="row" alignItems="center">
-            {
-                thumb ? 
-                <Box 
-                    component="img" 
-                    height={MAP_THUMB_SIZE} 
-                    width={MAP_THUMB_SIZE} 
-                    src={thumb} 
-                    alt={name} 
-                    marginRight="10px"
-                />
-                : 
-                <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE, marginRight: "10px" }} />
-            }
-                <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-                    {name}
-                </Typography>
-            </Box>
-        </Link>
-    );
 }
 
-const dateFormat = Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    day: "2-digit",
-    month: "2-digit"
-});
+export function makeUserColumn(flex: number): GridColDef {
+    return {
+        type: "string",
+        field: "username",
+        headerName: "User",
+        flex: flex,
+        minWidth: 160,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            const time = params.row;
+            return (
+                <UserLink userId={time.userId} username={time.username} game={time.game} strafesStyle={time.style} fontWeight="bold" underline="hover" />
+            );
+        }
+    }
+}
 
-const timeFormat = Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit"
-});
+export function makeDateColumn(notSortable?: boolean): GridColDef {
+    return {
+        type: "string",
+        field: "date",
+        headerName: "Date",
+        flex: 170,
+        minWidth: 105,
+        sortingOrder: notSortable ? [] : ["desc", "asc"],
+        sortable: !notSortable,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            return <DateDisplay date={params.row.date} />
+        }
+    }
+}
 
 function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, showPlacementOrdinals?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
@@ -85,37 +74,11 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
     }
 
     if (!hideMap) {
-        cols.push({
-            type: "string",
-            field: "map",
-            headerName: "Map",
-            flex: 350,
-            minWidth: 215,
-            sortable: false,
-            renderCell: (params: GridRenderCellParams<Time, string>) => {
-                const time = params.row;
-                return (
-                    <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} />
-                );
-            }
-        });
+        cols.push(makeMapColumn());
     }
 
     if (!hideUser) {
-        cols.push({
-            type: "string",
-            field: "username",
-            headerName: "User",
-            flex: 300,
-            minWidth: 160,
-            sortable: false,
-            renderCell: (params: GridRenderCellParams<Time, string>) => {
-                const time = params.row;
-                return (
-                    <UserLink userId={time.userId} username={time.username} game={time.game} style={time.style} />
-                );
-            }
-        });
+        cols.push(makeUserColumn(300));
     }
 
     if (showPlacement && showPlacementOrdinals) {
@@ -165,31 +128,7 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
         sortable: !notSortable
     });
 
-    cols.push({
-        type: "string",
-        field: "date",
-        headerName: "Date",
-        flex: 170,
-        minWidth: 105,
-        sortingOrder: notSortable ? [] : ["desc", "asc"],
-        sortable: !notSortable,
-        renderCell: (params: GridRenderCellParams<Time, string>) => {
-            if (!params.value) {
-                return <></>
-            }
-            const dateValue = new Date(params.value);
-            const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
-            const lessThanOneDay = dateValue.getTime() > oneDayAgo;
-            return (
-                <Tooltip placement="right" title={timeFormat.format(dateValue)}>
-                    <Box display="inline-block">
-                        {dateFormat.format(dateValue)}
-                        {lessThanOneDay ? <Typography color="info" variant="inherit" display="inline-block" marginLeft="1px">*</Typography> : undefined}
-                    </Box>
-                </Tooltip>
-            );
-        }
-    });
+    cols.push(makeDateColumn(notSortable));
 
     if (game === Game.all) {
         cols.push({

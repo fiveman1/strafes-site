@@ -7,6 +7,7 @@ import Users from './components/Users';
 import Ranks from './components/Ranks';
 import Globals from './components/Globals';
 import MapsPage from './components/MapsPage';
+import Compare from './components/Compare';
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -27,6 +28,7 @@ function Index() {
                     </Route>
                     <Route path="ranks" element={<Ranks />} />
                     <Route path="globals" element={<Globals />} />
+                    <Route path="compare" element={<Compare />} />
                 </Route>
             </Routes>
         </BrowserRouter>

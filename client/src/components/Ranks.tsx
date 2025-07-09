@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
-import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
+import { Game, RankSortBy, Style } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
-import UserLink from "./UserLink";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse } from "@mui/x-data-grid";
 import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
+import { makeUserColumn } from "./TimesCard";
 
 function makeColumns(game: Game, style: Style) {
     const cols: GridColDef[] = [];
@@ -21,20 +21,7 @@ function makeColumns(game: Game, style: Style) {
         sortable: false
     });
     
-    cols.push({
-        type: "string",
-        field: "username",
-        headerName: "User",
-        flex: 240,
-        minWidth: 160,
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<Rank, string>) => {
-            const rank = params.row;
-            return (
-                <UserLink userId={rank.userId} username={rank.username} game={game} style={style} />
-            );
-        }
-    });
+    cols.push(makeUserColumn(240));
 
     cols.push({
         type: "string",

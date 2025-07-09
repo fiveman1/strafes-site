@@ -1,5 +1,5 @@
 import apicache from "apicache";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import express from "express";
 import path from "path";
 import memoize from 'memoize';
@@ -18,9 +18,9 @@ if (!STRAFES_KEY) {
 const app = express();
 const port = process.env.PORT ?? "8080";
 const isDebug = process.env.DEBUG === "true";
-const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}, respectCacheControl: false} : {}).middleware as (duration?: string | number) => any;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 25, validate: {xForwardedForHeader: false} });
-const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 80, validate: {xForwardedForHeader: false} });
+const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 25, validate: {xForwardedForHeader: false} });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 80, validate: {xForwardedForHeader: false} });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url))
 const buildDir = path.join(dirName, "../../client/build/");
@@ -246,6 +246,97 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     res.status(200).json(timeInfo);
 });
 
+app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const userId = req.params.id;
+    const qGame = req.query.game;
+    const qStyle = req.query.style;
+
+    if (!validatePositiveInt(userId)) {
+        res.status(400).json({error: "Invalid user ID"});
+        return;
+    }
+
+    if (!qGame || isNaN(+qGame) || Game[+qGame] === undefined || +qGame === Game.all) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!qStyle || isNaN(+qStyle) || Style[+qStyle] === undefined || +qStyle == Style.all) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const game: Game = +qGame;
+    const style: Style = +qStyle;
+
+    const firstTimeRes = await tryGetStrafes("time", {
+        user_id: userId,
+        game_id: game,
+        style_id: style,
+        mode_id: 0,
+        page_number: 1,
+        page_size: 100,
+        sort_by: TimeSortBy.DateDesc
+    });
+
+    if (!firstTimeRes) {
+        return undefined;
+    }
+
+    const pageInfo = firstTimeRes.data.pagination;
+    const pagination: Pagination = {
+        page: pageInfo.page,
+        pageSize: pageInfo.page_size,
+        totalItems: pageInfo.total_items,
+        totalPages: pageInfo.total_pages
+    };
+
+    const promises: Promise<AxiosResponse<any, any> | undefined>[] = [];
+    for (let i = 2; i <= pagination.totalPages; ++i) {
+        promises.push(tryGetStrafes("time", {
+            user_id: userId,
+            game_id: game,
+            style_id: style,
+            mode_id: 0,
+            page_number: i,
+            page_size: 100,
+            sort_by: TimeSortBy.DateDesc
+        }));
+    }
+    const resolved = await Promise.all(promises);
+    const allTimes = [firstTimeRes];
+    for (const timeRes of resolved) {
+        if (!timeRes) {
+            res.status(404).json({error: "Not found"});
+            return;
+        }
+        allTimes.push(timeRes);
+    }
+
+    const timeArr: Time[] = [];
+    for (const timeRes of allTimes) {
+        for (const time of timeRes.data.data) {
+            timeArr.push({
+                map: time.map.display_name,
+                mapId: time.map.id,
+                username: time.user.username,
+                userId: time.user.id,
+                time: time.time,
+                date: time.date,
+                game: time.game_id,
+                style: time.style_id,
+                updatedAt: time.updated_at,
+                id: time.id
+            });
+        }
+    }
+
+    res.status(200).json({
+        data: timeArr,
+        pagination: pagination
+    });
+});
+
 async function setTimePlacements(times: Time[]) {
     if (times.length < 1) {
         return;
@@ -318,7 +409,7 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
 async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
     const page = Math.floor(+start / 100) + 1;
 
-    const firstTimeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
+    const timeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
         game_id: game === Game.all ? undefined : game,
         style_id: style === Style.all ? undefined : style,
@@ -328,13 +419,13 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyW
         sort_by: +sort
     });
 
-    if (!firstTimeRes) {
+    if (!timeRes) {
         return undefined;
     }
 
     const pageStart = (+start % 100)
     const pageEnd = (+end % 100)
-    const firstTimes = firstTimeRes.data.data;
+    const firstTimes = timeRes.data.data;
 
     const timeArr: Time[] = [];
     for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
@@ -353,7 +444,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyW
         });
     }
 
-    const pageInfo = firstTimeRes.data.pagination;
+    const pageInfo = timeRes.data.pagination;
     const pagination: Pagination = {
         page: pageInfo.page,
         pageSize: pageInfo.page_size,
@@ -498,13 +589,13 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 assetIds.push(assetId);
             }
         }
-        const largeReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
+        const largeReqPromise = tryGetCached("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "420x420",
             "format": "Webp"
         });
         
-        const smallReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
+        const smallReqPromise = tryGetCached("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "75x75",
             "format": "Webp"
@@ -554,6 +645,10 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 largeThumb: large
             });
         }
+
+        if (data.length < 100) {
+            break;
+        }
     }
 
     res.status(200).json({
@@ -570,7 +665,7 @@ app.listen(port, () => {
 });
 
 async function getUserId(username: string): Promise<undefined | string> {
-    const res = await tryPostRequest("https://users.roblox.com/v1/usernames/users", {
+    const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
         usernames: [username] 
     });
     if (!res) return undefined;
@@ -583,8 +678,8 @@ async function getUserId(username: string): Promise<undefined | string> {
 }
 
 async function getUserData(userId: string): Promise<undefined | User> {
-    const userReq = tryGetRequest("https://users.roblox.com/v1/users/" + userId);
-    const thumbReq = tryGetRequest("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
+    const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
+    const thumbReq = tryGetCached("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
         userIds: userId,
         size: "180x180",
         format: "Png",
@@ -625,7 +720,10 @@ async function getUserData(userId: string): Promise<undefined | User> {
     };
 }
 
+const tryGetCached = memoize(tryGetRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+const tryPostCached = memoize(tryPostRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
 const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 60 * 1000});
+
 async function tryGetStrafesCore(end_of_url: string, params?: any) {
     const headers = {
         "X-API-Key": STRAFES_KEY
@@ -638,7 +736,7 @@ async function tryGetRequest(url: string, params?: any, headers?: any) {
         return await axios.get(url, {params: params, headers: headers, timeout: 5000});
     } 
     catch (err) {
-        console.log(err);
+        //console.log(err);
         return undefined;
     }
 }
