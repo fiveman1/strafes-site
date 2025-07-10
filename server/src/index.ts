@@ -440,7 +440,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyW
             game: time.game_id,
             style: time.style_id,
             updatedAt: time.updated_at,
-            id: time.id
+            id: time.id,
+            placement: onlyWR ? 1 : undefined
         });
     }
 

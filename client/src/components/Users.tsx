@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Checkbox, FormControlLabel, FormGroup, FormHelperText, Typography } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Switch, Typography } from "@mui/material";
 import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
 import UserSearch from "./UserSearch";
-import { TimeSortBy, User } from "../api/interfaces";
+import { Time, TimeSortBy, User } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import { getUserData } from "../api/api";
+import ViewedTimes from "./ViewedTimes";
+import { useGridApiRef } from "@mui/x-data-grid";
+import CachedIcon from '@mui/icons-material/Cached';
 
 function Users() {
     const { id } = useParams();
@@ -19,7 +22,34 @@ function Users() {
     
     const [user, setUserInfo] = useState<User>();
     const [userLoading, setIsUserLoading] = useState<boolean>(false);
+    const [advanced, setAdvanced] = useState<boolean>(false);
     const [userText, setUserText] = useState<string>("");
+    const [viewedTimes, setViewedTimes] = useState<Time[]>([]);
+    const apiRef = useGridApiRef();
+
+    const addTimes = useCallback((times: Time[]) => {
+        setViewedTimes((viewed) => {
+            for (const time of times) {
+                viewed.push(time);
+            }
+            return [...viewed];
+        });
+    }, []);
+
+    const uniqueTimes = useMemo(() => {
+        if (!advanced) {
+            return [];
+        }
+        const timeIds = new Set<string>();
+        const unique: Time[] = [];
+        for (const time of viewedTimes) {
+            if (!timeIds.has(time.id)) {
+                timeIds.add(time.id);
+                unique.push(time);
+            }
+        }
+        return unique;
+    }, [advanced, viewedTimes]);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -58,11 +88,19 @@ function Users() {
         setOnlyWRs(checked);
     };
 
+    const onResetViewed = () => {
+        setViewedTimes([]);
+        apiRef.current?.dataSource.cache.clear();
+    };
+
     return (
     <Box padding={2} flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Users
         </Typography>
+        <Box marginLeft={2} marginBottom={0.5}>
+            <FormControlLabel control={<Switch checked={advanced} onChange={(e) => setAdvanced(e.target.checked)} />} label="Advanced" />
+        </Box>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
                 <UserSearch setUserId={setUserId} minHeight={185} userText={userText} setUserText={setUserText}/>
@@ -87,8 +125,18 @@ function Users() {
             <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} hideUser showPlacement showPlacementOrdinals />
+            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} onLoadTimes={addTimes} gridApiRef={apiRef} hideUser showPlacement showPlacementOrdinals />
         </Box>
+        {advanced ? 
+        <Box padding={1}>
+            <Box marginBottom={2}>
+                <Button variant="outlined" startIcon={<CachedIcon />} onClick={onResetViewed}>
+                    Clear Viewed
+                </Button>
+            </Box>
+            <ViewedTimes times={uniqueTimes} />
+        </Box>
+        : <></>}
     </Box>
     );
 }
