@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Button, LinearProgress, Paper, Typography } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
@@ -8,8 +8,9 @@ import UserCard from "./UserCard";
 import { Game, Style, Time, User } from "../api/interfaces";
 import { useLocation, useNavigate } from "react-router";
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
-import { getAllTimesForUser } from "../api/api";
+import { getAllTimesForUser, getUserData } from "../api/api";
 import UserLink from "./UserLink";
+import percentRound from "percent-round";
 
 interface ICompareCardProps {
     firstUser?: User
@@ -33,6 +34,22 @@ function CompareCard(props: ICompareCardProps) {
             <Box display="flex" alignContent="center" justifyContent="center" padding={2}>
                 <Typography variant="h6">
                     Waiting...
+                </Typography>
+            </Box>
+            {isLoading ? <LinearProgress /> : <></>}
+        </Paper>
+        );
+    }
+
+    if (firstUser.id === secondUser.id) {
+        return (
+        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
+            <Typography variant="caption">
+                Compare
+            </Typography>
+            <Box display="flex" alignContent="center" justifyContent="center" padding={2}>
+                <Typography variant="h6">
+                    😡
                 </Typography>
             </Box>
             {isLoading ? <LinearProgress /> : <></>}
@@ -89,6 +106,13 @@ function CompareCard(props: ICompareCardProps) {
         }
     });
 
+    const numTimes = mapToTime.size;
+    let roundedPercents = ["n/a", "n/a", "n/a", "n/a", "n/a"];
+    if (numTimes > 0) {
+        const percents = [firstWins / numTimes, onlyFirst / numTimes, secondWins / numTimes, onlySecond / numTimes, ties / numTimes];
+        roundedPercents = percentRound(percents, 1).map((num) => num.toFixed(1));
+    }
+
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
         <Typography variant="caption">
@@ -99,23 +123,23 @@ function CompareCard(props: ICompareCardProps) {
                 <UserLink color="textPrimary" userId={firstUserId} username={firstUser.username} game={game} strafesStyle={style} variant="h6" />
             </Box>
             <Box display="flex" flexWrap="wrap">
-                <Box flexGrow={1} padding={1}>
+                <Box flexGrow={1} padding={1} flexBasis={1}>
                     <Box display="flex" flexDirection="column" alignItems="center">
                         <Typography variant="subtitle1">
                             Wins
                         </Typography>
-                        <Typography variant="h6">
-                            {firstWins}
+                        <Typography variant="h6" color={firstWins > secondWins ? "success" : undefined}>
+                            {firstWins} ({roundedPercents[0]}%)
                         </Typography>
                     </Box>
                 </Box>
-                <Box flexGrow={1} padding={1}>
+                <Box flexGrow={1} padding={1} flexBasis={1}>
                     <Box display="flex" flexDirection="column" alignItems="center">
                         <Typography variant="subtitle1">
                             Exclusive
                         </Typography>
                         <Typography variant="h6">
-                            {onlyFirst}
+                            {onlyFirst} ({roundedPercents[1]}%)
                         </Typography>
                     </Box>
                 </Box>
@@ -126,23 +150,23 @@ function CompareCard(props: ICompareCardProps) {
                 <UserLink color="textPrimary" userId={secondUserId} username={secondUser.username} game={game} strafesStyle={style} variant="h6" />
             </Box>
             <Box display="flex" flexWrap="wrap">
-                <Box flexGrow={1} padding={1}>
+                <Box flexGrow={1} padding={1} flexBasis={1}>
                     <Box display="flex" flexDirection="column" alignItems="center">
                         <Typography variant="subtitle1">
                             Wins
                         </Typography>
-                        <Typography variant="h6">
-                            {secondWins}
+                        <Typography variant="h6" color={firstWins < secondWins ? "success" : undefined}>
+                            {secondWins} ({roundedPercents[2]}%)
                         </Typography>
                     </Box>
                 </Box>
-                <Box flexGrow={1} padding={1}>
+                <Box flexGrow={1} padding={1} flexBasis={1}>
                     <Box display="flex" flexDirection="column" alignItems="center">
                         <Typography variant="subtitle1">
                             Exclusive
                         </Typography>
                         <Typography variant="h6">
-                            {onlySecond}
+                            {onlySecond} ({roundedPercents[3]}%)
                         </Typography>
                     </Box>
                 </Box>
@@ -158,7 +182,7 @@ function CompareCard(props: ICompareCardProps) {
                         Ties
                     </Typography>
                     <Typography variant="h6">
-                        {ties}
+                        {ties} ({roundedPercents[4]}%)
                     </Typography>
                 </Box>
             </Box>
@@ -166,6 +190,24 @@ function CompareCard(props: ICompareCardProps) {
         {isLoading ? <LinearProgress /> : <></>}
     </Paper>
     );
+}
+
+interface UserToTimes {
+    [key: string]: {
+        loading: boolean
+        times?: Time[]
+    } | undefined
+}
+
+interface IdToUser {
+    [userId: string]: {
+        user?: User,
+        loading: boolean
+    } | undefined
+}
+
+function getUserTimesFromState(userToTimes: UserToTimes, userId: string, game: Game, style: Style) {
+    return userToTimes[`${userId},${game},${style}`];
 }
 
 function Compare() {
@@ -176,34 +218,44 @@ function Compare() {
     const navigate = useNavigate();
     
     const queryParams = new URLSearchParams(location.search);
+
+    const [idToUser, setIdToUserState] = useState<IdToUser>({});
+    const setIdToUser = (userId: string, loading: boolean, user?: User) => {
+        setIdToUserState((idToUser) => {
+            let info = idToUser[userId];
+            if (!info) {
+                info = {loading: loading};
+            }
+            else {
+                info.loading = loading;
+            }
+            info.user = user;
+            idToUser[userId] = info;
+            return {...idToUser};
+        })
+    };
+
+    const [userTimes, setUserTimesState] = useState<UserToTimes>({});
+    const setUserTimes = (userId: string, game: Game, style: Style, loading: boolean, times?: Time[]) => {
+        setUserTimesState((userToTimes) => {
+            let key = `${userId},${game},${style}`
+            let info = userToTimes[key];
+            if (!info) {
+                info = {loading: loading};
+            }
+            else {
+                info.loading = loading;
+            }
+            info.times = times;
+            userToTimes[key] = info;
+            return {...userToTimes}
+        });
+    };
     
     const [firstUserId, setFirstUserId] = useState<string | undefined>(queryParams.get("user1") ?? undefined);
-    const [firstUser, setFirstUserInfo] = useState<User>();
-    const [firstUserLoading, setIsFirstUserLoading] = useState<boolean>(false);
-
     const [secondUserId, setSecondUserId] = useState<string | undefined>(queryParams.get("user2") ?? undefined);
-    const [secondUser, setSecondUserInfo] = useState<User>();
-    const [secondUserLoading, setIsSecondUserLoading] = useState<boolean>(false);
-
-    const [firstTimes, setFirstTimes] = useState<Time[]>();
-    const [firstTimesLoading, setIsFirstTimesLoading] = useState<boolean>(false);
-
-    const [secondTimes, setSecondTimes] = useState<Time[]>();
-    const [secondTimesLoading, setIsSecondTimesLoading] = useState<boolean>(false);
-
     const [firstUserText, setFirstUserText] = useState<string>("");
     const [secondUserText, setSecondUserText] = useState<string>("");
-
-    useEffect(() => {
-        if (!firstUser && !secondUser) {
-            document.title = "strafes - compare";
-            return;
-        }
-        
-        const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
-        const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
-        document.title = `strafes - compare - ${firstUserName} vs ${secondUserName}`;
-    }, [firstUser, secondUser]);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -223,43 +275,97 @@ function Compare() {
     }, [firstUserId, secondUserId, location.search, navigate]);
 
     useEffect(() => {
-        if (!firstUser) {
-            setIsFirstTimesLoading(false);
-            setFirstTimes(undefined);
-            return;
-        }
-        setIsFirstTimesLoading(true);
-        getAllTimesForUser(firstUser.id, game, style).then((times) => {
-            setIsFirstTimesLoading(false);
-            if (times === undefined) {
-                setFirstTimes(undefined);
+        const load = async () => {
+            if (!firstUserId || getUserTimesFromState(userTimes, firstUserId, game, style)) {
                 return;
             }
-            setFirstTimes(times);
-        })
-        
-    }, [firstUser, game, style]);
+
+            setUserTimes(firstUserId, game, style, true);
+            const timesPromise = getAllTimesForUser(firstUserId, game, style);
+
+            if (!idToUser[firstUserId]) {
+                setIdToUser(firstUserId, true);
+                const user = await getUserData(firstUserId);
+                setIdToUser(firstUserId, false, user);
+            }
+            
+            const times = await timesPromise;
+            setUserTimes(firstUserId, game, style, false, times);
+        };
+        load();
+    }, [firstUserId, game, idToUser, style, userTimes]);
 
     useEffect(() => {
-        if (!secondUser) {
-            setIsSecondTimesLoading(false);
-            setSecondTimes(undefined);
-            return;
-        }
-        setIsSecondTimesLoading(true);
-        getAllTimesForUser(secondUser.id, game, style).then((times) => {
-            setIsSecondTimesLoading(false);
-            if (times === undefined) {
-                setSecondTimes(undefined);
+        const load = async () => {
+            if (!secondUserId || getUserTimesFromState(userTimes, secondUserId, game, style)) {
                 return;
             }
-            setSecondTimes(times);
-        })
+            
+            setUserTimes(secondUserId, game, style, true);
+            const timesPromise = getAllTimesForUser(secondUserId, game, style);
+
+            if (!idToUser[secondUserId]) {
+                setIdToUser(secondUserId, true);
+                const user = await getUserData(secondUserId);
+                setIdToUser(secondUserId, false, user);
+            }
+            
+            const times = await timesPromise;
+            setUserTimes(secondUserId, game, style, false, times);
+        };
+        load();
+    }, [secondUserId, game, style, userTimes, idToUser]);
+
+    
+    const {firstUser, firstTimes, secondUser, secondTimes, isLoading, isFirstUserLoading, isSecondUserLoading} = useMemo(() => {
+        let firstUser : User | undefined;
+        let firstTimes : Time[] | undefined;
+        let secondUser : User | undefined;
+        let secondTimes : Time[] | undefined;
+        let isLoading = false;
+        let isFirstUserLoading = false;
+        let isSecondUserLoading = false;
         
-    }, [secondUser, game, style]);
+        if (firstUserId) {
+            firstUser = idToUser[firstUserId]?.user;
+            isFirstUserLoading = idToUser[firstUserId]?.loading ?? false;
+
+            const info = getUserTimesFromState(userTimes, firstUserId, game, style);
+            firstTimes = info?.times;
+            if (info?.loading) {
+                isLoading = true;
+            }
+        }
+        
+        if (secondUserId) {
+            secondUser = idToUser[secondUserId]?.user;
+            isSecondUserLoading = idToUser[secondUserId]?.loading ?? false;
+
+            const info = getUserTimesFromState(userTimes, secondUserId, game, style);
+            secondTimes = info?.times;
+            if (info?.loading) {
+                isLoading = true;
+            }
+        }
+
+        isLoading = isLoading || isFirstUserLoading || isSecondUserLoading;
+
+        return {firstUser, firstTimes, secondUser, secondTimes, isLoading, isFirstUserLoading, isSecondUserLoading};
+    }, [firstUserId, game, idToUser, secondUserId, style, userTimes]);
+
+    useEffect(() => {
+        if (!firstUser && !secondUser) {
+            document.title = "strafes - compare";
+            return;
+        }
+        
+        const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
+        const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
+        document.title = `strafes - compare - ${firstUserName} vs ${secondUserName}`;
+    }, [firstUser, secondUser]);
     
     const onSwap = () => {
-        if (!firstUserId || !secondUserId || firstTimesLoading || secondTimesLoading) {
+        if (!firstUserId || !secondUserId || isLoading) {
             return;
         }
         const queryParams = new URLSearchParams(location.search);
@@ -285,11 +391,11 @@ function Compare() {
                 <UserSearch setUserId={setFirstUserId} minHeight={185} userText={firstUserText} setUserText={setFirstUserText} noNavigate />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard userId={firstUserId} user={firstUser} setUserInfo={setFirstUserInfo} loading={firstUserLoading} setIsLoading={setIsFirstUserLoading} minHeight={185}/>
+                <UserCard user={firstUser} loading={isFirstUserLoading} minHeight={185}/>
             </Box>
         </Box>
         <Box padding={1} display="flex" justifyContent="center">
-            <Button variant="outlined" size="large" sx={{width: "160px"}} disabled={!firstUserId || !secondUserId} loading={firstTimesLoading || secondTimesLoading} startIcon={<SwapCallsIcon />} onClick={onSwap}>
+            <Button variant="outlined" size="large" sx={{width: "160px"}} disabled={!firstUserId || !secondUserId} loading={isLoading} startIcon={<SwapCallsIcon />} onClick={onSwap}>
                 Swap
             </Button>
         </Box>
@@ -298,7 +404,7 @@ function Compare() {
                 <UserSearch setUserId={setSecondUserId} minHeight={185} userText={secondUserText} setUserText={setSecondUserText} noNavigate />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard userId={secondUserId} user={secondUser} setUserInfo={setSecondUserInfo} loading={secondUserLoading} setIsLoading={setIsSecondUserLoading} minHeight={185}/>
+                <UserCard user={secondUser} loading={isSecondUserLoading} minHeight={185}/>
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
@@ -306,7 +412,7 @@ function Compare() {
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>
-            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} game={game} style={style} isLoading={firstTimesLoading || secondTimesLoading} />
+            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} game={game} style={style} isLoading={isLoading} />
         </Box>
     </Box>
     );

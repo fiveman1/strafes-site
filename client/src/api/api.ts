@@ -7,7 +7,7 @@ export function delay(ms: number) {
 
 async function tryGetRequest(url: string, params?: any) {
     try {
-        return await axios.get("/api/" + url, {params: params, timeout: 5000});
+        return await axios.get("/api/" + url, {params: params, timeout: 10000});
     } 
     catch (err) {
         //console.log(err);

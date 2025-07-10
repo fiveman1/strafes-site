@@ -3,33 +3,15 @@ import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useEffect } from "react";
-import { getUserData } from "../api/api";
 
 export interface IUserCardProps {
-    userId?: string
     minHeight?: number
     loading: boolean
-    setIsLoading: (loading: boolean) => void
     user?: User
-    setUserInfo: (user?: User) => void
 }
 
 function UserCard(props: IUserCardProps) {
-    const { userId, minHeight, loading, setIsLoading, user, setUserInfo } = props;
-
-    useEffect(() => {
-        if (!userId) {
-            setUserInfo(undefined);
-            setIsLoading(false);
-            return;
-        }
-        setIsLoading(true);
-        getUserData(userId).then((userData) => {
-            setIsLoading(false);
-            setUserInfo(userData);
-        });
-    }, [userId, setIsLoading, setUserInfo]);
+    const { minHeight, loading, user } = props;
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
         {user && !loading ? <>

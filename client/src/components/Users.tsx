@@ -9,6 +9,7 @@ import UserSearch from "./UserSearch";
 import { TimeSortBy, User } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
+import { getUserData } from "../api/api";
 
 function Users() {
     const { id } = useParams();
@@ -37,6 +38,18 @@ function Users() {
     if (id !== userId) {
         setUserId(id);
     }
+    useEffect(() => {
+        if (!userId) {
+            setUserInfo(undefined);
+            setIsUserLoading(false);
+            return;
+        }
+        setIsUserLoading(true);
+        getUserData(userId).then((userData) => {
+            setIsUserLoading(false);
+            setUserInfo(userData);
+        });
+    }, [userId, setIsUserLoading, setUserInfo]);
 
     const handleChangeOnlyWRs = (checked: boolean) => {
         const queryParams = new URLSearchParams(location.search);
@@ -55,7 +68,7 @@ function Users() {
                 <UserSearch setUserId={setUserId} minHeight={185} userText={userText} setUserText={setUserText}/>
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard userId={userId} user={user} setUserInfo={setUserInfo} loading={userLoading} setIsLoading={setIsUserLoading} minHeight={185}/>
+                <UserCard user={user} loading={userLoading} minHeight={185}/>
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">

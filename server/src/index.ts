@@ -567,7 +567,7 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
     let i = 1;
     const maps: StrafesMap[] = [];
     while (true) {
-        const mapRes = await tryGetStrafes("map", {
+        const mapRes = await tryGetStrafesStatic("map", {
             page_number: i,
             page_size: 100
         });
@@ -589,13 +589,13 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 assetIds.push(assetId);
             }
         }
-        const largeReqPromise = tryGetCached("https://thumbnails.roproxy.com/v1/assets", {
+        const largeReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "420x420",
             "format": "Webp"
         });
         
-        const smallReqPromise = tryGetCached("https://thumbnails.roproxy.com/v1/assets", {
+        const smallReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "75x75",
             "format": "Webp"
@@ -722,7 +722,8 @@ async function getUserData(userId: string): Promise<undefined | User> {
 
 const tryGetCached = memoize(tryGetRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
 const tryPostCached = memoize(tryPostRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 60 * 1000});
+const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+const tryGetStrafesStatic = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 60 * 60 * 1000});
 
 async function tryGetStrafesCore(end_of_url: string, params?: any) {
     const headers = {
