@@ -1,16 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Button, LinearProgress, Paper, Typography } from "@mui/material";
+import { Button, Grid, LinearProgress, Paper, Typography, useTheme } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import UserSearch from "./UserSearch";
 import UserCard from "./UserCard";
 import { Game, Style, Time, User } from "../api/interfaces";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useOutletContext } from "react-router";
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 import { getAllTimesForUser, getUserData } from "../api/api";
 import UserLink from "./UserLink";
 import percentRound from "percent-round";
+import AutoSizer from "react-virtualized-auto-sizer";
+import { FixedSizeList } from "react-window";
+import { ContextParams } from "../util/format";
+import { blue, red } from "@mui/material/colors";
 
 interface ICompareCardProps {
     firstUser?: User
@@ -20,10 +24,11 @@ interface ICompareCardProps {
     isLoading: boolean
     game: Game
     style: Style
+    userColors: string[]
 }
 
 function CompareCard(props: ICompareCardProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, game, style } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, game, style, userColors } = props;
 
     if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined) {
         return (
@@ -120,7 +125,7 @@ function CompareCard(props: ICompareCardProps) {
         </Typography>
         <Box maxWidth="600px" alignSelf="center" width="100%">
             <Box textAlign="center">
-                <UserLink color="textPrimary" userId={firstUserId} username={firstUser.username} game={game} strafesStyle={style} variant="h6" />
+                <UserLink color={userColors[0]} userId={firstUserId} username={firstUser.username} game={game} strafesStyle={style} variant="h6" />
             </Box>
             <Box display="flex" flexWrap="wrap">
                 <Box flexGrow={1} padding={1} flexBasis={1}>
@@ -147,7 +152,7 @@ function CompareCard(props: ICompareCardProps) {
         </Box>
         <Box maxWidth="600px" alignSelf="center" width="100%">
             <Box textAlign="center">
-                <UserLink color="textPrimary" userId={secondUserId} username={secondUser.username} game={game} strafesStyle={style} variant="h6" />
+                <UserLink color={userColors[1]} userId={secondUserId} username={secondUser.username} game={game} strafesStyle={style} variant="h6" />
             </Box>
             <Box display="flex" flexWrap="wrap">
                 <Box flexGrow={1} padding={1} flexBasis={1}>
@@ -378,6 +383,8 @@ function Compare() {
         setSecondUserText(firstUserText);
     }
 
+    const userColors = [blue[700], red[800]];
+
     return (
     <Box padding={2} display="flex" flexDirection="column" flexGrow={1}>
         <Typography variant="h2" padding={1}>
@@ -412,9 +419,167 @@ function Compare() {
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>
-            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} game={game} style={style} isLoading={isLoading} />
+            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} game={game} style={style} isLoading={isLoading} userColors={userColors} />
         </Box>
+        <Grid container height={CARD_SIZE * 4} sx={{scrollbarWidth: "thin"}}>
+            <AutoSizer disableHeight>
+            {({ width }) => <CompareList 
+                                width={width} 
+                                firstUser={firstUser} 
+                                secondUser={secondUser} 
+                                firstTimes={firstTimes} 
+                                secondTimes={secondTimes} 
+                                game={game} 
+                                style={style} 
+                                isLoading={isLoading}  
+                                userColors={userColors}
+                            />}
+            </AutoSizer>
+        </Grid>
     </Box>
+    );
+}
+
+interface ICompareListProps {
+    firstUser?: User
+    firstTimes?: Time[]
+    secondUser?: User
+    secondTimes?: Time[]
+    isLoading: boolean
+    game: Game
+    style: Style
+    width: number
+    userColors: string[]
+}
+
+const CARD_SIZE = 180;
+
+interface CompareTimeInfo {
+    map: string
+    mapId: number
+    mapThumb?: string
+    times: CompareTime[]
+}
+
+interface CompareTime {
+    username: string
+    userThumb: string
+    userColor: string
+    time: string
+    date: string
+}
+
+function CompareList(props: ICompareListProps) {
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, game, style, width, userColors } = props;
+
+    const { maps } = useOutletContext() as ContextParams;
+
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+        return <></>;
+    }
+
+    const mapToTime = new Map<number, CompareTimeInfo>();
+    for (const time of firstTimes) {
+        mapToTime.set(time.mapId, {
+            map: time.map,
+            mapId: time.mapId,
+            mapThumb: maps[time.mapId]?.largeThumb,
+            times: [{
+                username: firstUser.username,
+                userThumb: firstUser.thumbUrl,
+                userColor: userColors[0],
+                time: time.time,
+                date: time.date
+            }]}
+        );
+    }
+
+    for (const time of secondTimes) {
+        const timeList = mapToTime.get(time.mapId);
+        const compareTime: CompareTime = {
+            username: secondUser.username,
+            userThumb: secondUser.thumbUrl,
+            userColor: userColors[1],
+            time: time.time,
+            date: time.date
+        };
+
+        if (timeList) {
+            timeList.times.push(compareTime);
+            timeList.times.sort((time1, time2) => +(time1.time) - +(time2.time))
+        }
+        else {
+            mapToTime.set(time.mapId, {
+                map: time.map,
+                mapId: time.mapId,
+                mapThumb: maps[time.mapId]?.largeThumb,
+                times: [compareTime]
+            });
+        }
+    }
+
+    const times = Array.from(mapToTime.values());
+    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
+    const rowCount = Math.ceil(times.length / itemsPerRow);
+    
+    return (
+        <FixedSizeList 
+            style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 4} width={width} 
+            itemCount={rowCount} itemSize={CARD_SIZE * 2}
+            itemData={{itemsPerRow: itemsPerRow, times: times, strafesStyle: style, game: game}}
+        >
+            {CompareRow}
+        </FixedSizeList>
+    );
+}
+
+interface ICompareRowProps {
+    data: {itemsPerRow: number, times: CompareTimeInfo[], strafesStyle: Style, game: Game}
+    index: number
+    style: CSSProperties
+}
+
+function CompareRow(props: ICompareRowProps) {
+    const { data, index, style } = props;
+    const { itemsPerRow, times, strafesStyle, game } = data;
+
+    const rowTimes: React.ReactElement[] = [];
+    const fromIndex = index * itemsPerRow;
+    const toIndex = Math.min(fromIndex + itemsPerRow, times.length);
+    
+    for (let i = fromIndex; i < toIndex; ++i) {
+        rowTimes.push(<CompareListCard key={i} times={times[i]} style={strafesStyle} game={game} />);
+    }
+
+    return (
+    <Box style={style} display="flex" justifyContent="center">
+        {rowTimes}
+    </Box>
+    );
+}
+
+interface ICompareListCardProps {
+    times: CompareTimeInfo
+    style: Style
+    game: Game
+}
+
+function CompareListCard(props: ICompareListCardProps) {
+    const {times, style, game} = props;
+    const theme = useTheme();
+
+    return (
+        <Box padding="8px">
+            <Paper elevation={2} sx={{width: CARD_SIZE - 16, height: (CARD_SIZE * 2) - 16, display: "flex", flexDirection: "column", overflow: "hidden"}}>
+                <Box height="50%" component="img" src={times.mapThumb} alt={times.map} />
+                <Box height="50%" padding={2} sx={{background: `linear-gradient(70deg, rgba(255,255,255,0), ${times.times[0].userColor})`}}>
+                    <Typography>
+                        {times.map}
+                    </Typography>
+                </Box>
+                
+            </Paper>
+        </Box>
     );
 }
 
