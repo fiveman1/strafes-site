@@ -15,6 +15,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import { ContextParams } from "../util/format";
 import { blue, red } from "@mui/material/colors";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 
 interface ICompareCardProps {
     firstUser?: User
@@ -519,7 +520,7 @@ function CompareList(props: ICompareListProps) {
     }
 
     const times = Array.from(mapToTime.values());
-    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
+    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE + 16)) || 1;
     const rowCount = Math.ceil(times.length / itemsPerRow);
     
     return (
@@ -568,17 +569,40 @@ function CompareListCard(props: ICompareListCardProps) {
     const {times, style, game} = props;
     const theme = useTheme();
 
+    const colors: string[] = [times.times[0].userColor];
+    if (times.times.length > 1) {
+        colors.push(times.times[1].userColor)
+    }
+    else {
+        colors.push(times.times[0].userColor)
+    }
     return (
         <Box padding="8px">
-            <Paper elevation={2} sx={{width: CARD_SIZE - 16, height: (CARD_SIZE * 2) - 16, display: "flex", flexDirection: "column", overflow: "hidden"}}>
-                <Box height="50%" component="img" src={times.mapThumb} alt={times.map} />
-                <Box height="50%" padding={2} sx={{background: `linear-gradient(70deg, rgba(255,255,255,0), ${times.times[0].userColor})`}}>
-                    <Typography>
-                        {times.map}
-                    </Typography>
+            <Box sx={{
+                width: CARD_SIZE, 
+                height: (CARD_SIZE * 2) - 16, 
+                display: "inline-flex", 
+                flexDirection: "column", 
+                overflow: "hidden", 
+                backgroundImage: `linear-gradient(180deg, ${colors[0]}, ${colors[1]})`, 
+                border: "solid 6px transparent",
+                borderRadius: "12px",
+                backgroundOrigin: "border-box",
+                backgroundClip: "content-box, border-box"
+            }}>
+                <Box padding={0.5} display="flex" flexDirection="column" height="100%">
+                    {
+                        times.mapThumb ? 
+                        <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} component="img" src={times.mapThumb} alt={times.map} /> :
+                        <QuestionMarkIcon sx={{ fontSize: CARD_SIZE - 20 }} />
+                    }
+                    <Paper square elevation={2} sx={{padding: 2, flexGrow: 1}}>
+                        <Typography>
+                            {times.map}
+                        </Typography>
+                    </Paper>
                 </Box>
-                
-            </Paper>
+            </Box>
         </Box>
     );
 }
