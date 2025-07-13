@@ -220,13 +220,6 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef = gridApiRef;
     }
 
-    // Reset row count to unknown when in only WRs mode after changing game or style
-    useEffect(() => {
-        if (onlyWRs) {
-            setRowCount(-1);
-        }
-    }, [onlyWRs, game, style]);
-
     useEffect(() => {
         if (onlyWRs) {
             apiRef.current?.sortColumn("date", "desc");
@@ -238,6 +231,10 @@ function TimesGrid(props: ITimesCardProps) {
     }, [game, hideMap, hideUser, onlyWRs, showPlacement, showPlacementOrdinals, style]);
 
     const gridKey = useMemo(() => {
+        // Set row count to unknown when changing settings in WR only mode
+        if (onlyWRs) {
+            setRowCount(-1);
+        }
         return `${userId ?? ""},${map ?? ""},${game},${style},${!!onlyWRs}`;
     }, [game, map, onlyWRs, style, userId]);
 
@@ -277,9 +274,6 @@ function TimesGrid(props: ITimesCardProps) {
                 rowCount: timeData.pagination.totalItems
             }
         }
-    // onLoadTimes cannot be a dep or we will get infinite re-renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    
     }, [allowOnlyWRs, game, map, onLoadTimes, onlyWRs, style, userId]);
 
     const dataSource: GridDataSource = useMemo(() => ({
