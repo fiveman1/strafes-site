@@ -1,4 +1,3 @@
-import React from "react";
 import { PaletteMode } from '@mui/material/styles';
 import IconButton from "@mui/material/IconButton";
 import NightsStay from "@mui/icons-material/NightsStay";
@@ -11,21 +10,15 @@ export interface IThemeSelectorProps {
 }
 
 export default function ThemeSelector(props: IThemeSelectorProps) {
+    const {themeMode, setThemeMode} = props;
     return (
         <ButtonGroup>
-            <IconButton color="inherit" disabled={props.themeMode === "light"} onClick={() => {
-                const newThemeMode = "light";
-                props.setThemeMode(newThemeMode);
-                localStorage.setItem('theme', newThemeMode);
+            <IconButton color="inherit" onClick={() => {
+                const newThemeMode = themeMode === "dark" ? "light" : "dark";
+                setThemeMode(newThemeMode);
+                localStorage.setItem("theme", newThemeMode);
             }}> 
-                <Sunny/> 
-            </IconButton>
-            <IconButton color="inherit" disabled={props.themeMode === "dark"} onClick={() => {
-                const newThemeMode = "dark";
-                props.setThemeMode(newThemeMode);
-                localStorage.setItem('theme', newThemeMode);
-            }}> 
-                <NightsStay/>
+                {themeMode === "dark" ? <Sunny/> : <NightsStay/>}
             </IconButton>
         </ButtonGroup>
     )

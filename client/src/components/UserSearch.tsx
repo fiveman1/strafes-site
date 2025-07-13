@@ -61,7 +61,8 @@ function UserSearch(props: IUserSearchProps) {
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
                 <TextField error={hasError} helperText={hasError ? "Invalid username." : ""} onKeyUp={onSearchKeyUp}
                         onChange={onSearchTextChanged} fullWidth label="Username" variant="outlined" inputRef={inputRef} value={userText}
-                        slotProps={{htmlInput: {maxLength: 50}, input: {inputMode: "search", endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
+                        inputMode="search" type="search"
+                        slotProps={{htmlInput: {maxLength: 50}, input: {endAdornment: <IconButton onClick={onSearch}> <Search /> </IconButton>  }}} 
                 />
             </Box>
         </Paper>

@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Button, Grid, LinearProgress, Paper, Typography, useTheme } from "@mui/material";
+import { Avatar, Button, darken, Divider, Grid, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import UserSearch from "./UserSearch";
@@ -9,13 +9,19 @@ import { Game, Style, Time, User } from "../api/interfaces";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 import { getAllTimesForUser, getUserData } from "../api/api";
-import UserLink from "./UserLink";
 import percentRound from "percent-round";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
-import { ContextParams } from "../util/format";
-import { blue, red } from "@mui/material/colors";
+import { ContextParams, formatDiff, formatTime } from "../util/format";
+import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import { PieChart } from "@mui/x-charts";
+
+function getCardHeight(numUsers: number) {
+    return CARD_SIZE + ((CARD_SIZE * 0.3) * numUsers) + (numUsers - 1);
+}
+
+const TIE_COLOR = blue["A400"];
 
 interface ICompareCardProps {
     firstUser?: User
@@ -23,13 +29,13 @@ interface ICompareCardProps {
     secondUser?: User
     secondTimes?: Time[]
     isLoading: boolean
-    game: Game
-    style: Style
     userColors: string[]
 }
 
 function CompareCard(props: ICompareCardProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, game, style, userColors } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors } = props;
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined) {
         return (
@@ -124,75 +130,28 @@ function CompareCard(props: ICompareCardProps) {
         <Typography variant="caption">
             Compare
         </Typography>
-        <Box maxWidth="600px" alignSelf="center" width="100%">
-            <Box textAlign="center">
-                <UserLink color={userColors[0]} userId={firstUserId} username={firstUser.username} game={game} strafesStyle={style} variant="h6" />
-            </Box>
-            <Box display="flex" flexWrap="wrap">
-                <Box flexGrow={1} padding={1} flexBasis={1}>
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                        <Typography variant="subtitle1">
-                            Wins
-                        </Typography>
-                        <Typography variant="h6" color={firstWins > secondWins ? "success" : undefined}>
-                            {firstWins} ({roundedPercents[0]}%)
-                        </Typography>
-                    </Box>
-                </Box>
-                <Box flexGrow={1} padding={1} flexBasis={1}>
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                        <Typography variant="subtitle1">
-                            Exclusive
-                        </Typography>
-                        <Typography variant="h6">
-                            {onlyFirst} ({roundedPercents[1]}%)
-                        </Typography>
-                    </Box>
-                </Box>
-            </Box>
-        </Box>
-        <Box maxWidth="600px" alignSelf="center" width="100%">
-            <Box textAlign="center">
-                <UserLink color={userColors[1]} userId={secondUserId} username={secondUser.username} game={game} strafesStyle={style} variant="h6" />
-            </Box>
-            <Box display="flex" flexWrap="wrap">
-                <Box flexGrow={1} padding={1} flexBasis={1}>
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                        <Typography variant="subtitle1">
-                            Wins
-                        </Typography>
-                        <Typography variant="h6" color={firstWins < secondWins ? "success" : undefined}>
-                            {secondWins} ({roundedPercents[2]}%)
-                        </Typography>
-                    </Box>
-                </Box>
-                <Box flexGrow={1} padding={1} flexBasis={1}>
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                        <Typography variant="subtitle1">
-                            Exclusive
-                        </Typography>
-                        <Typography variant="h6">
-                            {onlySecond} ({roundedPercents[3]}%)
-                        </Typography>
-                    </Box>
-                </Box>
-            </Box>
-        </Box>
-        <Typography variant="h6" textAlign="center">
-            Both
-        </Typography>
-        <Box display="flex" flexWrap="wrap">
-            <Box flexGrow={1} padding={1}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                    <Typography variant="subtitle1">
-                        Ties
-                    </Typography>
-                    <Typography variant="h6">
-                        {ties} ({roundedPercents[4]}%)
-                    </Typography>
-                </Box>
-            </Box>
-        </Box>
+        
+        <PieChart 
+            height={smallScreen ? 250 : 300}
+            width={smallScreen ? 250 : 300}
+            slotProps={{
+                legend: {
+                    direction: "horizontal"
+                }
+            }}
+            series={[
+                { 
+                    data: [
+                        { id: 0, value: firstWins, label: `${firstUser.username} wins`, color: userColors[0] },
+                        { id: 2, value: secondWins, label: `${secondUser.username} wins`, color: userColors[1] },
+                        { id: 1, value: onlyFirst, label: `${firstUser.username} exclusive`, color: lighten(userColors[0], 0.5) },
+                        { id: 3, value: onlySecond, label: `${secondUser.username} exclusive`, color: lighten(userColors[1], 0.5) },
+                        { id: 4, value: ties, label: "Ties", color: TIE_COLOR },
+                    ],
+                    valueFormatter: (val) => `${val.value} (${roundedPercents[val.id ?? 0]}%)`
+                }
+            ]}  
+        />
         {isLoading ? <LinearProgress /> : <></>}
     </Paper>
     );
@@ -384,7 +343,7 @@ function Compare() {
         setSecondUserText(firstUserText);
     }
 
-    const userColors = [blue[700], red[800]];
+    const userColors = [pink["A400"], purple["A700"]];
 
     return (
     <Box padding={2} display="flex" flexDirection="column" flexGrow={1}>
@@ -420,9 +379,9 @@ function Compare() {
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>
-            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} game={game} style={style} isLoading={isLoading} userColors={userColors} />
+            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} isLoading={isLoading} userColors={userColors} />
         </Box>
-        <Grid container height={CARD_SIZE * 4} sx={{scrollbarWidth: "thin"}}>
+        <Grid container height={getCardHeight(2) * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
             {({ width }) => <CompareList 
                                 width={width} 
@@ -430,8 +389,6 @@ function Compare() {
                                 secondUser={secondUser} 
                                 firstTimes={firstTimes} 
                                 secondTimes={secondTimes} 
-                                game={game} 
-                                style={style} 
                                 isLoading={isLoading}  
                                 userColors={userColors}
                             />}
@@ -447,13 +404,11 @@ interface ICompareListProps {
     secondUser?: User
     secondTimes?: Time[]
     isLoading: boolean
-    game: Game
-    style: Style
     width: number
     userColors: string[]
 }
 
-const CARD_SIZE = 180;
+const CARD_SIZE = 240;
 
 interface CompareTimeInfo {
     map: string
@@ -468,66 +423,76 @@ interface CompareTime {
     userColor: string
     time: string
     date: string
+    id: string
 }
 
 function CompareList(props: ICompareListProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, game, style, width, userColors } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, width, userColors } = props;
 
     const { maps } = useOutletContext() as ContextParams;
 
-    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
-        return <></>;
-    }
-
-    const mapToTime = new Map<number, CompareTimeInfo>();
-    for (const time of firstTimes) {
-        mapToTime.set(time.mapId, {
-            map: time.map,
-            mapId: time.mapId,
-            mapThumb: maps[time.mapId]?.largeThumb,
-            times: [{
-                username: firstUser.username,
-                userThumb: firstUser.thumbUrl,
-                userColor: userColors[0],
-                time: time.time,
-                date: time.date
-            }]}
-        );
-    }
-
-    for (const time of secondTimes) {
-        const timeList = mapToTime.get(time.mapId);
-        const compareTime: CompareTime = {
-            username: secondUser.username,
-            userThumb: secondUser.thumbUrl,
-            userColor: userColors[1],
-            time: time.time,
-            date: time.date
-        };
-
-        if (timeList) {
-            timeList.times.push(compareTime);
-            timeList.times.sort((time1, time2) => +(time1.time) - +(time2.time))
+    const times = useMemo(() => {
+        if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+            return [];
         }
-        else {
+        
+        const mapToTime = new Map<number, CompareTimeInfo>();
+        for (const time of firstTimes) {
             mapToTime.set(time.mapId, {
                 map: time.map,
                 mapId: time.mapId,
                 mapThumb: maps[time.mapId]?.largeThumb,
-                times: [compareTime]
-            });
+                times: [{
+                    username: firstUser.username,
+                    userThumb: firstUser.thumbUrl,
+                    userColor: userColors[0],
+                    time: time.time,
+                    date: time.date,
+                    id: time.id
+                }]}
+            );
         }
-    }
 
-    const times = Array.from(mapToTime.values());
+        for (const time of secondTimes) {
+            const timeList = mapToTime.get(time.mapId);
+            const compareTime: CompareTime = {
+                username: secondUser.username,
+                userThumb: secondUser.thumbUrl,
+                userColor: userColors[1],
+                time: time.time,
+                date: time.date,
+                id: time.id
+            };
+
+            if (timeList) {
+                timeList.times.push(compareTime);
+                timeList.times.sort((time1, time2) => +(time1.time) - +(time2.time))
+            }
+            else {
+                mapToTime.set(time.mapId, {
+                    map: time.map,
+                    mapId: time.mapId,
+                    mapThumb: maps[time.mapId]?.largeThumb,
+                    times: [compareTime]
+                });
+            }
+        }
+        return Array.from(mapToTime.values()).sort((a, b) => a.map < b.map ? -1 : 1);
+    }, [firstTimes, firstUser, isLoading, maps, secondTimes, secondUser, userColors]);
+
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+        return <></>;
+    }
+    
+    const card_height = CARD_SIZE + ((CARD_SIZE * 0.3) * 2) + 1;
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE + 16)) || 1;
     const rowCount = Math.ceil(times.length / itemsPerRow);
     
     return (
         <FixedSizeList 
-            style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 4} width={width} 
-            itemCount={rowCount} itemSize={CARD_SIZE * 2}
-            itemData={{itemsPerRow: itemsPerRow, times: times, strafesStyle: style, game: game}}
+            style={{scrollbarWidth: "thin"}} height={card_height * 2} width={width} 
+            itemCount={rowCount} itemSize={card_height}
+            itemData={{itemsPerRow: itemsPerRow, times: times}}
         >
             {CompareRow}
         </FixedSizeList>
@@ -535,21 +500,21 @@ function CompareList(props: ICompareListProps) {
 }
 
 interface ICompareRowProps {
-    data: {itemsPerRow: number, times: CompareTimeInfo[], strafesStyle: Style, game: Game}
+    data: {itemsPerRow: number, times: CompareTimeInfo[]}
     index: number
     style: CSSProperties
 }
 
 function CompareRow(props: ICompareRowProps) {
     const { data, index, style } = props;
-    const { itemsPerRow, times, strafesStyle, game } = data;
+    const { itemsPerRow, times } = data;
 
     const rowTimes: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, times.length);
     
     for (let i = fromIndex; i < toIndex; ++i) {
-        rowTimes.push(<CompareListCard key={i} times={times[i]} style={strafesStyle} game={game} />);
+        rowTimes.push(<CompareListCard key={i} times={times[i]} />);
     }
 
     return (
@@ -561,50 +526,117 @@ function CompareRow(props: ICompareRowProps) {
 
 interface ICompareListCardProps {
     times: CompareTimeInfo
-    style: Style
-    game: Game
 }
 
 function CompareListCard(props: ICompareListCardProps) {
-    const {times, style, game} = props;
-    const theme = useTheme();
+    const { times } = props;
 
-    const colors: string[] = [times.times[0].userColor];
-    if (times.times.length > 1) {
-        colors.push(times.times[1].userColor)
+    let colors: string[] = []
+    if (times.times.length === 2 && times.times[0].time === times.times[1].time) {
+        colors = [lighten(TIE_COLOR, 0.6), TIE_COLOR]
     }
     else {
-        colors.push(times.times[0].userColor)
+        colors = [lighten(times.times[0].userColor, 0.6), times.times.length === 1 ? lighten(times.times[0].userColor, 0.5) : times.times[0].userColor];
     }
+
+    const otherTimes: React.ReactElement[] = [];
+    for (let i = 1; i < times.times.length; ++i) {
+        otherTimes.push(
+        <Box key={times.times[i].id}>
+            <Divider component="li" />
+            <ListItem>
+                <CompareCardTimeCell time={times.times[i]} diff={+times.times[i].time - +times.times[0].time}/>
+            </ListItem>
+        </Box>
+        );
+    }
+
     return (
-        <Box padding="8px">
+        <Box >
             <Box sx={{
                 width: CARD_SIZE, 
-                height: (CARD_SIZE * 2) - 16, 
+                height: getCardHeight(2), 
                 display: "inline-flex", 
                 flexDirection: "column", 
                 overflow: "hidden", 
-                backgroundImage: `linear-gradient(180deg, ${colors[0]}, ${colors[1]})`, 
+                backgroundImage: `radial-gradient(${colors[0]}, ${colors[1]})`, 
                 border: "solid 6px transparent",
                 borderRadius: "12px",
                 backgroundOrigin: "border-box",
                 backgroundClip: "content-box, border-box"
             }}>
                 <Box padding={0.5} display="flex" flexDirection="column" height="100%">
+                    <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} >
                     {
                         times.mapThumb ? 
-                        <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} component="img" src={times.mapThumb} alt={times.map} /> :
-                        <QuestionMarkIcon sx={{ fontSize: CARD_SIZE - 20 }} />
+                        <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} component="img" position="absolute" src={times.mapThumb} alt={times.map} borderRadius="4px 4px 0 0" /> :
+                        <QuestionMarkIcon sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
                     }
-                    <Paper square elevation={2} sx={{padding: 2, flexGrow: 1}}>
-                        <Typography>
-                            {times.map}
-                        </Typography>
+                        <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} display="flex" flexDirection="column" >
+                            <Box flexGrow={1} />
+                            <Typography variant="h5" fontWeight="bold" sx={{ 
+                                padding: 1,
+                                overflow:"hidden", 
+                                textOverflow:"ellipsis", 
+                                backdropFilter: "blur(16px)", 
+                                textAlign: "center", 
+                                color: "white",
+                                textShadow: "black 3px 3px 3px" 
+                            }}>
+                                {times.map}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px"}}>
+                        <List>
+                            <ListItem key={times.times[0].id}>
+                                <CompareCardTimeCell time={times.times[0]} diff={0} />
+                            </ListItem>
+                            {otherTimes}
+                        </List>
                     </Paper>
                 </Box>
             </Box>
         </Box>
     );
+}
+
+interface ICompareCardTimeCellProps {
+    time: CompareTime
+    diff: number
+}
+
+function CompareCardTimeCell(props: ICompareCardTimeCellProps) {
+    const { time, diff } = props;
+    const theme = useTheme();
+
+    return (
+    <Box height="48px" display="flex" flexDirection="row" width="100%">
+        <Tooltip placement="top" title={time.username} arrow>
+            <Avatar sx={{bgcolor: grey[100], height: "40px", width: "40px", alignSelf: "center"}} alt={time.username} src={time.userThumb} />
+        </Tooltip>
+        <Box display="flex" flexDirection="column" alignItems="flex-end" width="100%">
+            <Typography variant="body1" fontWeight="bold">
+                {formatTime(time.time)}
+            </Typography>
+            <Box display="flex" flexDirection="row">
+                {diff > 0 ? 
+                <>
+                <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={red["A400"]} marginRight="4px">
+                    +
+                </Typography>
+                <Typography fontFamily="monospace" variant="body1">
+                    {formatDiff(diff)}
+                </Typography>
+                </> :
+                <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={theme.palette.mode === "dark" ? green["A400"] : darken(green["A400"], 0.15)}>
+                    best
+                </Typography>
+                }
+            </Box>
+        </Box>
+    </Box>
+    )
 }
 
 export default Compare;

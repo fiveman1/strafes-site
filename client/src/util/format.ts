@@ -128,3 +128,13 @@ export function formatPlacement(placement?: number) {
     if (placement === undefined) return "-";
     return `${placement}${getOrdinal(placement)}`;
 }
+
+export function formatDiff(diffMs: number) {
+    const diff = diffMs / 1000;
+    if (diff >= 60) {
+        const minutes = Math.floor(diff / 60);
+        const seconds = Math.round(diff % 60);
+        return `${minutes}m ${seconds}s`;
+    }
+    return `${diff.toFixed(3)}s`;
+}
