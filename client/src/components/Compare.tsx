@@ -37,7 +37,8 @@ function CompareCard(props: ICompareCardProps) {
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
-    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined) {
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.id === secondUser.id) {
+        const mainText = firstUser && secondUser && firstUser.id === secondUser.id ? "😡" : "Waiting...";
         return (
         <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
             <Typography variant="caption">
@@ -45,23 +46,7 @@ function CompareCard(props: ICompareCardProps) {
             </Typography>
             <Box display="flex" alignContent="center" justifyContent="center" padding={2}>
                 <Typography variant="h6">
-                    Waiting...
-                </Typography>
-            </Box>
-            {isLoading ? <LinearProgress /> : <></>}
-        </Paper>
-        );
-    }
-
-    if (firstUser.id === secondUser.id) {
-        return (
-        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
-            <Typography variant="caption">
-                Compare
-            </Typography>
-            <Box display="flex" alignContent="center" justifyContent="center" padding={2}>
-                <Typography variant="h6">
-                    😡
+                    {mainText}
                 </Typography>
             </Box>
             {isLoading ? <LinearProgress /> : <></>}
