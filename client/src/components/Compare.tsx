@@ -557,8 +557,7 @@ function CompareListCard(props: ICompareListCardProps) {
                         <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} component="img" position="absolute" src={times.mapThumb} alt={times.map} borderRadius="4px 4px 0 0" /> :
                         <QuestionMarkIcon sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
                     }
-                        <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} display="flex" flexDirection="column" >
-                            <Box flexGrow={1} />
+                        <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} >
                             <Typography variant="h5" fontWeight="bold" sx={{ 
                                 padding: 1,
                                 overflow:"hidden", 
@@ -572,7 +571,7 @@ function CompareListCard(props: ICompareListCardProps) {
                             </Typography>
                         </Box>
                     </Box>
-                    <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px"}}>
+                    <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
                         <List>
                             <ListItem key={times.times[0].id}>
                                 <CompareCardTimeCell time={times.times[0]} diff={0} />
