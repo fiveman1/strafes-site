@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Avatar, Button, darken, Divider, Grid, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Avatar, Button, darken, Divider, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import UserSearch from "./UserSearch";
@@ -16,6 +16,9 @@ import { ContextParams, formatDiff, formatTime } from "../util/format";
 import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { PieChart } from "@mui/x-charts";
+import CompareSortSelector, { CompareTimesSort, useCompareSort } from "./CompareSortSelector";
+
+const CARD_SIZE = 240;
 
 function getCardHeight(numUsers: number) {
     return CARD_SIZE + ((CARD_SIZE * 0.3) * numUsers) + (numUsers - 1);
@@ -366,34 +369,39 @@ function Compare() {
         <Box padding={1}>
             <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} isLoading={isLoading} userColors={userColors} />
         </Box>
-        <Grid container height={getCardHeight(2) * 2} sx={{scrollbarWidth: "thin"}}>
-            <AutoSizer disableHeight>
-            {({ width }) => <CompareList 
-                                width={width} 
-                                firstUser={firstUser} 
-                                secondUser={secondUser} 
-                                firstTimes={firstTimes} 
-                                secondTimes={secondTimes} 
-                                isLoading={isLoading}  
-                                userColors={userColors}
-                            />}
-            </AutoSizer>
-        </Grid>
+        <Box padding={1}>
+            <CompareTimesCard 
+                firstUser={firstUser} 
+                secondUser={secondUser} 
+                firstTimes={firstTimes} 
+                secondTimes={secondTimes} 
+                isLoading={isLoading}  
+                userColors={userColors}
+            />
+        </Box>
     </Box>
     );
 }
 
-interface ICompareListProps {
+interface ICompareTimesCardProps {
     firstUser?: User
     firstTimes?: Time[]
     secondUser?: User
     secondTimes?: Time[]
     isLoading: boolean
-    width: number
     userColors: string[]
 }
 
-const CARD_SIZE = 240;
+interface ICompareListProps {
+    width: number
+    sort: CompareTimesSort
+    firstUser: User
+    firstTimes: Time[]
+    secondUser: User
+    secondTimes: Time[]
+    isLoading: boolean
+    userColors: string[]
+}
 
 interface CompareTimeInfo {
     map: string
@@ -411,13 +419,61 @@ interface CompareTime {
     id: string
 }
 
+function CompareTimesCard(props: ICompareTimesCardProps) {
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors } = props;
+
+    const [sort, setSort] = useCompareSort();
+
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+        return <></>;
+    }
+
+    return (
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
+        <Typography variant="caption">
+            Times
+        </Typography>
+        <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
+            <CompareSortSelector setSort={setSort} />
+        </Box>
+        <Box>
+            <Paper elevation={1} sx={{height: getCardHeight(2) * 2}}>
+                <AutoSizer disableHeight>
+                {({ width }) => <CompareList 
+                                    width={width} 
+                                    sort={sort}
+                                    firstUser={firstUser} 
+                                    secondUser={secondUser} 
+                                    firstTimes={firstTimes} 
+                                    secondTimes={secondTimes} 
+                                    isLoading={isLoading}  
+                                    userColors={userColors}
+                                />}
+                </AutoSizer>
+            </Paper>
+        </Box>
+    </Paper>
+    );
+}
+
+function getDate(info: CompareTimeInfo) {
+    let date: number | undefined;
+    for (const time of info.times) {
+        const timeDate = new Date(time.date);
+        if (!date || timeDate.getTime() < date) {
+            date = timeDate.getTime();
+        }
+    }
+    return date ?? 0;
+}
+
 function CompareList(props: ICompareListProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, width, userColors } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, width, userColors, sort } = props;
 
     const { maps } = useOutletContext() as ContextParams;
 
     const times = useMemo(() => {
-        if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+        if (isLoading || firstUser.id === secondUser.id) {
             return [];
         }
         
@@ -462,10 +518,32 @@ function CompareList(props: ICompareListProps) {
                 });
             }
         }
-        return Array.from(mapToTime.values()).sort((a, b) => a.map < b.map ? -1 : 1);
-    }, [firstTimes, firstUser, isLoading, maps, secondTimes, secondUser, userColors]);
+        if (sort === "dateAsc") {
+            return Array.from(mapToTime.values()).sort((a, b) => {
+                return getDate(a) - getDate(b);
+            });
+        }
+        else if (sort === "dateDesc") {
+            return Array.from(mapToTime.values()).sort((a, b) => {
+                return getDate(b) - getDate(a);
+            });
+        }
+        else if (sort === "timeAsc") {
+            return Array.from(mapToTime.values()).sort((a, b) => +a.times[0].time - +b.times[0].time);
+        }
+        else if (sort === "timeDesc") {
+            return Array.from(mapToTime.values()).sort((a, b) => +b.times[0].time - +a.times[0].time);
+        }
+        else if (sort === "mapAsc") {
+            return Array.from(mapToTime.values()).sort((a, b) => a.map < b.map ? -1 : 1);
+        }
+        else if (sort === "mapDesc") {
+            return Array.from(mapToTime.values()).sort((a, b) => a.map > b.map ? -1 : 1);
+        }
+        return Array.from(mapToTime.values());
+    }, [firstTimes, firstUser.id, firstUser.thumbUrl, firstUser.username, isLoading, maps, secondTimes, secondUser.id, secondUser.thumbUrl, secondUser.username, sort, userColors]);
 
-    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+    if (isLoading || firstUser.id === secondUser.id) {
         return <></>;
     }
     
@@ -499,7 +577,7 @@ function CompareRow(props: ICompareRowProps) {
     const toIndex = Math.min(fromIndex + itemsPerRow, times.length);
     
     for (let i = fromIndex; i < toIndex; ++i) {
-        rowTimes.push(<CompareListCard key={i} times={times[i]} />);
+        rowTimes.push(<CompareListCard key={i} info={times[i]} />);
     }
 
     return (
@@ -510,78 +588,104 @@ function CompareRow(props: ICompareRowProps) {
 }
 
 interface ICompareListCardProps {
-    times: CompareTimeInfo
+    info: CompareTimeInfo
 }
 
 function CompareListCard(props: ICompareListCardProps) {
-    const { times } = props;
+    const { info } = props;
 
-    let colors: string[] = []
-    if (times.times.length === 2 && times.times[0].time === times.times[1].time) {
-        colors = [lighten(TIE_COLOR, 0.6), TIE_COLOR]
+    const times = info.times;
+    let colors: string[] = [];
+    if (times.length === 2 && times[0].time === times[1].time) {
+        colors = [lighten(TIE_COLOR, 0.6), TIE_COLOR];
+    }
+    else if (times.length === 1) {
+        colors = [lighten(times[0].userColor, 0.9), lighten(times[0].userColor, 0.5)];
     }
     else {
-        colors = [lighten(times.times[0].userColor, 0.6), times.times.length === 1 ? lighten(times.times[0].userColor, 0.5) : times.times[0].userColor];
+        colors = [lighten(times[0].userColor, 0.6), times[0].userColor];
     }
 
     const otherTimes: React.ReactElement[] = [];
-    for (let i = 1; i < times.times.length; ++i) {
+    for (let i = 1; i < times.length; ++i) {
         otherTimes.push(
-        <Box key={times.times[i].id}>
+        <Box key={times[i].id}>
             <Divider component="li" />
             <ListItem>
-                <CompareCardTimeCell time={times.times[i]} diff={+times.times[i].time - +times.times[0].time}/>
+                <CompareCardTimeCell time={times[i]} diff={+times[i].time - +times[0].time}/>
             </ListItem>
         </Box>
         );
     }
 
     return (
-        <Box >
-            <Box sx={{
-                width: CARD_SIZE, 
-                height: getCardHeight(2), 
-                display: "inline-flex", 
-                flexDirection: "column", 
-                overflow: "hidden", 
-                backgroundImage: `radial-gradient(${colors[0]}, ${colors[1]})`, 
-                border: "solid 6px transparent",
-                borderRadius: "12px",
-                backgroundOrigin: "border-box",
-                backgroundClip: "content-box, border-box"
-            }}>
-                <Box padding={0.5} display="flex" flexDirection="column" height="100%">
-                    <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} >
-                    {
-                        times.mapThumb ? 
-                        <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} component="img" position="absolute" src={times.mapThumb} alt={times.map} borderRadius="4px 4px 0 0" /> :
-                        <QuestionMarkIcon sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
-                    }
-                        <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} >
-                            <Typography variant="h5" fontWeight="bold" sx={{ 
-                                padding: 1,
-                                overflow:"hidden", 
-                                textOverflow:"ellipsis", 
-                                backdropFilter: "blur(16px)", 
-                                textAlign: "center", 
-                                color: "white",
-                                textShadow: "black 3px 3px 3px" 
-                            }}>
-                                {times.map}
-                            </Typography>
-                        </Box>
-                    </Box>
-                    <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
-                        <List>
-                            <ListItem key={times.times[0].id}>
-                                <CompareCardTimeCell time={times.times[0]} diff={0} />
-                            </ListItem>
-                            {otherTimes}
-                        </List>
-                    </Paper>
+    <Box sx={{
+        width: CARD_SIZE, 
+        height: getCardHeight(2), 
+        display: "inline-flex", 
+        flexDirection: "column", 
+        overflow: "hidden", 
+        backgroundImage: `radial-gradient(${colors[0]}, ${colors[1]})`, 
+        border: "solid 6px transparent",
+        borderRadius: "12px",
+        backgroundOrigin: "border-box",
+        backgroundClip: "content-box, border-box",
+        transition: ".6s ease",
+        "& .mapImg": { transition: "transform .6s ease" },
+        ":hover": { 
+            transform: "scale(1.03)",
+            boxShadow: 10,
+            "& .mapImg": { transform: "scale(1.11)" } 
+        }
+    }}>
+        <Box padding={0.5} display="flex" flexDirection="column" height="100%">
+            <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} >
+            {
+                info.mapThumb ? 
+                <Box
+                    width={CARD_SIZE - 20} 
+                    height={CARD_SIZE - 20} 
+                    position="absolute" 
+                    borderRadius="4px 4px 0 0" 
+                    overflow="hidden"
+                >
+                    <Box 
+                        className="mapImg"
+                        width="100%"
+                        height="100%"
+                        component="img" 
+                        src={info.mapThumb} 
+                        alt={info.map} 
+                    />
+                </Box>
+                    :
+                <QuestionMarkIcon className="mapImg" sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
+            }
+                <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} >
+                    <Typography variant="h5" fontWeight="bold" sx={{ 
+                        padding: 1,
+                        overflow:"hidden", 
+                        textOverflow:"ellipsis", 
+                        backdropFilter: "blur(16px)", 
+                        textAlign: "center", 
+                        color: "white",
+                        textShadow: "black 3px 3px 3px",
+                        borderRadius: "4px 4px 0 0"
+                    }}>
+                        {info.map}
+                    </Typography>
                 </Box>
             </Box>
+            <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
+                <List>
+                    <ListItem key={times[0].id}>
+                        <CompareCardTimeCell time={times[0]} diff={0} />
+                    </ListItem>
+                    {otherTimes}
+                </List>
+            </Paper>
         </Box>
+    </Box>
     );
 }
 
