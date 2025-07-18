@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Avatar, Button, darken, Divider, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Avatar, Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import UserSearch from "./UserSearch";
@@ -12,11 +12,13 @@ import { getAllTimesForUser, getUserData } from "../api/api";
 import percentRound from "percent-round";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
-import { ContextParams, formatDiff, formatTime } from "../util/format";
+import { ContextParams, formatDiff, formatStyle, formatTime } from "../util/format";
 import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { PieChart } from "@mui/x-charts";
 import CompareSortSelector, { CompareTimesSort, useCompareSort } from "./CompareSortSelector";
+import InfoIcon from '@mui/icons-material/Info';
+import DateDisplay from "./DateDisplay";
 
 const CARD_SIZE = 240;
 
@@ -417,6 +419,7 @@ interface CompareTime {
     time: string
     date: string
     id: string
+    style: Style
 }
 
 function CompareTimesCard(props: ICompareTimesCardProps) {
@@ -489,7 +492,8 @@ function CompareList(props: ICompareListProps) {
                     userColor: userColors[0],
                     time: time.time,
                     date: time.date,
-                    id: time.id
+                    id: time.id,
+                    style: time.style
                 }]}
             );
         }
@@ -502,7 +506,8 @@ function CompareList(props: ICompareListProps) {
                 userColor: userColors[1],
                 time: time.time,
                 date: time.date,
-                id: time.id
+                id: time.id,
+                style: time.style
             };
 
             if (timeList) {
@@ -547,7 +552,7 @@ function CompareList(props: ICompareListProps) {
         return <></>;
     }
     
-    const card_height = CARD_SIZE + ((CARD_SIZE * 0.3) * 2) + 1;
+    const card_height = (CARD_SIZE + ((CARD_SIZE * 0.3) * 2) + 1) + 4;
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE + 16)) || 1;
     const rowCount = Math.ceil(times.length / itemsPerRow);
     
@@ -577,7 +582,7 @@ function CompareRow(props: ICompareRowProps) {
     const toIndex = Math.min(fromIndex + itemsPerRow, times.length);
     
     for (let i = fromIndex; i < toIndex; ++i) {
-        rowTimes.push(<CompareListCard key={i} info={times[i]} />);
+        rowTimes.push(<CompareListCard key={times[i].mapId} info={times[i]} />);
     }
 
     return (
@@ -593,6 +598,9 @@ interface ICompareListCardProps {
 
 function CompareListCard(props: ICompareListCardProps) {
     const { info } = props;
+    const [ showInfo, setShowInfo ] = useState(false);
+    const [ defaultShowInfo, setDefaultShowInfo ] = useState(false);
+    const theme = useTheme();
 
     const times = info.times;
     let colors: string[] = [];
@@ -612,7 +620,7 @@ function CompareListCard(props: ICompareListCardProps) {
         <Box key={times[i].id}>
             <Divider component="li" />
             <ListItem>
-                <CompareCardTimeCell time={times[i]} diff={+times[i].time - +times[0].time}/>
+                <CompareCardTimeCell time={times[i]} diff={+times[i].time - +times[0].time} showInfo={showInfo}/>
             </ListItem>
         </Box>
         );
@@ -630,12 +638,12 @@ function CompareListCard(props: ICompareListCardProps) {
         borderRadius: "12px",
         backgroundOrigin: "border-box",
         backgroundClip: "content-box, border-box",
-        transition: ".6s ease",
-        "& .mapImg": { transition: "transform .6s ease" },
+        transition: ".4s ease",
+        "& .mapImg": { transition: "transform .4s ease" },
         ":hover": { 
-            transform: "scale(1.03)",
+            transform: "scale(1.04166667)",
             boxShadow: 10,
-            "& .mapImg": { transform: "scale(1.11)" } 
+            "& .mapImg": { transform: "scale(1.108363636)" } 
         }
     }}>
         <Box padding={0.5} display="flex" flexDirection="column" height="100%">
@@ -661,7 +669,7 @@ function CompareListCard(props: ICompareListCardProps) {
                     :
                 <QuestionMarkIcon className="mapImg" sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
             }
-                <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} >
+                <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} display="flex" flexDirection="column" >
                     <Typography variant="h5" fontWeight="bold" sx={{ 
                         padding: 1,
                         overflow:"hidden", 
@@ -674,12 +682,22 @@ function CompareListCard(props: ICompareListCardProps) {
                     }}>
                         {info.map}
                     </Typography>
+                    <Box display="flex" justifyContent="flex-end" alignItems="flex-end" flexGrow={1} padding={0.5}>
+                        <IconButton 
+                            onMouseEnter={() => setShowInfo(!defaultShowInfo)} 
+                            onMouseLeave={(() => setShowInfo(defaultShowInfo))} 
+                            onClick={() => setDefaultShowInfo(!defaultShowInfo)}
+                            sx={{filter: "drop-shadow(3px 5px 2px rgb(0 0 0 / 0.6))", color: showInfo ? theme.palette.secondary.main : "white"}}
+                        >
+                            <InfoIcon fontSize="large" />
+                        </IconButton>
+                    </Box>
                 </Box>
             </Box>
             <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
                 <List>
                     <ListItem key={times[0].id}>
-                        <CompareCardTimeCell time={times[0]} diff={0} />
+                        <CompareCardTimeCell time={times[0]} diff={0} showInfo={showInfo} />
                     </ListItem>
                     {otherTimes}
                 </List>
@@ -692,11 +710,41 @@ function CompareListCard(props: ICompareListCardProps) {
 interface ICompareCardTimeCellProps {
     time: CompareTime
     diff: number
+    showInfo: boolean
 }
 
 function CompareCardTimeCell(props: ICompareCardTimeCellProps) {
-    const { time, diff } = props;
+    const { time, diff, showInfo } = props;
     const theme = useTheme();
+
+    const mainText = showInfo ?
+    <>
+    <DateDisplay date={time.date} bold noRecentHighlight tooltipPlacement="top" />
+    <Typography fontFamily="monospace" variant="body1">
+        {formatStyle(time.style)}
+    </Typography>
+    </>
+    :
+    <>
+    <Typography variant="body1" fontWeight="bold">
+        {formatTime(time.time)}
+    </Typography>
+    <Box display="flex" flexDirection="row">
+        {diff > 0 ? 
+        <>
+        <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={red["A400"]} marginRight="4px">
+            +
+        </Typography>
+        <Typography fontFamily="monospace" variant="body1">
+            {formatDiff(diff)}
+        </Typography>
+        </> :
+        <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={theme.palette.mode === "dark" ? green["A400"] : darken(green["A400"], 0.15)}>
+            best
+        </Typography>
+        }
+    </Box>
+    </>
 
     return (
     <Box height="48px" display="flex" flexDirection="row" width="100%">
@@ -704,24 +752,7 @@ function CompareCardTimeCell(props: ICompareCardTimeCellProps) {
             <Avatar sx={{bgcolor: grey[100], height: "40px", width: "40px", alignSelf: "center"}} alt={time.username} src={time.userThumb} />
         </Tooltip>
         <Box display="flex" flexDirection="column" alignItems="flex-end" width="100%">
-            <Typography variant="body1" fontWeight="bold">
-                {formatTime(time.time)}
-            </Typography>
-            <Box display="flex" flexDirection="row">
-                {diff > 0 ? 
-                <>
-                <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={red["A400"]} marginRight="4px">
-                    +
-                </Typography>
-                <Typography fontFamily="monospace" variant="body1">
-                    {formatDiff(diff)}
-                </Typography>
-                </> :
-                <Typography fontFamily="monospace" variant="body1" fontWeight="bold" color={theme.palette.mode === "dark" ? green["A400"] : darken(green["A400"], 0.15)}>
-                    best
-                </Typography>
-                }
-            </Box>
+            {mainText}
         </Box>
     </Box>
     )
