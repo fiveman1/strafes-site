@@ -38,9 +38,9 @@ function getCardHeight(numUsers: number) {
 function shouldIncludeTimes(times: CompareTime[], userIds: string[], filterMode: CompareSlice) {
     switch (filterMode) {
         case CompareSlice.FirstWins:
-            return times.length > 1 && times[0].userId === userIds[0];
+            return times.length > 1 && times[0].userId === userIds[0] && times[0].time !== times[1].time;
         case CompareSlice.SecondWins:
-            return times.length > 1 && times[0].userId === userIds[1];
+            return times.length > 1 && times[0].userId === userIds[1] && times[0].time !== times[1].time;
         case CompareSlice.OnlyFirst:
             return times.length === 1 && times[0].userId === userIds[0];
         case CompareSlice.OnlySecond:
@@ -141,7 +141,12 @@ function CompareCard(props: ICompareCardProps) {
         const numTimes = mapToTime.size;
         let roundedPercents = ["n/a", "n/a", "n/a", "n/a", "n/a"];
         if (numTimes > 0) {
-            const percents = [firstWins / numTimes, onlyFirst / numTimes, secondWins / numTimes, onlySecond / numTimes, ties / numTimes];
+            const percents = [0, 0, 0, 0, 0];
+            percents[CompareSlice.FirstWins] = firstWins / numTimes;
+            percents[CompareSlice.SecondWins] = secondWins / numTimes;
+            percents[CompareSlice.OnlyFirst] = onlyFirst / numTimes;
+            percents[CompareSlice.OnlySecond] = onlySecond / numTimes;
+            percents[CompareSlice.Ties] = ties / numTimes;
             roundedPercents = percentRound(percents, 1).map((num) => num.toFixed(1));
         }
 
