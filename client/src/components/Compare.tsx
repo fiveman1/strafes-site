@@ -52,6 +52,21 @@ function shouldIncludeTimes(times: CompareTime[], userIds: string[], filterMode:
     }
 }
 
+function diffSortVal(a: CompareTimeInfo, b: CompareTimeInfo, isAsc: boolean): number {
+    if (a.times.length === 1 && b.times.length === 1) {
+        return a.map < b.map ? -1 : 1;
+    }
+    else if (a.times.length === 1) {
+        return 1;
+    }
+    else if (b.times.length === 1) {
+        return -1;
+    }
+    const diffA = +a.times[0].time - +a.times[1].time;
+    const diffB = +b.times[0].time - +b.times[1].time;
+    return isAsc ? diffB - diffA : diffA - diffB;
+}
+
 interface ICompareCardProps {
     firstUser?: User
     firstTimes?: Time[]
@@ -619,6 +634,12 @@ function CompareList(props: ICompareListProps) {
         }
         else if (sort === "mapDesc") {
             return times.sort((a, b) => a.map > b.map ? -1 : 1);
+        }
+        else if (sort === "diffAsc") {
+            return times.sort((a, b) => diffSortVal(a, b, true))
+        }
+        else if (sort === "diffDesc") {
+            return times.sort((a, b) => diffSortVal(a, b, false))
         }
         return times;
     }, [firstTimes, firstUser, isLoading, maps, secondTimes, secondUser, sort, userColors, selectedSlice]);

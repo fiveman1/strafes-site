@@ -4,9 +4,9 @@ import { useLocation, useNavigate } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
-export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc";
-type CompareTimesSortRaw = "map" | "date" | "time";
-const SORTS = ["mapAsc" , "mapDesc" , "dateAsc" , "dateDesc" , "timeAsc" ,"timeDesc"];
+export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
+type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
+const SORTS = ["mapAsc" , "mapDesc" , "dateAsc" , "dateDesc" , "timeAsc" ,"timeDesc", "diffAsc", "diffDesc"];
 function isCompareTimesSort(value: string): value is CompareTimesSort {
     return SORTS.includes(value);
 }
@@ -34,6 +34,8 @@ function convertToSort(sortVal: CompareTimesSortRaw, isAsc: boolean): CompareTim
             return isAsc ? "dateAsc" : "dateDesc";
         case "time":
             return isAsc ? "timeAsc" : "timeDesc";
+        case "diff":
+            return isAsc ? "diffAsc" : "diffDesc";
     }
 }
 
@@ -74,6 +76,14 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
                 paramRawSort = "time";
                 paramIsAsc = false;
                 break;
+            case "diffAsc":
+                paramRawSort = "diff";
+                paramIsAsc = true;
+                break;
+            case "diffDesc":
+                paramRawSort = "diff";
+                paramIsAsc = false;
+                break;
         }
     }
     const [ rawSort, setRawSort ] = useState<CompareTimesSortRaw>(paramRawSort);
@@ -107,7 +117,7 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
                     label="Sort"
                     onChange={handleChangeSort}
                 >
-                    {["map", "date", "time"].map((sort) => <MenuItem value={sort}>{sort}</MenuItem>)}
+                    {["map", "date", "time", "diff"].map((sort) => <MenuItem value={sort}>{sort}</MenuItem>)}
                 </Select>
             </FormControl>
             <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}> 
