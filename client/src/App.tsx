@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainAppBar from "./components/MainAppBar";
@@ -29,6 +29,13 @@ function App() {
         getMaps().then(setMaps);
     }, []);
 
+    const contextParams: ContextParams = useMemo(() => {
+        return {
+            maps: maps,
+            sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1)
+        };
+    }, [maps]);
+
     const theme = createTheme({
         palette: {
             // SrafesNET red: #c61926
@@ -49,11 +56,6 @@ function App() {
             },
         },
     });
-
-    const contextParams: ContextParams = {
-        maps: maps,
-        sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1)
-    };
 
     return (
         <ThemeProvider theme={theme}>

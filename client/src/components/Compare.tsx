@@ -15,18 +15,42 @@ import { FixedSizeList } from "react-window";
 import { ContextParams, formatDiff, formatStyle, formatTime } from "../util/format";
 import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { PieChart } from "@mui/x-charts";
+import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
 import CompareSortSelector, { CompareTimesSort, useCompareSort } from "./CompareSortSelector";
 import InfoIcon from '@mui/icons-material/Info';
 import DateDisplay from "./DateDisplay";
 
 const CARD_SIZE = 240;
+const TIE_COLOR = blue["A400"];
+
+const enum CompareSlice {
+    FirstWins,
+    SecondWins,
+    OnlyFirst,
+    OnlySecond,
+    Ties
+}
 
 function getCardHeight(numUsers: number) {
     return CARD_SIZE + ((CARD_SIZE * 0.3) * numUsers) + (numUsers - 1);
 }
 
-const TIE_COLOR = blue["A400"];
+function shouldIncludeTimes(times: CompareTime[], userIds: string[], filterMode: CompareSlice) {
+    switch (filterMode) {
+        case CompareSlice.FirstWins:
+            return times.length > 1 && times[0].userId === userIds[0];
+        case CompareSlice.SecondWins:
+            return times.length > 1 && times[0].userId === userIds[1];
+        case CompareSlice.OnlyFirst:
+            return times.length === 1 && times[0].userId === userIds[0];
+        case CompareSlice.OnlySecond:
+            return times.length === 1 && times[0].userId === userIds[1];
+        case CompareSlice.Ties:
+            return times.length > 1 && times[0].time === times[1].time;
+        default:
+            return true;
+    }
+}
 
 interface ICompareCardProps {
     firstUser?: User
@@ -35,12 +59,101 @@ interface ICompareCardProps {
     secondTimes?: Time[]
     isLoading: boolean
     userColors: string[]
+    selectedSlice?: CompareSlice
+    setSelectedSlice: (slice?: CompareSlice) => void
 }
 
 function CompareCard(props: ICompareCardProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors, selectedSlice, setSelectedSlice } = props;
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const theme = useTheme();
+
+    const series: PieSeriesType<PieValueType>[] = useMemo(() => {
+        if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.id === secondUser.id) {
+            return [];
+        }
+
+        const firstUserId = firstUser.id;
+        const secondUserId = secondUser.id;
+        const mapToTime = new Map<number, Map<string, Time>>();
+        for (const time of firstTimes) {
+            mapToTime.set(time.mapId, new Map<string, Time>([[firstUserId, time]]));
+        }
+
+        for (const time of secondTimes) {
+            const map = mapToTime.get(time.mapId);
+            if (map) {
+                map.set(secondUserId, time);
+            }
+            else {
+                mapToTime.set(time.mapId, new Map<string, Time>([[secondUserId, time]]));
+            }
+        }
+
+        let firstWins = 0;
+        let secondWins = 0;
+        let ties = 0;
+        let onlyFirst = 0;
+        let onlySecond = 0;
+        mapToTime.forEach((userToTime) => {
+            const firstTime = userToTime.get(firstUserId);
+            const secondTime = userToTime.get(secondUserId);
+            
+            if (firstTime && !secondTime) {
+                ++onlyFirst;
+                return;
+            }
+            else if (!firstTime && secondTime) {
+                ++onlySecond;
+                return;
+            }
+
+            const firstMillis = firstTime!.time;
+            const secondMillis = secondTime!.time;
+
+            if (firstMillis < secondMillis) {
+                ++firstWins;
+            }
+            else if (secondMillis < firstMillis) {
+                ++secondWins;
+            }
+            else {
+                ++ties;
+            }
+        });
+
+        const numTimes = mapToTime.size;
+        let roundedPercents = ["n/a", "n/a", "n/a", "n/a", "n/a"];
+        if (numTimes > 0) {
+            const percents = [firstWins / numTimes, onlyFirst / numTimes, secondWins / numTimes, onlySecond / numTimes, ties / numTimes];
+            roundedPercents = percentRound(percents, 1).map((num) => num.toFixed(1));
+        }
+
+        const sliceColors = [userColors[0], userColors[1], lighten(userColors[0], 0.5), lighten(userColors[1], 0.5), TIE_COLOR];
+        if (selectedSlice !== undefined) {
+            for (let i = 0; i < sliceColors.length; ++i) {
+                if (i !== selectedSlice) {
+                    sliceColors[i] = "gray"
+                }
+            }
+        }
+
+        return [{
+            type: "pie",
+            highlightScope: { fade: "global", highlight: "item" },
+            faded: { innerRadius: 30, additionalRadius: -30 },
+            id: "data",
+            data: [
+                { id: CompareSlice.FirstWins, value: firstWins, label: `${firstUser.username} wins`, color: sliceColors[0] },
+                { id: CompareSlice.SecondWins, value: secondWins, label: `${secondUser.username} wins`, color: sliceColors[1] },
+                { id: CompareSlice.OnlyFirst, value: onlyFirst, label: `${firstUser.username} exclusive`, color: sliceColors[2] },
+                { id: CompareSlice.OnlySecond, value: onlySecond, label: `${secondUser.username} exclusive`, color: sliceColors[3] },
+                { id: CompareSlice.Ties, value: ties, label: "Ties", color: sliceColors[4] },
+            ],
+            valueFormatter: (val) => `${val.value} (${roundedPercents[val.id ?? 0]}%)`
+        }]
+    }, [firstTimes, firstUser, secondTimes, secondUser, selectedSlice, userColors]);
 
     if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.id === secondUser.id) {
         const mainText = firstUser && secondUser && firstUser.id === secondUser.id ? "😡" : "Waiting...";
@@ -59,88 +172,28 @@ function CompareCard(props: ICompareCardProps) {
         );
     }
 
-    const firstUserId = firstUser.id;
-    const secondUserId = secondUser.id;
-    const mapToTime = new Map<number, Map<string, Time>>();
-    for (const time of firstTimes) {
-        mapToTime.set(time.mapId, new Map<string, Time>([[firstUserId, time]]));
-    }
-
-    for (const time of secondTimes) {
-        const map = mapToTime.get(time.mapId);
-        if (map) {
-            map.set(secondUserId, time);
-        }
-        else {
-            mapToTime.set(time.mapId, new Map<string, Time>([[secondUserId, time]]));
-        }
-    }
-
-    let firstWins = 0;
-    let secondWins = 0;
-    let ties = 0;
-    let onlyFirst = 0;
-    let onlySecond = 0;
-    mapToTime.forEach((userToTime) => {
-        const firstTime = userToTime.get(firstUserId);
-        const secondTime = userToTime.get(secondUserId);
-        
-        if (firstTime && !secondTime) {
-            ++onlyFirst;
-            return;
-        }
-        else if (!firstTime && secondTime) {
-            ++onlySecond;
-            return;
-        }
-
-        const firstMillis = firstTime!.time;
-        const secondMillis = secondTime!.time;
-
-        if (firstMillis < secondMillis) {
-            ++firstWins;
-        }
-        else if (secondMillis < firstMillis) {
-            ++secondWins;
-        }
-        else {
-            ++ties;
-        }
-    });
-
-    const numTimes = mapToTime.size;
-    let roundedPercents = ["n/a", "n/a", "n/a", "n/a", "n/a"];
-    if (numTimes > 0) {
-        const percents = [firstWins / numTimes, onlyFirst / numTimes, secondWins / numTimes, onlySecond / numTimes, ties / numTimes];
-        roundedPercents = percentRound(percents, 1).map((num) => num.toFixed(1));
-    }
-
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
-        <Typography variant="caption">
-            Compare
-        </Typography>
-        
+        <Box display="flex" flexDirection="row">
+            <Typography variant="caption">
+                Compare
+            </Typography>
+            <Typography flexGrow={1} variant="caption" fontStyle="italic" color={theme.palette.text.secondary} textAlign="right">
+                Click on a slice to filter
+            </Typography>
+        </Box>
         <PieChart 
-            height={smallScreen ? 250 : 300}
-            width={smallScreen ? 250 : 300}
+            height={smallScreen ? 250 : 350}
+            width={smallScreen ? 250 : 350}
+            
+            onItemClick={(_event, item) => {item.dataIndex === selectedSlice ? setSelectedSlice(undefined) : setSelectedSlice(item.dataIndex)}}
             slotProps={{
                 legend: {
                     direction: "horizontal"
-                }
+                },
+                
             }}
-            series={[
-                { 
-                    data: [
-                        { id: 0, value: firstWins, label: `${firstUser.username} wins`, color: userColors[0] },
-                        { id: 2, value: secondWins, label: `${secondUser.username} wins`, color: userColors[1] },
-                        { id: 1, value: onlyFirst, label: `${firstUser.username} exclusive`, color: lighten(userColors[0], 0.5) },
-                        { id: 3, value: onlySecond, label: `${secondUser.username} exclusive`, color: lighten(userColors[1], 0.5) },
-                        { id: 4, value: ties, label: "Ties", color: TIE_COLOR },
-                    ],
-                    valueFormatter: (val) => `${val.value} (${roundedPercents[val.id ?? 0]}%)`
-                }
-            ]}  
+            series={series}
         />
         {isLoading ? <LinearProgress /> : <></>}
     </Paper>
@@ -168,6 +221,7 @@ function getUserTimesFromState(userToTimes: UserToTimes, userId: string, game: G
 function Compare() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
+    const [selectedSlice, setSelectedSlice] = useState<CompareSlice>();
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -305,6 +359,9 @@ function Compare() {
 
         isLoading = isLoading || isFirstUserLoading || isSecondUserLoading;
 
+        // Reset filtered/selected slice when changing data
+        setSelectedSlice(undefined);
+
         return {firstUser, firstTimes, secondUser, secondTimes, isLoading, isFirstUserLoading, isSecondUserLoading};
     }, [firstUserId, game, idToUser, secondUserId, style, userTimes]);
 
@@ -369,7 +426,16 @@ function Compare() {
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>
-            <CompareCard firstUser={firstUser} secondUser={secondUser} firstTimes={firstTimes} secondTimes={secondTimes} isLoading={isLoading} userColors={userColors} />
+            <CompareCard 
+                firstUser={firstUser} 
+                secondUser={secondUser} 
+                firstTimes={firstTimes} 
+                secondTimes={secondTimes} 
+                isLoading={isLoading} 
+                userColors={userColors} 
+                selectedSlice={selectedSlice}
+                setSelectedSlice={setSelectedSlice}
+            />
         </Box>
         <Box padding={1}>
             <CompareTimesCard 
@@ -379,6 +445,7 @@ function Compare() {
                 secondTimes={secondTimes} 
                 isLoading={isLoading}  
                 userColors={userColors}
+                selectedSlice={selectedSlice}
             />
         </Box>
     </Box>
@@ -392,6 +459,7 @@ interface ICompareTimesCardProps {
     secondTimes?: Time[]
     isLoading: boolean
     userColors: string[]
+    selectedSlice?: CompareSlice
 }
 
 interface ICompareListProps {
@@ -403,6 +471,7 @@ interface ICompareListProps {
     secondTimes: Time[]
     isLoading: boolean
     userColors: string[]
+    selectedSlice?: CompareSlice
 }
 
 interface CompareTimeInfo {
@@ -414,6 +483,7 @@ interface CompareTimeInfo {
 
 interface CompareTime {
     username: string
+    userId: string
     userThumb: string
     userColor: string
     time: string
@@ -423,7 +493,7 @@ interface CompareTime {
 }
 
 function CompareTimesCard(props: ICompareTimesCardProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, userColors, selectedSlice } = props;
 
     const [sort, setSort] = useCompareSort();
 
@@ -451,6 +521,7 @@ function CompareTimesCard(props: ICompareTimesCardProps) {
                                     secondTimes={secondTimes} 
                                     isLoading={isLoading}  
                                     userColors={userColors}
+                                    selectedSlice={selectedSlice}
                                 />}
                 </AutoSizer>
             </Paper>
@@ -471,7 +542,7 @@ function getDate(info: CompareTimeInfo) {
 }
 
 function CompareList(props: ICompareListProps) {
-    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, width, userColors, sort } = props;
+    const { firstUser, secondUser, firstTimes, secondTimes, isLoading, width, userColors, sort, selectedSlice } = props;
 
     const { maps } = useOutletContext() as ContextParams;
 
@@ -488,6 +559,7 @@ function CompareList(props: ICompareListProps) {
                 mapThumb: maps[time.mapId]?.largeThumb,
                 times: [{
                     username: firstUser.username,
+                    userId: firstUser.id,
                     userThumb: firstUser.thumbUrl,
                     userColor: userColors[0],
                     time: time.time,
@@ -502,6 +574,7 @@ function CompareList(props: ICompareListProps) {
             const timeList = mapToTime.get(time.mapId);
             const compareTime: CompareTime = {
                 username: secondUser.username,
+                userId: secondUser.id,
                 userThumb: secondUser.thumbUrl,
                 userColor: userColors[1],
                 time: time.time,
@@ -523,30 +596,32 @@ function CompareList(props: ICompareListProps) {
                 });
             }
         }
+        let times = Array.from(mapToTime.values());
+
+        if (selectedSlice !== undefined) {
+            times = times.filter((info) => shouldIncludeTimes(info.times, [firstUser.id, secondUser.id], selectedSlice))
+        }
+
         if (sort === "dateAsc") {
-            return Array.from(mapToTime.values()).sort((a, b) => {
-                return getDate(a) - getDate(b);
-            });
+            return times.sort((a, b) => getDate(a) - getDate(b));
         }
         else if (sort === "dateDesc") {
-            return Array.from(mapToTime.values()).sort((a, b) => {
-                return getDate(b) - getDate(a);
-            });
+            return times.sort((a, b) => getDate(b) - getDate(a));
         }
         else if (sort === "timeAsc") {
-            return Array.from(mapToTime.values()).sort((a, b) => +a.times[0].time - +b.times[0].time);
+            return times.sort((a, b) => +a.times[0].time - +b.times[0].time);
         }
         else if (sort === "timeDesc") {
-            return Array.from(mapToTime.values()).sort((a, b) => +b.times[0].time - +a.times[0].time);
+            return times.sort((a, b) => +b.times[0].time - +a.times[0].time);
         }
         else if (sort === "mapAsc") {
-            return Array.from(mapToTime.values()).sort((a, b) => a.map < b.map ? -1 : 1);
+            return times.sort((a, b) => a.map < b.map ? -1 : 1);
         }
         else if (sort === "mapDesc") {
-            return Array.from(mapToTime.values()).sort((a, b) => a.map > b.map ? -1 : 1);
+            return times.sort((a, b) => a.map > b.map ? -1 : 1);
         }
-        return Array.from(mapToTime.values());
-    }, [firstTimes, firstUser.id, firstUser.thumbUrl, firstUser.username, isLoading, maps, secondTimes, secondUser.id, secondUser.thumbUrl, secondUser.username, sort, userColors]);
+        return times;
+    }, [firstTimes, firstUser, isLoading, maps, secondTimes, secondUser, sort, userColors, selectedSlice]);
 
     if (isLoading || firstUser.id === secondUser.id) {
         return <></>;
@@ -685,7 +760,7 @@ function CompareListCard(props: ICompareListCardProps) {
                     <Box display="flex" justifyContent="flex-end" alignItems="flex-end" flexGrow={1} padding={0.5}>
                         <IconButton 
                             onMouseEnter={() => setShowInfo(!defaultShowInfo)} 
-                            onMouseLeave={(() => setShowInfo(defaultShowInfo))} 
+                            onMouseLeave={() => setShowInfo(defaultShowInfo)} 
                             onClick={() => setDefaultShowInfo(!defaultShowInfo)}
                             sx={{filter: "drop-shadow(3px 5px 2px rgb(0 0 0 / 0.6))", color: showInfo ? theme.palette.secondary.main : "white"}}
                         >
