@@ -144,6 +144,7 @@ function UserSearch(props: IUserSearchProps) {
                             fullWidth 
                             label="Username" 
                             variant="outlined"
+                            type="search"
                             slotProps={{
                                 htmlInput: {
                                     ...params.inputProps, 
