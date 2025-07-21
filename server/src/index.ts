@@ -48,6 +48,51 @@ app.get("/api/username", cache("5 minutes"), async (req, res) => {
     res.status(200).json({id: userId});
 });
 
+const searchGUID = crypto.randomUUID();
+app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
+    const username = req.query.username;
+
+    if (!username) {
+        res.status(400).json({error: "Invalid username"});
+        return;
+    }
+
+    const usernames = [];
+    const searchRes = await tryGetCached("https://apis.roproxy.com/search-api/omni-search", {
+        verticalType: "user",
+        searchQuery: username,
+        sessionId: searchGUID
+    });
+
+    if (!searchRes || searchRes.data.searchResults.length === 0) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    for (const result of searchRes.data.searchResults[0].contents) {
+        usernames.push(result.username);
+    }
+
+    res.status(200).json({usernames: usernames});
+
+    // Below is an implementation using the web API that is actually documented, but it seems to not perform as well
+
+    // const searchRes = await tryGetCached("https://users.roproxy.com/v1/users/search", {
+    //     keyword: username,
+    // });
+
+    // if (!searchRes) {
+    //     res.status(404).json({error: "Not found"});
+    //     return;
+    // }
+
+    // for (const result of searchRes.data.data) {
+    //     usernames.push(result.name);
+    // }
+
+    // res.status(200).json({usernames: usernames});
+});
+
 function validatePositiveInt(userId: any) {
     return !isNaN(+userId) && +userId > 0;
 }

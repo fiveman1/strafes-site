@@ -134,3 +134,10 @@ export async function getMaps(): Promise<Maps> {
     }
     return maps;
 }
+
+export async function searchByUsername(username: string): Promise<string[]> {
+    const res = await tryGetRequest("usersearch", {username: username});
+    if (!res) return [];
+
+    return res.data.usernames;
+}

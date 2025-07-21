@@ -5,7 +5,7 @@ import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
-import UserSearch from "./UserSearch";
+import UserSearch, { useUserSearch } from "./UserSearch";
 import { Time, TimeSortBy, User } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
@@ -21,9 +21,9 @@ function Users() {
     const [style, setStyle] = useStyle();
     
     const [user, setUserInfo] = useState<User>();
-    const [userLoading, setIsUserLoading] = useState<boolean>(false);
-    const [advanced, setAdvanced] = useState<boolean>(false);
-    const [userText, setUserText] = useState<string>("");
+    const [userLoading, setIsUserLoading] = useState(false);
+    const [advanced, setAdvanced] = useState(false);
+    const [userSearch] = useUserSearch();
     const [viewedTimes, setViewedTimes] = useState<Time[]>([]);
     const apiRef = useGridApiRef();
 
@@ -99,11 +99,22 @@ function Users() {
             Users
         </Typography>
         <Box marginLeft={2} marginBottom={0.5}>
-            <FormControlLabel control={<Switch checked={advanced} onChange={(e) => setAdvanced(e.target.checked)} />} label="Advanced" />
+            <FormControlLabel 
+                label="Advanced"
+                control={
+                <Switch 
+                    checked={advanced} 
+                    onChange={(e) => setAdvanced(e.target.checked)} 
+                />}
+            />
         </Box>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch setUserId={setUserId} minHeight={185} userText={userText} setUserText={setUserText}/>
+                <UserSearch 
+                    setUserId={setUserId} 
+                    minHeight={185} 
+                    userSearch={userSearch}
+                />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
                 <UserCard user={user} loading={userLoading} minHeight={185}/>
@@ -125,7 +136,18 @@ function Users() {
             <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={TimeSortBy.DateDesc} userId={userId} game={game} style={style} onlyWRs={onlyWRs} onLoadTimes={addTimes} gridApiRef={apiRef} hideUser showPlacement showPlacementOrdinals />
+            <TimesCard 
+                defaultSort={TimeSortBy.DateDesc} 
+                userId={userId} 
+                game={game} 
+                style={style} 
+                onlyWRs={onlyWRs} 
+                onLoadTimes={addTimes} 
+                gridApiRef={apiRef} 
+                hideUser 
+                showPlacement 
+                showPlacementOrdinals 
+            />
         </Box>
         {advanced ? 
         <Box padding={1}>

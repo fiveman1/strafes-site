@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import { Avatar, Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
-import UserSearch from "./UserSearch";
+import UserSearch, { useUserSearch } from "./UserSearch";
 import UserCard from "./UserCard";
 import { Game, Style, Time, User } from "../api/interfaces";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
@@ -281,10 +281,10 @@ function Compare() {
         });
     };
     
-    const [firstUserId, setFirstUserId] = useState<string | undefined>(queryParams.get("user1") ?? undefined);
-    const [secondUserId, setSecondUserId] = useState<string | undefined>(queryParams.get("user2") ?? undefined);
-    const [firstUserText, setFirstUserText] = useState<string>("");
-    const [secondUserText, setSecondUserText] = useState<string>("");
+    const [firstUserId, setFirstUserId] = useState(queryParams.get("user1") ?? undefined);
+    const [secondUserId, setSecondUserId] = useState(queryParams.get("user2") ?? undefined);
+    const [firstUserSearch, setFirstUserSearch] = useUserSearch();
+    const [secondUserSearch, setSecondUserSearch] = useUserSearch();
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -406,8 +406,8 @@ function Compare() {
         navigate({ search: queryParams.toString() }, { replace: true });
         setFirstUserId(secondUserId);
         setSecondUserId(firstUserId);
-        setFirstUserText(secondUserText);
-        setSecondUserText(firstUserText);
+        setFirstUserSearch(secondUserSearch);
+        setSecondUserSearch(firstUserSearch);
     }
 
     const userColors = [pink["A400"], purple["A700"]];
@@ -422,7 +422,12 @@ function Compare() {
         </Typography>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch setUserId={setFirstUserId} minHeight={185} userText={firstUserText} setUserText={setFirstUserText} noNavigate />
+                <UserSearch 
+                    setUserId={setFirstUserId} 
+                    minHeight={185} 
+                    userSearch={firstUserSearch}
+                    noNavigate 
+                />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
                 <UserCard user={firstUser} loading={isFirstUserLoading} minHeight={185}/>
@@ -435,7 +440,12 @@ function Compare() {
         </Box>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch setUserId={setSecondUserId} minHeight={185} userText={secondUserText} setUserText={setSecondUserText} noNavigate />
+                <UserSearch 
+                    setUserId={setSecondUserId} 
+                    minHeight={185} 
+                    userSearch={secondUserSearch}
+                    noNavigate 
+                />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
                 <UserCard user={secondUser} loading={isSecondUserLoading} minHeight={185}/>
