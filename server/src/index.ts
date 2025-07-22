@@ -5,7 +5,7 @@ import path from "path";
 import memoize from 'memoize';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces.js";
+import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
 import { exit } from "process";
 import { MapToAsset } from "./util.js";
 
@@ -57,7 +57,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
         return;
     }
 
-    const usernames = [];
+    const usernames: UserSearchData[] = [];
     const searchRes = await tryGetCached("https://apis.roproxy.com/search-api/omni-search", {
         verticalType: "user",
         searchQuery: username,
@@ -70,7 +70,11 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
     }
 
     for (const result of searchRes.data.searchResults[0].contents) {
-        usernames.push(result.username);
+        usernames.push({
+            username: result.username,
+            id: result.contentId.toString(),
+            previousUsernames: result.previousUsernames
+        });
     }
 
     res.status(200).json({usernames: usernames});

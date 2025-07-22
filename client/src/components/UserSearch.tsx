@@ -2,22 +2,23 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Autocomplete, Box, debounce, Paper, TextField, Typography } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
+import { UserSearchData } from "../api/interfaces";
 
 export interface UserSearchInfo {
     userText: string
     setUserText: (text: string) => void
-    selectedUser: string
-    setSelectedUser: (user: string) => void
-    options: readonly string[]
-    setOptions: (options: readonly string[]) => void
+    selectedUser?: UserSearchData
+    setSelectedUser: (user: UserSearchData) => void
+    options: readonly UserSearchData[]
+    setOptions: (options: readonly UserSearchData[]) => void
     loadingOptions: boolean
     setIsLoadingOptions: (loading: boolean) => void
 }
 
 export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => void] {
     const [userText, setUserText] = useState("");
-    const [selectedUser, setSelectedUser] = useState("");
-    const [options, setOptions] = useState<readonly string[]>([]);
+    const [selectedUser, setSelectedUser] = useState<UserSearchData>();
+    const [options, setOptions] = useState<readonly UserSearchData[]>([]);
     const [loadingOptions, setIsLoadingOptions] = useState(false);
 
     const search = {
@@ -48,6 +49,13 @@ export interface IUserSearchProps {
     userSearch: UserSearchInfo
 }
 
+function prevUsernamesContains(data: UserSearchData, search: string) {
+    if (!data.previousUsernames) {
+        return false;
+    }
+    return data.previousUsernames.map(name => name.toLowerCase()).includes(search);
+}
+
 function UserSearch(props: IUserSearchProps) {
     const { minHeight, setUserId, noNavigate, userSearch } = props;
     const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
@@ -56,7 +64,7 @@ function UserSearch(props: IUserSearchProps) {
     const navigate = useNavigate();
     const [hasError, setHasError] = useState(false);
 
-    const fetchSearchOptions = useMemo(() => debounce(async (searchText: string, callback: (usernames: string[]) => void) => {
+    const fetchSearchOptions = useMemo(() => debounce(async (searchText: string, callback: (usernames: UserSearchData[]) => void) => {
         const usernames = await searchByUsername(searchText);
         callback(usernames);
     }, 300), []);
@@ -78,9 +86,30 @@ function UserSearch(props: IUserSearchProps) {
             if (!active) return;
 
             // Always put search text at top of the list
-            if (!usernames.map((name) => name.toLowerCase()).includes(userText.toLowerCase())) {
-                usernames = [userText, ...usernames];
+            let found = false;
+            const lowerUserText = userText.toLowerCase();
+            for (const data of usernames) {
+                if (data.username.toLowerCase() === lowerUserText) {
+                    found = true;
+                }
+                else if (prevUsernamesContains(data, lowerUserText)) {
+                    found = true;
+                }
+
+                if (found) {
+                    const newUsernames = [data];
+                    for (const copyData of usernames) {
+                        if (copyData.username === data.username) continue;
+                        newUsernames.push(copyData);
+                    }
+                    usernames = newUsernames;
+                    break;
+                }
             }
+            if (!found) {
+                usernames = [{username: userText}, ...usernames];
+            }
+            
             setOptions(usernames);
         });
 
@@ -94,16 +123,26 @@ function UserSearch(props: IUserSearchProps) {
         setUserText(val);
     }, [setUserText]);
 
-    const onSearch = useCallback(async (search: string) => {
-        setSelectedUser(search);
-
+    const onSearch = useCallback(async (search: string | UserSearchData) => {
         if (!search) {
             setUserId(undefined);
             if (!noNavigate) navigate("/users");
             return;
         }
 
-        const userId = await getUserIdFromName(search);
+        let userId: string | undefined;
+        if (typeof search === "string") {
+            setSelectedUser({username: search});
+            userId = await getUserIdFromName(search);
+        }
+        else {
+            setSelectedUser(search);
+            userId = search.id;
+            if (!userId) {
+                userId = await getUserIdFromName(search.username);
+            }
+        }
+
         if (userId !== undefined) {
             if (!noNavigate) {
                 navigate({pathname: `/users/${userId}`, search: new URLSearchParams(location.search).toString()});
@@ -122,13 +161,18 @@ function UserSearch(props: IUserSearchProps) {
             <Box width="100%">
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
                 <Autocomplete 
+                    sx={{
+                        // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+                        "[type=\"search\"]::-webkit-search-decoration": {appearance: "none"},
+                        "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"}
+                    }}
                     fullWidth
                     inputMode="search"
                     inputValue={userText}
                     value={selectedUser}
                     onInputChange={(e, v) => onInputChange(v ?? "")}
                     onChange={(e, v) => onSearch(v ?? "")}
-                    isOptionEqualToValue={(opt, val) => opt.toLowerCase() === val.toLowerCase()}
+                    isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
                     filterOptions={(x) => x}
                     options={options}
                     loading={loadingOptions}
@@ -154,6 +198,7 @@ function UserSearch(props: IUserSearchProps) {
                             }}
                         />
                     }
+                    getOptionLabel={(option) => typeof option === "string" ? option : option.username}
                 />
             </Box>
         </Paper>

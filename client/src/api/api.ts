@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy } from "./interfaces";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -135,7 +135,7 @@ export async function getMaps(): Promise<Maps> {
     return maps;
 }
 
-export async function searchByUsername(username: string): Promise<string[]> {
+export async function searchByUsername(username: string): Promise<UserSearchData[]> {
     const res = await tryGetRequest("usersearch", {username: username});
     if (!res) return [];
 

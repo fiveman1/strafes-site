@@ -98,3 +98,9 @@ export enum ModerationStatus {
     Pending = 3,
     Hidden = 4
 }
+
+export interface UserSearchData {
+    username: string,
+    id?: string,
+    previousUsernames?: string[]
+}
