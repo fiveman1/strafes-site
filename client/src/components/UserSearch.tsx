@@ -169,7 +169,7 @@ function UserSearch(props: IUserSearchProps) {
                     fullWidth
                     inputMode="search"
                     inputValue={userText}
-                    value={selectedUser}
+                    value={selectedUser || null}
                     onInputChange={(e, v) => onInputChange(v ?? "")}
                     onChange={(e, v) => onSearch(v ?? "")}
                     isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}

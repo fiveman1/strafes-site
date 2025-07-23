@@ -3,6 +3,7 @@ import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
+import { Link as RouterLink } from "react-router";
 
 export interface IUserCardProps {
     minHeight?: number
@@ -23,9 +24,19 @@ function UserCard(props: IUserCardProps) {
                 <Typography variant="subtitle2" color="textSecondary">
                     @{user.username}
                 </Typography>
-                <Link href={`https://www.roblox.com/users/${user.id}/profile`} variant="subtitle2" color="info" underline="hover">
-                    {user.id}
-                </Link>
+                <Box>
+                    <Link 
+                        component={RouterLink} 
+                        to={{pathname: `https://www.roblox.com/users/${user.id}/profile`}}
+                        underline="hover"
+                        color="secondary"
+                        display="inline-block"
+                    >
+                        <Typography variant="subtitle2" overflow="hidden" whiteSpace="nowrap" >
+                            {user.id}
+                        </Typography>
+                    </Link>
+                </Box>
             </Box>
             <Box>
                 <Typography variant="body2">

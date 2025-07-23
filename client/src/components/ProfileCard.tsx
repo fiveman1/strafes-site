@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box, Paper, Tooltip, Typography } from "@mui/material";
+import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
 import { getUserRank } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { formatRank, formatSkill } from "../util/format";
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
 export interface IProfileCardProps {
     userId?: string
@@ -63,11 +64,24 @@ function ProfileCard(props: IProfileCardProps) {
             break;
     }
 
+    const disableButton = !userId || game === Game.all || style === Style.all;
+
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
-        <Typography variant="caption">
-            Profile
-        </Typography>
+        <Box display="flex">
+            <Typography variant="caption" flexGrow={1}>
+                Profile
+            </Typography>
+            {disableButton ? 
+            <IconButton size="small" disabled>
+                <CompareArrowsIcon fontSize="inherit" />
+            </IconButton>
+            :
+            <IconButton size="small" title={user ? `Compare @${user.username} to other users` : "Compare to other users"} LinkComponent={Link} href={`/compare?game=${game}&style=${style}&user1=${userId}`}>
+                <CompareArrowsIcon fontSize="inherit" />
+            </IconButton>
+            }
+        </Box>
         <Box display="flex" flexWrap="wrap">
             <Box flexGrow={1} padding={1}>
                 <Box display="flex" flexDirection="column">
