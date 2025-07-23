@@ -7,7 +7,7 @@ import { UserSearchData } from "../api/interfaces";
 export interface UserSearchInfo {
     userText: string
     setUserText: (text: string) => void
-    selectedUser?: UserSearchData
+    selectedUser: UserSearchData
     setSelectedUser: (user: UserSearchData) => void
     options: readonly UserSearchData[]
     setOptions: (options: readonly UserSearchData[]) => void
@@ -17,7 +17,7 @@ export interface UserSearchInfo {
 
 export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => void] {
     const [userText, setUserText] = useState("");
-    const [selectedUser, setSelectedUser] = useState<UserSearchData>();
+    const [selectedUser, setSelectedUser] = useState<UserSearchData>({username: ""});
     const [options, setOptions] = useState<readonly UserSearchData[]>([]);
     const [loadingOptions, setIsLoadingOptions] = useState(false);
 
@@ -169,7 +169,7 @@ function UserSearch(props: IUserSearchProps) {
                     fullWidth
                     inputMode="search"
                     inputValue={userText}
-                    value={selectedUser || null}
+                    value={selectedUser}
                     onInputChange={(e, v) => onInputChange(v ?? "")}
                     onChange={(e, v) => onSearch(v ?? "")}
                     isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
