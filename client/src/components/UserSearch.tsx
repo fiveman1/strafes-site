@@ -125,6 +125,7 @@ function UserSearch(props: IUserSearchProps) {
 
     const onSearch = useCallback(async (search: string | UserSearchData) => {
         if (!search) {
+            setSelectedUser({username: ""});
             setUserId(undefined);
             if (!noNavigate) navigate("/users");
             return;
