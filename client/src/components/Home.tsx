@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
-import { Grid, Typography } from "@mui/material";
+import { Grid, Typography, useMediaQuery } from "@mui/material";
 import HomeCard from "./HomeCard";
 import PersonIcon from '@mui/icons-material/Person';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -9,14 +9,16 @@ import StarIcon from '@mui/icons-material/Star';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
 function Home() {
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    
     useEffect(() => {
         document.title = "strafes - home"
     }, []);
 
     return (
-    <Box display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+    <Box padding={2} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
         <Typography padding={2} variant="h3">Go to...</Typography>
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={smallScreen ? 2 : 3} justifyContent="center">
             <Grid>
                 <HomeCard href="/users" title="Users" icon={<PersonIcon />} description="Search user profiles and times" />
             </Grid>
