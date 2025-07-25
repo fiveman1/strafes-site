@@ -227,7 +227,7 @@ function TimesGrid(props: ITimesCardProps) {
     }, [onlyWRs, apiRef]);
     
     const gridCols = useMemo(() => {
-        return makeColumns(game, style, hideUser, hideMap, showPlacement && !onlyWRs, showPlacementOrdinals, onlyWRs);
+        return makeColumns(game, style, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs);
     }, [game, hideMap, hideUser, onlyWRs, showPlacement, showPlacementOrdinals, style]);
 
     const gridKey = useMemo(() => {

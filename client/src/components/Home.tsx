@@ -24,10 +24,10 @@ function Home() {
                 <HomeCard href="/globals" title="Globals" icon={<EmojiEventsIcon />} description="View the latest world records" />
             </Grid>
             <Grid>
-                <HomeCard href="/maps" title="Maps" icon={<LayersIcon />} description="Browse maps and view their times" />
+                <HomeCard href="/maps" title="Maps" icon={<LayersIcon />} description="Browse maps and view the top times" />
             </Grid>
             <Grid>
-                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the top ranks by game and style" />
+                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the rank leaderboards" />
             </Grid>
             <Grid>
                 <HomeCard href="/compare" title="Compare" icon={<CompareArrowsIcon />} description="Compare users head-to-head" />

@@ -14,7 +14,7 @@ function isCompareTimesSort(value: string): value is CompareTimesSort {
 export function useCompareSort() {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
-    let paramSort: CompareTimesSort = "mapAsc";
+    let paramSort: CompareTimesSort = "diffAsc";
     const sortParam = queryParams.get("sort");
     if (sortParam && isCompareTimesSort(sortParam)) {
         paramSort = sortParam;
@@ -46,7 +46,7 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
     const location = useLocation();
     const navigate = useNavigate();
 
-    let paramRawSort: CompareTimesSortRaw = "map";
+    let paramRawSort: CompareTimesSortRaw = "diff";
     let paramIsAsc = true;
     const queryParams = new URLSearchParams(location.search);
     const sortParam = queryParams.get("sort");
@@ -117,7 +117,7 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
                     label="Sort"
                     onChange={handleChangeSort}
                 >
-                    {["map", "date", "time", "diff"].map((sort) => <MenuItem value={sort}>{sort}</MenuItem>)}
+                    {["diff", "date", "map", "time"].map((sort) => <MenuItem value={sort}>{sort}</MenuItem>)}
                 </Select>
             </FormControl>
             <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}> 
