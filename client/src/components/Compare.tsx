@@ -664,7 +664,7 @@ function CompareList(props: ICompareListProps) {
     }
     
     const card_height = (CARD_SIZE + ((CARD_SIZE * 0.3) * 2) + 1) + 4;
-    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE + 16)) || 1;
+    const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE)) || 1;
     const rowCount = Math.ceil(times.length / itemsPerRow);
     
     return (
@@ -738,81 +738,82 @@ function CompareListCard(props: ICompareListCardProps) {
     }
 
     return (
-    <Box sx={{
-        width: CARD_SIZE, 
-        height: getCardHeight(2), 
-        display: "inline-flex", 
-        flexDirection: "column", 
-        overflow: "hidden", 
-        backgroundImage: `radial-gradient(${colors[0]}, ${colors[1]})`, 
-        border: "solid 6px transparent",
-        borderRadius: "12px",
-        backgroundOrigin: "border-box",
-        backgroundClip: "content-box, border-box",
-        transition: ".4s ease",
-        "& .mapImg": { transition: "transform .4s ease" },
-        ":hover": { 
-            transform: "scale(1.04166667)",
-            boxShadow: 10,
-            "& .mapImg": { transform: "scale(1.108363636)" } 
-        }
-    }}>
-        <Box padding={0.5} display="flex" flexDirection="column" height="100%">
-            <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} >
-            {
-                info.mapThumb ? 
-                <Box
-                    width={CARD_SIZE - 20} 
-                    height={CARD_SIZE - 20} 
-                    position="absolute" 
-                    borderRadius="4px 4px 0 0" 
-                    overflow="hidden"
-                >
-                    <Box 
-                        className="mapImg"
-                        width="100%"
-                        height="100%"
-                        component="img" 
-                        src={info.mapThumb} 
-                        alt={info.map} 
-                    />
-                </Box>
-                    :
-                <QuestionMarkIcon className="mapImg" sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
+    <Box padding="6px">
+        <Box sx={{
+            width: CARD_SIZE - 12, 
+            height: getCardHeight(2) - 12, 
+            display: "inline-flex", 
+            flexDirection: "column", 
+            overflow: "hidden", 
+            backgroundColor: colors[1],
+            borderRadius: "8px",
+            backgroundOrigin: "border-box",
+            backgroundClip: "content-box, border-box",
+            transition: ".4s ease",
+            "& .mapImg": { transition: "transform .4s ease" },
+            ":hover": { 
+                boxShadow: `0 0 16px ${colors[1]}`,
+                backgroundColor: colors[0],
+                "& .mapImg": { transform: "scale(1.05)" } 
             }
-                <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} display="flex" flexDirection="column" >
-                    <Typography variant="h5" fontWeight="bold" sx={{ 
-                        padding: 1,
-                        overflow:"hidden", 
-                        textOverflow:"ellipsis", 
-                        backdropFilter: "blur(16px)", 
-                        textAlign: "center", 
-                        color: "white",
-                        textShadow: "black 3px 3px 3px",
-                        borderRadius: "4px 4px 0 0"
-                    }}>
-                        {info.map}
-                    </Typography>
-                    <Box display="flex" justifyContent="flex-end" alignItems="flex-end" flexGrow={1} padding={0.5}>
-                        <IconButton 
-                            onMouseEnter={() => setShowInfo(!defaultShowInfo)} 
-                            onMouseLeave={() => setShowInfo(defaultShowInfo)} 
-                            onClick={() => setDefaultShowInfo(!defaultShowInfo)}
-                            sx={{filter: "drop-shadow(3px 5px 2px rgb(0 0 0 / 0.6))", color: showInfo ? theme.palette.secondary.main : "white"}}
-                        >
-                            <InfoIcon fontSize="large" />
-                        </IconButton>
+        }}>
+            <Box padding={0.5} display="flex" flexDirection="column" height="100%">
+                <Box width={CARD_SIZE - 20} height={CARD_SIZE - 20} >
+                {
+                    info.mapThumb ? 
+                    <Box
+                        width={CARD_SIZE - 20} 
+                        height={CARD_SIZE - 20} 
+                        position="absolute" 
+                        borderRadius="4px 4px 0 0" 
+                        overflow="hidden"
+                    >
+                        <Box 
+                            className="mapImg"
+                            width="100%"
+                            height="100%"
+                            component="img" 
+                            src={info.mapThumb} 
+                            alt={info.map} 
+                        />
+                    </Box>
+                        :
+                    <QuestionMarkIcon className="mapImg" sx={{ fontSize: CARD_SIZE - 20, position: "absolute" }} />
+                }
+                    <Box height={CARD_SIZE - 20} width={CARD_SIZE - 20} display="flex" flexDirection="column" >
+                        <Typography variant="h5" fontWeight="bold" sx={{ 
+                            padding: 1,
+                            overflow:"hidden", 
+                            textOverflow:"ellipsis", 
+                            backdropFilter: "blur(16px)", 
+                            textAlign: "center", 
+                            color: "white",
+                            textShadow: "black 3px 3px 3px",
+                            borderRadius: "4px 4px 0 0"
+                        }}>
+                            {info.map}
+                        </Typography>
+                        <Box display="flex" justifyContent="flex-end" alignItems="flex-end" flexGrow={1} padding={0.5}>
+                            <IconButton 
+                                onMouseEnter={() => setShowInfo(!defaultShowInfo)} 
+                                onMouseLeave={() => setShowInfo(defaultShowInfo)} 
+                                onClick={() => setDefaultShowInfo(!defaultShowInfo)}
+                                sx={{filter: "drop-shadow(3px 5px 2px rgb(0 0 0 / 0.6))", color: showInfo ? theme.palette.secondary.main : "white"}}
+                            >
+                                <InfoIcon fontSize="large" />
+                            </IconButton>
+                        </Box>
                     </Box>
                 </Box>
+                <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
+                    <List>
+                        <ListItem key={times[0].id}>
+                            <CompareCardTimeCell time={times[0]} diff={0} showInfo={showInfo} />
+                        </ListItem>
+                        {otherTimes}
+                    </List>
+                </Paper>
             </Box>
-            <Paper square elevation={2} sx={{flexGrow: 1, borderRadius: "0 0 4px 4px", width: CARD_SIZE - 20, height: CARD_SIZE - 20}}>
-                <List>
-                    <ListItem key={times[0].id}>
-                        <CompareCardTimeCell time={times[0]} diff={0} showInfo={showInfo} />
-                    </ListItem>
-                    {otherTimes}
-                </List>
-            </Paper>
         </Box>
     </Box>
     );
