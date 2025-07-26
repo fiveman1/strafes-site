@@ -12,7 +12,7 @@ import { getAllTimesForUser, getUserData } from "../api/api";
 import percentRound from "percent-round";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
-import { ContextParams, formatDiff, formatGame, formatStyle, formatTime } from "../util/format";
+import { ContextParams, formatDiff, formatStyle, formatTime } from "../util/format";
 import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
@@ -385,26 +385,16 @@ function Compare() {
         return {firstUser, firstTimes, secondUser, secondTimes, isLoading, isFirstUserLoading, isSecondUserLoading};
     }, [firstUserId, game, idToUser, secondUserId, style, userTimes]);
 
-    const title = useMemo(() => {
+    useEffect(() => {
         if (!firstUser && !secondUser) {
-            return "strafes - compare";
+            document.title = "strafes - compare";
+            return;
         }
         
         const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
         const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
-        return `strafes - compare - ${firstUserName} vs ${secondUserName}`;
+        document.title = `strafes - compare - ${firstUserName} vs ${secondUserName}`;
     }, [firstUser, secondUser]);
-    document.title = title;
-
-    const description = useMemo(() => {
-        if (!firstUser && !secondUser) {
-            return "Compare users head-to-head";
-        }
-        
-        const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
-        const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
-        return `Compare ${firstUserName} vs ${secondUserName} head-to-head (game: ${formatGame(game)}, style: ${formatStyle(style)})`;
-    }, [game, style, firstUser, secondUser]);
     
     const onSwap = () => {
         if (!firstUserId || !secondUserId || isLoading) {
@@ -424,11 +414,6 @@ function Compare() {
 
     return (
     <Box padding={2} display="flex" flexDirection="column" flexGrow={1}>
-        <meta content={title} property="og:title" />
-        <meta
-            name="description"
-            content={description}
-        />
         <Typography variant="h2" padding={1}>
             Compare
         </Typography>

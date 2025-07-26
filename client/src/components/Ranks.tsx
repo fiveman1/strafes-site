@@ -5,7 +5,7 @@ import { Game, RankSortBy, Style } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse } from "@mui/x-data-grid";
-import { formatGame, formatRank, formatSkill, formatStyle } from "../util/format";
+import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { makeUserColumn } from "./TimesCard";
@@ -125,20 +125,11 @@ function Ranks() {
     const [style, setStyle] = useStyle();
     
     useEffect(() => {
-        document.title = "strafes - ranks";
+        document.title = "strafes - ranks"
     }, []);
-
-    const description = useMemo(() => {
-        return `Explore the leaderboards (game: ${formatGame(game)}, style: ${formatStyle(style)})`;
-    }, [game, style]);
     
     return (
     <Box padding={2} display="flex" flexDirection="column" flexGrow={1}>
-        <meta content="strafes - ranks" property="og:title" />
-        <meta
-            name="description"
-            content={description}
-        />
         <Typography variant="h2" padding={1}>
             Ranks
         </Typography>
