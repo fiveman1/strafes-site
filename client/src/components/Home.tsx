@@ -17,6 +17,11 @@ function Home() {
 
     return (
     <Box padding={2} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+        <meta content="strafes - home" property="og:title" />
+        <meta
+            name="description"
+            content="Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)"
+        />
         <Typography padding={2} variant="h3">Go to...</Typography>
         <Grid container spacing={smallScreen ? 2 : 3} justifyContent="center">
             <Grid>
@@ -29,7 +34,7 @@ function Home() {
                 <HomeCard href="/maps" title="Maps" icon={<LayersIcon />} description="Browse maps and view the top times" />
             </Grid>
             <Grid>
-                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the rank leaderboards" />
+                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the leaderboards" />
             </Grid>
             <Grid>
                 <HomeCard href="/compare" title="Compare" icon={<CompareArrowsIcon />} description="Compare users head-to-head" />

@@ -13,6 +13,7 @@ import { getUserData } from "../api/api";
 import ViewedTimes from "./ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
+import { formatGame, formatStyle } from "../util/format";
 
 function Users() {
     const { id } = useParams();
@@ -61,9 +62,14 @@ function Users() {
     }
     const [onlyWRs, setOnlyWRs] = useState(paramWRs);
 
-    useEffect(() => {
-        document.title = user ? `strafes - users - @${user.username}` : "strafes - users";
+    const title = useMemo(() => {
+        return user ? `strafes - users - @${user.username}` : "strafes - users";
     }, [user]);
+    document.title = title;
+
+    const description = useMemo(() => {
+        return user ? `View @${user.username}'s profile and times (game: ${formatGame(game)}, style: ${formatStyle(style)})` : "Search user profiles and times";
+    }, [game, style, user]);
 
     if (id !== userId) {
         setUserId(id);
@@ -95,6 +101,11 @@ function Users() {
 
     return (
     <Box padding={2} flexGrow={1}>
+        <meta content={title} property="og:title" />
+        <meta
+            name="description"
+            content={description}
+        />
         <Typography variant="h2" padding={1}>
             Users
         </Typography>

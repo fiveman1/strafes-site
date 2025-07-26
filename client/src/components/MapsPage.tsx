@@ -1,8 +1,8 @@
-import React, { CSSProperties, useEffect, useRef, useState } from "react";
+import React, { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
-import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
+import { ContextParams, formatGame, formatStyle, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
@@ -154,9 +154,14 @@ function MapsPage() {
     const [style, setStyle] = useStyle();
     const location = useLocation();
 
-    useEffect(() => {
-        document.title = selectedMap ? `strafes - maps - ${selectedMap.name}` : "strafes - maps";
+    const title = useMemo(() => {
+        return selectedMap ? `strafes - maps - ${selectedMap.name}` : "strafes - maps";
     }, [selectedMap]);
+    document.title = title;
+
+    const description = useMemo(() => {
+        return selectedMap ? `Browse the top times on ${selectedMap.name} (game: ${formatGame(game)}, style: ${formatStyle(style)})` : "Browse maps and view the top times";
+    }, [selectedMap, game, style]);
     
     useEffect(() => {
         const mapId = id && !isNaN(+id) ? +id : undefined;
@@ -228,6 +233,11 @@ function MapsPage() {
 
     return (
     <Box padding={2} flexGrow={1}>
+        <meta content={title} property="og:title" />
+        <meta
+            name="description"
+            content={description}
+        />
         <Typography variant="h2" padding={1}>
             Maps
         </Typography>

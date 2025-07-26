@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import Box from "@mui/material/Box";
 import { Typography } from "@mui/material";
 import TimesCard from "./TimesCard";
@@ -6,17 +6,27 @@ import { TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
+import { formatGame, formatStyle } from "../util/format";
 
 function Globals() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
 
     useEffect(() => {
-        document.title = "strafes - globals"
+        document.title = "strafes - globals";
     }, []);
+
+    const description = useMemo(() => {
+        return `View the latest world records (game: ${formatGame(game)}, style: ${formatStyle(style)})`;
+    }, [game, style]);
 
     return (
     <Box padding={2} flexGrow={1} display="flex" flexDirection="column">
+        <meta content="strafes - globals" property="og:title" />
+        <meta
+            name="description"
+            content={description}
+        />
         <Typography variant="h2" padding={1}>
             Globals
         </Typography>
