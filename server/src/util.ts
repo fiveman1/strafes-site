@@ -1,3 +1,61 @@
+import { Game, Style } from "./interfaces.js";
+
+export function safeQuoteText(str: string) {
+    return str.replaceAll("\"", "&quot;")
+}
+
+export function formatGame(game?: Game) {
+    switch (game) {
+        case Game.bhop:
+            return "bhop";
+        case Game.surf:
+            return "surf";
+        case Game.fly_trials:
+            return "fly trials";
+        case Game.all:
+            return "all";
+        default:
+            return "unknown";
+    }
+}
+
+export function formatStyle(style?: Style) {
+    switch (style) {
+        case Style.aonly:
+            return "a-only";
+        case Style.autohop:
+            return "autohop";
+        case Style.backwards:
+            return "backwards";
+        case Style.faste:
+            return "faste";
+        case Style.hsw:
+            return "half-sideways";
+        case Style.scroll:
+            return "scroll";
+        case Style.sideways:
+            return "sideways";
+        case Style.wonly:
+            return "w-only";
+        case Style.low_gravity:
+            return "low gravity";
+        case Style.fly:
+            return "fly";
+        case Style.fly_sustain:
+            return "fly sustain";
+        case Style.rocket:
+            return "rocket";
+        case Style.rocket_strafe:
+            return "rocket strafe";
+        case Style.strafe_3d:
+            return "3d strafe";
+        case Style.all:
+            return "all";
+        default:
+            return "unknown";
+    }
+}
+
 export const MapToAsset: {[key: number]: number} = {
     11222350808:12549993403,
     5692112607:12549993278,

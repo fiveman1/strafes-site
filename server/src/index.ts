@@ -7,7 +7,8 @@ import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
 import { exit } from "process";
-import { MapToAsset } from "./util.js";
+import { formatGame, formatStyle, MapToAsset, safeQuoteText } from "./util.js";
+import { readFileSync } from "fs";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -28,8 +29,6 @@ const buildDir = path.join(dirName, "../../client/build/");
 function calcRank(rank: number) {
     return Math.floor((1 - rank) * 19) + 1;;
 }
-
-app.use(express.static(buildDir));
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
@@ -706,9 +705,93 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
     });
 });
 
-app.get("*splat", (req, res) => {
-    res.sendFile("index.html", {root: buildDir})
+async function getMapInfo(mapId: string) {
+    const res = await tryGetStrafesStatic(`map/${mapId}`);
+    if (!res) {
+        return undefined;
+    }
+    return res.data.data as {
+        creator: string,
+        date: string,
+        display_name: string,
+        game_id: Game,
+        id: number
+    };
+}
+
+app.use(express.static(buildDir, {index: false}));
+app.get("*splat", async (req, res) => {
+    try {
+        // Inject meta tags for title and description based on the requested URL
+        // It's either this or SSR... I chose this
+        let html = readFileSync(path.resolve(buildDir, "index.html"), "utf8");
+        let title = "strafes";
+        let description = "Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)";
+        const url = (req.params as {splat: string[]}).splat.slice(1); // why isn't this automatically typed...
+        const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
+        const style = req.query.style ? formatStyle(+req.query.style) : formatStyle(Style.autohop);
+        if (url[0] === "") {
+            title = "strafes - home";
+        }
+        else if (url[0] === "globals") {
+            title = "strafes - globals";
+            description = "View the latest world records";
+        }
+        else if (url[0] === "ranks") {
+            title = "strafes - ranks";
+            description = "Explore the leaderboards";
+        }
+        else if (url[0] === "users") {
+            title = "strafes - users";
+            description = "Search user profiles and times";
+            if (url.length > 1) {
+                const userId = url[1];
+                const user = await getUserData(userId);
+                if (user) {
+                    title = `strafes - users - @${user.username}`;
+                    description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
+                }
+            }
+        }
+        else if (url[0] === "maps") {
+            title = "strafes - maps";
+            description = "Browse maps and view the top times";
+            if (url.length > 1) {
+                const mapId = url[1];
+                const mapInfo = await getMapInfo(mapId);
+                if (mapInfo) {
+                    title = `strafes - maps - ${mapInfo.display_name}`;
+                    const mapGame = req.query.game ? game : formatGame(mapInfo.game_id);
+                    description = `View the top times on ${mapInfo.display_name} (game: ${mapGame}, style: ${style})`;
+                }
+            }
+        }
+        else if (url[0] === "compare") {
+            title = "strafes - compare";
+            description = "Compare users head-to-head";
+            const user1 = req.query.user1;
+            const user2 = req.query.user2;
+            if (user1 && typeof user1 === "string" && user2 && typeof user2 === "string") {
+                const user1InfoPromise = getUserData(user1);
+                const user2InfoPromise = getUserData(user2);
+                const user1Info = await user1InfoPromise;
+                const user2Info = await user2InfoPromise;
+                if (user1Info && user2Info) {
+                    title = `strafes - compare - @${user1Info.username} vs @${user2Info.username}`;
+                    description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
+                }
+            }
+        }
+        // Don't give Roblox or Quat/itzaname an XSS attack (safeQuoteText)
+        html = html.replace("__META_OG_TITLE__", safeQuoteText(title));
+        html = html.replace("__META_DESCRIPTION__", safeQuoteText(description));
+        return res.send(html);
+    }
+    catch {
+        return res.status(500);
+    }
 });
+
 
 app.listen(port, () => {
     console.log(`Strafes site on port ${port}`);

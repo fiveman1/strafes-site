@@ -29,7 +29,7 @@ function Home() {
                 <HomeCard href="/maps" title="Maps" icon={<LayersIcon />} description="Browse maps and view the top times" />
             </Grid>
             <Grid>
-                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the rank leaderboards" />
+                <HomeCard href="/ranks" title="Ranks" icon={<StarIcon />} description="Explore the leaderboards" />
             </Grid>
             <Grid>
                 <HomeCard href="/compare" title="Compare" icon={<CompareArrowsIcon />} description="Compare users head-to-head" />
