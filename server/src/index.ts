@@ -784,7 +784,7 @@ app.get("*splat", async (req, res): Promise<any> => {
         }
         // Don't give Roblox or Quat/itzaname an XSS attack (safeQuoteText)
         html = html.replace("__META_OG_TITLE__", safeQuoteText(title));
-        html = html.replace("__META_DESCRIPTION__", safeQuoteText(description));
+        html = html.replaceAll("__META_DESCRIPTION__", safeQuoteText(description));
         return res.send(html);
     }
     catch {
