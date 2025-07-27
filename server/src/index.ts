@@ -731,43 +731,43 @@ app.get("*splat", async (req, res): Promise<any> => {
         const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
         const style = req.query.style ? formatStyle(+req.query.style) : formatStyle(Style.autohop);
         if (url[0] === "") {
-            title = "strafes - home";
+            title = "home";
         }
         else if (url[0] === "globals") {
-            title = "strafes - globals";
+            title = "globals";
             description = "View the latest world records";
         }
         else if (url[0] === "ranks") {
-            title = "strafes - ranks";
+            title = "ranks";
             description = "Explore the leaderboards";
         }
         else if (url[0] === "users") {
-            title = "strafes - users";
+            title = "users";
             description = "Search user profiles and times";
             if (url.length > 1) {
                 const userId = url[1];
                 const user = await getUserData(userId);
                 if (user) {
-                    title = `strafes - users - @${user.username}`;
+                    title = `users - @${user.username}`;
                     description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
                 }
             }
         }
         else if (url[0] === "maps") {
-            title = "strafes - maps";
+            title = "maps";
             description = "Browse maps and view the top times";
             if (url.length > 1) {
                 const mapId = url[1];
                 const mapInfo = await getMapInfo(mapId);
                 if (mapInfo) {
-                    title = `strafes - maps - ${mapInfo.display_name}`;
+                    title = `maps - ${mapInfo.display_name}`;
                     const mapGame = req.query.game ? game : formatGame(mapInfo.game_id);
                     description = `View the top times on ${mapInfo.display_name} (game: ${mapGame}, style: ${style})`;
                 }
             }
         }
         else if (url[0] === "compare") {
-            title = "strafes - compare";
+            title = "compare";
             description = "Compare users head-to-head";
             const user1 = req.query.user1;
             const user2 = req.query.user2;
@@ -777,7 +777,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 const user1Info = await user1InfoPromise;
                 const user2Info = await user2InfoPromise;
                 if (user1Info && user2Info) {
-                    title = `strafes - compare - @${user1Info.username} vs @${user2Info.username}`;
+                    title = `compare - @${user1Info.username} vs @${user2Info.username}`;
                     description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
                 }
             }
