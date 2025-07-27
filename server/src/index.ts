@@ -720,7 +720,7 @@ async function getMapInfo(mapId: string) {
 }
 
 app.use(express.static(buildDir, {index: false}));
-app.get("*splat", async (req, res) => {
+app.get("*splat", async (req, res): Promise<any> => {
     try {
         // Inject meta tags for title and description based on the requested URL
         // It's either this or SSR... I chose this
