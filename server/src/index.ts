@@ -735,11 +735,11 @@ app.get("*splat", async (req, res): Promise<any> => {
         }
         else if (url[0] === "globals") {
             title = "globals";
-            description = "View the latest world records";
+            description = `View the latest world records (game: ${game}, style: ${style})`;
         }
         else if (url[0] === "ranks") {
             title = "ranks";
-            description = "Explore the leaderboards";
+            description = `Explore the leaderboards (game: ${game}, style: ${style})`;
         }
         else if (url[0] === "users") {
             title = "users";
