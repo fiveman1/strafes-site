@@ -93,9 +93,16 @@ export function formatSkill(skill: number) {
     return `${(skill * 100).toFixed(3)}%`
 }
 
+export interface MapCount {
+    bhop: number
+    surf: number
+    flyTrials: number
+}
+
 export interface ContextParams {
     maps: Maps,
     sortedMaps: Map[]
+    mapCounts: MapCount
 }
 
 export function getAllowedStyles(game: Game) {

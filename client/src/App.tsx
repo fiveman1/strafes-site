@@ -8,8 +8,9 @@ import { Outlet } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { getMaps, Maps } from "./api/api";
-import { ContextParams } from "./util/format";
+import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs } from "@mui/material";
+import { Game, Map } from "./api/interfaces";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -30,9 +31,32 @@ function App() {
     }, []);
 
     const contextParams: ContextParams = useMemo(() => {
+        const counts : MapCount = {
+            bhop: 0,
+            surf: 0,
+            flyTrials: 0
+        }
+        const now = new Date();
+
+        for (const map of (Object.values(maps) as Map[])) {
+            const date = new Date(map.date);
+            if (date > now) {
+                continue;
+            }
+            
+            ++counts.flyTrials;
+            if (map.game === Game.bhop) {
+                ++counts.bhop;
+            }
+            else if (map.game === Game.surf) {
+                ++counts.surf;
+            }
+        }
+
         return {
             maps: maps,
-            sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1)
+            sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1),
+            mapCounts: counts
         };
     }, [maps]);
 

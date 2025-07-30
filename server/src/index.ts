@@ -294,6 +294,42 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     res.status(200).json(timeInfo);
 });
 
+app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const userId = req.params.id;
+    const game = req.query.game;
+    const style = req.query.style;
+
+    if (!validatePositiveInt(userId)) {
+        res.status(400).json({error: "Invalid user ID"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const timeRes = await tryGetStrafes("time", {
+        user_id: userId,
+        game_id: game,
+        style_id: style,
+        mode_id: 0,
+        page_size: 1
+    });
+
+    if (!timeRes) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    res.status(200).json({completions: timeRes.data.pagination.total_items});
+});
+
 app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     const qGame = req.query.game;

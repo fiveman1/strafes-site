@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
-import { getUserRank } from "../api/api";
+import { getCompletionsForUser, getUserRank } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import { formatRank, formatSkill } from "../util/format";
+import { ContextParams, formatRank, formatSkill } from "../util/format";
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import { useOutletContext } from "react-router";
 
 export interface IProfileCardProps {
     userId?: string
@@ -20,12 +21,19 @@ function ProfileCard(props: IProfileCardProps) {
 
     const [rank, setRank] = useState<Rank>();
     const [rankLoading, setRankLoading] = useState(false);
+    const [comps, setComps] = useState<number>();
+    const [compsLoading, setCompsLoading] = useState(false);
+
+    const { mapCounts } = useOutletContext() as ContextParams;
 
     useEffect(() => {
         if (!userId || game === Game.all || style === Style.all) {
+            setComps(undefined);
             setRank(undefined);
             return;
         }
+
+        setCompsLoading(true);
         setRankLoading(true);
         getUserRank(userId, game, style).then((rankData) => {
             if (!rankData) {
@@ -38,7 +46,44 @@ function ProfileCard(props: IProfileCardProps) {
                 setRank(rankData);
             }
         });
-    }, [userId, game, style])
+
+        let compsActive = true;
+        getCompletionsForUser(userId, game, style).then((completions) => {
+            if (!compsActive) return;
+            setComps(completions);
+            setCompsLoading(false);
+        });
+
+        return () => {
+            compsActive = false;
+        }
+    }, [userId, game, style]);
+
+    const compsFormatted = useMemo(() => {
+        let compsFormatted = "n/a";
+        if (comps !== undefined) {
+            let count = 0;
+            switch (game) {
+                case Game.bhop:
+                    count = mapCounts.bhop;
+                    break;
+                case Game.surf:
+                    count = mapCounts.surf;
+                    break;
+                case Game.fly_trials:
+                    count = mapCounts.flyTrials;
+                    break;
+            }
+
+            if (count === 0) {
+                compsFormatted = `${comps} / ? (?%)`;
+            }
+            else {
+                compsFormatted = `${comps} / ${count} (${((comps / count) * 100).toFixed(1)}%)`;
+            }
+        }
+        return compsFormatted;
+    }, [comps, game, mapCounts.bhop, mapCounts.flyTrials, mapCounts.surf]);
     
     let rankFormatted = "n/a";
     let skillFormatted = "n/a";
@@ -82,7 +127,7 @@ function ProfileCard(props: IProfileCardProps) {
             </IconButton>
         </Box>
         <Box display="flex" flexWrap="wrap">
-            <Box flexGrow={1} padding={1}>
+            <Box flex="1 0 25%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
                     <Tooltip sx={{marginRight: "auto"}} arrow title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
                         <Typography variant="subtitle1">
@@ -96,7 +141,7 @@ function ProfileCard(props: IProfileCardProps) {
                     </Typography>}
                 </Box>
             </Box>
-            <Box flexGrow={1} padding={1}>
+            <Box flex="1 0 25%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
                     <Tooltip sx={{marginRight: "auto"}} arrow title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
                         <Typography variant="subtitle1">
@@ -110,7 +155,7 @@ function ProfileCard(props: IProfileCardProps) {
                     </Typography>}
                 </Box>
             </Box>
-            <Box flexGrow={1} padding={1}>
+            <Box flex="1 0 25%" padding={1} minWidth={150} >
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Moderation status
@@ -130,6 +175,17 @@ function ProfileCard(props: IProfileCardProps) {
                     }
                     </Tooltip> : 
                     <Typography variant="h6">{formattedStatus}</Typography>}
+                </Box>
+            </Box>
+            <Box flex="1 0 25%" padding={1} minWidth={150}>
+                <Box display="flex" flexDirection="column">
+                    <Typography variant="subtitle1">
+                        Completions
+                    </Typography>
+                    {compsLoading ? <CircularProgress size="32px" /> : 
+                    <Typography variant="h6">
+                        {compsFormatted}
+                    </Typography>}
                 </Box>
             </Box>
             {/* <Box flexGrow={1} padding={1}>

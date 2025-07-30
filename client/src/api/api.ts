@@ -119,8 +119,19 @@ export async function getAllTimesForUser(userId: string, game: Game, style: Styl
     return res.data.data;
 }
 
+export async function getCompletionsForUser(userId: string, game: Game, style: Style): Promise<number | undefined> {
+    const res = await tryGetRequest("user/times/completions/" + userId, {
+        game: game,
+        style: style,
+    });
+    
+    if (!res) return undefined;
+
+    return res.data.completions;
+}
+
 export interface Maps {
-    [id: number]: Map
+    [id: number]: Map | undefined
 }
 
 export async function getMaps(): Promise<Maps> {
