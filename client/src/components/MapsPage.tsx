@@ -12,6 +12,10 @@ import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import GameSelector, { useGame } from "./GameSelector";
 
 const CARD_SIZE = 180;
+const dateFormat = Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short"
+});
 
 function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style, game: Game, selectedMap?: Map}, index: number, style: CSSProperties}) {
     const { data, index, style } = props;
@@ -96,8 +100,21 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                             transition: "transform .3s ease"
                         }} 
                     />
+                    
                 </Box>
                 : <QuestionMarkIcon sx={{ fontSize: real_height }} />}
+                <Typography position="absolute" bottom="8px" right="8px" variant="body1" fontWeight="bold" sx={{ 
+                    padding: 0.5,
+                    overflow:"hidden", 
+                    textOverflow:"ellipsis", 
+                    backdropFilter: "blur(8px)", 
+                    textAlign: "center", 
+                    color: "white",
+                    textShadow: "black 3px 3px 3px",
+                    borderRadius: "12px"
+                }}>
+                    {dateFormat.format(new Date(map.date))}
+                </Typography>
             </CardActionArea>
             
         </Card>
