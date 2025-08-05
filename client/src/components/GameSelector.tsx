@@ -38,6 +38,15 @@ function GameSelector(props: IGameSelectorProps) {
         }
     }, [game, style, setStyle, allowSelectAll]);
 
+    useEffect(() => {
+        if (allowedGames && !allowedGames.includes(game)) {
+            const queryParams = new URLSearchParams(location.search);
+            queryParams.set("game", allowedGames[0].toString());
+            navigate({ search: queryParams.toString() }, { replace: true });
+            setGame(allowedGames[0]);
+        }
+    }, [allowedGames, game, location.search, navigate, setGame]);
+
     const handleChangeGame = (event: SelectChangeEvent<Game>) => {
         const game = event.target.value;
         const queryParams = new URLSearchParams(location.search);

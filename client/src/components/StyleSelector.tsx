@@ -34,7 +34,7 @@ function StyleSelector(props: IStyleSelectorProps) {
         }
         const allowedStyles = getAllowedStyles(game);
         if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
-            const defaultStyle = allowedStyles[0];
+            const defaultStyle = allowedStyles[0] ?? Style.autohop;
             const queryParams = new URLSearchParams(location.search);
             queryParams.set("style", defaultStyle.toString());
             navigate({ search: queryParams.toString() }, { replace: true });
@@ -50,10 +50,15 @@ function StyleSelector(props: IStyleSelectorProps) {
         setStyle(style);
     };
 
-    const styles = game === undefined ? [...bhop_styles] : [...getAllowedStyles(game)];
+    let styles = game === undefined ? [...bhop_styles] : [...getAllowedStyles(game)];
+    if (styles.length === 0) {
+        styles = [...bhop_styles];
+    }
+
     if (allowSelectAll) {
         styles.push(Style.all);
     }
+    
     const realStyle = styles.includes(style) ? style : styles[0];
 
     return (
