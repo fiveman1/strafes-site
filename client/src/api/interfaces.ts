@@ -77,6 +77,8 @@ export interface Map {
     date: string
     smallThumb?: string
     largeThumb?: string
+    modes: number,
+    loadCount: number
 }
 
 export enum TimeSortBy {

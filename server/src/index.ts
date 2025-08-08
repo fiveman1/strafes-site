@@ -7,7 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
 import { exit } from "process";
-import { formatGame, formatStyle, MapToAsset, safeQuoteText } from "./util.js";
+import { formatGame, formatStyle, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
@@ -652,15 +652,18 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
     let i = 1;
     const maps: StrafesMap[] = [];
     while (true) {
-        const mapRes = await tryGetStrafesStatic("map", {
+        const mapRes = await tryGetMaps("map", {
             page_number: i,
             page_size: 100
         });
+
         ++i;
+
         if (!mapRes) {
             res.status(404).json({error: "Not found"});
             return;
         }
+
         const data = mapRes.data.data as any[];
         if (data.length < 1) {
             break;
@@ -669,11 +672,11 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
         const assetToThumb = new Map<number, Map<string, string>>();
         const assetIds: number[] = [];
         for (const map of data) {
-            const assetId = MapToAsset[map.id];
-            if (assetId) {
-                assetIds.push(assetId);
+            if (map.thumbnail) {
+                assetIds.push(map.thumbnail);
             }
         }
+
         const largeReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
             "assetIds": assetIds,
             "size": "420x420",
@@ -712,10 +715,9 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
         }
 
         for (const map of data) {
-            const assetId = MapToAsset[map.id];
             let small, large;
-            if (assetId) {
-                const urls = assetToThumb.get(assetId);
+            if (map.thumbnail) {
+                const urls = assetToThumb.get(map.thumbnail);
                 small = urls?.get("small");
                 large = urls?.get("large");
             }
@@ -727,7 +729,9 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
                 game: map.game_id,
                 date: map.date,
                 smallThumb: small,
-                largeThumb: large
+                largeThumb: large,
+                loadCount: map.load_count,
+                modes: map.modes
             });
         }
 
@@ -742,7 +746,7 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
 });
 
 async function getMapInfo(mapId: string) {
-    const res = await tryGetStrafesStatic(`map/${mapId}`);
+    const res = await tryGetMaps(`map/${mapId}`);
     if (!res) {
         return undefined;
     }
@@ -892,13 +896,20 @@ async function getUserData(userId: string): Promise<undefined | User> {
 const tryGetCached = memoize(tryGetRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
 const tryPostCached = memoize(tryPostRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
 const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-const tryGetStrafesStatic = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 60 * 60 * 1000});
+const tryGetMaps = memoize(tryGetMapsCore, {cacheKey: JSON.stringify, maxAge: 60 * 60 * 1000});
 
 async function tryGetStrafesCore(end_of_url: string, params?: any) {
     const headers = {
         "X-API-Key": STRAFES_KEY
     };
     return await tryGetRequest(`https://api.strafes.net/api/v1/${end_of_url}`, params, headers);
+}
+
+async function tryGetMapsCore(end_of_url: string, params?: any) {
+    const headers = {
+        "X-API-Key": STRAFES_KEY
+    };
+    return await tryGetRequest(`https://maps.strafes.net/public-api/v1/${end_of_url}`, params, headers);
 }
 
 async function tryGetRequest(url: string, params?: any, headers?: any) {
