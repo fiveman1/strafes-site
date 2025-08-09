@@ -60,6 +60,7 @@ export async function getTimeData(
     start: number | string, 
     end: number | string, 
     sortBy: TimeSortBy, 
+    course: number,
     game?: Game, 
     style?: Style, 
     userId?: string, 
@@ -75,6 +76,7 @@ export async function getTimeData(
             sort: sortBy,
             game: game,
             style: style,
+            course: course,
             onlyWR: !!onlyWR
         });
     }
@@ -84,7 +86,8 @@ export async function getTimeData(
             end: end,
             sort: sortBy,
             game: game,
-            style: style
+            style: style,
+            course: course
         });
     }
     else if (onlyWR) {
@@ -93,7 +96,8 @@ export async function getTimeData(
             end: end,
             sort: sortBy,
             game: game,
-            style: style
+            style: style,
+            course: course
         });
     }
     else {

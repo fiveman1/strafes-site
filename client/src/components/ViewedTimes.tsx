@@ -2,7 +2,7 @@ import { Box, Paper, Typography } from "@mui/material";
 import { Time } from "../api/interfaces";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "./TimesCard";
+import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "./TimesCard";
 
 interface IViewedTimesProps {
     times: Time[]
@@ -30,6 +30,8 @@ function makeColumns() {
     const cols: GridColDef[] = [];
 
     cols.push(makeMapColumn());
+
+    cols.push(makeCourseColumn());
 
     cols.push(makeUserColumn(300, true));
 

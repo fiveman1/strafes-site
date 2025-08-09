@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
+import { ALL_COURSES, formatCourse, formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
@@ -23,7 +23,7 @@ export function makeMapColumn(): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return (
-                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} />
+                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} />
             );
         }
     }
@@ -135,7 +135,19 @@ export function makeStyleColumn(): GridColDef {
     }
 }
 
-function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, showPlacementOrdinals?: boolean, notSortable?: boolean) {
+export function makeCourseColumn(): GridColDef {
+    return {
+        type: "string",
+        field: "course",
+        headerName: "Course",
+        flex: 130,
+        minWidth: 90,
+        valueFormatter: formatCourse,
+        sortable: false
+    }
+}
+
+function makeColumns(game: Game, style: Style, hideCourse?: boolean, hideUser?: boolean, hideMap?: boolean, showPlacement?: boolean, showPlacementOrdinals?: boolean, notSortable?: boolean) {
     const cols: GridColDef[] = [];
 
     if (showPlacement && !showPlacementOrdinals) {
@@ -150,6 +162,9 @@ function makeColumns(game: Game, style: Style, hideUser?: boolean, hideMap?: boo
 
     if (!hideMap) {
         cols.push(makeMapColumn());
+        if (!hideCourse) {
+            cols.push(makeCourseColumn());
+        }
     }
 
     if (!hideUser) {
@@ -180,6 +195,7 @@ export interface ITimesCardProps {
     map?: Map
     game: Game
     style: Style
+    course: number
     onlyWRs?: boolean
     hideUser?: boolean
     hideMap?: boolean
@@ -211,7 +227,7 @@ function TimesCard(props: ITimesCardProps) {
 }
 
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, gridApiRef } = props;
+    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, gridApiRef } = props;
     let apiRef = useGridApiRef();
     const [rowCount, setRowCount] = useState(onlyWRs ? -1 : 0);
     const [isLoading, setIsLoading] = useState(false);
@@ -227,22 +243,22 @@ function TimesGrid(props: ITimesCardProps) {
     }, [onlyWRs, apiRef]);
     
     const gridCols = useMemo(() => {
-        return makeColumns(game, style, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs);
-    }, [game, hideMap, hideUser, onlyWRs, showPlacement, showPlacementOrdinals, style]);
+        return makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs);
+    }, [course, game, hideMap, hideUser, onlyWRs, showPlacement, showPlacementOrdinals, style]);
 
     const gridKey = useMemo(() => {
         // Set row count to unknown when changing settings in WR only mode
         if (onlyWRs) {
             setRowCount(-1);
         }
-        return `${userId ?? ""},${map ?? ""},${game},${style},${!!onlyWRs}`;
-    }, [game, map, onlyWRs, style, userId]);
+        return `${userId ?? ""},${map ?? ""},${game},${style},${course},${!!onlyWRs}`;
+    }, [course, game, map, onlyWRs, style, userId]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
         if (!allowOnlyWRs && !userId && !map) return { rows: [], rowCount: 0 }
         
         setIsLoading(true);
-        const timeData = await getTimeData(start, end, sortBy, game, style, userId, map, onlyWRs);
+        const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, map, onlyWRs);
         setIsLoading(false);
 
         if (onLoadTimes && timeData?.times) {
@@ -274,7 +290,7 @@ function TimesGrid(props: ITimesCardProps) {
                 rowCount: timeData.pagination.totalItems
             }
         }
-    }, [allowOnlyWRs, game, map, onLoadTimes, onlyWRs, style, userId]);
+    }, [allowOnlyWRs, course, game, map, onLoadTimes, onlyWRs, style, userId]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {

@@ -7,7 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
 import { exit } from "process";
-import { formatGame, formatStyle, safeQuoteText } from "./util.js";
+import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
@@ -241,6 +241,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const userId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
+    const course = req.query.course;
     const onlyWR = req.query.onlyWR ? req.query.onlyWR === "true" : false;
     const start = req.query.start;
     const end = req.query.end;
@@ -271,6 +272,11 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         return;
     }
 
+    if (course === undefined || isNaN(+course)) {
+        res.status(400).json({error: "Invalid course"});
+        return;
+    }
+
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
         res.status(400).json({error: "Invalid sort by"});
         return;
@@ -280,7 +286,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const timeInfo = await getTimesPaged(+start, +end, +sort, onlyWR, userId, +game, +style);
+    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, onlyWR, userId, +game, +style);
     
     if (!timeInfo) {
         res.status(404).json({error: "Not found"});
@@ -410,6 +416,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
                 game: time.game_id,
                 style: time.style_id,
                 updatedAt: time.updated_at,
+                course: time.mode_id,
                 id: time.id
             });
         }
@@ -447,6 +454,7 @@ async function setTimePlacements(times: Time[]) {
 app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const game = req.query.game;
     const style = req.query.style;
+    const course = req.query.course;
     const start = req.query.start;
     const end = req.query.end;
     const sort = req.query.sort;
@@ -471,6 +479,11 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
         return;
     }
 
+    if (course === undefined || isNaN(+course)) {
+        res.status(400).json({error: "Invalid course"});
+        return;
+    }
+
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
         res.status(400).json({error: "Invalid sort by"});
         return;
@@ -480,7 +493,7 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const timeInfo = await getTimesPaged(+start, +end, +sort, true, undefined, +game, +style);
+    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, true, undefined, +game, +style);
     
     if (!timeInfo) {
         res.status(404).json({error: "Not found"});
@@ -490,14 +503,14 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
     res.status(200).json(timeInfo);
 });
 
-async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
+async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
     const page = Math.floor(+start / 100) + 1;
 
     const timeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
         user_id: userId,
         game_id: game === Game.all ? undefined : game,
         style_id: style === Style.all ? undefined : style,
-        mode_id: 0,
+        mode_id: course >= 0 ? course : undefined,
         page_number: page,
         page_size: 100,
         sort_by: +sort
@@ -525,6 +538,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, onlyW
             style: time.style_id,
             updatedAt: time.updated_at,
             id: time.id,
+            course: time.mode_id,
             placement: onlyWR ? 1 : undefined
         });
     }
@@ -547,6 +561,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const mapId = req.params.id;
     const game = req.query.game;
     const style = req.query.style;
+    const qCourse = req.query.course;
     const start = req.query.start;
     const end = req.query.end;
     const sort = req.query.sort;
@@ -576,6 +591,12 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
+    if (qCourse === undefined || isNaN(+qCourse)) {
+        res.status(400).json({error: "Invalid course"});
+        return;
+    }
+    const course = +qCourse;
+
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
         res.status(400).json({error: "Invalid sort by"});
         return;
@@ -590,7 +611,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         map_id: mapId,
         game_id: game,
         style_id: style,
-        mode_id: 0,
+        mode_id: course >= 0 ? course : undefined,
         page_number: page + 1,
         page_size: 100,
         sort_by: +sort
@@ -634,6 +655,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             style: time.style_id,
             updatedAt: time.updated_at,
             id: time.id,
+            course: time.mode_id,
             placement: placement
         });
     }
@@ -800,9 +822,14 @@ app.get("*splat", async (req, res): Promise<any> => {
                 const mapId = url[1];
                 const mapInfo = await getMapInfo(mapId);
                 if (mapInfo) {
+                    const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
+                    const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
                     title = `maps - ${mapInfo.display_name}`;
+                    if (course !== "main") {
+                        title += ` (${courseAbrev})`;
+                    }
                     const mapGame = req.query.game ? game : formatGame(mapInfo.game_id);
-                    description = `View the top times on ${mapInfo.display_name} (game: ${mapGame}, style: ${style})`;
+                    description = `View the top times on ${mapInfo.display_name} (game: ${mapGame}, style: ${style}, course: ${course})`;
                 }
             }
         }

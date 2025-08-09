@@ -59,6 +59,7 @@ export interface Time {
     style: Style
     updatedAt: string
     id: string
+    course: number
     placement?: number
 }
 

@@ -13,6 +13,7 @@ import { getUserData } from "../api/api";
 import ViewedTimes from "./ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
+import { ALL_COURSES } from "../util/format";
 
 function Users() {
     const { id } = useParams();
@@ -141,6 +142,7 @@ function Users() {
                 userId={userId} 
                 game={game} 
                 style={style} 
+                course={ALL_COURSES}
                 onlyWRs={onlyWRs} 
                 onLoadTimes={addTimes} 
                 gridApiRef={apiRef} 

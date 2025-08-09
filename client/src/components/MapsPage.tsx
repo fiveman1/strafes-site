@@ -10,6 +10,7 @@ import StyleSelector, { useStyle } from "./StyleSelector";
 import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import GameSelector, { useGame } from "./GameSelector";
+import CourseSelector, { useCourse } from "./CourseSelector";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -65,7 +66,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
             }}
         >
             <CardActionArea
-                href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}`}
+                href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}&course=0`}
                 sx={{ 
                     height: "100%",
                     backgroundColor: bgColor,
@@ -169,6 +170,7 @@ function MapsPage() {
     const [selectedMap, setSelectedMap] = useState<Map>();
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
+    const [course, setCourse] = useCourse();
     const location = useLocation();
 
     useEffect(() => {
@@ -264,9 +266,10 @@ function MapsPage() {
         <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowedGames={allowedGames} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
+            <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
         </Box>
         <Box padding={1}>
-            <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} hideMap showPlacement />
+            <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} hideMap showPlacement />
         </Box>
     </Box>
     );

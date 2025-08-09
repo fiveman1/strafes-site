@@ -11,10 +11,11 @@ interface IMapLinkProps {
     name: string
     style: Style
     game: Game
+    course: number
 }
 
 function MapLink(props: IMapLinkProps) {
-    const { id, name, style, game } = props;
+    const { id, name, style, game, course } = props;
     const { maps } = useOutletContext() as ContextParams;
     const mapInfo = maps[id];
     
@@ -24,7 +25,7 @@ function MapLink(props: IMapLinkProps) {
     }
     
     return (
-        <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}`}} 
+        <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
             component={RouterLink} 
             underline="hover" 
             fontWeight="bold" 

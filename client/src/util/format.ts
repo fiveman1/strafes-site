@@ -145,3 +145,18 @@ export function formatDiff(diffMs: number) {
     }
     return `${diff.toFixed(3)}s`;
 }
+
+export const MAIN_COURSE = 0;
+export const ALL_COURSES = -1;
+export function formatCourse(course: number, short?: boolean) {
+    course = Math.round(course);
+    if (course < 0) {
+        return "invalid";
+    }
+    else if (course === MAIN_COURSE) {
+        return "main";
+    }
+    else {
+        return short ? `b${course}` : `bonus ${course}`;
+    }
+}

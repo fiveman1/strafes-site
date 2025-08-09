@@ -6,6 +6,7 @@ import { TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
+import { ALL_COURSES } from "../util/format";
 
 function Globals() {
     const [game, setGame] = useGame();
@@ -29,7 +30,7 @@ function Globals() {
         </Box>
         <Box padding={1} flexGrow={1} minHeight={540}>
             <AutoSizer disableWidth>
-                {({ height }) => <TimesCard title="World Records" height={height} defaultSort={TimeSortBy.DateDesc} game={game} style={style} onlyWRs allowOnlyWRs />}
+                {({ height }) => <TimesCard title="World Records" height={height} defaultSort={TimeSortBy.DateDesc} game={game} style={style} course={ALL_COURSES} onlyWRs allowOnlyWRs />}
             </AutoSizer>
         </Box>
     </Box>
