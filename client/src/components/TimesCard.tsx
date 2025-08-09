@@ -140,9 +140,9 @@ export function makeCourseColumn(): GridColDef {
         type: "string",
         field: "course",
         headerName: "Course",
-        flex: 130,
+        flex: 60,
         minWidth: 90,
-        valueFormatter: formatCourse,
+        valueFormatter: (val) => formatCourse(val),
         sortable: false
     }
 }
