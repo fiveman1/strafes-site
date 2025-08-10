@@ -51,7 +51,7 @@ function CourseSelector(props: ICourseSelectorProps) {
     }
 
     return (
-        <Box padding={smallScreen ? 0.5 : 1.5}>
+        <Box padding={smallScreen ? 1 : 1.5}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Course</InputLabel>
                 <Select

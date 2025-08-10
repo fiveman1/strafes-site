@@ -62,7 +62,7 @@ function StyleSelector(props: IStyleSelectorProps) {
     const realStyle = styles.includes(style) ? style : styles[0];
 
     return (
-        <Box padding={smallScreen ? 0.5 : 1.5}>
+        <Box padding={smallScreen ? 1 : 1.5}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Style</InputLabel>
                 <Select

@@ -68,7 +68,7 @@ function GameSelector(props: IGameSelectorProps) {
     const realGame = games.includes(game) ? game : games[0];
 
     return (
-        <Box padding={smallScreen ? 0.5 : 1.5}>
+        <Box padding={smallScreen ? 1 : 1.5}>
             <FormControl sx={{ width: "150px" }} disabled={games.length <= 1}>
                 <InputLabel>Game</InputLabel>
                 <Select
