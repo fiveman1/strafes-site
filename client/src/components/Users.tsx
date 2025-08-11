@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Switch, Typography } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Switch, Typography, useMediaQuery } from "@mui/material";
 import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
@@ -27,6 +27,7 @@ function Users() {
     const [userSearch] = useUserSearch();
     const [viewedTimes, setViewedTimes] = useState<Time[]>([]);
     const apiRef = useGridApiRef();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const addTimes = useCallback((times: Time[]) => {
         setViewedTimes((viewed) => {
@@ -124,7 +125,7 @@ function Users() {
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
-            <Box padding={1.5}>
+            <Box padding={smallScreen ? 1 : 1.5}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={
                         <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  

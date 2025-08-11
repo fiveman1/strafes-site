@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
-import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, Paper, TextField, Typography, useTheme } from "@mui/material";
+import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, Paper, TextField, Tooltip, Typography, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
@@ -11,6 +11,8 @@ import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import GameSelector, { useGame } from "./GameSelector";
 import CourseSelector, { useCourse } from "./CourseSelector";
+import DownloadIcon from '@mui/icons-material/Download';
+import { download, generateCsv, mkConfig } from "export-to-csv";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -245,6 +247,30 @@ function MapsPage() {
         }
     }
 
+    const onDownloadMapCsv = () => {
+        if (sortedMaps.length < 1) {
+            return;
+        }
+
+        const csvConfig = mkConfig({ filename: "maps", columnHeaders: [
+            "id", "name", "creator", "game", "release_date", "load_count", "courses"
+        ]});
+        const mapData: any[] = [];
+        for (const map of sortedMaps) {
+            mapData.push({
+                id: map.id,
+                name: map.name,
+                creator: map.creator,
+                game: formatGame(map.game),
+                release_date: map.date,
+                load_count: map.loadCount,
+                courses: map.modes
+            });
+        }
+        const csv = generateCsv(csvConfig)(mapData);
+        download(csvConfig)(csv);
+    };
+
     return (
     <Box padding={2} flexGrow={1}>
         <Typography variant="h2" padding={1}>
@@ -270,6 +296,13 @@ function MapsPage() {
         </Box>
         <Box padding={1}>
             <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} hideMap showPlacement />
+        </Box>
+        <Box padding={1} display="flex" flexDirection="row" justifyContent="flex-end">
+            <Tooltip title="Download maps to .csv" placement="left" arrow>
+                <IconButton disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
+                    <DownloadIcon />
+                </IconButton>
+            </Tooltip>
         </Box>
     </Box>
     );
