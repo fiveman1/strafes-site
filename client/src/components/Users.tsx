@@ -13,7 +13,8 @@ import { getUserData } from "../api/api";
 import ViewedTimes from "./ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
-import { ALL_COURSES } from "../util/format";
+import { ALL_COURSES, MAIN_COURSE } from "../util/format";
+import IncludeBonusCheckbox, { useIncludeBonuses } from "./IncludeBonusCheckbox";
 
 function Users() {
     const { id } = useParams();
@@ -62,6 +63,8 @@ function Users() {
         paramWRs = true;
     }
     const [onlyWRs, setOnlyWRs] = useState(paramWRs);
+
+    const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
     useEffect(() => {
         document.title = user ? `strafes - users - @${user.username}` : "strafes - users";
@@ -133,6 +136,7 @@ function Users() {
                 </FormGroup>
                 <FormHelperText>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
             </Box>
+            <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>
         <Box padding={1}>
             <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
@@ -143,7 +147,7 @@ function Users() {
                 userId={userId} 
                 game={game} 
                 style={style} 
-                course={ALL_COURSES}
+                course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
                 onlyWRs={onlyWRs} 
                 onLoadTimes={addTimes} 
                 gridApiRef={apiRef} 

@@ -6,11 +6,14 @@ import { TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { ALL_COURSES } from "../util/format";
+import { ALL_COURSES, MAIN_COURSE } from "../util/format";
+import IncludeBonusCheckbox, { useIncludeBonuses } from "./IncludeBonusCheckbox";
 
 function Globals() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
+
+    const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
     useEffect(() => {
         document.title = "strafes - globals"
@@ -27,10 +30,21 @@ function Globals() {
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
+            <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>
         <Box padding={1} flexGrow={1} minHeight={540}>
             <AutoSizer disableWidth>
-                {({ height }) => <TimesCard title="World Records" height={height} defaultSort={TimeSortBy.DateDesc} game={game} style={style} course={ALL_COURSES} onlyWRs allowOnlyWRs />}
+                {({ height }) => 
+                <TimesCard 
+                    title="World Records" 
+                    height={height} 
+                    defaultSort={TimeSortBy.DateDesc} 
+                    game={game} 
+                    style={style} 
+                    course={includeBonuses ? ALL_COURSES : MAIN_COURSE} 
+                    onlyWRs 
+                    allowOnlyWRs 
+                />}
             </AutoSizer>
         </Box>
     </Box>
