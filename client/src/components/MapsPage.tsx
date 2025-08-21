@@ -78,18 +78,15 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                     ":hover": { backgroundColor: hoverColor, "& img": { transform: "scale(1.15)" } }
                 }}
             >
-                <CardContent sx={{height: "100%", width: real_height, display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
+                <CardContent sx={{height: "100%", padding: 1.5, width: real_height, display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
                     <Box flexGrow={1}>
-                        <Typography maxHeight="64px" variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor}>
+                        <Typography variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor} maxHeight={96}>
                             {map.name}
                         </Typography>
-                        <Typography variant="subtitle1" overflow="hidden" textOverflow="ellipsis" color={creatorColor} maxHeight={84} >
+                        <Typography variant="subtitle1" overflow="hidden" textOverflow="ellipsis" color={creatorColor} >
                             {map.creator}
                         </Typography>
                     </Box>
-                    <Typography variant="caption" marginLeft="auto" color={titleColor}>
-                        {formatGame(map.game)}
-                    </Typography>
                 </CardContent>
                 {map.largeThumb ? 
                 <Box width={real_height} height={real_height} overflow="hidden">
@@ -106,6 +103,17 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                     
                 </Box>
                 : <QuestionMarkIcon sx={{ fontSize: real_height }} />}
+                <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{ 
+                    padding: 0.5,
+                    overflow:"hidden", 
+                    backgroundColor: theme.palette.primary.main,
+                    textAlign: "center", 
+                    color: "white",
+                    textShadow: "black 1px 1px 1px",
+                    borderRadius: "6px"
+                }}>
+                    {formatGame(map.game)}
+                </Typography>
                 <Typography position="absolute" bottom="8px" right="8px" variant="body1" fontWeight="bold" sx={{ 
                     padding: 0.5,
                     overflow:"hidden", 
@@ -298,10 +306,12 @@ function MapsPage() {
             <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} hideMap showPlacement />
         </Box>
         <Box padding={1} display="flex" flexDirection="row" justifyContent="flex-end">
-            <Tooltip title="Download maps to .csv" placement="left" arrow>
-                <IconButton disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
-                    <DownloadIcon />
-                </IconButton>
+            <Tooltip title="Download maps as .csv" placement="left" arrow>
+                <Box>
+                    <IconButton disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
+                        <DownloadIcon />
+                    </IconButton>
+                </Box>
             </Tooltip>
         </Box>
     </Box>
