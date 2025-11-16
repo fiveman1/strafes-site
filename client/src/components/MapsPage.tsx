@@ -102,7 +102,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
                     />
                     
                 </Box>
-                : <QuestionMarkIcon sx={{ fontSize: real_height }} />}
+                : <QuestionMarkIcon sx={{ fontSize: real_height, color: selected ? "#ffffff" : undefined }} />}
                 <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{ 
                     padding: 0.5,
                     overflow:"hidden", 

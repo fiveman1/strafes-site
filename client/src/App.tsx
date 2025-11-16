@@ -11,6 +11,7 @@ import { getMaps, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs } from "@mui/material";
 import { Game, Map } from "./api/interfaces";
+import type {} from '@mui/x-data-grid/themeAugmentation';
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -60,12 +61,15 @@ function App() {
         };
     }, [maps]);
 
-    const theme = createTheme({
+    const theme = useMemo(() => createTheme({
         palette: {
             // SrafesNET red: #c61926
             primary: pink,
             secondary: lightBlue,
-            mode: themeMode
+            mode: themeMode,
+            DataGrid: {
+                bg: themeMode === "light" ? "#ffffff" : "#121212"
+            }
         },
         components: {
             MuiLink: {
@@ -79,7 +83,7 @@ function App() {
                 },
             },
         },
-    });
+    }), [themeMode]);
 
     return (
         <ThemeProvider theme={theme}>

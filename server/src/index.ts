@@ -404,8 +404,14 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     }
 
     const timeArr: Time[] = [];
+    const timeIds = new Set<number>();
     for (const timeRes of allTimes) {
         for (const time of timeRes.data.data) {
+            if (timeIds.has(time.id)) {
+                // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+                continue;
+            }
+            timeIds.add(time.id);
             timeArr.push({
                 map: time.map.display_name,
                 mapId: time.map.id,
@@ -522,11 +528,17 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 
     const pageStart = (+start % 100)
     const pageEnd = (+end % 100)
-    const firstTimes = timeRes.data.data;
+    const resTimes = timeRes.data.data;
 
     const timeArr: Time[] = [];
-    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
-        const time = firstTimes[i];
+    const timeIds = new Set<number>();
+    for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
+        const time = resTimes[i];
+        if (timeIds.has(time.id)) {
+            // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+            continue;
+        }
+        timeIds.add(time.id);
         timeArr.push({
             map: time.map.display_name,
             mapId: time.map.id,
@@ -635,6 +647,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     };
 
     const timeArr: Time[] = [];
+    const timeIds = new Set<number>();
     for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
         const time = firstTimes[i];
         let placement: number | undefined;
@@ -644,6 +657,11 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         else if (+sort === TimeSortBy.TimeDesc) {
             placement =  pageInfo.total_items - ((page * 100) + i);
         }
+        if (timeIds.has(time.id)) {
+            // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+            continue;
+        }
+        timeIds.add(time.id);
         timeArr.push({
             map: time.map.display_name,
             mapId: time.map.id,
