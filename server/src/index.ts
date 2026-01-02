@@ -569,6 +569,23 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
     };
 }
 
+interface APITime {
+    time: string
+    date: string
+}
+
+function sortTimes(times: APITime[], isAsc: boolean) {
+    times.sort((a, b) => {
+        const timeDiff = +(a.time) - +(b.time);
+        if (timeDiff !== 0) {
+            return isAsc ? timeDiff : -timeDiff;
+        }
+        // Sort by date
+        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return isAsc ? dateDiff : -dateDiff;
+    });
+}
+
 app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const mapId = req.params.id;
     const game = req.query.game;
@@ -637,6 +654,13 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const pageStart = (+start % 100)
     const pageEnd = (+end % 100)
     const firstTimes = firstTimeRes.data.data;
+
+    if (+sort === TimeSortBy.TimeAsc) {
+        sortTimes(firstTimes, true);
+    }
+    else if (+sort === TimeSortBy.TimeDesc) {
+        sortTimes(firstTimes, false);
+    }
 
     const pageInfo = firstTimeRes.data.pagination;
     const pagination: Pagination = {
