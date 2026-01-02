@@ -56,7 +56,7 @@ function App() {
 
         return {
             maps: maps,
-            sortedMaps: Object.values(maps).sort((a, b) => a.name > b.name ? 1 : -1),
+            sortedMaps: Object.values(maps).sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1),
             mapCounts: counts
         };
     }, [maps]);
