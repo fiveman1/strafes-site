@@ -53,7 +53,7 @@ export interface Time {
     mapId: number
     username: string
     userId: number
-    time: string
+    time: number
     date: string
     game: Game
     style: Style

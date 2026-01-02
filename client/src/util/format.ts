@@ -61,8 +61,7 @@ function formatTimeHelper(time: number, digits: number) {
     return timeStr;
 }
 
-export function formatTime(timeStr: string) {
-    const time = +timeStr;
+export function formatTime(time: number) {
     if (time > 86400000) {
         const days = Math.floor(time / 86400000);
         if (days > 999) {

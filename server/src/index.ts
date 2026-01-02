@@ -570,13 +570,13 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 }
 
 interface APITime {
-    time: string
+    time: number
     date: string
 }
 
 function sortTimes(times: APITime[], isAsc: boolean) {
     times.sort((a, b) => {
-        const timeDiff = +(a.time) - +(b.time);
+        const timeDiff = a.time - b.time;
         if (timeDiff !== 0) {
             return isAsc ? timeDiff : -timeDiff;
         }
@@ -983,10 +983,12 @@ async function tryGetMapsCore(end_of_url: string, params?: any) {
 
 async function tryGetRequest(url: string, params?: any, headers?: any) {
     try {
-        return await axios.get(url, {params: params, headers: headers, timeout: 5000});
+        return await axios.get(url, {params: params, headers: headers, timeout: 7500});
     } 
     catch (err) {
-        //console.log(err);
+        if (isDebug) {
+            console.log(err);
+        }
         return undefined;
     }
 }
@@ -996,7 +998,9 @@ async function tryPostRequest(url: string, params?: any) {
         return await axios.post(url, params, {timeout: 5000});
     } 
     catch (err) {
-        //console.log(err);
+        if (isDebug) {
+            console.log(err);
+        }
         return undefined;
     }
 }

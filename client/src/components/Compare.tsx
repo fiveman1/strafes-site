@@ -516,7 +516,7 @@ interface CompareTime {
     userId: string
     userThumb: string
     userColor: string
-    time: string
+    time: number
     date: string
     id: string
     style: Style
