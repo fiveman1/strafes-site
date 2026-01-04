@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { ALL_COURSES, formatCourse, formatGame, formatPlacement, formatStyle, formatTime } from "../util/format";
+import { ALL_COURSES, formatCourse, formatGame, formatPlacement, formatStyle } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
@@ -11,6 +11,7 @@ import { brown, grey, yellow } from "@mui/material/colors";
 import MapLink, { MAP_THUMB_SIZE } from "./MapLink";
 import DateDisplay from "./DateDisplay";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
+import TimeDisplay from "./TimeDisplay";
 
 export function makeMapColumn(): GridColDef {
     return {
@@ -103,11 +104,14 @@ export function makeTimeColumn(sortable: boolean): GridColDef {
         type: "string",
         field: "time",
         headerName: "Time",
-        flex: 150,
-        minWidth: 100,
-        valueFormatter: formatTime,
+        flex: 160,
+        minWidth: 180,
         sortingOrder: sortable ? ["asc", "desc"] : [],
-        sortable: sortable
+        sortable: sortable,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            const time = params.row;
+            return <TimeDisplay ms={time.time} diff={time.wrDiff} />
+        }
     };
 }
 

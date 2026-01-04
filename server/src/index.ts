@@ -9,6 +9,7 @@ import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, Use
 import { exit } from "process";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
+import { getMapWR, Record } from "./globals.js";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -294,7 +295,10 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     }
 
     if (!onlyWR) {
-        await setTimePlacements(timeInfo.data);
+        const promises = [];
+        promises.push(setTimePlacements(timeInfo.data));
+        promises.push(setTimeDiffs(timeInfo.data));
+        await Promise.all(promises);
     }
 
     res.status(200).json(timeInfo);
@@ -455,6 +459,44 @@ async function setTimePlacements(times: Time[]) {
     for (const time of times) {
         time.placement = idToPlacement.get(time.id);
     }
+}
+
+async function setTimeDiffs(times: Time[]) {
+    if (times.length < 1) {
+        return;
+    }
+
+    const mapToWR = new Map<string, Record>();
+    const keys = new Set<string>();
+    for (const time of times) {
+        keys.add(getMapKey(time));
+    }
+
+    const promises = [];
+    for (const mapKey of keys) {
+        const promise = async () => {
+            const pieces = mapKey.split(",");
+            const wr = await getMapWR(pieces[0], +pieces[1], +pieces[2], +pieces[3]);
+            if (wr) {
+                mapToWR.set(mapKey, wr);
+            }
+        }
+        promises.push(promise());
+    }
+
+    await Promise.all(promises);
+
+    for (const time of times) {
+        const mapKey = getMapKey(time);
+        const wr = mapToWR.get(mapKey);
+        if (wr) {
+            time.wrDiff = time.time - wr.time;
+        }
+    }
+}
+
+function getMapKey(time: Time) {
+    return `${time.mapId},${time.game},${time.style},${time.course}`;
 }
 
 app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -702,9 +744,13 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         });
     }
 
+    const promises = [];
     if (+sort === TimeSortBy.DateAsc || +sort == TimeSortBy.DateDesc) {
-        await setTimePlacements(timeArr);
+        promises.push(setTimePlacements(timeArr));
     }
+    promises.push(setTimeDiffs(timeArr));
+
+    await Promise.all(promises);
 
     res.status(200).json({
         data: timeArr,

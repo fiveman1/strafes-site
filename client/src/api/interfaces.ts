@@ -61,6 +61,7 @@ export interface Time {
     id: string
     course: number
     placement?: number
+    wrDiff?: number
 }
 
 export interface Pagination {
