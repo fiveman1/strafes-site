@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 import { formatDiff, formatTime } from "../util/format";
 import { green, red } from "@mui/material/colors";
 import { darken, useTheme } from "@mui/material";
-import { convertToHSL, HexToHSL, HSLToHex } from "../util/colors";
+import { convertToHSL, HSLToHex } from "../util/colors";
 
 interface ITimeDisplayProps {
     ms: number,
