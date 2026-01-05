@@ -7,9 +7,6 @@ export function convertToHSL(colorStr: string) {
         if (values) {
             return RGBToHSL({r: values[0], g: values[1], b: values[2]});
         }
-        else {
-            console.log(colorStr);
-        }
     }
     return {h: 0, s: 0, l: 0};
 }
@@ -80,7 +77,6 @@ export function HexToHSL(hex: string): { h: number; s: number; l: number } {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 
     if (!result) {
-        console.log(hex);
         throw new Error("Could not parse Hex Color");
     }
 
