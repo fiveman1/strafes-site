@@ -27,8 +27,8 @@ function TimeDisplay(props: ITimeDisplayProps) {
         const wrTime = ms - diff;
         let ratio = diff / wrTime;
         const maxRatio = 0.05;
-        // Desaturate the color, if it's 10% worse than WR then use full saturation,
-        // otherwise we will scale it linearly on a normalized scale between 0% to 10%.
+        // Desaturate the color, if it's 5% worse than WR then use full saturation,
+        // otherwise we will scale it linearly on a normalized scale between 0% to 5%.
         if (ratio > maxRatio) {
             ratio = maxRatio;
         }
