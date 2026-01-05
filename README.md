@@ -14,6 +14,12 @@ Make a `.env` in the root directory (this folder) with the following:
 STRAFES_KEY=<your key>
 ```
 
+If using https://github.com/fiveman1/strafes-globals-db, then add
+```sh
+DB_USER=<your MySQL user>
+DB_PASSWORD=<your MySQL password>
+```
+
 ### Run dev server
 
 `yarn run dev`
