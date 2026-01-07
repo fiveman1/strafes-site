@@ -9,7 +9,7 @@ import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, Use
 import { exit } from "process";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
-import { getMapWR, Record } from "./globals.js";
+import { getMapWR, getUserWRs, Record } from "./globals.js";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -235,6 +235,21 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         });
     }
 
+    const promises = [];
+    for (const rank of rankArr) {
+        promises.push(getUserWRs(rank.userId, +game, +style));
+    }
+
+    const resolved = await Promise.all(promises);
+    
+    for (let i = 0; i < resolved.length; ++i) {
+        const wrs = resolved[i];
+        const counts = getUserWRCounts(wrs);
+        if (!counts.loaded) continue;
+        rankArr[i].mainWrs = counts.mainWrs;
+        rankArr[i].bonusWrs = counts.bonusWrs;
+    }
+
     res.status(200).json(rankArr);
 });
 
@@ -314,12 +329,12 @@ app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minu
         return;
     }
 
-    if (!game || isNaN(+game) || Game[+game] === undefined) {
+    if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         res.status(400).json({error: "Invalid game"});
         return;
     }
 
-    if (!style || isNaN(+style) || Style[+style] === undefined) {
+    if (!style || isNaN(+style) || Style[+style] === undefined || +style === Style.all) {
         res.status(400).json({error: "Invalid style"});
         return;
     }
@@ -339,6 +354,55 @@ app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minu
 
     res.status(200).json({completions: timeRes.data.pagination.total_items});
 });
+
+app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const userId = req.params.id;
+    const game = req.query.game;
+    const style = req.query.style;
+
+    if (!validatePositiveInt(userId)) {
+        res.status(400).json({error: "Invalid user ID"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const wrs = await getUserWRs(userId, +game, +style);
+
+    res.status(200).json(getUserWRCounts(wrs));
+});
+
+function getUserWRCounts(wrs?: Record[]) {
+    let mainWrs = 0;
+    let bonusWrs = 0;
+    let loaded = false;
+    
+    if (wrs !== undefined) {
+        loaded = true;
+        for (const wr of wrs) {
+            if (wr.course === 0) {
+                mainWrs += 1;
+            }
+            else {
+                bonusWrs += 1;
+            }
+        }
+    }
+
+    return {
+        loaded: loaded,
+        mainWrs: mainWrs,
+        bonusWrs: bonusWrs
+    };
+}
 
 app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;

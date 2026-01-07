@@ -29,14 +29,21 @@ function TimeDisplay(props: ITimeDisplayProps) {
         const maxRatio = 0.05;
         // Desaturate the color, if it's 5% worse than WR then use full saturation,
         // otherwise we will scale it linearly on a normalized scale between 0% to 5%.
-        if (ratio > maxRatio) {
-            ratio = maxRatio;
-        }
-        ratio = normalize(ratio, 0, maxRatio, 0.55, 1);
+        if (ratio < maxRatio) {
+            ratio = normalize(ratio, 0, maxRatio, 0.55, 1);
 
-        const hsl = convertToHSL(diffColor);
-        hsl.s *= ratio;
-        diffColor = HSLToHex(hsl);
+            const hsl = convertToHSL(diffColor);
+            hsl.s *= ratio;
+            diffColor = HSLToHex(hsl);
+        }
+    }
+
+    let diffText = "WR";
+    if (diff && diff > 0) {
+        diffText = `+${formatDiff(Math.abs(diff))}`;
+    }
+    else if (diff && diff < 0) {
+        diffText = `-${formatDiff(Math.abs(diff))}`;
     }
     
     return (
@@ -46,7 +53,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
             </Typography>
             {diff !== undefined ? 
             <Box display="inline-block"  color={diffColor}>
-                {`(${diff > 0 ? `+${formatDiff(Math.abs(diff))}` : "WR"})`}
+                {`(${diffText})`}
             </Box>
             : <></>}
         </Box>

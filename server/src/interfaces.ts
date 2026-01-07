@@ -45,6 +45,8 @@ export interface Rank {
     skill: number
     username: string
     userId: string
+    mainWrs?: number,
+    bonusWrs?: number,
     placement?: number
 }
 

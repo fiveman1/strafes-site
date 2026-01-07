@@ -9,8 +9,10 @@ import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { makeUserColumn } from "./TimesCard";
+import { yellow } from "@mui/material/colors";
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
-function makeColumns(game: Game, style: Style) {
+function makeColumns() {
     const cols: GridColDef[] = [];
 
     cols.push({
@@ -22,6 +24,17 @@ function makeColumns(game: Game, style: Style) {
     });
     
     cols.push(makeUserColumn(240));
+
+    cols.push({
+        type: "number",
+        field: "mainWrs",
+        renderHeader: (params) => <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />,
+        align: "center",
+        headerAlign: "center",
+        width: 64,
+        sortable: false,
+        renderCell: (params) => <Typography variant="inherit" color={params.value === 0 ? "textSecondary" : undefined}>{params.value}</Typography>
+    });
 
     cols.push({
         type: "string",
@@ -58,9 +71,7 @@ function RanksCard(props: IRanksCardProps) {
     const [rowCount, setRowCount] = useState(-1);
     const [isLoading, setIsLoading] = useState(false);
 
-    const gridCols = useMemo(() => {
-        return makeColumns(game, style);
-    }, [game, style]);
+    const gridCols = makeColumns();
 
     const gridKey = useMemo(() => {
         return `${game},${style}`;

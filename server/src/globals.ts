@@ -41,3 +41,32 @@ export async function getMapWR(mapId: string, game: Game, style: Style, course: 
     }
     return record;
 }
+
+export async function getUserWRs(userId: string, game: Game, style: Style): Promise<Record[] | undefined> {
+    if (!pool) {
+        return undefined;
+    }
+
+    let query = "SELECT * FROM globals WHERE user_id = ?";
+    const values : any[] = [userId];
+    
+    if (game !== Game.all) {
+        query += " AND game = ?";
+        values.push(game);
+    }
+   
+    if (style !== Style.all) {
+        query += " AND style = ?";
+        values.push(style);
+    }
+    
+    query += ";";
+
+    const [records] = await pool.query<RecordRow[]>(query, values);
+    
+    if (!records) {
+        return undefined;
+    }
+   
+    return records;
+}

@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
-import { getCompletionsForUser, getUserRank } from "../api/api";
+import { getCompletionsForUser, getNumWRsForUser, getUserRank, WRCount } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { ContextParams, formatRank, formatSkill } from "../util/format";
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
+import { yellow } from "@mui/material/colors";
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 export interface IProfileCardProps {
     userId?: string
@@ -23,6 +25,8 @@ function ProfileCard(props: IProfileCardProps) {
     const [rankLoading, setRankLoading] = useState(false);
     const [comps, setComps] = useState<number>();
     const [compsLoading, setCompsLoading] = useState(false);
+    const [wrs, setWrs] = useState<WRCount>();
+    const [wrsLoading, setWrsLoading] = useState(false);
 
     const { mapCounts } = useOutletContext() as ContextParams;
 
@@ -56,6 +60,26 @@ function ProfileCard(props: IProfileCardProps) {
 
         return () => {
             compsActive = false;
+        }
+    }, [userId, game, style]);
+
+    useEffect(() => {
+        if (!userId) {
+            setWrs(undefined);
+            return;
+        }
+
+        let wrsActive = true;
+        setWrsLoading(true);
+
+        getNumWRsForUser(userId, game, style).then((wrs) => {
+            if (!wrsActive) return;
+            setWrs(wrs);
+            setWrsLoading(false);
+        });
+
+        return () => {
+            wrsActive = false;
         }
     }, [userId, game, style]);
 
@@ -127,7 +151,7 @@ function ProfileCard(props: IProfileCardProps) {
             </IconButton>
         </Box>
         <Box display="flex" flexWrap="wrap">
-            <Box flex="1 0 25%" padding={1} minWidth={150}>
+            <Box flex="1 0 20%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
                     <Tooltip sx={{marginRight: "auto"}} arrow title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
                         <Typography variant="subtitle1">
@@ -141,7 +165,7 @@ function ProfileCard(props: IProfileCardProps) {
                     </Typography>}
                 </Box>
             </Box>
-            <Box flex="1 0 25%" padding={1} minWidth={150}>
+            <Box flex="1 0 20%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
                     <Tooltip sx={{marginRight: "auto"}} arrow title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
                         <Typography variant="subtitle1">
@@ -155,7 +179,7 @@ function ProfileCard(props: IProfileCardProps) {
                     </Typography>}
                 </Box>
             </Box>
-            <Box flex="1 0 25%" padding={1} minWidth={150} >
+            <Box flex="1 0 20%" padding={1} minWidth={150} >
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Moderation status
@@ -177,7 +201,7 @@ function ProfileCard(props: IProfileCardProps) {
                     <Typography variant="h6">{formattedStatus}</Typography>}
                 </Box>
             </Box>
-            <Box flex="1 0 25%" padding={1} minWidth={150}>
+            <Box flex="1 0 20%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle1">
                         Completions
@@ -186,6 +210,38 @@ function ProfileCard(props: IProfileCardProps) {
                     <Typography variant="h6">
                         {compsFormatted}
                     </Typography>}
+                </Box>
+            </Box>
+            <Box flex="1 0 20%" padding={1} minWidth={150}>
+                <Box display="flex" flexDirection="column">
+                    <Typography variant="subtitle1">
+                        World Records
+                    </Typography>
+                    {wrsLoading ? <CircularProgress size="32px" /> : 
+                    <Box display="flex" flexDirection="row" alignItems="center">
+                        <Box display="flex" flexDirection="row">
+                            <EmojiEventsIcon htmlColor={yellow[800]} sx={{fontSize: "24px"}} />
+                        </Box>
+                        {wrs === undefined ?
+                        <Typography variant="h6" marginLeft={1}>
+                            n/a
+                        </Typography>
+                        :
+                        <>
+                        <Typography variant="h6" marginLeft={1}>
+                            {`${wrs.mainWrs + wrs.bonusWrs}`}
+                        </Typography>
+                        {wrs.mainWrs + wrs.bonusWrs <= 0 ? <></> :
+                        <Box display="flex" flexDirection="column" marginTop={0.25} marginLeft={1.5}>
+                            <Typography variant="caption">
+                                {`${wrs.mainWrs} main`}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                {`${wrs.bonusWrs} bonus`}
+                            </Typography>
+                        </Box>}
+                        </>}
+                    </Box>}
                 </Box>
             </Box>
             {/* <Box flexGrow={1} padding={1}>

@@ -134,6 +134,26 @@ export async function getCompletionsForUser(userId: string, game: Game, style: S
     return res.data.completions;
 }
 
+export interface WRCount {
+    loaded: boolean,
+    mainWrs: number,
+    bonusWrs: number
+}
+
+export async function getNumWRsForUser(userId: string, game: Game, style: Style): Promise<WRCount | undefined> {
+    const res = await tryGetRequest("user/times/wrs/" + userId, {
+        game: game,
+        style: style,
+    });
+    
+    if (!res) return undefined;
+    const data = res.data as WRCount;
+    
+    if (!data.loaded) return undefined;
+
+    return data;
+}
+
 export interface Maps {
     [id: number]: Map | undefined
 }
