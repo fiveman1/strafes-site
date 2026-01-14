@@ -13,7 +13,7 @@ import GameSelector, { useGame } from "./GameSelector";
 import CourseSelector, { useCourse } from "./CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { download, generateCsv, mkConfig } from "export-to-csv";
-import MapSortSelector, { useMapSort } from "./MapSortSelector";
+import MapSortSelector, { MapTimesSort, useMapSort } from "./MapSortSelector";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -134,8 +134,8 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game}
     );
 }
 
-function MapList(props: {width: number, filteredMaps: Map[], style: Style, game: Game, selectedMap?: Map}) {
-    const { width, filteredMaps, style, game, selectedMap } = props;
+function MapList(props: {width: number, filteredMaps: Map[], style: Style, game: Game, sort: MapTimesSort, selectedMap?: Map}) {
+    const { width, filteredMaps, style, game, sort, selectedMap } = props;
     const listRef = useRef<FixedSizeList>(null);
 
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE * 2)) || 1;
@@ -160,7 +160,7 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, game:
     // 1. Loading a map for the first time (from a direct link), or
     // 2. Clicking on a map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedMap, listRef])
+    }, [selectedMap, listRef, sort])
     
     return (
         <FixedSizeList 
@@ -339,7 +339,7 @@ function MapsPage() {
         </Box>
         <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
             <AutoSizer disableHeight>
-            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} game={game} selectedMap={selectedMap} />}
+            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} game={game} sort={sort} selectedMap={selectedMap} />}
             </AutoSizer>
         </Grid>
         <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
