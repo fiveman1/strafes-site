@@ -12,7 +12,7 @@ function Home() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     
     useEffect(() => {
-        document.title = "strafes - home"
+        document.title = "home - strafes"
     }, []);
 
     return (

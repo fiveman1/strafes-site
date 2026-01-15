@@ -196,7 +196,7 @@ function MapsPage() {
     const [sort, setSort] = useMapSort();
 
     useEffect(() => {
-        document.title = selectedMap ? `strafes - maps - ${selectedMap.name}` : "strafes - maps";
+        document.title = selectedMap ? `maps - ${selectedMap.name} - strafes` : "maps - strafes";
     }, [selectedMap]);
     
     useEffect(() => {

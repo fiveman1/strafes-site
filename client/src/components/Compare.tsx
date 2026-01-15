@@ -387,13 +387,13 @@ function Compare() {
 
     useEffect(() => {
         if (!firstUser && !secondUser) {
-            document.title = "strafes - compare";
+            document.title = "compare - strafes";
             return;
         }
         
         const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
         const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
-        document.title = `strafes - compare - ${firstUserName} vs ${secondUserName}`;
+        document.title = `compare - ${firstUserName} vs ${secondUserName} - strafes`;
     }, [firstUser, secondUser]);
     
     const onSwap = () => {

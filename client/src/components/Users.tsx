@@ -67,7 +67,7 @@ function Users() {
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
     useEffect(() => {
-        document.title = user ? `strafes - users - @${user.username}` : "strafes - users";
+        document.title = user ? `users - @${user.username} - strafes` : "users - strafes";
     }, [user]);
 
     if (id !== userId) {

@@ -136,7 +136,7 @@ function Ranks() {
     const [style, setStyle] = useStyle();
     
     useEffect(() => {
-        document.title = "strafes - ranks"
+        document.title = "ranks - strafes"
     }, []);
     
     return (

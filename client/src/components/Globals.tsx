@@ -16,7 +16,7 @@ function Globals() {
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
     useEffect(() => {
-        document.title = "strafes - globals"
+        document.title = "globals - strafes"
     }, []);
 
     return (
