@@ -92,14 +92,14 @@ function App() {
                 <MainAppBar themeMode={themeMode} setThemeMode={setThemeMode} />
                 <Outlet context={contextParams}/>
                 <Box marginTop="auto">
-                <Breadcrumbs sx={{display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", marginBottom: 2}}>
-                    <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex">
+                <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", marginBottom: 2}}>
+                    <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
                         bhop
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style={{marginLeft: 4}}>
                             <path fill={theme.palette.primary.main} d="M6,2L2,18l16,4l4-16L6,2z M13.635,14.724l-4.358-1.09l1.089-4.358l4.358,1.09L13.635,14.724z"></path>
                         </svg>
                     </Link>
-                    <Link href="https://www.roblox.com/games/5315066937/surf" display="flex">
+                    <Link href="https://www.roblox.com/games/5315066937/surf" display="flex" underline="hover">
                         surf
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style={{marginLeft: 4}}>
                             <path fill={theme.palette.primary.main} d="M6,2L2,18l16,4l4-16L6,2z M13.635,14.724l-4.358-1.09l1.089-4.358l4.358,1.09L13.635,14.724z"></path>
