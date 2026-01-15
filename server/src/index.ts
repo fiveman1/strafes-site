@@ -489,7 +489,6 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
                 date: time.date,
                 game: time.game_id,
                 style: time.style_id,
-                updatedAt: time.updated_at,
                 course: time.mode_id,
                 id: time.id
             });
@@ -654,7 +653,6 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             date: time.date,
             game: time.game_id,
             style: time.style_id,
-            updatedAt: time.updated_at,
             id: time.id,
             course: time.mode_id,
             placement: onlyWR ? 1 : undefined
@@ -801,7 +799,6 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             date: time.date,
             game: time.game_id,
             style: time.style_id,
-            updatedAt: time.updated_at,
             id: time.id,
             course: time.mode_id,
             placement: placement

@@ -59,7 +59,6 @@ export interface Time {
     date: string
     game: Game
     style: Style
-    updatedAt: string
     id: string
     course: number
     placement?: number
