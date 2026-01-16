@@ -227,7 +227,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                 minWidth={imageSize}
                 width={imageSize} 
                 height={imageSize} 
-                borderRadius="4px 4px 0 0" 
+                borderRadius="4px" 
                 overflow="hidden"
             >
                 <Box 
