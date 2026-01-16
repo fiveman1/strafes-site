@@ -187,15 +187,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
 
     if (!selectedMap) {
-        return (
-            <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
-                <Box marginBottom={1} display="flex">
-                    <Typography variant="caption" flexGrow={1} marginRight={2}>
-                        Info
-                    </Typography>
-                </Box>
-            </Paper>
-        )
+        return undefined;
     }
 
     const imageSize = smallScreen ? 250 : 300;
@@ -247,7 +239,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                 />
             </Box>
                 :
-            <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize }}  />
+            <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize, alignSelf: "center" }}  />
             }
         </Paper>
     )
