@@ -138,8 +138,12 @@ export function formatPlacement(placement?: number) {
 export function formatDiff(diffMs: number) {
     const diff = diffMs / 1000;
     if (diff >= 60) {
-        const minutes = Math.floor(diff / 60);
-        const seconds = Math.round(diff % 60);
+        let minutes = Math.floor(diff / 60);
+        let seconds = Math.round(diff % 60);
+        if (seconds === 60) {
+            minutes += 1;
+            seconds = 0;
+        }
         return `${minutes}m ${seconds}s`;
     }
     return `${diff.toFixed(3)}s`;
