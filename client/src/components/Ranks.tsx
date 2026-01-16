@@ -126,6 +126,7 @@ function RanksCard(props: IRanksCardProps) {
             }}
             disableColumnFilter
             density="compact"
+            disableRowSelectionOnClick
         />
     </Paper>
     );
