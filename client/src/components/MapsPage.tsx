@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
-import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
@@ -185,6 +185,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
     const { selectedMap } = props;
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
+    const theme = useTheme();
 
     if (!selectedMap) {
         return undefined;
@@ -200,7 +201,11 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                         Map Info
                     </Typography>
                     <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
-                        <Typography variant="h4" fontWeight="bold" margin={0.5}>
+                        <Typography variant="h4" fontWeight="bold" margin={0.5} sx={{
+                            background: `radial-gradient(circle, ${theme.palette.primary.main}, ${theme.palette.mode === "dark" ? theme.palette.text.primary : lighten(theme.palette.primary.main, 0.25)})`,
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent"
+                        }}>
                             {selectedMap.name}
                         </Typography>
                         <Typography variant="subtitle2" color="textSecondary">
