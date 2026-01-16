@@ -349,6 +349,7 @@ function TimesGrid(props: ITimesCardProps) {
         }}
         disableColumnFilter
         density="compact"
+        disableRowSelectionOnClick
     />
     );
 }

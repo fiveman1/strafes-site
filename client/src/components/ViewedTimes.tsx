@@ -68,6 +68,7 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
         }}
         density="compact"
         disableColumnFilter
+        disableRowSelectionOnClick
     />
     );
 }

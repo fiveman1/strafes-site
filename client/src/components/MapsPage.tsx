@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
-import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, Paper, TextField, Tooltip, Typography, useTheme } from "@mui/material";
+import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
@@ -171,6 +171,86 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, game:
             {MapRow}
         </FixedSizeList>
     );
+}
+
+const mapDateFormat = Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit"
+});
+
+function MapInfoCard(props: {selectedMap?: Map}) {
+    const { selectedMap } = props;
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
+
+    if (!selectedMap) {
+        return (
+            <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
+                <Box marginBottom={1} display="flex">
+                    <Typography variant="caption" flexGrow={1} marginRight={2}>
+                        Info
+                    </Typography>
+                </Box>
+            </Paper>
+        )
+    }
+
+    const imageSize = smallScreen ? 250 : 300;
+
+    return (
+        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: smallScreen ? "column" : "row"}}>
+            <Box display="flex" flexDirection="column" flexGrow={1} marginRight={smallScreen ? 0 : 2} marginBottom={smallScreen ? 1.5 : 0} sx={{overflowWrap: "break-word"}}>
+                <Box display="flex" flexDirection="column" justifyContent="flex-start" marginBottom={4} flexGrow={1}>
+                    <Typography variant="caption" marginBottom={1}>
+                        Map Info
+                    </Typography>
+                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                        <Typography variant="h4" fontWeight="bold" margin={0.5}>
+                            {selectedMap.name}
+                        </Typography>
+                        <Typography variant="subtitle2" color="textSecondary">
+                            by {selectedMap.creator}
+                        </Typography>
+                    </Box>
+                </Box>
+                <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                    <Typography variant="body2">
+                        Released on {mapDateFormat.format(new Date(selectedMap.date))}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                        Server load count: {selectedMap.loadCount}
+                    </Typography>
+                    <Typography variant="body2" color="primary">
+                        {formatGame(selectedMap.game)}
+                    </Typography>
+                </Box>
+            </Box>
+            {
+            selectedMap.largeThumb ? 
+            <Box
+                alignSelf="center"
+                minWidth={imageSize}
+                width={imageSize} 
+                height={imageSize} 
+                borderRadius="4px 4px 0 0" 
+                overflow="hidden"
+            >
+                <Box 
+                    width="100%"
+                    height="100%"
+                    component="img" 
+                    src={selectedMap.largeThumb} 
+                    alt={selectedMap.name} 
+                />
+            </Box>
+                :
+            <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize }}  />
+            }
+        </Paper>
+    )
 }
 
 const defaultCompareFunc : ((a: Map, b: Map) => number) = (a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
@@ -349,6 +429,9 @@ function MapsPage() {
         </Box>
         <Box padding={1}>
             <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} hideMap showPlacement />
+        </Box>
+        <Box padding={1}>
+            <MapInfoCard selectedMap={selectedMap} />
         </Box>
         <Box padding={1} display="flex" flexDirection="row" justifyContent="flex-end">
             <Tooltip title="Download maps as .csv" placement="left" arrow>
