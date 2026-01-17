@@ -192,6 +192,9 @@ function MapInfoCard(props: {selectedMap?: Map}) {
     }
 
     const imageSize = smallScreen ? 250 : 300;
+    const mapDate = new Date(selectedMap.date);
+    let releasedText = mapDate.getTime() > Date.now() ? "Releases on " : "Released on ";
+    releasedText += mapDateFormat.format(mapDate);
 
     return (
         <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: smallScreen ? "column" : "row"}}>
@@ -215,7 +218,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                 </Box>
                 <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
                     <Typography variant="body2">
-                        Released on {mapDateFormat.format(new Date(selectedMap.date))}
+                        {releasedText}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                         Server load count: {selectedMap.loadCount}
