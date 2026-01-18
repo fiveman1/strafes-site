@@ -4,11 +4,11 @@ import { Game, Style } from "../api/interfaces";
 import { formatGame, getAllowedStyles } from "../util/format";
 import { useLocation, useNavigate } from "react-router";
 
-export function useGame() {
+export function useGame(paramName: string = "game", defaultGame: Game = Game.bhop) {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
-    let paramGame = Game.bhop;
-    const gameParam = queryParams.get("game");
+    let paramGame = defaultGame;
+    const gameParam = queryParams.get(paramName);
     if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined) {
         paramGame = +gameParam;
     }
@@ -18,19 +18,24 @@ export function useGame() {
 export interface IGameSelectorProps {
     game: Game
     setGame: (game: Game) => void
-    style: Style
-    setStyle: (style: Style) => void
+    style?: Style
+    setStyle?: (style: Style) => void
     allowedGames?: Game[]
     allowSelectAll?: boolean
+    label?: string
+    paramName?: string
 }
 
 function GameSelector(props: IGameSelectorProps) {
-    const { game, setGame, style, setStyle, allowedGames, allowSelectAll } = props;
+    const { game, setGame, style, setStyle, allowedGames, allowSelectAll, label, paramName } = props;
     const location = useLocation();
     const navigate = useNavigate();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
+        if (!style || !setStyle) {
+            return;
+        }
         const allowedStyles = getAllowedStyles(game);
         if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
             const defaultStyle = allowedStyles[0];
@@ -41,22 +46,22 @@ function GameSelector(props: IGameSelectorProps) {
     useEffect(() => {
         if (allowedGames && !allowedGames.includes(game)) {
             const queryParams = new URLSearchParams(location.search);
-            queryParams.set("game", allowedGames[0].toString());
+            queryParams.set(paramName ?? "game", allowedGames[0].toString());
             navigate({ search: queryParams.toString() }, { replace: true });
             setGame(allowedGames[0]);
         }
-    }, [allowedGames, game, location.search, navigate, setGame]);
+    }, [allowedGames, game, location.search, navigate, setGame, paramName]);
 
     const handleChangeGame = (event: SelectChangeEvent<Game>) => {
         const game = event.target.value;
         const queryParams = new URLSearchParams(location.search);
         const allowedStyles = getAllowedStyles(game);
-        if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
+        if (style && setStyle && !allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
             const defaultStyle = allowedStyles[0];
             queryParams.set("style", defaultStyle.toString());
             setStyle(defaultStyle);
         }
-        queryParams.set("game", game.toString());
+        queryParams.set(paramName ?? "game", game.toString());
         navigate({ search: queryParams.toString() }, { replace: true });
         setGame(game);
     };
@@ -70,10 +75,10 @@ function GameSelector(props: IGameSelectorProps) {
     return (
         <Box padding={smallScreen ? 1 : 1.5}>
             <FormControl sx={{ width: "150px" }} disabled={games.length <= 1}>
-                <InputLabel>Game</InputLabel>
+                <InputLabel>{label ?? "Game"}</InputLabel>
                 <Select
                     value={realGame}
-                    label="Game"
+                    label={label ?? "Game"}
                     onChange={handleChangeGame}
                 >
                     {games.map((game) => <MenuItem value={game}>{formatGame(game)}</MenuItem>)}
