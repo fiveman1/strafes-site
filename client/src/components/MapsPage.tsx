@@ -274,6 +274,7 @@ function MapsPage() {
     const [course, setCourse] = useCourse();
     const location = useLocation();
     const [sort, setSort] = useMapSort();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
         document.title = selectedMap ? `maps - ${selectedMap.name} - strafes` : "maps - strafes";
@@ -407,7 +408,7 @@ function MapsPage() {
     };
 
     return (
-    <Box padding={2} flexGrow={1}>
+    <Box padding={smallScreen ? 1 : 2} flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Maps
         </Typography>
@@ -423,7 +424,7 @@ function MapsPage() {
                 </Box>
             </Paper>
         </Box>
-        <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}}>
+        <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}} paddingRight={smallScreen ? 1 : 0} paddingLeft={smallScreen ? 1 : 0}>
             <AutoSizer disableHeight>
             {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} game={game} sort={sort} filterGame={filterGame} selectedMap={selectedMap} />}
             </AutoSizer>

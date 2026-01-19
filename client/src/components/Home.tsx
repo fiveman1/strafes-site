@@ -16,7 +16,7 @@ function Home() {
     }, []);
 
     return (
-    <Box padding={2} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+    <Box padding={smallScreen ? 1 : 2} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
         <Typography padding={2} variant="h3">Go to...</Typography>
         <Grid container spacing={smallScreen ? 2 : 3} justifyContent="center">
             <Grid>

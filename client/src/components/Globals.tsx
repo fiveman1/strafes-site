@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
-import { Typography } from "@mui/material";
+import { Typography, useMediaQuery } from "@mui/material";
 import TimesCard from "./TimesCard";
 import { TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
@@ -12,6 +12,7 @@ import IncludeBonusCheckbox, { useIncludeBonuses } from "./IncludeBonusCheckbox"
 function Globals() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
@@ -20,7 +21,7 @@ function Globals() {
     }, []);
 
     return (
-    <Box padding={2} flexGrow={1} display="flex" flexDirection="column">
+    <Box padding={smallScreen ? 1 : 2} flexGrow={1} display="flex" flexDirection="column">
         <Typography variant="h2" padding={1}>
             Globals
         </Typography>
