@@ -122,7 +122,7 @@ function MapSortSelector(props: IMapSortSelectorProps) {
     }
 
     return (
-        <Box padding={smallScreen ? 0.5 : 1.5} display="flex" alignItems="center">
+        <Box padding={smallScreen ? 1 : 1.5} display="flex" alignItems="center">
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Sort</InputLabel>
                 <Select
