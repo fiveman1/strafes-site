@@ -41,7 +41,7 @@ export function makeUserColumn(flex: number, noLink?: boolean): GridColDef {
         renderCell: noLink ? undefined : (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return (
-                <UserLink userId={time.userId} username={time.username} game={time.game} strafesStyle={time.style} fontWeight="bold" underline="hover" />
+                <UserLink userId={time.userId} username={time.username} userRole={time.userRole} game={time.game} strafesStyle={time.style} fontWeight="bold" underline="hover" />
             );
         }
     }

@@ -57,6 +57,8 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
     }
     const allowedStyles = getAllowedStyles(allowedGame);
     const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
+    let href = selected ? "/maps" : `/maps/${map.id}`;
+    href += `?style=${styleForLink}&game=${allowedGame}&course=0&sort=${sort}&filterGame=${filterGame}`;
 
     return (
     <Box padding="8px">
@@ -69,7 +71,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
             }}
         >
             <CardActionArea
-                href={`/maps/${map.id}?style=${styleForLink}&game=${allowedGame}&course=0&sort=${sort}&filterGame=${filterGame}`}
+                href={href}
                 sx={{ 
                     height: "100%",
                     backgroundColor: bgColor,
@@ -291,6 +293,9 @@ function MapsPage() {
                 setGame(+gameParam);
             }
         }
+        else {
+            setSelectedMap(undefined);
+        }
     }, [selectedMap, id, maps, setGame, location.search]);
 
     const onSearchTextChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +425,7 @@ function MapsPage() {
             <Paper elevation={2} sx={{padding: 3, display:"flex", alignItems: "center"}}>
                 <Box width="100%">
                     <Typography variant="subtitle1" marginBottom={2}>Search by name or creator as you type</Typography>
-                    <TextField onChange={onSearchTextChanged} fullWidth label="Name" variant="outlined" />
+                    <TextField onChange={onSearchTextChanged} fullWidth label="Name" variant="outlined" type="search" />
                 </Box>
             </Paper>
         </Box>

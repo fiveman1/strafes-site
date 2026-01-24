@@ -1,21 +1,15 @@
 import apicache from "apicache";
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import express from "express";
 import path from "path";
-import memoize from 'memoize';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
-import { exit } from "process";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, Record } from "./globals.js";
-
-const STRAFES_KEY = process.env.STRAFES_KEY;
-if (!STRAFES_KEY) {
-    console.error("Missing StrafesNET API key");
-    exit(1);
-}
+import { tryGetCached, tryGetMaps, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
+import { getAllUsersToRoles } from "./roles.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -220,6 +214,8 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     const pageEnd = (+end % 100)
     const ranks = ranksRes.data.data as any[];
     const rankArr: Rank[] = [];
+    const roles = await getAllUsersToRoles();
+
     for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
         const data = ranks[i];
         const rank = calcRank(data.rank);
@@ -231,6 +227,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
             skill: data.skill,
             userId: data.user.id,
             username: data.user.username,
+            userRole: roles.get(+data.user.id),
             placement: ((page - 1) * 100) + i + 1
         });
     }
@@ -631,6 +628,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         return undefined;
     }
 
+    const roles = await getAllUsersToRoles();
+
     const pageStart = (+start % 100)
     const pageEnd = (+end % 100)
     const resTimes = timeRes.data.data;
@@ -649,6 +648,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             mapId: time.map.id,
             username: time.user.username,
             userId: time.user.id,
+            userRole: roles.get(+time.user.id),
             time: time.time,
             date: time.date,
             game: time.game_id,
@@ -755,6 +755,8 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
+    const roles = await getAllUsersToRoles();
+
     const pageStart = (+start % 100)
     const pageEnd = (+end % 100)
     const firstTimes = firstTimeRes.data.data;
@@ -795,6 +797,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             mapId: time.map.id,
             username: time.user.username,
             userId: time.user.id,
+            userRole: roles.get(+time.user.id),
             time: time.time,
             date: time.date,
             game: time.game_id,
@@ -1035,6 +1038,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
         isCircular: false
     });
     const strafesUserReq = tryGetStrafes("user/" + userId);
+    const userRolesReq = getAllUsersToRoles();
 
     const userRes = await userReq;
     if (!userRes) return undefined;
@@ -1047,13 +1051,17 @@ async function getUserData(userId: string): Promise<undefined | User> {
     }
 
     const strafesUserRes = await strafesUserReq;
+    const userRoles = await userRolesReq;
+    const role = userRoles.get(+userId);
+
     if (!strafesUserRes) {
         return {
             displayName: user.displayName,
             id: userId,
             username: user.name,
             joinedOn: user.created,
-            thumbUrl: url
+            thumbUrl: url,
+            role: role
         };
     }
     const strafesData = strafesUserRes.data.data;
@@ -1065,49 +1073,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
         joinedOn: user.created,
         thumbUrl: url,
         status: strafesData.state_id,
-        muted: strafesData.muted
+        muted: strafesData.muted,
+        role: role
     };
-}
-
-const tryGetCached = memoize(tryGetRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-const tryPostCached = memoize(tryPostRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-const tryGetStrafes = memoize(tryGetStrafesCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-const tryGetMaps = memoize(tryGetMapsCore, {cacheKey: JSON.stringify, maxAge: 60 * 60 * 1000});
-
-async function tryGetStrafesCore(end_of_url: string, params?: any) {
-    const headers = {
-        "X-API-Key": STRAFES_KEY
-    };
-    return await tryGetRequest(`https://api.strafes.net/api/v1/${end_of_url}`, params, headers);
-}
-
-async function tryGetMapsCore(end_of_url: string, params?: any) {
-    const headers = {
-        "X-API-Key": STRAFES_KEY
-    };
-    return await tryGetRequest(`https://maps.strafes.net/public-api/v1/${end_of_url}`, params, headers);
-}
-
-async function tryGetRequest(url: string, params?: any, headers?: any) {
-    try {
-        return await axios.get(url, {params: params, headers: headers, timeout: 7500});
-    } 
-    catch (err) {
-        if (isDebug) {
-            console.log(err);
-        }
-        return undefined;
-    }
-}
-
-async function tryPostRequest(url: string, params?: any) {
-    try {
-        return await axios.post(url, params, {timeout: 5000});
-    } 
-    catch (err) {
-        if (isDebug) {
-            console.log(err);
-        }
-        return undefined;
-    }
 }

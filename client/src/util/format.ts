@@ -1,5 +1,6 @@
+import { lighten, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { bhop_styles, fly_trials_styles, Game, Map, Style, surf_styles } from "../api/interfaces";
+import { bhop_styles, fly_trials_styles, Game, Map, Style, surf_styles, UserRole } from "../api/interfaces";
 
 export function formatGame(game: Game) {
     switch (game) {
@@ -161,5 +162,68 @@ export function formatCourse(course: number, short?: boolean) {
     }
     else {
         return short ? `b${course}` : `bonus ${course}`;
+    }
+}
+
+export function formatUserRole(role: UserRole) {
+    switch (role) {
+        case UserRole.Faste:
+            return "faste";
+        case UserRole.MapMaker:
+            return "map maker";
+        case UserRole.MapAdmin:
+            return "map admin";
+        case UserRole.ChatMod:
+            return "in-game chat moderator";
+        case UserRole.InGameMod:
+            return "in-game moderator";
+        case UserRole.InGameHeadMod:
+            return "in-game head moderator";
+        case UserRole.Dev:
+            return "developer";
+        case UserRole.DatabaseMan:
+            return "database developer";
+        case UserRole.GameCreator:
+            return "game creator";
+        default:
+            return "unknown";
+    }
+}
+
+export function getUserRoleColor(role: UserRole, theme: Theme) {
+    const color = getUserRoleColorCore(role);
+    
+    if (!color) {
+        return theme.palette.text.primary;
+    }
+    
+    if (theme.palette.mode === "dark") {
+        return lighten(color, 0.2);
+    }
+    return color;
+}
+
+function getUserRoleColorCore(role: UserRole) {
+    switch (role) {
+        case UserRole.Faste:
+            return "#b92eff";
+        case UserRole.MapMaker:
+            return "#f17a2b";
+        case UserRole.MapAdmin:
+            return "#ffc423";
+        case UserRole.ChatMod:
+            return "#1bcf78";
+        case UserRole.InGameMod:
+            return "#c176df";
+        case UserRole.InGameHeadMod:
+            return "#5c26f1";
+        case UserRole.Dev:
+            return "#3b92ff";
+        case UserRole.DatabaseMan:
+            return "#ff00d5";
+        case UserRole.GameCreator:
+            return "#9b59b6";
+        default:
+            return undefined;
     }
 }

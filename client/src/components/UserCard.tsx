@@ -1,8 +1,9 @@
-import { Avatar, Box, Link, Paper, Typography } from "@mui/material";
+import { Avatar, Box, Link, Paper, Typography, useTheme } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
+import { formatUserRole, getUserRoleColor } from "../util/format";
 
 export interface IUserCardProps {
     minHeight?: number
@@ -12,6 +13,7 @@ export interface IUserCardProps {
 
 function UserCard(props: IUserCardProps) {
     const { minHeight, loading, user } = props;
+    const theme = useTheme();
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
         {user && !loading ? <>
@@ -20,23 +22,28 @@ function UserCard(props: IUserCardProps) {
                 <Typography variant="h4">
                     {user.displayName}
                 </Typography>
-                <Typography variant="subtitle2" color="textSecondary">
-                    @{user.username}
-                </Typography>
                 <Box>
                     <Link 
                         href={`https://www.roblox.com/users/${user.id}/profile`}
-                        underline="hover"
                         color="secondary"
-                        display="inline-block"
+                        display="inline-flex"
+                        sx={{verticalAlign: "top"}}
                     >
                         <Typography variant="subtitle2" overflow="hidden" whiteSpace="nowrap" >
-                            {user.id}
+                            @{user.username}
                         </Typography>
                     </Link>
                 </Box>
+                <Typography variant="body2" color="textSecondary">
+                    {user.id}
+                </Typography>
             </Box>
             <Box>
+                {user.role === undefined ? undefined :
+                <Typography variant="body2" color={getUserRoleColor(user.role, theme)}>
+                    {formatUserRole(user.role)}
+                </Typography>
+                }
                 <Typography variant="body2">
                     Joined Roblox on {new Date(user.joinedOn).toLocaleDateString()}
                 </Typography>

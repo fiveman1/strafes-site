@@ -6,6 +6,7 @@ export interface User {
     thumbUrl: string
     status?: ModerationStatus
     muted?: boolean
+    role?: UserRole
 }
 
 export enum Game {
@@ -45,8 +46,9 @@ export interface Rank {
     skill: number
     username: string
     userId: string
-    mainWrs?: number,
-    bonusWrs?: number,
+    userRole?: UserRole
+    mainWrs?: number
+    bonusWrs?: number
     placement?: number
 }
 
@@ -55,6 +57,7 @@ export interface Time {
     mapId: number
     username: string
     userId: number
+    userRole?: UserRole
     time: number
     date: string
     game: Game
@@ -80,7 +83,7 @@ export interface Map {
     date: string
     smallThumb?: string
     largeThumb?: string
-    modes: number,
+    modes: number
     loadCount: number
 }
 
@@ -108,4 +111,16 @@ export interface UserSearchData {
     username: string,
     id?: string,
     previousUsernames?: string[]
+}
+
+export enum UserRole {
+    Faste = 17639145,
+    MapMaker = 17307028,
+    MapAdmin = 108480632,
+    ChatMod = 135242269,
+    InGameMod = 17720479,
+    InGameHeadMod = 108511840,
+    Dev = 99336516,
+    DatabaseMan = 44154401,
+    GameCreator = 17295536
 }
