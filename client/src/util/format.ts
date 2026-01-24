@@ -222,7 +222,7 @@ function getUserRoleColorCore(role: UserRole) {
         case UserRole.DatabaseMan:
             return "#ff00d5";
         case UserRole.GameCreator:
-            return "#9b59b6";
+            return "#7700ff";
         default:
             return undefined;
     }
