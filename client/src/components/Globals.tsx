@@ -158,7 +158,6 @@ function LeaderboardCard(props: IRanksCardProps) {
         }
 
         setRowCount(page.total);
-        console.log(page.data);
         return {
             rows: page.data,
             rowCount: page.total
