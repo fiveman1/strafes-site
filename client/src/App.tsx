@@ -12,6 +12,7 @@ import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs } from "@mui/material";
 import { Game, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
+import { sortMapsByName } from "./util/sort";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -56,7 +57,7 @@ function App() {
 
         return {
             maps: maps,
-            sortedMaps: Object.values(maps).sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1),
+            sortedMaps: Object.values(maps).sort(sortMapsByName),
             mapCounts: counts
         };
     }, [maps]);

@@ -14,6 +14,7 @@ import CourseSelector, { useCourse } from "./CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { download, generateCsv, mkConfig } from "export-to-csv";
 import MapSortSelector, { MapTimesSort, useMapSort } from "./MapSortSelector";
+import { sortMapsByName } from "../util/sort";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -254,12 +255,11 @@ function MapInfoCard(props: {selectedMap?: Map}) {
     )
 }
 
-const defaultCompareFunc : ((a: Map, b: Map) => number) = (a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
 function dateCompareFunc(a: Map, b: Map, isAsc: boolean) {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
     if (dateA === dateB) {
-        return defaultCompareFunc(a, b);
+        return sortMapsByName(a, b);
     }
     return isAsc ? dateB - dateA : dateA - dateB;
 }
@@ -351,28 +351,28 @@ function MapsPage() {
     let compareFunc : ((a: Map, b: Map) => number);
     switch (sort) {
         case "nameAsc":
-            compareFunc = defaultCompareFunc
+            compareFunc = sortMapsByName;
             break;
         case "nameDesc":
-            compareFunc = (a, b) => defaultCompareFunc(a, b) * -1
+            compareFunc = (a, b) => sortMapsByName(a, b) * -1;
             break;
         case "creatorAsc":
-            compareFunc = (a, b) => a.creator === b.creator ? defaultCompareFunc(a, b) : a.creator.toLowerCase() > b.creator.toLowerCase() ? 1 : -1
+            compareFunc = (a, b) => a.creator === b.creator ? sortMapsByName(a, b) : a.creator.toLowerCase() > b.creator.toLowerCase() ? 1 : -1;
             break;
         case "creatorDesc":
-            compareFunc = (a, b) => a.creator === b.creator ? defaultCompareFunc(a, b) : a.creator.toLowerCase() < b.creator.toLowerCase() ? 1 : -1
+            compareFunc = (a, b) => a.creator === b.creator ? sortMapsByName(a, b) : a.creator.toLowerCase() < b.creator.toLowerCase() ? 1 : -1;
             break;
         case "dateAsc":
-            compareFunc = (a, b) => dateCompareFunc(a, b, true)
+            compareFunc = (a, b) => dateCompareFunc(a, b, true);
             break;
         case "dateDesc":
-            compareFunc = (a, b) => dateCompareFunc(a, b, false)
+            compareFunc = (a, b) => dateCompareFunc(a, b, false);
             break;
         case "countAsc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? defaultCompareFunc(a, b) : b.loadCount - a.loadCount
+            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : b.loadCount - a.loadCount;
             break;
         case "countDesc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? defaultCompareFunc(a, b) : a.loadCount - b.loadCount
+            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : a.loadCount - b.loadCount;
             break;
     }
 
