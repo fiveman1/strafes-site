@@ -1,5 +1,5 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, LeaderboardCount, Style } from "./interfaces.js";
+import { Game, Style } from "./interfaces.js";
 
 export interface Record {
     time_id: string,
@@ -19,7 +19,7 @@ export interface GlobalCountSQL {
     userId: string,
     username: string,
     count: string
-    total_count: string
+    totalCount: string
 }
 type GlobalCountRow = GlobalCountSQL & RowDataPacket;
 
@@ -43,7 +43,7 @@ export async function getMapWR(mapId: string, game: Game, style: Style, course: 
     if (!pool) {
         return undefined;
     }
-    const query = "SELECT * FROM globals WHERE map_id = ? AND game = ? AND style = ? AND course = ?;";
+    const query = "SELECT globals.*, users.username FROM globals INNER JOIN users ON globals.user_id = users.user_id WHERE map_id = ? AND game = ? AND style = ? AND course = ?;";
     const [[record]] = await pool.query<RecordRow[]>(query, [mapId, game, style, course]);
     if (!record) {
         return undefined;
@@ -56,7 +56,7 @@ export async function getUserWRs(userId: string, game: Game, style: Style): Prom
         return undefined;
     }
 
-    let query = "SELECT * FROM globals WHERE user_id = ?";
+    let query = "SELECT globals.*, users.username FROM globals INNER JOIN users ON globals.user_id = users.user_id WHERE globals.user_id = ?";
     const values : any[] = [userId];
     
     if (game !== Game.all) {
@@ -88,7 +88,7 @@ export async function getWRLeaderboardPage(start: number, end: number, game: Gam
         };
     }
 
-    let query = "SELECT COUNT(time_id) as count, user_id as userId, username, COUNT(user_id) OVER() as total_count FROM globals WHERE course = 0";
+    let query = "SELECT COUNT(globals.time_id) as count, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount FROM globals INNER JOIN users ON globals.user_id = users.user_id WHERE course = 0";
     const values : any[] = [];
     
     if (game !== Game.all) {
@@ -103,7 +103,7 @@ export async function getWRLeaderboardPage(start: number, end: number, game: Gam
 
     values.push(end - start + 1);
     values.push(start);
-    query += " GROUP BY user_id, username ORDER BY count DESC LIMIT ? OFFSET ?;";
+    query += " GROUP BY globals.user_id ORDER BY count DESC LIMIT ? OFFSET ?;";
 
     const [globalCounts] = await pool.query<GlobalCountRow[]>(query, values);
     
@@ -114,7 +114,7 @@ export async function getWRLeaderboardPage(start: number, end: number, game: Gam
         };
     }
 
-    const total = globalCounts.length === 0 ? 0 : globalCounts[0].total_count;
+    const total = globalCounts.length === 0 ? 0 : globalCounts[0].totalCount;
     return {
         total: +total,
         data: globalCounts
