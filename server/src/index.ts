@@ -4,10 +4,10 @@ import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData } from "./interfaces.js";
+import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole } from "./interfaces.js";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
-import { getMapWR, getUserWRs, Record } from "./globals.js";
+import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
 import { tryGetCached, tryGetMaps, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 
@@ -158,6 +158,86 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
 
     res.status(200).json(rankData);
 });
+
+app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const game = req.query.game;
+    const style = req.query.style;
+    const start = req.query.start;
+    const end = req.query.end;
+
+    if (start === undefined || isNaN(+start) || +start < 0) {
+        res.status(400).json({error: "Invalid start"});
+        return;
+    }
+
+    if (end === undefined || isNaN(+end) || +end < 0) {
+        res.status(400).json({error: "Invalid end"});
+        return;
+    }
+
+    if (!game || isNaN(+game) || Game[+game] === undefined) {
+        res.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined) {
+        res.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    const page = Math.floor(+start / 100) + 1;
+    if (+start >= +end) {
+        res.status(400).json({error: "Start must be higher than end"});
+    }
+
+    const pageRes = await getWRLeaderboardPage(+start, +end, +game, +style);
+
+    if (!pageRes) {
+        res.status(404).json({error: "Not found"});
+        return;
+    }
+
+    const roles = await getAllUsersToRoles();
+    const promises = [];
+    for (const page of pageRes.data) {
+        promises.push(convertToLeaderboardCount(page, +game, +style, roles));
+    }
+
+    res.status(200).json({
+        total: pageRes.total,
+        data: await Promise.all(promises)
+    });
+});
+
+async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style, roles: Map<number, UserRole>): Promise<LeaderboardCount> {
+    const wrs = await getUserWRs(page.userId, game, style) || [];
+
+    let bonusCount = 0;
+    let earliestDate, latestDate;
+    for (const wr of wrs) {
+        if (wr.course !== 0) {
+            ++bonusCount;
+        }
+        const wrDate = new Date(wr.date);
+        if (!earliestDate || wrDate < earliestDate) {
+            earliestDate = wrDate;
+        }
+
+        if (!latestDate || wrDate > latestDate) {
+            latestDate = wrDate;
+        }
+    }
+
+    return {
+        userId: page.userId,
+        username: page.username,
+        userRole: roles.get(+page.userId),
+        count: +page.count,
+        bonusCount: bonusCount,
+        earliestDate: earliestDate ? earliestDate.toISOString() : "",
+        latestDate: latestDate ? latestDate.toISOString() : ""
+    }
+}
 
 app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
     const game = req.query.game;

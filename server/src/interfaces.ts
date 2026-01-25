@@ -124,3 +124,13 @@ export enum UserRole {
     DatabaseMan = 44154401,
     GameCreator = 17295536
 }
+
+export interface LeaderboardCount {
+    userId: string,
+    username: string,
+    userRole?: UserRole,
+    count: number,
+    bonusCount: number
+    earliestDate: string,
+    latestDate: string,
+}
