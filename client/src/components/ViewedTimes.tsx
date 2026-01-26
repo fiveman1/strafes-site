@@ -33,7 +33,7 @@ function makeColumns() {
 
     cols.push(makeCourseColumn());
 
-    cols.push(makeUserColumn(300, true));
+    cols.push(makeUserColumn<Time>(300, true));
 
     cols.push(makePlacementColumn(true));
 

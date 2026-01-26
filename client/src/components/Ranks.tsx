@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography, useMediaQuery } from "@mui/material";
-import { Game, RankSortBy, Style } from "../api/interfaces";
+import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse } from "@mui/x-data-grid";
@@ -23,7 +23,7 @@ function makeColumns() {
         sortable: false
     });
     
-    cols.push(makeUserColumn(240));
+    cols.push(makeUserColumn<Rank>(240));
 
     cols.push({
         type: "number",

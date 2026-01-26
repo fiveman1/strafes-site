@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography, useMediaQuery } from "@mui/material";
-import TimesCard from "./TimesCard";
+import TimesCard, { makeUserColumn } from "./TimesCard";
 import { LeaderboardCount, TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
@@ -66,21 +66,8 @@ function Globals() {
 
 function makeColumns(game: Game, style: Style) {
     const cols: GridColDef[] = [];
-    
-    cols.push({
-        type: "string",
-        field: "username",
-        headerName: "User",
-        flex: 50,
-        minWidth: 160,
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
-            const time = params.row;
-            return (
-                <UserLink userId={time.userId} username={time.username} userRole={time.userRole} game={game} strafesStyle={style} fontWeight="bold" underline="hover" />
-            );
-        }
-    });
+
+    cols.push(makeUserColumn<LeaderboardCount>(50, false, game, style))
 
     cols.push({
         type: "number",

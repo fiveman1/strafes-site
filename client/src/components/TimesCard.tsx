@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
-import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
+import { Game, Map, TimeSortBy, Style, Time, UserRole } from "../api/interfaces";
 import { ALL_COURSES, formatCourse, formatGame, formatPlacement, formatStyle } from "../util/format";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
@@ -12,6 +12,7 @@ import MapLink, { MAP_THUMB_SIZE } from "./MapLink";
 import DateDisplay from "./DateDisplay";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import TimeDisplay from "./TimeDisplay";
+import { time } from "console";
 
 export function makeMapColumn(): GridColDef {
     return {
@@ -30,7 +31,14 @@ export function makeMapColumn(): GridColDef {
     }
 }
 
-export function makeUserColumn(flex: number, noLink?: boolean): GridColDef {
+interface UserRowInfo {
+    userId: string | number,
+    username: string,
+    userRole?: UserRole,
+    game?: Game,
+    style?: Style
+}
+export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boolean, game: Game = Game.all, style: Style = Style.all): GridColDef {
     return {
         type: "string",
         field: "username",
@@ -38,10 +46,12 @@ export function makeUserColumn(flex: number, noLink?: boolean): GridColDef {
         flex: flex,
         minWidth: 160,
         sortable: false,
-        renderCell: noLink ? undefined : (params: GridRenderCellParams<Time, string>) => {
+        renderCell: noLink ? undefined : (params: GridRenderCellParams<T, string>) => {
             const time = params.row;
+            const linkGame = time.game !== undefined ? time.game : game;
+            const linkStyle = time.style !== undefined ? time.style : style;
             return (
-                <UserLink userId={time.userId} username={time.username} userRole={time.userRole} game={time.game} strafesStyle={time.style} fontWeight="bold" underline="hover" />
+                <UserLink userId={time.userId} username={time.username} userRole={time.userRole} game={linkGame} strafesStyle={linkStyle} fontWeight="bold" underline="hover" />
             );
         }
     }
@@ -172,7 +182,7 @@ function makeColumns(game: Game, style: Style, hideCourse?: boolean, hideUser?: 
     }
 
     if (!hideUser) {
-        cols.push(makeUserColumn(300));
+        cols.push(makeUserColumn<Time>(300));
     }
 
     if (showPlacement && showPlacementOrdinals) {
