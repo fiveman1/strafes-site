@@ -12,7 +12,6 @@ import MapLink, { MAP_THUMB_SIZE } from "./MapLink";
 import DateDisplay from "./DateDisplay";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import TimeDisplay from "./TimeDisplay";
-import { time } from "console";
 
 export function makeMapColumn(): GridColDef {
     return {
@@ -269,7 +268,10 @@ function TimesGrid(props: ITimesCardProps) {
     }, [course, game, map, onlyWRs, style, userId]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
-        if (!allowOnlyWRs && !userId && !map) return { rows: [], rowCount: 0 }
+        if (!allowOnlyWRs && !userId && !map) {
+            setRowCount(0);
+            return { rows: [], rowCount: 0 }
+        }
         
         setIsLoading(true);
         const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, map, onlyWRs);

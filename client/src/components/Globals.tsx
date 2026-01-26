@@ -13,7 +13,6 @@ import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsRes
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
-import UserLink from "./UserLink";
 import DateDisplay from "./DateDisplay";
 
 function Globals() {
