@@ -1,7 +1,7 @@
 import { Game, Style } from "./interfaces.js";
 
 export function safeQuoteText(str: string) {
-    return str.replaceAll("\"", "&quot;")
+    return str.replaceAll("\"", "&quot;");
 }
 
 export function formatGame(game?: Game) {

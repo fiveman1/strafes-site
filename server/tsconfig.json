@@ -11,7 +11,7 @@
         "moduleResolution": "nodenext"
     },
     "include": [
-        "**/*.ts"
+        "./src/**/*"
     ],
     "exclude": [
         "dist"

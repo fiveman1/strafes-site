@@ -39,6 +39,10 @@ if (user && password) {
     });
 }
 
+export function getPool() {
+    return pool;
+}
+
 export async function getMapWR(mapId: string, game: Game, style: Style, course: number): Promise<Record | undefined> {
     if (!pool) {
         return undefined;

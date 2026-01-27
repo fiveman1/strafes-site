@@ -4,12 +4,13 @@ import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Map as StrafesMap, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole } from "./interfaces.js";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole } from "./interfaces.js";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
-import { tryGetCached, tryGetMaps, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
+import { tryGetCached, tryGetMaps, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
+import { getMaps } from "./maps.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -18,11 +19,11 @@ const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 80, validate: {xForwardedForHeader: false} });
 
-const dirName = path.dirname(fileURLToPath(import.meta.url))
+const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 
 function calcRank(rank: number) {
-    return Math.floor((1 - rank) * 19) + 1;;
+    return Math.floor((1 - rank) * 19) + 1;
 }
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
@@ -185,7 +186,6 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
         return;
     }
 
-    const page = Math.floor(+start / 100) + 1;
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
     }
@@ -236,7 +236,7 @@ async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style
         bonusCount: bonusCount,
         earliestDate: earliestDate ? earliestDate.toISOString() : "",
         latestDate: latestDate ? latestDate.toISOString() : ""
-    }
+    };
 }
 
 app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -290,8 +290,8 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         return;
     }
 
-    const pageStart = (+start % 100)
-    const pageEnd = (+end % 100)
+    const pageStart = (+start % 100);
+    const pageEnd = (+end % 100);
     const ranks = ranksRes.data.data as any[];
     const rankArr: Rank[] = [];
     const roles = await getAllUsersToRoles();
@@ -620,7 +620,7 @@ async function setTimeDiffs(times: Time[]) {
             if (wr) {
                 mapToWR.set(mapKey, wr);
             }
-        }
+        };
         promises.push(promise());
     }
 
@@ -710,8 +710,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 
     const roles = await getAllUsersToRoles();
 
-    const pageStart = (+start % 100)
-    const pageEnd = (+end % 100)
+    const pageStart = (+start % 100);
+    const pageEnd = (+end % 100);
     const resTimes = timeRes.data.data;
 
     const timeArr: Time[] = [];
@@ -837,8 +837,8 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 
     const roles = await getAllUsersToRoles();
 
-    const pageStart = (+start % 100)
-    const pageEnd = (+end % 100)
+    const pageStart = (+start % 100);
+    const pageEnd = (+end % 100);
     const firstTimes = firstTimeRes.data.data;
 
     if (+sort === TimeSortBy.TimeAsc) {
@@ -903,95 +903,11 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 });
 
 app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
-    let i = 1;
-    const maps: StrafesMap[] = [];
-    while (true) {
-        const mapRes = await tryGetMaps("map", {
-            page_number: i,
-            page_size: 100
-        });
-
-        ++i;
-
-        if (!mapRes) {
-            res.status(404).json({error: "Not found"});
-            return;
-        }
-
-        const data = mapRes.data.data as any[];
-        if (data.length < 1) {
-            break;
-        }
-
-        const assetToThumb = new Map<number, Map<string, string>>();
-        const assetIds: number[] = [];
-        for (const map of data) {
-            if (map.thumbnail) {
-                assetIds.push(map.thumbnail);
-            }
-        }
-
-        const largeReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
-            "assetIds": assetIds,
-            "size": "420x420",
-            "format": "Webp"
-        });
-        
-        const smallReqPromise = tryGetRequest("https://thumbnails.roproxy.com/v1/assets", {
-            "assetIds": assetIds,
-            "size": "75x75",
-            "format": "Webp"
-        });
-
-        const largeReq = await largeReqPromise;
-        const smallReq = await smallReqPromise;
-
-        if (largeReq) {
-            for (const assetInfo of largeReq.data.data) {
-                const targetId = assetInfo.targetId;
-                const url = assetInfo.imageUrl;
-                assetToThumb.set(targetId, new Map<string, string>([["large", url]]));
-            }
-        }
-
-        if (smallReq) {
-            for (const assetInfo of smallReq.data.data) {
-                const targetId = assetInfo.targetId;
-                const url = assetInfo.imageUrl;
-                const urlMap = assetToThumb.get(targetId);
-                if (urlMap) {
-                    urlMap.set("small", url);
-                }
-                else {
-                    assetToThumb.set(targetId, new Map<string, string>([["small", url]]));
-                }
-            }
-        }
-
-        for (const map of data) {
-            let small, large;
-            if (map.thumbnail) {
-                const urls = assetToThumb.get(map.thumbnail);
-                small = urls?.get("small");
-                large = urls?.get("large");
-            }
-           
-            maps.push({
-                id: map.id,
-                name: map.display_name,
-                creator: map.creator,
-                game: map.game_id,
-                date: map.date,
-                smallThumb: small,
-                largeThumb: large,
-                loadCount: map.load_count,
-                modes: map.modes
-            });
-        }
-
-        if (data.length < 100) {
-            break;
-        }
+    const maps = await getMaps();
+    
+    if (!maps) {
+        res.status(404).json({error: "Not found"});
+        return;
     }
 
     res.status(200).json({
