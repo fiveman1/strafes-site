@@ -99,6 +99,11 @@ export enum RankSortBy {
     SkillAsc = 2
 }
 
+export enum LeaderboardSortBy {
+    MainAsc,
+    MainDesc
+}
+
 export enum ModerationStatus {
     Default = 0,
     Whitelisted = 1,
@@ -130,7 +135,7 @@ export interface LeaderboardCount {
     username: string,
     userRole?: UserRole,
     count: number,
-    bonusCount: number
     earliestDate: string,
     latestDate: string,
+    bonusCount: number
 }

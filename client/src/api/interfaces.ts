@@ -99,6 +99,11 @@ export enum RankSortBy {
     SkillAsc = 2
 }
 
+export enum LeaderboardSortBy {
+    MainAsc,
+    MainDesc
+}
+
 export enum ModerationStatus {
     Default = 0,
     Whitelisted = 1,

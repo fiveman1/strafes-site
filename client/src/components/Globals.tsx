@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography, useMediaQuery } from "@mui/material";
 import TimesCard, { makeUserColumn } from "./TimesCard";
-import { LeaderboardCount, TimeSortBy } from "../api/interfaces";
+import { LeaderboardCount, LeaderboardSortBy, TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -74,7 +74,7 @@ function makeColumns(game: Game, style: Style) {
         renderHeader: (params) => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Main</Typography></>,
         flex: 20,
         minWidth: 110,
-        sortable: false,
+        sortingOrder: ["desc", "asc"],
         renderCell: (params) => <Typography variant="inherit" color={params.value === 0 ? "textSecondary" : undefined}>{params.value}</Typography>
     });
 
@@ -133,9 +133,9 @@ function LeaderboardCard(props: IRanksCardProps) {
         return `${game},${style}`;
     }, [game, style]);
 
-    const updateRowData = useCallback(async (start: number, end: number) => {
+    const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
         setIsLoading(true);
-        const page = await getLeaderboardPage(start, end, game, style);
+        const page = await getLeaderboardPage(start, end, game, style, sort);
         setIsLoading(false);
 
         if (page === undefined) {
@@ -152,7 +152,14 @@ function LeaderboardCard(props: IRanksCardProps) {
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
-            return await updateRowData(+params.start, params.end);
+            const sort = params.sortModel.at(0);
+            let sortBy = LeaderboardSortBy.MainDesc;
+            if (sort) {
+                if (sort.field === "count") {
+                    sortBy = sort.sort === "asc" ? LeaderboardSortBy.MainAsc : LeaderboardSortBy.MainDesc;
+                }
+            }
+            return await updateRowData(+params.start, params.end, sortBy);
         }
     }), [updateRowData]);
 
@@ -180,7 +187,7 @@ function LeaderboardCard(props: IRanksCardProps) {
                     paginationModel: { pageSize: 25 }
                 },
                 sorting: {
-                    sortModel: [{ field: "count", sort: "asc" }],
+                    sortModel: [{ field: "count", sort: "desc" }],
                 }
             }}
             getRowId={(row) => row.userId}

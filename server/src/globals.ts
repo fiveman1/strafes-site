@@ -1,5 +1,5 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, Style } from "./interfaces.js";
+import { Game, LeaderboardSortBy, Style } from "./interfaces.js";
 
 export interface Record {
     time_id: string,
@@ -84,7 +84,7 @@ export async function getUserWRs(userId: string, game: Game, style: Style): Prom
     return records;
 }
 
-export async function getWRLeaderboardPage(start: number, end: number, game: Game, style: Style): Promise<{ total: number; data: GlobalCountSQL[]; }> {
+export async function getWRLeaderboardPage(start: number, end: number, game: Game, style: Style, sort: LeaderboardSortBy): Promise<{ total: number; data: GlobalCountSQL[]; }> {
     if (!pool) {
         return {
             total: 0,
@@ -105,9 +105,18 @@ export async function getWRLeaderboardPage(start: number, end: number, game: Gam
         values.push(style);
     }
 
+    query += " GROUP BY globals.user_id ORDER BY ";
+    let userDir = "ASC";
+    if (sort === LeaderboardSortBy.MainAsc) {
+        query += "count ASC";
+        userDir = "DESC";
+    }
+    else {
+        query += "count DESC";
+    }
     values.push(end - start + 1);
     values.push(start);
-    query += " GROUP BY globals.user_id ORDER BY count DESC LIMIT ? OFFSET ?;";
+    query += `, username ${userDir} LIMIT ? OFFSET ?;`;
 
     const [globalCounts] = await pool.query<GlobalCountRow[]>(query, values);
     

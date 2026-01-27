@@ -4,7 +4,7 @@ import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole } from "./interfaces.js";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy } from "./interfaces.js";
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
@@ -165,6 +165,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     const style = req.query.style;
     const start = req.query.start;
     const end = req.query.end;
+    const qSort = req.query.sort;
 
     if (start === undefined || isNaN(+start) || +start < 0) {
         res.status(400).json({error: "Invalid start"});
@@ -186,11 +187,16 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
         return;
     }
 
+    let sort = LeaderboardSortBy.MainDesc;
+    if (qSort && !isNaN(+qSort) && LeaderboardSortBy[+qSort] !== undefined) {
+        sort = +qSort;
+    }
+
     if (+start >= +end) {
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const pageRes = await getWRLeaderboardPage(+start, +end, +game, +style);
+    const pageRes = await getWRLeaderboardPage(+start, +end, +game, +style, sort);
 
     if (!pageRes) {
         res.status(404).json({error: "Not found"});

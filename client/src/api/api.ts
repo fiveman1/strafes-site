@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount } from "./interfaces";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -181,12 +181,13 @@ export interface LeaderboardPage {
     total: number,
     data: LeaderboardCount[]
 }
-export async function getLeaderboardPage(start: number | string, end: number | string, game: Game, style: Style) {
+export async function getLeaderboardPage(start: number | string, end: number | string, game: Game, style: Style, sort: LeaderboardSortBy) {
     const res = await tryGetRequest("wrs/leaderboard", {
         game: game,
         style: style,
         start: start,
-        end: end
+        end: end,
+        sort: sort
     });
 
     if (!res) return undefined;
