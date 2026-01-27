@@ -61,8 +61,8 @@ export function makeDateColumn(sortable: boolean): GridColDef {
         type: "string",
         field: "date",
         headerName: "Date",
-        flex: 170,
-        minWidth: 105,
+        flex: 180,
+        minWidth: 125,
         sortingOrder: sortable ? ["desc", "asc"] : [],
         sortable: sortable,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
@@ -113,8 +113,8 @@ export function makeTimeColumn(sortable: boolean): GridColDef {
         type: "string",
         field: "time",
         headerName: "Time",
-        flex: 160,
-        minWidth: 180,
+        flex: 200,
+        minWidth: 165,
         sortingOrder: sortable ? ["asc", "desc"] : [],
         sortable: sortable,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
@@ -229,10 +229,6 @@ function TimesCard(props: ITimesCardProps) {
             <Typography variant="caption" flexGrow={1} marginRight={2}>
                 {props.title ?? "Times"}
             </Typography>
-            <Typography color="info" variant="body2" display="inline-block" marginRight="2px">*</Typography>
-            <Typography variant="caption">
-                = less than 24 hours ago
-            </Typography>
         </Box>
         <TimesGrid {...props} />
     </Paper>
@@ -264,7 +260,7 @@ function TimesGrid(props: ITimesCardProps) {
         if (onlyWRs) {
             setRowCount(-1);
         }
-        return `${userId ?? ""},${map ?? ""},${game},${style},${course},${!!onlyWRs}`;
+        return `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
     }, [course, game, map, onlyWRs, style, userId]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {

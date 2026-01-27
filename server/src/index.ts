@@ -98,7 +98,7 @@ function validatePositiveInt(userId: any) {
 
 app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -117,7 +117,7 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     const game = req.query.game;
     const style = req.query.style;
 
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -346,7 +346,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const end = req.query.end;
     const sort = req.query.sort;
 
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -443,7 +443,7 @@ app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async 
     const game = req.query.game;
     const style = req.query.style;
 
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }

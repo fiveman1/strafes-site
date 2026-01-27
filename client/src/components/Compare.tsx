@@ -832,7 +832,7 @@ function CompareCardTimeCell(props: ICompareCardTimeCellProps) {
 
     const mainText = showInfo ?
     <>
-    <DateDisplay date={time.date} bold noRecentHighlight tooltipPlacement="top" />
+    <DateDisplay date={time.date} bold tooltipPlacement="top" />
     <Typography fontFamily="monospace" variant="body1">
         {formatStyle(time.style)}
     </Typography>

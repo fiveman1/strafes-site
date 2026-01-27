@@ -31,7 +31,7 @@ async function tryGetMapsCore(end_of_url: string, params?: any) {
 
 export async function tryGetRequest(url: string, params?: any, headers?: any) {
     try {
-        return await axios.get(url, {params: params, headers: headers, timeout: 7500});
+        return await axios.get(url, {params: params, headers: headers, timeout: 10000});
     } 
     catch (err) {
         if (isDebug) {

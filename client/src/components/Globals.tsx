@@ -93,7 +93,7 @@ function makeColumns(game: Game, style: Style) {
         field: "earliestDate",
         headerName: "Earliest WR",
         flex: 20,
-        minWidth: 105,
+        minWidth: 125,
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
             return <DateDisplay date={params.row.earliestDate} />
@@ -105,7 +105,7 @@ function makeColumns(game: Game, style: Style) {
         field: "latestDate",
         headerName: "Latest WR",
         flex: 20,
-        minWidth: 105,
+        minWidth: 125,
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
             return <DateDisplay date={params.row.latestDate} />
@@ -168,10 +168,6 @@ function LeaderboardCard(props: IRanksCardProps) {
         <Box marginBottom={1} display="flex">
             <Typography variant="caption" flexGrow={1} marginRight={2}>
                 Leaderboards
-            </Typography>
-            <Typography color="info" variant="body2" display="inline-block" marginRight="2px">*</Typography>
-            <Typography variant="caption">
-                = less than 24 hours ago
             </Typography>
         </Box>
         <DataGrid

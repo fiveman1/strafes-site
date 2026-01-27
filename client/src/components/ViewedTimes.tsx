@@ -14,11 +14,7 @@ function ViewedTimes(props: IViewedTimesProps) {
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 720}}>
         <Box marginBottom={1} display="flex">
             <Typography variant="caption" flexGrow={1} marginRight={2}>
-                {"Viewed Times"}
-            </Typography>
-            <Typography color="info" variant="body2" display="inline-block" marginRight="2px">*</Typography>
-            <Typography variant="caption">
-                = less than 24 hours ago
+                Viewed Times
             </Typography>
         </Box>
         <ViewedTimesGrid {...props} />
