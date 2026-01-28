@@ -8,9 +8,9 @@ import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, User
 import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
-import { tryGetCached, tryGetMaps, tryGetStrafes, tryPostCached } from "./requests.js";
+import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
-import { getMaps } from "./maps.js";
+import { getAllMaps, getMap } from "./maps.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -909,7 +909,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 });
 
 app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
-    const maps = await getMaps();
+    const maps = await getAllMaps();
     
     if (!maps) {
         res.status(404).json({error: "Not found"});
@@ -920,20 +920,6 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
         data: maps
     });
 });
-
-async function getMapInfo(mapId: string) {
-    const res = await tryGetMaps(`map/${mapId}`);
-    if (!res) {
-        return undefined;
-    }
-    return res.data.data as {
-        creator: string,
-        date: string,
-        display_name: string,
-        game_id: Game,
-        id: number
-    };
-}
 
 app.use(express.static(buildDir, {index: false}));
 app.get("*splat", async (req, res): Promise<any> => {
@@ -974,16 +960,16 @@ app.get("*splat", async (req, res): Promise<any> => {
             description = "Browse maps and view the top times";
             if (url.length > 1) {
                 const mapId = url[1];
-                const mapInfo = await getMapInfo(mapId);
+                const mapInfo = await getMap(mapId);
                 if (mapInfo) {
                     const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
                     const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
-                    title = `maps - ${mapInfo.display_name}`;
+                    title = `maps - ${mapInfo.name}`;
                     if (course !== "main") {
                         title += ` (${courseAbrev})`;
                     }
-                    const mapGame = req.query.game ? game : formatGame(mapInfo.game_id);
-                    description = `View the top times on ${mapInfo.display_name} (game: ${mapGame}, style: ${style}, course: ${course})`;
+                    const mapGame = req.query.game ? game : formatGame(mapInfo.game);
+                    description = `View the top times on ${mapInfo.name} (game: ${mapGame}, style: ${style}, course: ${course})`;
                 }
             }
         }

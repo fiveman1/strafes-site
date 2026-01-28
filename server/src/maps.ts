@@ -21,7 +21,57 @@ interface MapSQL {
 
 type MapSQLRow = MapSQL & RowDataPacket;
 
-async function getMapsFromDB() {
+async function getMapFromDB(mapId: string | number): Promise<StrafesMap | undefined> {
+    const pool = getPool();
+    if (!pool) {
+        return undefined;;
+    }
+
+    const query = `SELECT * FROM maps WHERE map_id = ?;`;
+    const values = [mapId];
+    const [[row]] = await pool.query<MapSQLRow[]>(query, values);
+
+    if (!row) {
+        return undefined;
+    }
+
+    return {
+        id: +row.map_id,
+        name: row.name,
+        creator: row.creator,
+        game: row.game,
+        date: new Date(row.date).toISOString(), // ISO strings for consistency
+        modes: row.modes,
+        loadCount: row.load_count,
+        smallThumb: row.small_thumb ?? undefined,
+        largeThumb: row.large_thumb ?? undefined
+    };
+}
+
+export async function getMap(mapId: string | number): Promise<StrafesMap | undefined> {
+    const dbMap = await getMapFromDB(mapId);
+    if (dbMap) {
+        return dbMap;
+    }
+
+    const res = await tryGetMaps(`map/${mapId}`);
+    if (!res) {
+        return undefined;
+    }
+
+    const map = res.data.data;
+    return {
+        id: map.id,
+        name: map.display_name,
+        creator: map.creator,
+        game: map.game_id,
+        date: map.date,
+        loadCount: map.load_count,
+        modes: map.modes
+    };
+}
+
+async function getAllMapsFromDB() {
     const pool = getPool();
     if (!pool) {
         return [];
@@ -49,8 +99,8 @@ async function getMapsFromDB() {
     return maps;
 }
 
-export async function getMaps() {
-    const dbMaps = await getMapsFromDB();
+export async function getAllMaps() {
+    const dbMaps = await getAllMapsFromDB();
     if (dbMaps) {
         return dbMaps;
     }
