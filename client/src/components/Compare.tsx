@@ -242,7 +242,6 @@ function Compare() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
     const [selectedSlice, setSelectedSlice] = useState<CompareSlice>();
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -414,7 +413,7 @@ function Compare() {
     const userColors = [pink["A400"], purple["A700"]];
 
     return (
-    <Box padding={smallScreen ? 1 : 2} display="flex" flexDirection="column" flexGrow={1}>
+    <Box display="flex" flexDirection="column" flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Compare
         </Typography>

@@ -1,4 +1,4 @@
-import { Box, PaletteMode, Typography, useMediaQuery } from "@mui/material";
+import { Box, PaletteMode, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { Game, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
@@ -50,7 +50,6 @@ interface ISettingsProps {
 
 function Settings(props: ISettingsProps) {
     const { settings, setSettings } = props;
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const setGame = (game: Game) => setSettings((settings) => {
         settings.defaultGame = game; 
@@ -67,7 +66,7 @@ function Settings(props: ISettingsProps) {
     const threeDaysAgo = new Date().getTime() - (3 * 24 * 60 * 60 * 1000);
     
     return (
-    <Box padding={smallScreen ? 1 : 2} display="flex" flexDirection="column" flexGrow={1}>
+    <Box marginBottom={1} display="flex" flexDirection="column" flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Settings
         </Typography>
@@ -119,14 +118,16 @@ function Settings(props: ISettingsProps) {
         <Typography variant="body2" padding={1}>
             Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
         </Typography>
-        <Box padding={2} marginTop={-0.5} maxWidth="340px">
+        <Box padding={2} marginTop={-1} maxWidth="340px">
             <NumberSpinner 
+                size="small"
                 label="Max relative days old"
                 min={0}
                 max={9999}
                 value={settings.maxDaysRelativeDates}
                 onValueChange={(value) => setSettings((settings) => {
                     settings.maxDaysRelativeDates = value ?? 30;
+                    settings.maxDaysRelativeDates = Math.round(settings.maxDaysRelativeDates);
                     localStorage.setItem("maxDays", settings.maxDaysRelativeDates.toString());
                     return {...settings};
                 })}

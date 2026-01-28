@@ -99,7 +99,7 @@ function Users() {
     };
 
     return (
-    <Box padding={smallScreen ? 1 : 2} flexGrow={1}>
+    <Box flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Users
         </Typography>

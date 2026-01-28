@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Typography, useMediaQuery } from "@mui/material";
+import { Paper, Typography } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
@@ -135,14 +135,13 @@ function RanksCard(props: IRanksCardProps) {
 function Ranks() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     
     useEffect(() => {
         document.title = "ranks - strafes"
     }, []);
     
     return (
-    <Box padding={smallScreen ? 1 : 2} display="flex" flexDirection="column" flexGrow={1}>
+    <Box display="flex" flexDirection="column" flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Ranks
         </Typography>

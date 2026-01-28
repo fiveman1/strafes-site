@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Typography, useMediaQuery } from "@mui/material";
+import { Paper, Typography } from "@mui/material";
 import TimesCard, { makeUserColumn } from "./TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
@@ -18,7 +18,6 @@ import DateDisplay from "./DateDisplay";
 function Globals() {
     const [game, setGame] = useGame();
     const [style, setStyle] = useStyle();
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
@@ -27,7 +26,7 @@ function Globals() {
     }, []);
 
     return (
-    <Box padding={smallScreen ? 1 : 2} flexGrow={1} display="flex" flexDirection="column">
+    <Box flexGrow={1} display="flex" flexDirection="column">
         <Typography variant="h2" padding={1}>
             Globals
         </Typography>

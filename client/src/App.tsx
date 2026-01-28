@@ -9,7 +9,7 @@ import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { getMaps, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
-import { Breadcrumbs } from "@mui/material";
+import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
@@ -29,6 +29,7 @@ function App() {
     const [maps, setMaps] = useState<Maps>({});
     const [settings, setSettings] = useSettings();
     const location = useLocation();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
         getMaps().then(setMaps);
@@ -106,7 +107,7 @@ function App() {
             <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
                 <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} />
-                <Box display="flex" flexGrow={1} flexDirection="column">
+                <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
                     {settingsOpen ? <Settings settings={settings} setSettings={setSettings} /> : <Outlet context={contextParams}/>}
                 </Box>
                 <Box marginTop="auto">
