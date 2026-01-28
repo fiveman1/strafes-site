@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import Button from '@mui/material/Button';
-import ThemeSelector, { IThemeSelectorProps } from "./ThemeSelector";
 import Box from "@mui/material/Box";
-import { AppBar, Link, Menu, MenuItem, Toolbar } from "@mui/material";
+import { AppBar, ButtonGroup, IconButton, Link, Menu, MenuItem, Toolbar } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { useLocation } from "react-router";
+import SettingsIcon from '@mui/icons-material/Settings';
+import CloseIcon from '@mui/icons-material/Close';
 
-interface IMainAppBarProps extends IThemeSelectorProps {
-    
+interface IMainAppBarProps {
+    settingsOpen: boolean,
+    setSettingsOpen: (val: boolean) => void
 }
 
 export enum NavigatorPage {
@@ -42,6 +44,7 @@ function getCurrentPage(path: string) {
 }
 
 function MainAppBar(props: IMainAppBarProps) {
+    const { settingsOpen, setSettingsOpen } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const location = useLocation();
@@ -53,6 +56,11 @@ function MainAppBar(props: IMainAppBarProps) {
 
     const closeNavMenu = () => {
         setAnchorEl(null);
+    }
+
+    const onClickLink = () => {
+        //setSettingsOpen(false);
+        closeNavMenu();
     }
 
     const navMenuWidth = 125;
@@ -69,39 +77,45 @@ function MainAppBar(props: IMainAppBarProps) {
                     </Button>
                     <Menu anchorEl={anchorEl} open={open} onClose={closeNavMenu} slotProps={{list: {sx: {width: navMenuWidth}}}} >
                         <Link href="/" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Home} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Home} >
                                 {NavigatorPage.Home}
                             </MenuItem>
                         </Link>
                         <Link href="/users" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Users} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Users} >
                                 {NavigatorPage.Users}
                             </MenuItem>
                         </Link>
                         <Link href="/globals" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Gloabls} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Gloabls} >
                                 {NavigatorPage.Gloabls}
                             </MenuItem>
                         </Link>
                         <Link href="/maps" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Maps} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Maps} >
                                 {NavigatorPage.Maps}
                             </MenuItem>
                         </Link>
                         <Link href="/ranks" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Ranks} >
                                 {NavigatorPage.Ranks}
                             </MenuItem>
                         </Link>
                         <Link href="/compare" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Compare} >
+                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Compare} >
                                 {NavigatorPage.Compare}
                             </MenuItem>
                         </Link>
                     </Menu>
                 </Box>
                 <Box minWidth={84} display="flex" justifyContent="flex-end">
-                    <ThemeSelector themeMode={props.themeMode} setThemeMode={props.setThemeMode} />
+                    <ButtonGroup>
+                        <IconButton color="inherit" onClick={() => {
+                            setSettingsOpen(!settingsOpen);
+                        }}> 
+                            {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
+                        </IconButton>
+                    </ButtonGroup>
                 </Box>
             </Toolbar>
         </AppBar>

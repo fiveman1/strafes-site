@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
 import { Game, Style } from "../api/interfaces";
-import { formatGame, getAllowedStyles } from "../util/format";
-import { useLocation, useNavigate } from "react-router";
+import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
+import { useLocation, useNavigate, useOutletContext } from "react-router";
 
-export function useGame(paramName: string = "game", defaultGame: Game = Game.bhop) {
+export function useGame(paramName: string = "game", defaultGame?: Game) {
     const location = useLocation();
+    const context = useOutletContext() as ContextParams;
     const queryParams = new URLSearchParams(location.search);
-    let paramGame = defaultGame;
+    let paramGame = defaultGame ?? context.settings.defaultGame;
     const gameParam = queryParams.get(paramName);
     if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined) {
         paramGame = +gameParam;
@@ -24,10 +25,11 @@ export interface IGameSelectorProps {
     allowSelectAll?: boolean
     label?: string
     paramName?: string
+    disableNavigate?: boolean
 }
 
 function GameSelector(props: IGameSelectorProps) {
-    const { game, setGame, style, setStyle, allowedGames, allowSelectAll, label, paramName } = props;
+    const { game, setGame, style, setStyle, allowedGames, allowSelectAll, label, paramName, disableNavigate } = props;
     const location = useLocation();
     const navigate = useNavigate();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
@@ -47,10 +49,10 @@ function GameSelector(props: IGameSelectorProps) {
         if (allowedGames && !allowedGames.includes(game)) {
             const queryParams = new URLSearchParams(location.search);
             queryParams.set(paramName ?? "game", allowedGames[0].toString());
-            navigate({ search: queryParams.toString() }, { replace: true });
+            if (!disableNavigate) navigate({ search: queryParams.toString() }, { replace: true });
             setGame(allowedGames[0]);
         }
-    }, [allowedGames, game, location.search, navigate, setGame, paramName]);
+    }, [allowedGames, game, location.search, navigate, setGame, paramName, disableNavigate]);
 
     const handleChangeGame = (event: SelectChangeEvent<Game>) => {
         const game = event.target.value;
@@ -62,7 +64,7 @@ function GameSelector(props: IGameSelectorProps) {
             setStyle(defaultStyle);
         }
         queryParams.set(paramName ?? "game", game.toString());
-        navigate({ search: queryParams.toString() }, { replace: true });
+        if (!disableNavigate) navigate({ search: queryParams.toString() }, { replace: true });
         setGame(game);
     };
 

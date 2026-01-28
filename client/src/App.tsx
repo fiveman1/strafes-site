@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainAppBar from "./components/MainAppBar";
 import Box from "@mui/material/Box";
 import { pink, lightBlue } from "@mui/material/colors";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { getMaps, Maps } from "./api/api";
@@ -13,6 +13,7 @@ import { Breadcrumbs } from "@mui/material";
 import { Game, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
+import Settings, { useSettings } from "./components/Settings";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -24,15 +25,16 @@ const LinkBehavior = React.forwardRef<
 });
 
 function App() {
-    const storedTheme = localStorage.getItem("theme") as PaletteMode || "dark";
-    const [themeMode, setThemeMode] = useState(storedTheme);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [maps, setMaps] = useState<Maps>({});
+    const [settings, setSettings] = useSettings();
+    const location = useLocation();
 
     useEffect(() => {
         getMaps().then(setMaps);
     }, []);
 
-    const contextParams: ContextParams = useMemo(() => {
+    const mapInfo = useMemo(() => {
         const counts : MapCount = {
             bhop: 0,
             surf: 0,
@@ -62,14 +64,27 @@ function App() {
         };
     }, [maps]);
 
+    const contextParams: ContextParams = useMemo(() => {
+        return {
+            maps: mapInfo.maps,
+            sortedMaps: mapInfo.sortedMaps,
+            mapCounts: mapInfo.mapCounts,
+            settings: settings
+        };
+    }, [mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, settings]);
+
+    useEffect(() => {
+        setSettingsOpen(false);
+    }, [location.pathname]);
+
     const theme = useMemo(() => createTheme({
         palette: {
             // SrafesNET red: #c61926
             primary: pink,
             secondary: lightBlue,
-            mode: themeMode,
+            mode: settings.theme,
             DataGrid: {
-                bg: themeMode === "light" ? "#ffffff" : "#121212"
+                bg: settings.theme === "light" ? "#ffffff" : "#121212"
             }
         },
         components: {
@@ -84,14 +99,16 @@ function App() {
                 },
             },
         },
-    }), [themeMode]);
+    }), [settings.theme]);
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
-                <MainAppBar themeMode={themeMode} setThemeMode={setThemeMode} />
-                <Outlet context={contextParams}/>
+                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} />
+                <Box display="flex" flexGrow={1} flexDirection="column">
+                    {settingsOpen ? <Settings settings={settings} setSettings={setSettings} /> : <Outlet context={contextParams}/>}
+                </Box>
                 <Box marginTop="auto">
                     <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", marginBottom: 2}}>
                         <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
