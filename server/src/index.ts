@@ -4,8 +4,9 @@ import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy } from "./interfaces.js";
-import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
+import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
@@ -22,13 +23,18 @@ const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ?
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 
-function calcRank(rank: number) {
-    return Math.floor((1 - rank) * 19) + 1;
-}
+const cookieSecret = process.env.COOKIE_SECRET;
+const secureCookieConfig = {
+    secure: !isDebug,
+    httpOnly: true,
+    signed: true,
+};
+
+app.use(cookieParser(cookieSecret));
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
-    
+
     if (!username || typeof username !== "string" || username.length > 50) {
         res.status(400).json({error: "Invalid username"});
         return;
