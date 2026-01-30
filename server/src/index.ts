@@ -12,6 +12,7 @@ import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } fr
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
+import { authorizeAndSetTokens, logout, redirectToAuthURL, setLoggedInUser } from "./oauth.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -24,17 +25,27 @@ const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 
 const cookieSecret = process.env.COOKIE_SECRET;
-const secureCookieConfig = {
-    secure: !isDebug,
-    httpOnly: true,
-    signed: true,
-};
-
 app.use(cookieParser(cookieSecret));
+
+app.get("/api/login", async (req, res) => {
+    await redirectToAuthURL(res);
+});
+
+app.get("/api/logout", async (req, res) => {
+    await logout(req, res);
+});
+
+app.get("/oauth/callback", async (req, res) => {
+    await authorizeAndSetTokens(req, res);
+});
+
+app.get("/api/auth/user", async (req, res) => {
+    await setLoggedInUser(req, res);
+});
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
-
+    
     if (!username || typeof username !== "string" || username.length > 50) {
         res.status(400).json({error: "Invalid username"});
         return;

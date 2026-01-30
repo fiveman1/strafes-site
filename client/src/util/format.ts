@@ -1,6 +1,6 @@
 import { lighten, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { bhop_styles, fly_trials_styles, Game, Map, Style, surf_styles, UserRole } from "../api/interfaces";
+import { bhop_styles, fly_trials_styles, Game, LoginUser, Map, Style, surf_styles, UserRole } from "../api/interfaces";
 import { SettingsValues } from "../components/Settings";
 
 export function formatGame(game: Game) {
@@ -105,6 +105,7 @@ export interface ContextParams {
     sortedMaps: Map[]
     mapCounts: MapCount
     settings: SettingsValues
+    loggedInUser: LoginUser | undefined
 }
 
 export function getAllowedStyles(game: Game) {

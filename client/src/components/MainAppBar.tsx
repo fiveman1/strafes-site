@@ -4,13 +4,17 @@ import Box from "@mui/material/Box";
 import { AppBar, ButtonGroup, IconButton, Link, Menu, MenuItem, Toolbar } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloseIcon from '@mui/icons-material/Close';
+import PermIdentityIcon from '@mui/icons-material/PermIdentity';
+import { LoginUser } from "../api/interfaces";
+import { login, logout } from "../api/api";
 
 interface IMainAppBarProps {
     settingsOpen: boolean,
     setSettingsOpen: (val: boolean) => void
+    loggedInUser: LoginUser | undefined
 }
 
 export enum NavigatorPage {
@@ -44,11 +48,12 @@ function getCurrentPage(path: string) {
 }
 
 function MainAppBar(props: IMainAppBarProps) {
-    const { settingsOpen, setSettingsOpen } = props;
+    const { settingsOpen, setSettingsOpen, loggedInUser } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const location = useLocation();
     const navPage = getCurrentPage(location.pathname);
+    const navigate = useNavigate();
     
     const openNavMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -114,6 +119,18 @@ function MainAppBar(props: IMainAppBarProps) {
                             setSettingsOpen(!settingsOpen);
                         }}> 
                             {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
+                        </IconButton>
+                        <IconButton color="inherit" onClick={async () => {
+                            if (loggedInUser) {
+                                await logout();
+                                navigate(0);
+                            }
+                            else {
+                                const url = await login();
+                                if (url) window.location.href = url;
+                            }
+                        }}>
+                            <PermIdentityIcon color={loggedInUser ? "success" : "error"} />
                         </IconButton>
                     </ButtonGroup>
                 </Box>

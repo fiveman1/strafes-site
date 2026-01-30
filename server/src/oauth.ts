@@ -1,6 +1,7 @@
-import { Request } from "express";
+import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
+import { LoginUser } from "./interfaces.js";
 
 const SCOPE = "openid profile";
 
@@ -19,11 +20,12 @@ const pool = mysql.createPool({
 
 const clientId = process.env.ROBLOX_CLIENT_ID ?? "";
 const clientSecret = process.env.ROBLOX_CLIENT_SECRET ?? "";
+const isDebug = process.env.DEBUG === "true";
 
-let redirectUri = process.env.BASE_URL + "/oauth/callback";
-if (process.argv.splice(2)[0] === "--dev") {
-    redirectUri = "http://localhost:3000/oauth/callback";
-}
+const BASE_URL = process.env.BASE_URL;
+const REDIRECT_URI = BASE_URL + "/oauth/callback";
+// If running the dev site, go back across the proxy
+const AFTER_AUTH_URL = process.argv.splice(2)[0] === "--dev" ? "http://localhost:3000/" : "/";
 
 const config = await client.discovery(
     new URL("https://apis.roblox.com/oauth/.well-known/openid-configuration"),
@@ -31,33 +33,29 @@ const config = await client.discovery(
     clientSecret
 );
 
-export interface AuthCookieTokens {
-    accessToken: string | undefined,
-    expiresAt: string | undefined,
-    refreshToken: string | undefined,
-    robloxUserId: string | undefined
+export interface AuthCookies {
+    accessToken: {
+        token: string | undefined
+    } | undefined,
+    refreshToken: {
+        token: string | undefined
+        robloxUserId: string | undefined
+    } | undefined
 }
 
-export interface AuthRedirectInfo {
-    url: string,
-    cookies: LoginCookieTokens
+export interface LoginCookies {
+    login: {
+        codeVerifier: string
+        state?: string
+    } | undefined
 }
 
-export interface LoginCookieTokens {
-    codeVerifier: string
-    state?: string
-}
-
-export async function getUserInfo(request: Request) {
-    
-}
-
-export async function getAuthRedirectUrl(): Promise<AuthRedirectInfo> {
+export async function redirectToAuthURL(response: Response) {
     const codeVerifier = client.randomPKCECodeVerifier();
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
 
     const params: Record<string, string> = {
-        redirect_uri: redirectUri,
+        redirect_uri: REDIRECT_URI,
         scope: SCOPE,
         response_type: "code",
         code_challenge: codeChallenge,
@@ -74,14 +72,12 @@ export async function getAuthRedirectUrl(): Promise<AuthRedirectInfo> {
         params.state = client.randomState();
     }
 
-    return {
-        url: client.buildAuthorizationUrl(config, params).href,
-        cookies: {
-            codeVerifier: codeVerifier,
-            state: params.state
-        }
-    };
+    response.cookie("login", {
+        codeVerifier: codeVerifier,
+        state: params.state
+    }, createCookieOptions());
 
+    response.status(200).json({url: client.buildAuthorizationUrl(config, params).href});
 }
 
 export interface RobloxClaims {
@@ -94,55 +90,78 @@ export interface RobloxClaims {
     picture: string // URL
 }
 
-async function insertUserToDB(accessToken: string, claims: RobloxClaims) {
+async function insertUserToDB(claims: RobloxClaims) {
     
 }
 
-export async function authorizeAndGetTokens(request: Request): Promise<AuthCookieTokens | undefined> {
-    const cookies = request.signedCookies.login as LoginCookieTokens;
+export async function authorizeAndSetTokens(request: Request, response: Response) {
     try {
+        const cookies = request.signedCookies as LoginCookies;
+        console.log(cookies);
         const tokens = await client.authorizationCodeGrant(
             config,
-            new URL(`${process.env.BASE_URL}${request.url}`),
+            new URL(BASE_URL + request.url),
             {
-                pkceCodeVerifier: cookies.codeVerifier,
-                expectedState: cookies.state,
+                pkceCodeVerifier: cookies.login?.codeVerifier,
+                expectedState: cookies.login?.state,
             },
         );
 
-        const now = new Date().getTime();
-        const expiresAt = new Date(now + (tokens.expiresIn() ?? 0));
-
         const claims = tokens.claims() as client.IDToken & RobloxClaims;
-        await insertUserToDB(tokens.access_token, claims);
+        await insertUserToDB(claims);
 
-        return {
-            accessToken: tokens.access_token,
-            expiresAt: expiresAt.toISOString(),
-            refreshToken: tokens.refresh_token ?? "",
-            robloxUserId: claims.sub
-        };
+        setAccessCookie(response, tokens.access_token, tokens.expiresIn());
+        setRefreshCookie(response, tokens.refresh_token ?? "", claims.sub);
     }
-    catch {
-        return undefined;
+    catch (err) {
+        console.error(err);
     }
+    
+    response.clearCookie("login");
+    response.redirect(AFTER_AUTH_URL);
 }
 
-export async function getLoggedInUser(request: Request) {
-    const cookies = request.signedCookies.tokens as AuthCookieTokens;
-    const now = new Date();
-    let accessToken = cookies.accessToken || "";
-    if (cookies.accessToken === undefined || cookies.refreshToken === undefined || cookies.expiresAt === undefined || cookies.robloxUserId === undefined) {
-        return undefined;
+function setAccessCookie(response: Response, accessToken: string, expiresIn: number | undefined) {
+    response.cookie("accessToken", {
+        token: accessToken
+    }, createCookieOptions(expiresIn));
+}
+
+function setRefreshCookie(response: Response, refreshToken: string, robloxUserId: string) {
+    response.cookie("refreshToken", {
+        token: refreshToken,
+        robloxUserId: robloxUserId
+    }, createCookieOptions(90 * 60 * 60 * 24)); // 90 days
+}
+
+export async function setLoggedInUser(request: Request, response: Response) {
+    const cookies = request.signedCookies as AuthCookies;
+    let accessToken = cookies.accessToken?.token;
+    let refreshToken = cookies.refreshToken?.token;
+    let userId = cookies.refreshToken?.robloxUserId;
+    
+    if (!refreshToken || !userId) {
+        response.status(401).json({error: "You are not logged in"});
+        return;
     }
-    else if (now > new Date(cookies.expiresAt)) {
-        const newTokenSet = await client.refreshTokenGrant(config, cookies.refreshToken, {
-            scope: SCOPE,
-        });
-        accessToken = newTokenSet.access_token;
+    else if (!accessToken) {
+        const newTokenSet = await refreshTokens(response, refreshToken);
+        accessToken = newTokenSet.accessToken;
+        refreshToken = newTokenSet.refreshToken;
+        userId = newTokenSet.userId;
     }
-    const userInfo = await client.fetchUserInfo(config, accessToken, cookies.robloxUserId) as unknown as RobloxClaims;
-    return {
+
+    let userInfo;
+    try {
+        userInfo = await client.fetchUserInfo(config, accessToken, userId) as unknown as RobloxClaims;
+    }
+    catch {
+        // Refresh and try again
+        const newTokenSet = await refreshTokens(response, refreshToken ?? "");
+        userInfo = await client.fetchUserInfo(config, newTokenSet.accessToken, newTokenSet.userId) as unknown as RobloxClaims;
+    }
+
+    const data: LoginUser = {
         userId: userInfo.sub,
         username: userInfo.name,
         displayName: userInfo.prferred_username,
@@ -150,4 +169,43 @@ export async function getLoggedInUser(request: Request) {
         profileUrl: userInfo.profile,
         thumbnailUrl: userInfo.picture
     };
+
+    response.status(200).json(data);
+}
+
+async function refreshTokens(response: Response, refreshToken: string) {
+    const newTokenSet = await client.refreshTokenGrant(config, refreshToken, {
+        scope: SCOPE,
+    });
+    const claims = newTokenSet.claims() as client.IDToken;
+    const tokens = {
+        accessToken: newTokenSet.access_token,
+        refreshToken: newTokenSet.refresh_token ?? "",
+        expiresIn: newTokenSet.expiresIn(),
+        userId: claims.sub
+    };
+    setAccessCookie(response, tokens.accessToken, tokens.expiresIn);
+    setRefreshCookie(response, tokens.refreshToken, claims.sub);
+    
+    return tokens;
+}
+
+function createCookieOptions(expiresIn?: number): CookieOptions {
+    return {
+        secure: !isDebug,
+        httpOnly: true,
+        signed: true,
+        maxAge: expiresIn ? expiresIn * 1000 : undefined
+    };
+}
+
+export async function logout(request: Request, response: Response) {
+    const cookies = request.signedCookies as AuthCookies;
+    if (cookies.refreshToken?.token) {
+        await client.tokenRevocation(config, cookies.refreshToken.token);
+    }
+    
+    response.clearCookie("accessToken");
+    response.clearCookie("refreshToken");
+    response.status(200).json({logout: "success"});
 }

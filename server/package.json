@@ -5,8 +5,8 @@
     "description": "Server for strafes.fiveman1.net",
     "type": "module",
     "scripts": {
-        "dev": "tsx --watch --env-file ../.env src/index.ts",
-        "start": "node --env-file ../.env dist/index.js --dev",
+        "dev": "tsx --watch --env-file ../.env src/index.ts --dev",
+        "start": "node --env-file ../.env dist/index.js",
         "build": "rm -rf dist && npx tsc"
     },
     "keywords": [],

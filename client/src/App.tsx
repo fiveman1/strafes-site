@@ -7,10 +7,10 @@ import { pink, lightBlue } from "@mui/material/colors";
 import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
-import { getMaps, Maps } from "./api/api";
+import { getLoggedInUser, getMaps, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
-import { Game, Map } from "./api/interfaces";
+import { Game, LoginUser, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
 import Settings, { useSettings } from "./components/Settings";
@@ -27,12 +27,14 @@ const LinkBehavior = React.forwardRef<
 function App() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [maps, setMaps] = useState<Maps>({});
+    const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
     const [settings, setSettings] = useSettings();
     const location = useLocation();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
         getMaps().then(setMaps);
+        getLoggedInUser().then(setLoggedInUser);
     }, []);
 
     const mapInfo = useMemo(() => {
@@ -70,9 +72,10 @@ function App() {
             maps: mapInfo.maps,
             sortedMaps: mapInfo.sortedMaps,
             mapCounts: mapInfo.mapCounts,
-            settings: settings
+            settings: settings,
+            loggedInUser: loggedInUser
         };
-    }, [mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, settings]);
+    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, settings]);
 
     useEffect(() => {
         setSettingsOpen(false);
@@ -106,7 +109,7 @@ function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
-                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} />
+                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} loggedInUser={loggedInUser} />
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
                     {settingsOpen ? <Settings settings={settings} setSettings={setSettings} /> : <Outlet context={contextParams}/>}
                 </Box>

@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy } from "./interfaces";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -193,4 +193,24 @@ export async function getLeaderboardPage(start: number | string, end: number | s
     if (!res) return undefined;
 
     return res.data as LeaderboardPage;
+}
+
+export async function getLoggedInUser() {
+    const res = await tryGetRequest("auth/user");
+
+    if (!res) return undefined;
+
+    return res.data as LoginUser;
+}
+
+export async function login() {
+    const res = await tryGetRequest("login");
+
+    if (!res) return undefined;
+
+    return res.data.url as string;
+}
+
+export async function logout() {
+    await tryGetRequest("logout");
 }

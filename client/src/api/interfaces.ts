@@ -137,5 +137,14 @@ export interface LeaderboardCount {
     count: number,
     earliestDate: string,
     latestDate: string,
-    bonusCount: string
+    bonusCount: number
+}
+
+export interface LoginUser {
+    userId: string,
+    username: string,
+    displayName: string,
+    createdAt: number,
+    profileUrl: string,
+    thumbnailUrl: string
 }

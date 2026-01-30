@@ -23,8 +23,8 @@ export interface GlobalCountSQL {
 }
 type GlobalCountRow = GlobalCountSQL & RowDataPacket;
 
-const user = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
+const user = process.env.STRAFES_DB_USER;
+const password = process.env.STRAFES_DB_PASSWORD;
 let pool: mysql.Pool | undefined = undefined;
 if (user && password) {
     pool = mysql.createPool({
