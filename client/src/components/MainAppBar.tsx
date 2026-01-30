@@ -42,9 +42,10 @@ function getCurrentPage(path: string) {
     else if (path.startsWith("/compare")) {
         return NavigatorPage.Compare;
     }
-    else {
+    else if (path === "/") {
         return NavigatorPage.Home;
     }
+    return undefined;
 }
 
 function MainAppBar(props: IMainAppBarProps) {
@@ -78,7 +79,7 @@ function MainAppBar(props: IMainAppBarProps) {
                 </Link>
                 <Box>
                     <Button sx={{width: navMenuWidth, textTransform: "none"}} size="large" variant="outlined" color="inherit" endIcon={open ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />} onClick={openNavMenu} >
-                        {navPage}
+                        {navPage ?? NavigatorPage.Home}
                     </Button>
                     <Menu anchorEl={anchorEl} open={open} onClose={closeNavMenu} slotProps={{list: {sx: {width: navMenuWidth}}}} >
                         <Link href="/" variant="inherit" color="inherit" underline="none">
