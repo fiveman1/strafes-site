@@ -28,13 +28,18 @@ function App() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [maps, setMaps] = useState<Maps>({});
     const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
+    const [loggedInUserLoading, setLoggedInUserLoading] = useState(true);
     const [settings, setSettings] = useSettings();
     const location = useLocation();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     useEffect(() => {
         getMaps().then(setMaps);
-        getLoggedInUser().then(setLoggedInUser);
+        setLoggedInUserLoading(true);
+        getLoggedInUser().then((user) => {
+            setLoggedInUser(user);
+            setLoggedInUserLoading(false);
+        });
     }, []);
 
     const mapInfo = useMemo(() => {
@@ -109,12 +114,12 @@ function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
-                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} loggedInUser={loggedInUser} />
+                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
                     {settingsOpen ? <Settings settings={settings} setSettings={setSettings} /> : <Outlet context={contextParams}/>}
                 </Box>
                 <Box marginTop="auto">
-                    <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" , marginTop: "auto", padding: "0 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>
+                    <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>
                         <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
                             bhop
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style={{marginLeft: 4}}>

@@ -1,22 +1,22 @@
 import { Request, Response, CookieOptions } from "express";
-import mysql, { RowDataPacket } from "mysql2/promise";
+// import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
 import { LoginUser } from "./interfaces.js";
 
 const SCOPE = "openid profile";
 
-const user = process.env.AUTH_DB_USER ?? "";
-const password = process.env.AUTH_DB_PASSWORD ?? "";
-const pool = mysql.createPool({
-    host: "localhost",
-    user: user,
-    password: password,
-    database: "strafes_auth_users",
-    timezone: "Z", // UTC
-    dateStrings: true,
-    supportBigNumbers: true,
-    bigNumberStrings: true
-});
+// const user = process.env.AUTH_DB_USER ?? "";
+// const password = process.env.AUTH_DB_PASSWORD ?? "";
+// const pool = mysql.createPool({
+//     host: "localhost",
+//     user: user,
+//     password: password,
+//     database: "strafes_auth_users",
+//     timezone: "Z", // UTC
+//     dateStrings: true,
+//     supportBigNumbers: true,
+//     bigNumberStrings: true
+// });
 
 const clientId = process.env.ROBLOX_CLIENT_ID ?? "";
 const clientSecret = process.env.ROBLOX_CLIENT_SECRET ?? "";
@@ -90,14 +90,14 @@ export interface RobloxClaims {
     picture: string // URL
 }
 
-async function insertUserToDB(claims: RobloxClaims) {
+// async function insertUserToDB(claims: RobloxClaims) {
     
-}
+// }
 
 export async function authorizeAndSetTokens(request: Request, response: Response) {
+    let userId = "";
     try {
         const cookies = request.signedCookies as LoginCookies;
-        console.log(cookies);
         const tokens = await client.authorizationCodeGrant(
             config,
             new URL(BASE_URL + request.url),
@@ -108,17 +108,19 @@ export async function authorizeAndSetTokens(request: Request, response: Response
         );
 
         const claims = tokens.claims() as client.IDToken & RobloxClaims;
-        await insertUserToDB(claims);
+        userId = claims.sub;
+        // await insertUserToDB(claims);
 
         setAccessCookie(response, tokens.access_token, tokens.expiresIn());
-        setRefreshCookie(response, tokens.refresh_token ?? "", claims.sub);
+        setRefreshCookie(response, tokens.refresh_token ?? "", userId);
     }
     catch (err) {
         console.error(err);
     }
     
     response.clearCookie("login");
-    response.redirect(AFTER_AUTH_URL);
+    const url = userId ? `${AFTER_AUTH_URL}users/${userId}` : AFTER_AUTH_URL;
+    response.redirect(url);
 }
 
 function setAccessCookie(response: Response, accessToken: string, expiresIn: number | undefined) {
