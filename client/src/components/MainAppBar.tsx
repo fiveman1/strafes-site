@@ -4,13 +4,19 @@ import Box from "@mui/material/Box";
 import { AppBar, ButtonGroup, IconButton, Link, Menu, MenuItem, Toolbar } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloseIcon from '@mui/icons-material/Close';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { LoginUser } from "../api/interfaces";
+import { login, logout } from "../api/api";
 
 interface IMainAppBarProps {
     settingsOpen: boolean,
     setSettingsOpen: (val: boolean) => void
+    loggedInUser: LoginUser | undefined
+    isUserLoading: boolean
 }
 
 export enum NavigatorPage {
@@ -45,11 +51,17 @@ function getCurrentPage(path: string) {
 }
 
 function MainAppBar(props: IMainAppBarProps) {
-    const { settingsOpen, setSettingsOpen } = props;
+    const { settingsOpen, setSettingsOpen, loggedInUser, isUserLoading } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const location = useLocation();
     const navPage = getCurrentPage(location.pathname);
+    const navigate = useNavigate();
+
+    let userLink = "/users";
+    if (loggedInUser) {
+        userLink += `/${loggedInUser.userId}`
+    }
     
     const openNavMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -57,11 +69,6 @@ function MainAppBar(props: IMainAppBarProps) {
 
     const closeNavMenu = () => {
         setAnchorEl(null);
-    }
-
-    const onClickLink = () => {
-        //setSettingsOpen(false);
-        closeNavMenu();
     }
 
     const navMenuWidth = 125;
@@ -78,32 +85,32 @@ function MainAppBar(props: IMainAppBarProps) {
                     </Button>
                     <Menu anchorEl={anchorEl} open={open} onClose={closeNavMenu} slotProps={{list: {sx: {width: navMenuWidth}}}} >
                         <Link href="/" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Home} >
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Home} >
                                 {NavigatorPage.Home}
                             </MenuItem>
                         </Link>
-                        <Link href="/users" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Users} >
+                        <Link href={userLink} variant="inherit" color="inherit" underline="none">
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Users} >
                                 {NavigatorPage.Users}
                             </MenuItem>
                         </Link>
                         <Link href="/globals" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Gloabls} >
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Gloabls} >
                                 {NavigatorPage.Gloabls}
                             </MenuItem>
                         </Link>
                         <Link href="/maps" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Maps} >
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Maps} >
                                 {NavigatorPage.Maps}
                             </MenuItem>
                         </Link>
                         <Link href="/ranks" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Ranks} >
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
                                 {NavigatorPage.Ranks}
                             </MenuItem>
                         </Link>
                         <Link href="/compare" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={onClickLink} selected={navPage === NavigatorPage.Compare} >
+                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Compare} >
                                 {NavigatorPage.Compare}
                             </MenuItem>
                         </Link>
@@ -115,6 +122,18 @@ function MainAppBar(props: IMainAppBarProps) {
                             setSettingsOpen(!settingsOpen);
                         }}> 
                             {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
+                        </IconButton>
+                        <IconButton loading={isUserLoading} color="inherit" onClick={async () => {
+                            if (loggedInUser) {
+                                await logout();
+                                navigate(0); // Refresh the page
+                            }
+                            else {
+                                const url = await login();
+                                if (url) window.location.href = url; // Force external redirect
+                            }
+                        }}>
+                            {loggedInUser ? <LogoutIcon /> : <LoginIcon />}
                         </IconButton>
                     </ButtonGroup>
                 </Box>

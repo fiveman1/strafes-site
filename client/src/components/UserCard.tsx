@@ -3,7 +3,9 @@ import { grey } from "@mui/material/colors";
 import { User } from "../api/interfaces";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { formatUserRole, getUserRoleColor } from "../util/format";
+import { ContextParams, formatUserRole, getUserRoleColor } from "../util/format";
+import { useOutletContext } from "react-router";
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
 
 export interface IUserCardProps {
     minHeight?: number
@@ -14,6 +16,9 @@ export interface IUserCardProps {
 function UserCard(props: IUserCardProps) {
     const { minHeight, loading, user } = props;
     const theme = useTheme();
+    const { loggedInUser } = useOutletContext() as ContextParams;
+
+    const isCurrentUser = loggedInUser && user && +user.id === +loggedInUser.userId;
     
     return <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
         {user && !loading ? <>
@@ -50,7 +55,28 @@ function UserCard(props: IUserCardProps) {
             </Box>
         </Box>
         <Box minWidth="128px" padding={0.25} display="flex" alignItems="center" justifyContent="right" flexGrow={1}>
-            <Avatar sx={{height: 120, width: 120, bgcolor: grey[100]}} alt={user.displayName} src={user.thumbUrl} />
+            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                <Avatar sx={{height: 120, width: 120, bgcolor: grey[100]}} alt={user.displayName} src={user.thumbUrl} />
+                {isCurrentUser ?
+                <Box
+                    title="You" 
+                    sx={{
+                        position: "absolute",
+                        bottom: 5,
+                        right: 5,
+                        backgroundColor: theme.palette.common.white,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "22px",
+                        height: "22px"
+                    }}
+                >
+                    <AccountBoxIcon sx={{fontSize: "36px"}} htmlColor={theme.palette.secondary.main} />
+                </Box>
+                : null}
+            </Box>
+            
         </Box>
         </> : 
         <Box display="flex" alignItems="center" width="100%">

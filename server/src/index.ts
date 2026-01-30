@@ -4,13 +4,15 @@ import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy } from "./interfaces.js";
-import { formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
+import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
+import { authorizeAndSetTokens, logout, redirectToAuthURL, setLoggedInUser } from "./oauth.js";
 
 const app = express();
 const port = process.env.PORT ?? "8080";
@@ -22,9 +24,24 @@ const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ?
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 
-function calcRank(rank: number) {
-    return Math.floor((1 - rank) * 19) + 1;
-}
+const cookieSecret = process.env.COOKIE_SECRET;
+app.use(cookieParser(cookieSecret));
+
+app.get("/api/login", async (req, res) => {
+    await redirectToAuthURL(res);
+});
+
+app.get("/api/logout", async (req, res) => {
+    await logout(req, res);
+});
+
+app.get("/oauth/callback", async (req, res) => {
+    await authorizeAndSetTokens(req, res);
+});
+
+app.get("/api/auth/user", async (req, res) => {
+    await setLoggedInUser(req, res);
+});
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
