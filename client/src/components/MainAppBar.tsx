@@ -1,20 +1,16 @@
 import React, { useState } from "react";
 import Button from '@mui/material/Button';
 import Box from "@mui/material/Box";
-import { AppBar, ButtonGroup, IconButton, Link, Menu, MenuItem, Toolbar } from "@mui/material";
+import { AppBar, ButtonGroup, Link, Menu, MenuItem, Toolbar, useMediaQuery } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import { useLocation, useNavigate } from "react-router";
-import SettingsIcon from '@mui/icons-material/Settings';
-import CloseIcon from '@mui/icons-material/Close';
+import { useLocation } from "react-router";
 import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
 import { LoginUser } from "../api/interfaces";
-import { login, logout } from "../api/api";
+import { login } from "../api/api";
+import AccountMenu from "./AccountMenu";
 
 interface IMainAppBarProps {
-    settingsOpen: boolean,
-    setSettingsOpen: (val: boolean) => void
     loggedInUser: LoginUser | undefined
     isUserLoading: boolean
 }
@@ -51,12 +47,12 @@ function getCurrentPage(path: string) {
 }
 
 function MainAppBar(props: IMainAppBarProps) {
-    const { settingsOpen, setSettingsOpen, loggedInUser, isUserLoading } = props;
+    const { loggedInUser, isUserLoading } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const location = useLocation();
     const navPage = getCurrentPage(location.pathname);
-    const navigate = useNavigate();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     let userLink = "/users";
     if (loggedInUser) {
@@ -69,14 +65,20 @@ function MainAppBar(props: IMainAppBarProps) {
 
     const closeNavMenu = () => {
         setAnchorEl(null);
-    }
+    };
+
+    const onLogin = async () => {
+        const url = await login();
+        if (url) window.location.href = url; // Force external redirect
+    };
 
     const navMenuWidth = 125;
+    const outerWidth = smallScreen ? 75 : 100;
 
     return (
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: "space-between" }}>
-                <Link href="/" variant="h6" color="inherit" underline="hover" minWidth={84} >
+                <Link href="/" variant="h6" color="inherit" underline="hover" minWidth={outerWidth} >
                     strafes
                 </Link>
                 <Box>
@@ -116,25 +118,17 @@ function MainAppBar(props: IMainAppBarProps) {
                         </Link>
                     </Menu>
                 </Box>
-                <Box minWidth={84} display="flex" justifyContent="flex-end">
+                <Box minWidth={outerWidth} display="flex" justifyContent="flex-end">
                     <ButtonGroup>
-                        <IconButton color="inherit" onClick={() => {
-                            setSettingsOpen(!settingsOpen);
-                        }}> 
-                            {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
-                        </IconButton>
-                        <IconButton loading={isUserLoading} color="inherit" onClick={async () => {
-                            if (loggedInUser) {
-                                await logout();
-                                navigate(0); // Refresh the page
-                            }
-                            else {
-                                const url = await login();
-                                if (url) window.location.href = url; // Force external redirect
-                            }
-                        }}>
-                            {loggedInUser ? <LogoutIcon /> : <LoginIcon />}
-                        </IconButton>
+                        {loggedInUser ? 
+                        <AccountMenu user={loggedInUser} settingsOpen={location.pathname.startsWith("/settings")} /> 
+                        : 
+                        <Button variant="outlined" size={smallScreen ? "small" : "medium"} sx={{ width: outerWidth, whiteSpace: "nowrap", textTransform: "none"}} 
+                            loading={isUserLoading}
+                            startIcon={<LoginIcon />} 
+                            onClick={onLogin}>
+                            Login
+                        </Button>}
                     </ButtonGroup>
                 </Box>
             </Toolbar>

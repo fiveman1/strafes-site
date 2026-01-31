@@ -148,3 +148,10 @@ export interface LoginUser {
     profileUrl: string,
     thumbnailUrl: string
 }
+
+export interface SettingsValues {
+    defaultGame: Game
+    defaultStyle: Style
+    maxDaysRelativeDates: number
+    theme: "dark" | "light"
+}

@@ -1,7 +1,6 @@
-import { lighten, Theme } from "@mui/material";
+import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { bhop_styles, fly_trials_styles, Game, LoginUser, Map, Style, surf_styles, UserRole } from "../api/interfaces";
-import { SettingsValues } from "../components/Settings";
+import { bhop_styles, fly_trials_styles, Game, LoginUser, Map, SettingsValues, Style, surf_styles, UserRole } from "../api/interfaces";
 
 export function formatGame(game: Game) {
     switch (game) {
@@ -106,6 +105,8 @@ export interface ContextParams {
     mapCounts: MapCount
     settings: SettingsValues
     loggedInUser: LoginUser | undefined
+    setSettings: (val: React.SetStateAction<SettingsValues>) => void
+    setMode: (mode: PaletteMode) => void
 }
 
 export function getAllowedStyles(game: Game) {

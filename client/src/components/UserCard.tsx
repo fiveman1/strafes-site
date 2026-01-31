@@ -9,7 +9,7 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 
 export interface IUserCardProps {
     minHeight?: number
-    loading: boolean
+    loading?: boolean
     user?: User
 }
 

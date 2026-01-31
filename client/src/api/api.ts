@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser } from "./interfaces";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues } from "./interfaces";
 
 export function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
@@ -10,7 +10,15 @@ async function tryGetRequest(url: string, params?: any) {
         return await axios.get("/api/" + url, {params: params, timeout: 15000});
     } 
     catch (err) {
-        //console.log(err);
+        return undefined;
+    }
+}
+
+export async function tryPostRequest(url: string, params?: any) {
+    try {
+        return await axios.post("/api/" + url, params, {timeout: 5000});
+    } 
+    catch (err) {
         return undefined;
     }
 }
@@ -213,4 +221,23 @@ export async function login() {
 
 export async function logout() {
     await tryGetRequest("logout");
+}
+
+export async function getSettings() {
+    const res = await tryGetRequest("settings");
+
+    if (!res) return undefined;
+
+    return res.data as SettingsValues;
+}
+
+export async function updateSettings(settings: SettingsValues) {
+    const res = await tryPostRequest("settings", {
+        game: settings.defaultGame,
+        style: settings.defaultStyle,
+        theme: settings.theme,
+        maxDaysRelative: settings.maxDaysRelativeDates
+    });
+
+    return !!res;
 }

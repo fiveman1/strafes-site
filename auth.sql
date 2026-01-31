@@ -7,3 +7,12 @@ CREATE TABLE sessions (
     userId bigint NOT NULL,
     PRIMARY KEY (sessionHash)
 );
+
+CREATE TABLE settings (
+    userId bigint NOT NULL,
+    theme enum('dark', 'light') NOT NULL,
+    game smallint NOT NULL,
+    style smallint NOT NULL,
+    maxDaysRelative smallint NOT NULL,
+    PRIMARY KEY (userId)
+);

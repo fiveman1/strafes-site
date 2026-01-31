@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainAppBar from "./components/MainAppBar";
 import Box from "@mui/material/Box";
@@ -7,13 +7,13 @@ import { pink, lightBlue } from "@mui/material/colors";
 import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
-import { getLoggedInUser, getMaps, Maps } from "./api/api";
+import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, LoginUser, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
-import Settings, { useSettings } from "./components/Settings";
+import { saveSettingsToLocalStorage, useSettings } from "./components/Settings";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -25,13 +25,13 @@ const LinkBehavior = React.forwardRef<
 });
 
 function App() {
-    const [settingsOpen, setSettingsOpen] = useState(false);
     const [maps, setMaps] = useState<Maps>({});
     const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
     const [loggedInUserLoading, setLoggedInUserLoading] = useState(true);
     const [settings, setSettings] = useSettings();
-    const location = useLocation();
+    const [mode, setMode] = useState<PaletteMode>(settings.theme);
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const location = useLocation();
 
     useEffect(() => {
         getMaps().then(setMaps);
@@ -41,6 +41,23 @@ function App() {
             setLoggedInUserLoading(false);
         });
     }, []);
+
+    useEffect(() => {
+        getSettings().then((result) => {
+            if (result) {
+                setSettings(() => {
+                    return {...result}
+                })
+                saveSettingsToLocalStorage(result);
+                setMode(result.theme);
+            }
+        });
+    }, [setSettings]);
+
+    // If user navigates off the settings page, reset the theme
+    useEffect(() => {
+        setMode(settings.theme);
+    }, [location.pathname, settings.theme]);
 
     const mapInfo = useMemo(() => {
         const counts : MapCount = {
@@ -78,22 +95,20 @@ function App() {
             sortedMaps: mapInfo.sortedMaps,
             mapCounts: mapInfo.mapCounts,
             settings: settings,
-            loggedInUser: loggedInUser
+            loggedInUser: loggedInUser,
+            setSettings: setSettings,
+            setMode: setMode
         };
-    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, settings]);
-
-    useEffect(() => {
-        setSettingsOpen(false);
-    }, [location.pathname]);
+    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, setSettings, settings]);
 
     const theme = useMemo(() => createTheme({
         palette: {
             // SrafesNET red: #c61926
             primary: pink,
             secondary: lightBlue,
-            mode: settings.theme,
+            mode: mode,
             DataGrid: {
-                bg: settings.theme === "light" ? "#ffffff" : "#121212"
+                bg: mode === "light" ? "#ffffff" : "#121212"
             }
         },
         components: {
@@ -108,15 +123,15 @@ function App() {
                 },
             },
         },
-    }), [settings.theme]);
+    }), [mode]);
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
             <Box height="100%" display="flex" flexDirection="column">
-                <MainAppBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
+                <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
-                    {settingsOpen ? <Settings settings={settings} setSettings={setSettings} /> : <Outlet context={contextParams}/>}
+                    <Outlet context={contextParams}/>
                 </Box>
                 <Box marginTop="auto">
                     <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>

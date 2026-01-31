@@ -1,7 +1,7 @@
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
-import { LoginUser } from "./interfaces.js";
+import { Game, LoginUser, SettingsValues, Style } from "./interfaces.js";
 import { createHash, randomBytes } from "crypto";
 
 // Environment params
@@ -60,10 +60,18 @@ interface RobloxClaims {
     sub: string,
     name: string,
     nickname: string,
-    prferred_username: string,
+    preferred_username: string,
     created_at: number,
     profile: string, // URL
     picture: string // URL
+}
+
+interface SettingsRow {
+    userId: string
+    theme: "dark" | "light"
+    game: number
+    style: number
+    maxDaysRelative: number
 }
 
 // Entrypoints
@@ -160,7 +168,7 @@ export async function getLoggedInUser(request: Request, response: Response): Pro
     return {
         userId: userInfo.sub,
         username: userInfo.name,
-        displayName: userInfo.prferred_username,
+        displayName: userInfo.preferred_username,
         createdAt: userInfo.created_at,
         profileUrl: userInfo.profile,
         thumbnailUrl: userInfo.picture
@@ -187,6 +195,67 @@ export async function logout(request: Request, response: Response) {
     
     response.clearCookie("session");
     response.status(200).json({logout: "success"});
+}
+
+export async function getSettings(request: Request, response: Response) {
+    const user = await getLoggedInUser(request, response);
+    
+    if (!user) {
+        response.status(401).json({error: "You are not logged in"});
+        return;
+    }
+
+    const settings = await loadSettingsFromDB(user.userId);
+    if (!settings) {
+        response.status(404).json({error: "No settings found"});
+        return;
+    }
+
+    response.status(200).json(settings);
+}
+
+export async function updateSettings(request: Request, response: Response) {
+    const game = request.body.game;
+    const style = request.body.style;
+    const theme = request.body.theme;
+    const maxDaysRelative = request.body.maxDaysRelative;
+
+    if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
+        response.status(400).json({error: "Invalid game"});
+        return;
+    }
+
+    if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
+        response.status(400).json({error: "Invalid style"});
+        return;
+    }
+
+    if (theme !== "light" && theme !== "dark") {
+        response.status(400).json({error: "Invalid theme"});
+        return;
+    }
+
+    if (maxDaysRelative === undefined || isNaN(+maxDaysRelative) || +maxDaysRelative < 0 || +maxDaysRelative > 9999) {
+        response.status(400).json({error: "Invalid max days relative dates"});
+        return;
+    }
+
+    const user = await getLoggedInUser(request, response);
+    
+    if (!user) {
+        response.status(401).json({error: "You are not logged in"});
+        return;
+    }
+
+    await updateSettingsToDB({
+        userId: user.userId,
+        game: +game,
+        style: +style,
+        theme: theme,
+        maxDaysRelative: +maxDaysRelative
+    });
+
+    response.status(200).json({success: true});
 }
 
 // Helpers
@@ -271,6 +340,41 @@ async function insertSessionToDB(session: Session) {
 async function deleteSessionFromDB(session: Session) {
     const query = `DELETE FROM sessions WHERE sessionHash=?;`;
     await pool.query(query, [session.sessionHash]);
+}
+
+async function loadSettingsFromDB(userId: string): Promise<SettingsValues | undefined> {
+    const query = `SELECT * FROM settings WHERE userId=?`;
+    const [[row]] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
+    if (!row) {
+        return undefined;
+    }
+
+    return {
+        defaultGame: row.game,
+        defaultStyle: row.style,
+        theme: row.theme,
+        maxDaysRelativeDates: row.maxDaysRelative
+    };
+}
+
+async function updateSettingsToDB(settings: SettingsRow) {
+    const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative) 
+        VALUES ? AS new 
+        ON DUPLICATE KEY UPDATE
+            theme=new.theme,
+            game=new.game,
+            style=new.style,
+            maxDaysRelative=new.maxDaysRelative
+    ;`;
+
+    const values = [
+        settings.userId,
+        settings.theme,
+        settings.game,
+        settings.style,
+        settings.maxDaysRelative
+    ];
+    await pool.query(query, [[values]]);
 }
 
 // Utils

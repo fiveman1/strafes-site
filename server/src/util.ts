@@ -74,3 +74,7 @@ export function formatCourse(course: number, short?: boolean) {
 export function calcRank(rank: number) {
     return Math.floor((1 - rank) * 19) + 1;
 }
+
+export function validatePositiveInt(value: any) {
+    return !isNaN(+value) && +value > 0;
+}

@@ -6,13 +6,13 @@ import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy } from "./interfaces.js";
-import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText } from "./util.js";
+import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
-import { authorizeAndSetTokens, logout, redirectToAuthURL, setLoggedInUser } from "./oauth.js";
+import { authorizeAndSetTokens, getSettings, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
@@ -26,6 +26,8 @@ const buildDir = path.join(dirName, "../../client/build/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
+
+app.use(express.json());
 
 app.get("/api/login", async (req, res) => {
     await redirectToAuthURL(res);
@@ -41,6 +43,14 @@ app.get("/oauth/callback", async (req, res) => {
 
 app.get("/api/auth/user", async (req, res) => {
     await setLoggedInUser(req, res);
+});
+
+app.get("/api/settings", async (req, res) => {
+    await getSettings(req, res);
+});
+
+app.post("/api/settings", async (req, res) => {
+    await updateSettings(req, res);
 });
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
@@ -108,10 +118,6 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
 
     // res.status(200).json({usernames: usernames});
 });
-
-function validatePositiveInt(userId: any) {
-    return !isNaN(+userId) && +userId > 0;
-}
 
 app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
