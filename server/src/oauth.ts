@@ -102,8 +102,6 @@ export async function redirectToAuthURL(response: Response) {
     response.cookie("codeVerifier", codeVerifier, options);
     response.cookie("state", params.state, options);
 
-    await removeOldUsersFromDB();
-
     response.status(200).json({url: client.buildAuthorizationUrl(config, params).href});
 }
 
@@ -379,44 +377,18 @@ async function updateSettingsToDB(settings: SettingsRow) {
     await pool.query(query, [[values]]);
 }
 
-async function removeOldUsersFromDB() {
-    // Sort users by oldest session, but only including the most recent session
-    const query = `WITH recentUsers AS 
-        (SELECT 
-            userId, 
-            refreshExpiresAt, 
-            ROW_NUMBER() OVER (PARTITION BY userId ORDER BY refreshExpiresAt DESC) rn 
-        FROM sessions) 
-        SELECT userId 
-        FROM recentUsers 
-        WHERE rn=1 
-        ORDER BY refreshExpiresAt
-    ;`;
+// async function deleteSessionsByUserFromDB(userId: string) {
+//     const query = `SELECT * FROM sessions WHERE userId = ?;`;
+//     const [rows] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [userId]);
+//     if (!rows) {
+//         return undefined;
+//     }
 
-    const [rows] = await pool.query<({userId: string} & RowDataPacket)[]>(query);
-    // Only allowed to have up to 10 active sessions while app isn't approved
-    if (rows.length < 10) {
-        return;
-    }
-
-    // Remove until there are 9 rows left
-    for (let i = 0; i + 9 < rows.length; ++i) {
-        await deleteSessionsByUserFromDB(rows[i].userId);
-    }
-}
-
-async function deleteSessionsByUserFromDB(userId: string) {
-    const query = `SELECT * FROM sessions WHERE userId = ?;`;
-    const [rows] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [userId]);
-    if (!rows) {
-        return undefined;
-    }
-
-    for (const row of rows) {
-        await client.tokenRevocation(config, row.refreshToken);
-        await deleteSessionFromDB(row);
-    }
-}
+//     for (const row of rows) {
+//         await client.tokenRevocation(config, row.refreshToken);
+//         await deleteSessionFromDB(row);
+//     }
+// }
 
 // Utils
 function hashSessionToken(token: string) {
