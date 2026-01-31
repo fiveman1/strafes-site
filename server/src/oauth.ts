@@ -102,6 +102,8 @@ export async function redirectToAuthURL(response: Response) {
     response.cookie("codeVerifier", codeVerifier, options);
     response.cookie("state", params.state, options);
 
+    await removeOldUsersFromDB();
+
     response.status(200).json({url: client.buildAuthorizationUrl(config, params).href});
 }
 
@@ -315,7 +317,7 @@ async function refreshSession(response: Response, session: Session): Promise<Ses
     return newSession;
 }
 
-async function insertSessionToDB(session: Session) {
+async function insertSessionToDB(session: SessionRow) {
     const query = `INSERT INTO sessions (sessionHash, refreshToken, accessToken, refreshExpiresAt, accessExpiresAt, userId) 
         VALUES ? AS new 
         ON DUPLICATE KEY UPDATE
@@ -337,7 +339,7 @@ async function insertSessionToDB(session: Session) {
     await pool.query(query, [[values]]);
 }
 
-async function deleteSessionFromDB(session: Session) {
+async function deleteSessionFromDB(session: SessionRow) {
     const query = `DELETE FROM sessions WHERE sessionHash=?;`;
     await pool.query(query, [session.sessionHash]);
 }
@@ -375,6 +377,45 @@ async function updateSettingsToDB(settings: SettingsRow) {
         settings.maxDaysRelative
     ];
     await pool.query(query, [[values]]);
+}
+
+async function removeOldUsersFromDB() {
+    // Sort users by oldest session, but only including the most recent session
+    const query = `WITH recentUsers AS 
+        (SELECT 
+            userId, 
+            refreshExpiresAt, 
+            ROW_NUMBER() OVER (PARTITION BY userId ORDER BY refreshExpiresAt DESC) rn 
+        FROM sessions) 
+        SELECT userId 
+        FROM recentUsers 
+        WHERE rn=1 
+        ORDER BY refreshExpiresAt
+    ;`;
+
+    const [rows] = await pool.query<({userId: string} & RowDataPacket)[]>(query);
+    // Only allowed to have up to 10 active sessions while app isn't approved
+    if (rows.length < 10) {
+        return;
+    }
+
+    // Remove until there are 9 rows left
+    for (let i = 0; i + 9 < rows.length; ++i) {
+        await deleteSessionsByUserFromDB(rows[i].userId);
+    }
+}
+
+async function deleteSessionsByUserFromDB(userId: string) {
+    const query = `SELECT * FROM sessions WHERE userId = ?;`;
+    const [rows] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [userId]);
+    if (!rows) {
+        return undefined;
+    }
+
+    for (const row of rows) {
+        await client.tokenRevocation(config, row.refreshToken);
+        await deleteSessionFromDB(row);
+    }
 }
 
 // Utils
