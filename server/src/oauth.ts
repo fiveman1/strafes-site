@@ -1,55 +1,72 @@
 import { Request, Response, CookieOptions } from "express";
-// import mysql, { RowDataPacket } from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
 import { LoginUser } from "./interfaces.js";
+import { createHash, randomBytes } from "crypto";
 
-const SCOPE = "openid profile";
-
-// const user = process.env.AUTH_DB_USER ?? "";
-// const password = process.env.AUTH_DB_PASSWORD ?? "";
-// const pool = mysql.createPool({
-//     host: "localhost",
-//     user: user,
-//     password: password,
-//     database: "strafes_auth_users",
-//     timezone: "Z", // UTC
-//     dateStrings: true,
-//     supportBigNumbers: true,
-//     bigNumberStrings: true
-// });
-
-const clientId = process.env.ROBLOX_CLIENT_ID ?? "";
-const clientSecret = process.env.ROBLOX_CLIENT_SECRET ?? "";
-const isDebug = process.env.DEBUG === "true";
-
+// Environment params
+const CLIENT_ID = process.env.ROBLOX_CLIENT_ID ?? "";
+const CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET ?? "";
+const IS_DEBUG = process.env.DEBUG === "true";
 const BASE_URL = process.env.BASE_URL;
 const REDIRECT_URI = BASE_URL + "/oauth/callback";
 // If running the dev site, go back across the proxy
 const AFTER_AUTH_URL = process.argv.splice(2)[0] === "--dev" ? "http://localhost:3000/" : "/";
 
+// Contants
+const SCOPE = "openid profile";
+
+// Setup
 const config = await client.discovery(
     new URL("https://apis.roblox.com/oauth/.well-known/openid-configuration"),
-    clientId,
-    clientSecret
+    CLIENT_ID,
+    CLIENT_SECRET
 );
 
-export interface AuthCookies {
-    accessToken: {
-        token: string | undefined
-    } | undefined,
-    refreshToken: {
-        token: string | undefined
-        robloxUserId: string | undefined
-    } | undefined
+const pool = mysql.createPool({
+    host: "localhost",
+    user: process.env.AUTH_DB_USER ?? "",
+    password: process.env.AUTH_DB_PASSWORD ?? "",
+    database: "strafes_auth_users",
+    timezone: "Z", // UTC
+    supportBigNumbers: true,
+    bigNumberStrings: true
+});
+
+// Types
+interface AuthCookies {
+    session?: string
 }
 
-export interface LoginCookies {
-    login: {
-        codeVerifier: string
-        state?: string
-    } | undefined
+interface LoginCookies {
+    codeVerifier?: string
+    state?: string
 }
 
+interface SessionRow {
+    sessionHash: string
+    refreshToken: string
+    accessToken: string
+    refreshExpiresAt: Date
+    accessExpiresAt: Date
+    userId: string
+}
+
+interface Session extends SessionRow {
+    sessionToken: string
+}
+
+interface RobloxClaims {
+    sub: string,
+    name: string,
+    nickname: string,
+    prferred_username: string,
+    created_at: number,
+    profile: string, // URL
+    picture: string // URL
+}
+
+// Entrypoints
 export async function redirectToAuthURL(response: Response) {
     const codeVerifier = client.randomPKCECodeVerifier();
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
@@ -72,27 +89,13 @@ export async function redirectToAuthURL(response: Response) {
         params.state = client.randomState();
     }
 
-    response.cookie("login", {
-        codeVerifier: codeVerifier,
-        state: params.state
-    }, createCookieOptions());
+    const expiresAt = new Date().getTime() + (60 * 10000); // 1 minute
+    const options = createCookieOptions(new Date(expiresAt));
+    response.cookie("codeVerifier", codeVerifier, options);
+    response.cookie("state", params.state, options);
 
     response.status(200).json({url: client.buildAuthorizationUrl(config, params).href});
 }
-
-export interface RobloxClaims {
-    sub: string,
-    name: string,
-    nickname: string,
-    prferred_username: string,
-    created_at: number,
-    profile: string, // URL
-    picture: string // URL
-}
-
-// async function insertUserToDB(claims: RobloxClaims) {
-    
-// }
 
 export async function authorizeAndSetTokens(request: Request, response: Response) {
     let userId = "";
@@ -102,68 +105,59 @@ export async function authorizeAndSetTokens(request: Request, response: Response
             config,
             new URL(BASE_URL + request.url),
             {
-                pkceCodeVerifier: cookies.login?.codeVerifier,
-                expectedState: cookies.login?.state,
+                pkceCodeVerifier: cookies.codeVerifier,
+                expectedState: cookies.state,
             },
         );
-
-        const claims = tokens.claims() as client.IDToken & RobloxClaims;
-        userId = claims.sub;
-        // await insertUserToDB(claims);
-
-        setAccessCookie(response, tokens.access_token, tokens.expiresIn());
-        setRefreshCookie(response, tokens.refresh_token ?? "", userId);
+        
+        const sessionToken = generateSessionToken();
+        const session = createSessionObject(sessionToken, hashSessionToken(sessionToken), tokens);
+        if (session) {
+            userId = session.userId;
+            response.cookie("session", sessionToken, createCookieOptions(session.refreshExpiresAt));
+            await insertSessionToDB(session);
+        }
     }
     catch (err) {
         console.error(err);
     }
     
-    response.clearCookie("login");
+    response.clearCookie("codeVerifier");
+    response.clearCookie("state");
+
     const url = userId ? `${AFTER_AUTH_URL}users/${userId}` : AFTER_AUTH_URL;
     response.redirect(url);
 }
 
-function setAccessCookie(response: Response, accessToken: string, expiresIn: number | undefined) {
-    response.cookie("accessToken", {
-        token: accessToken
-    }, createCookieOptions(expiresIn));
-}
-
-function setRefreshCookie(response: Response, refreshToken: string, robloxUserId: string) {
-    response.cookie("refreshToken", {
-        token: refreshToken,
-        robloxUserId: robloxUserId
-    }, createCookieOptions(90 * 60 * 60 * 24)); // 90 days
-}
-
-export async function setLoggedInUser(request: Request, response: Response) {
-    const cookies = request.signedCookies as AuthCookies;
-    let accessToken = cookies.accessToken?.token;
-    let refreshToken = cookies.refreshToken?.token;
-    let userId = cookies.refreshToken?.robloxUserId;
-    
-    if (!refreshToken || !userId) {
-        response.status(401).json({error: "You are not logged in"});
-        return;
+export async function getLoggedInUser(request: Request, response: Response): Promise<LoginUser | undefined> {
+    // Clear out old style of cookies, can remove later once no one is still using them
+    if (request.signedCookies.accessToken) {
+        response.clearCookie("accessToken");
     }
-    else if (!accessToken) {
-        const newTokenSet = await refreshTokens(response, refreshToken);
-        accessToken = newTokenSet.accessToken;
-        refreshToken = newTokenSet.refreshToken;
-        userId = newTokenSet.userId;
+    if (request.signedCookies.refreshToken) {
+        response.clearCookie("refreshToken");
+    }
+
+    const session = await loadSession(request, response);
+    if (!session) {
+        return undefined;
     }
 
     let userInfo;
     try {
-        userInfo = await client.fetchUserInfo(config, accessToken, userId) as unknown as RobloxClaims;
+        userInfo = await client.fetchUserInfo(config, session.accessToken, session.userId) as unknown as RobloxClaims;
     }
     catch {
         // Refresh and try again
-        const newTokenSet = await refreshTokens(response, refreshToken ?? "");
-        userInfo = await client.fetchUserInfo(config, newTokenSet.accessToken, newTokenSet.userId) as unknown as RobloxClaims;
+        const newSession = await refreshSession(response, session);
+        if (!newSession) {
+            response.clearCookie("session");
+            return undefined;
+        }
+        userInfo = await client.fetchUserInfo(config, newSession.accessToken, newSession.userId) as unknown as RobloxClaims;
     }
 
-    const data: LoginUser = {
+    return {
         userId: userInfo.sub,
         username: userInfo.name,
         displayName: userInfo.prferred_username,
@@ -171,43 +165,149 @@ export async function setLoggedInUser(request: Request, response: Response) {
         profileUrl: userInfo.profile,
         thumbnailUrl: userInfo.picture
     };
-
-    response.status(200).json(data);
 }
 
-async function refreshTokens(response: Response, refreshToken: string) {
-    const newTokenSet = await client.refreshTokenGrant(config, refreshToken, {
-        scope: SCOPE,
-    });
-    const claims = newTokenSet.claims() as client.IDToken;
-    const tokens = {
-        accessToken: newTokenSet.access_token,
-        refreshToken: newTokenSet.refresh_token ?? "",
-        expiresIn: newTokenSet.expiresIn(),
-        userId: claims.sub
-    };
-    setAccessCookie(response, tokens.accessToken, tokens.expiresIn);
-    setRefreshCookie(response, tokens.refreshToken, claims.sub);
+export async function setLoggedInUser(request: Request, response: Response) {
+    const user = await getLoggedInUser(request, response);
     
-    return tokens;
-}
+    if (!user) {
+        response.status(401).json({error: "You are not logged in"});
+        return;
+    }
 
-function createCookieOptions(expiresIn?: number): CookieOptions {
-    return {
-        secure: !isDebug,
-        httpOnly: true,
-        signed: true,
-        maxAge: expiresIn ? expiresIn * 1000 : undefined
-    };
+    response.status(200).json(user);
 }
 
 export async function logout(request: Request, response: Response) {
-    const cookies = request.signedCookies as AuthCookies;
-    if (cookies.refreshToken?.token) {
-        await client.tokenRevocation(config, cookies.refreshToken.token);
+    const session = await loadSession(request, response, true);
+    if (session) {
+        await deleteSessionFromDB(session);
+        await client.tokenRevocation(config, session.refreshToken);
     }
     
-    response.clearCookie("accessToken");
-    response.clearCookie("refreshToken");
+    response.clearCookie("session");
     response.status(200).json({logout: "success"});
+}
+
+// Helpers
+async function loadSession(request: Request, response: Response, noRefresh?: boolean): Promise<Session | undefined> {
+    const cookies = request.signedCookies as AuthCookies;
+    if (!cookies.session) {
+        return undefined;
+    }
+    
+    const session = loadSessionFromDB(response, cookies.session, noRefresh);
+    if (!session) {
+        response.clearCookie("session");
+    }
+
+    return session;
+}
+
+async function loadSessionFromDB(response: Response, sessionToken: string, noRefresh?: boolean) {
+    const hash = hashSessionToken(sessionToken);
+    
+    const query = "SELECT * FROM sessions WHERE sessionHash = ?;";
+    const [[row]] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
+    if (!row) {
+        return undefined;
+    }
+
+    const session: Session = {
+        sessionToken: sessionToken,
+        ...row
+    };
+
+    const now = new Date();
+    if (now > session.refreshExpiresAt) {
+        return undefined;
+    }
+
+    if (!noRefresh && now > session.accessExpiresAt) {
+        return await refreshSession(response, session);
+    }
+
+    return session;
+}
+
+async function refreshSession(response: Response, session: Session): Promise<Session | undefined> {
+    const newTokenSet = await client.refreshTokenGrant(config, session.refreshToken, {
+        scope: SCOPE,
+    });
+
+    const newSession = createSessionObject(session.sessionToken, session.sessionHash, newTokenSet);
+    if (!newSession) {
+        response.clearCookie("session");
+        return undefined;
+    }
+
+    response.cookie("session", newSession.sessionToken, createCookieOptions(newSession.refreshExpiresAt));
+    await insertSessionToDB(newSession);
+    return newSession;
+}
+
+async function insertSessionToDB(session: Session) {
+    const query = `INSERT INTO sessions (sessionHash, refreshToken, accessToken, refreshExpiresAt, accessExpiresAt, userId) 
+        VALUES ? AS new 
+        ON DUPLICATE KEY UPDATE
+            refreshToken=new.refreshToken,
+            accessToken=new.accessToken,
+            refreshExpiresAt=new.refreshExpiresAt,
+            accessExpiresAt=new.accessExpiresAt,
+            userId=new.userId
+    ;`;
+
+    const values = [
+        session.sessionHash,
+        session.refreshToken,
+        session.accessToken,
+        session.refreshExpiresAt,
+        session.accessExpiresAt,
+        session.userId
+    ];
+    await pool.query(query, [[values]]);
+}
+
+async function deleteSessionFromDB(session: Session) {
+    const query = `DELETE FROM sessions WHERE sessionHash=?;`;
+    await pool.query(query, [session.sessionHash]);
+}
+
+// Utils
+function hashSessionToken(token: string) {
+    return createHash("sha256").update(token).digest("hex");
+}
+
+function generateSessionToken() {
+    return randomBytes(64).toString("hex").slice(0, 64);
+}
+
+function createCookieOptions(expires: Date): CookieOptions {
+    return {
+        secure: !IS_DEBUG,
+        httpOnly: true,
+        signed: true,
+        expires: expires
+    };
+}
+
+function createSessionObject(sessionToken: string, sessionHash: string, tokenSet: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers): Session | undefined {
+    const claims = tokenSet.claims();
+    if (!tokenSet.refresh_token || !claims) {
+        return undefined;
+    }
+
+    const now = new Date().getTime();
+    const accessExpiresIn = (tokenSet.expiresIn() ?? 0) * 1000;
+    const refreshExpiresIn = 30 * 60 * 60 * 24 * 1000; // 30 days
+    
+    return {
+        sessionToken: sessionToken,
+        sessionHash: sessionHash,
+        refreshToken: tokenSet.refresh_token,
+        accessToken: tokenSet.access_token,
+        refreshExpiresAt: new Date(now + refreshExpiresIn),
+        accessExpiresAt: new Date(now + accessExpiresIn),
+        userId: claims.sub
+    };
 }

@@ -15,17 +15,17 @@ import { getAllMaps, getMap } from "./maps.js";
 import { authorizeAndSetTokens, logout, redirectToAuthURL, setLoggedInUser } from "./oauth.js";
 
 const app = express();
-const port = process.env.PORT ?? "8080";
-const isDebug = process.env.DEBUG === "true";
-const cache = apicache.options(isDebug ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 25, validate: {xForwardedForHeader: false} });
-const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: isDebug ? 250 : 80, validate: {xForwardedForHeader: false} });
+const PORT = process.env.PORT ?? "8080";
+const IS_DEBUG = process.env.DEBUG === "true";
+const cache = apicache.options(IS_DEBUG ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 25, validate: {xForwardedForHeader: false} });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 80, validate: {xForwardedForHeader: false} });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 
-const cookieSecret = process.env.COOKIE_SECRET;
-app.use(cookieParser(cookieSecret));
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
+app.use(cookieParser(COOKIE_SECRET));
 
 app.get("/api/login", async (req, res) => {
     await redirectToAuthURL(res);
@@ -1017,8 +1017,8 @@ app.get("*splat", async (req, res): Promise<any> => {
 });
 
 
-app.listen(port, () => {
-    console.log(`Strafes site on port ${port}`);
+app.listen(PORT, () => {
+    console.log(`Strafes site on port ${PORT}`);
 });
 
 async function getUserId(username: string): Promise<undefined | string> {

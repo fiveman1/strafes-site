@@ -1,9 +1,9 @@
-CREATE TABLE users (
+CREATE TABLE sessions (
+    sessionHash char(64) NOT NULL,
+    refreshToken TEXT NOT NULL,
+    accessToken TEXT NOT NULL,
+    refreshExpiresAt DATETIME NOT NULL,
+    accessExpiresAt DATETIME NOT NULL,
     userId bigint NOT NULL,
-    username varchar(64) NOT NULL,
-    displayName varchar(64) NOT NULL,
-    createdAt datetime NOT NULL,
-    profileUrl varchar(256) NOT NULL,
-    thumbnailUrl: varchar(256),
-    PRIMARY KEY (userId)
+    PRIMARY KEY (sessionHash)
 );
