@@ -167,8 +167,8 @@ export async function getLoggedInUser(request: Request, response: Response): Pro
 
     return {
         userId: userInfo.sub,
-        username: userInfo.name,
-        displayName: userInfo.preferred_username,
+        username: userInfo.preferred_username,
+        displayName: userInfo.name,
         createdAt: userInfo.created_at,
         profileUrl: userInfo.profile,
         thumbnailUrl: userInfo.picture
