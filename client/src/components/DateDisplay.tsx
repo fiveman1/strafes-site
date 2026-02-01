@@ -16,7 +16,7 @@ const timeFormat = Intl.DateTimeFormat(undefined, {
     minute: "2-digit"
 });
 
-const dateTimeFormat = Intl.DateTimeFormat(undefined, {
+export const dateTimeFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
     day: "2-digit",
     month: "2-digit",
@@ -37,7 +37,7 @@ export const relativeTimeFormat = new Intl.RelativeTimeFormat(undefined, {
     numeric: "auto"
 })
 
-function relativeTimeFormatter(value: number, unit: Unit, suffix: Suffix) {
+export function relativeTimeFormatter(value: number, unit: Unit, suffix: Suffix) {
     return relativeTimeFormat.format(suffix === "ago" ? -value : value, unit);
 }
 

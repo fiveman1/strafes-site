@@ -300,11 +300,18 @@ async function loadSessionFromDB(response: Response, sessionToken: string, noRef
 }
 
 async function refreshSession(response: Response, session: Session): Promise<Session | undefined> {
-    const newTokenSet = await client.refreshTokenGrant(config, session.refreshToken, {
-        scope: SCOPE,
-    });
+    let newSession;
+    try {
+        const newTokenSet = await client.refreshTokenGrant(config, session.refreshToken, {
+            scope: SCOPE,
+        });
 
-    const newSession = createSessionObject(session.sessionToken, session.sessionHash, newTokenSet);
+        newSession = createSessionObject(session.sessionToken, session.sessionHash, newTokenSet);
+    }
+    catch {
+        
+    }
+    
     if (!newSession) {
         response.clearCookie("session");
         return undefined;
