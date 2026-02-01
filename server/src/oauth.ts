@@ -159,7 +159,6 @@ export async function getLoggedInUser(request: Request, response: Response): Pro
         // Refresh and try again
         const newSession = await refreshSession(response, session);
         if (!newSession) {
-            response.clearCookie("session");
             return undefined;
         }
         userInfo = await client.fetchUserInfo(config, newSession.accessToken, newSession.userId) as unknown as RobloxClaims;
@@ -265,12 +264,7 @@ async function loadSession(request: Request, response: Response, noRefresh?: boo
         return undefined;
     }
     
-    const session = loadSessionFromDB(response, cookies.session, noRefresh);
-    if (!session) {
-        response.clearCookie("session");
-    }
-
-    return session;
+    return loadSessionFromDB(response, cookies.session, noRefresh);
 }
 
 async function loadSessionFromDB(response: Response, sessionToken: string, noRefresh?: boolean) {
@@ -279,6 +273,7 @@ async function loadSessionFromDB(response: Response, sessionToken: string, noRef
     const query = "SELECT * FROM sessions WHERE sessionHash = ?;";
     const [[row]] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
     if (!row) {
+        response.clearCookie("session");
         return undefined;
     }
 
@@ -314,6 +309,7 @@ async function refreshSession(response: Response, session: Session): Promise<Ses
     
     if (!newSession) {
         response.clearCookie("session");
+        await deleteSessionFromDB(session);
         return undefined;
     }
 
