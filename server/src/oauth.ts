@@ -72,6 +72,7 @@ interface SettingsRow {
     game: number
     style: number
     maxDaysRelative: number
+    countryCode: string | null
 }
 
 // Entrypoints
@@ -218,6 +219,7 @@ export async function updateSettings(request: Request, response: Response) {
     const style = request.body.style;
     const theme = request.body.theme;
     const maxDaysRelative = request.body.maxDaysRelative;
+    const country = request.body.country;
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         response.status(400).json({error: "Invalid game"});
@@ -239,6 +241,11 @@ export async function updateSettings(request: Request, response: Response) {
         return;
     }
 
+    if (country && (typeof country !== "string" || country.length !== 2)) {
+        response.status(400).json({error: "Invalid country"});
+        return;
+    }
+
     const user = await getLoggedInUser(request, response);
     
     if (!user) {
@@ -251,10 +258,31 @@ export async function updateSettings(request: Request, response: Response) {
         game: +game,
         style: +style,
         theme: theme,
-        maxDaysRelative: +maxDaysRelative
+        maxDaysRelative: +maxDaysRelative,
+        countryCode: country
     });
 
     response.status(200).json({success: true});
+}
+
+export async function setProfileInfoForList(array: ({userId: string | number, userCountry?: string})[]) {
+    const query = `SELECT * FROM settings WHERE userId IN (?);`;
+    const [rows] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [array.map((val) => val.userId)]);
+    if (!rows) {
+        return undefined;
+    }
+
+    const userIdToSettings = new Map<number, SettingsRow>();
+    for (const row of rows) {
+        userIdToSettings.set(+row.userId, row);
+    }
+
+    for (const val of array) {
+        const settings = userIdToSettings.get(+val.userId);
+        if (settings) {
+             val.userCountry = settings.countryCode ?? undefined;
+        }
+    }
 }
 
 // Helpers
@@ -345,7 +373,7 @@ async function deleteSessionFromDB(session: SessionRow) {
     await pool.query(query, [session.sessionHash]);
 }
 
-async function loadSettingsFromDB(userId: string): Promise<SettingsValues | undefined> {
+export async function loadSettingsFromDB(userId: string): Promise<SettingsValues | undefined> {
     const query = `SELECT * FROM settings WHERE userId=?`;
     const [[row]] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
     if (!row) {
@@ -356,18 +384,20 @@ async function loadSettingsFromDB(userId: string): Promise<SettingsValues | unde
         defaultGame: row.game,
         defaultStyle: row.style,
         theme: row.theme,
-        maxDaysRelativeDates: row.maxDaysRelative
+        maxDaysRelativeDates: row.maxDaysRelative,
+        country: row.countryCode ?? undefined
     };
 }
 
 async function updateSettingsToDB(settings: SettingsRow) {
-    const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative) 
+    const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative, countryCode) 
         VALUES ? AS new 
         ON DUPLICATE KEY UPDATE
             theme=new.theme,
             game=new.game,
             style=new.style,
-            maxDaysRelative=new.maxDaysRelative
+            maxDaysRelative=new.maxDaysRelative,
+            countryCode=new.countryCode
     ;`;
 
     const values = [
@@ -375,7 +405,8 @@ async function updateSettingsToDB(settings: SettingsRow) {
         settings.theme,
         settings.game,
         settings.style,
-        settings.maxDaysRelative
+        settings.maxDaysRelative,
+        settings.countryCode
     ];
     await pool.query(query, [[values]]);
 }

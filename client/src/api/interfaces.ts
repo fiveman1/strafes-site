@@ -7,6 +7,7 @@ export interface User {
     status?: ModerationStatus
     muted?: boolean
     role?: UserRole
+    country?: string
 }
 
 export enum Game {
@@ -47,6 +48,7 @@ export interface Rank {
     username: string
     userId: string
     userRole?: UserRole
+    userCountry?: string
     mainWrs?: number
     bonusWrs?: number
     placement?: number
@@ -58,6 +60,7 @@ export interface Time {
     username: string
     userId: number
     userRole?: UserRole
+    userCountry?: string
     time: number
     date: string
     game: Game
@@ -113,8 +116,8 @@ export enum ModerationStatus {
 }
 
 export interface UserSearchData {
-    username: string,
-    id?: string,
+    username: string
+    id?: string
     previousUsernames?: string[]
 }
 
@@ -131,21 +134,22 @@ export enum UserRole {
 }
 
 export interface LeaderboardCount {
-    userId: string,
-    username: string,
-    userRole?: UserRole,
-    count: number,
-    earliestDate: string,
-    latestDate: string,
+    userId: string
+    username: string
+    userRole?: UserRole
+    userCountry?: string
+    count: number
+    earliestDate: string
+    latestDate: string
     bonusCount: number
 }
 
 export interface LoginUser {
-    userId: string,
-    username: string,
-    displayName: string,
-    createdAt: number,
-    profileUrl: string,
+    userId: string
+    username: string
+    displayName: string
+    createdAt: number
+    profileUrl: string
     thumbnailUrl: string
 }
 
@@ -154,4 +158,5 @@ export interface SettingsValues {
     defaultStyle: Style
     maxDaysRelativeDates: number
     theme: "dark" | "light"
+    country: string | undefined
 }

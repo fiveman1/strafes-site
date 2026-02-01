@@ -236,7 +236,8 @@ export async function updateSettings(settings: SettingsValues) {
         game: settings.defaultGame,
         style: settings.defaultStyle,
         theme: settings.theme,
-        maxDaysRelative: settings.maxDaysRelativeDates
+        maxDaysRelative: settings.maxDaysRelativeDates,
+        country: settings.country
     });
 
     return !!res;

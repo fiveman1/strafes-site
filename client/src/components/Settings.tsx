@@ -13,6 +13,7 @@ import { updateSettings } from "../api/api";
 import { grey } from "@mui/material/colors";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/format";
+import CountrySelect from "./CountrySelect";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -35,11 +36,14 @@ export function useSettings() {
         maxDays = +sMaxDays;
     }
 
+    const country = localStorage.getItem("country") ?? undefined;
+
     return useState<SettingsValues>({
         defaultGame: game,
         defaultStyle: style,
         maxDaysRelativeDates: maxDays,
-        theme: theme
+        theme: theme,
+        country: country
     });
 }
 
@@ -48,13 +52,15 @@ export function saveSettingsToLocalStorage(settings: SettingsValues) {
     localStorage.setItem("style", settings.defaultStyle.toString());
     localStorage.setItem("theme", settings.theme);
     localStorage.setItem("maxDays", settings.maxDaysRelativeDates.toString());
+    localStorage.setItem("country", settings.country ?? "");
 }
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
         settings.defaultStyle === other.defaultStyle &&
         settings.maxDaysRelativeDates === other.maxDaysRelativeDates &&
-        settings.theme === other.theme;
+        settings.theme === other.theme &&
+        settings.country === other.country;
 }
 
 function Settings() {
@@ -89,6 +95,11 @@ function Settings() {
     const setMaxDays = (value: number | null) => setMockSettings((settings) => {
         settings.maxDaysRelativeDates = value ?? 30;
         settings.maxDaysRelativeDates = Math.round(settings.maxDaysRelativeDates);
+        return {...settings};
+    });
+
+    const setCountry = (value: string | undefined) => setMockSettings((settings) => {
+        settings.country = value;
         return {...settings};
     });
 
@@ -161,12 +172,19 @@ function Settings() {
                 </Box>
             </Box>
             <Typography variant="h6" padding={1}>
+                User Profile
+            </Typography>
+            <Typography variant="body2" padding={1}>
+                These are settings about you that are displayed to other users across the site.
+            </Typography>
+            <CountrySelect country={mockSettings.country} setCountry={setCountry} />
+            <Typography variant="h6" padding={1}>
                 Defaults
             </Typography>
             <Typography variant="body2" padding={1}>
                 These are the defaults used when loading a page for the first time (unless there was existing context).
             </Typography>
-            <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
+            <Box marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector 
                     game={mockSettings.defaultGame} 
                     setGame={setGame} 

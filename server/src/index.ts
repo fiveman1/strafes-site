@@ -12,7 +12,7 @@ import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } fr
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
-import { authorizeAndSetTokens, getSettings, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
+import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, setProfileInfoForList, updateSettings } from "./oauth.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
@@ -232,9 +232,12 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
         promises.push(convertToLeaderboardCount(page, +game, +style, roles));
     }
 
+    const data = await Promise.all(promises);
+    await setProfileInfoForList(data);
+
     res.status(200).json({
         total: pageRes.total,
-        data: await Promise.all(promises)
+        data: data
     });
 });
 
@@ -340,6 +343,8 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
             placement: ((page - 1) * 100) + i + 1
         });
     }
+
+    await setProfileInfoForList(rankArr);
 
     const promises = [];
     for (const rank of rankArr) {
@@ -768,6 +773,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         });
     }
 
+    await setProfileInfoForList(timeArr);
+
     const pageInfo = timeRes.data.pagination;
     const pagination: Pagination = {
         page: pageInfo.page,
@@ -922,6 +929,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         promises.push(setTimePlacements(timeArr));
     }
     promises.push(setTimeDiffs(timeArr));
+    promises.push(setProfileInfoForList(timeArr));
 
     await Promise.all(promises);
 
@@ -1050,6 +1058,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
     });
     const strafesUserReq = tryGetStrafes("user/" + userId);
     const userRolesReq = getAllUsersToRoles();
+    const settingsPromise = loadSettingsFromDB(userId);
 
     const userRes = await userReq;
     if (!userRes) return undefined;
@@ -1064,6 +1073,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
     const strafesUserRes = await strafesUserReq;
     const userRoles = await userRolesReq;
     const role = userRoles.get(+userId);
+    const settings = await settingsPromise;
 
     if (!strafesUserRes) {
         return {
@@ -1072,7 +1082,8 @@ async function getUserData(userId: string): Promise<undefined | User> {
             username: user.name,
             joinedOn: user.created,
             thumbUrl: url,
-            role: role
+            role: role,
+            country: settings?.country
         };
     }
     const strafesData = strafesUserRes.data.data;
@@ -1085,6 +1096,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
         thumbUrl: url,
         status: strafesData.state_id,
         muted: strafesData.muted,
-        role: role
+        role: role,
+        country: settings?.country
     };
 }

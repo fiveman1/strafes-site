@@ -31,10 +31,11 @@ export function makeMapColumn(): GridColDef {
 }
 
 interface UserRowInfo {
-    userId: string | number,
-    username: string,
-    userRole?: UserRole,
-    game?: Game,
+    userId: string | number
+    username: string
+    userRole?: UserRole
+    userCountry?: string
+    game?: Game
     style?: Style
 }
 export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boolean, game: Game = Game.all, style: Style = Style.all): GridColDef {
@@ -50,7 +51,16 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
             const linkGame = time.game !== undefined ? time.game : game;
             const linkStyle = time.style !== undefined ? time.style : style;
             return (
-                <UserLink userId={time.userId} username={time.username} userRole={time.userRole} game={linkGame} strafesStyle={linkStyle} fontWeight="bold" underline="hover" />
+                <UserLink 
+                    userId={time.userId} 
+                    username={time.username} 
+                    userRole={time.userRole} 
+                    userCountry={time.userCountry} 
+                    game={linkGame} 
+                    strafesStyle={linkStyle} 
+                    fontWeight="bold" 
+                    underline="hover" 
+                />
             );
         }
     }

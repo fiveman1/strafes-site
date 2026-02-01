@@ -8,6 +8,8 @@ import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { dateTimeFormat, relativeTimeFormatter } from "./DateDisplay";
 import TimeAgo from "react-timeago";
+import ReactCountryFlag from "react-country-flag";
+import { formatCountryCode } from "./CountrySelect";
 
 interface IUserDisplayProps {
     user: User
@@ -61,17 +63,20 @@ function UserDisplay(props: IUserDisplayProps) {
     return (<>
         <Box display="flex" flexDirection="column" minWidth="0" sx={{overflowWrap: "break-word"}}>
             <Box display="flex" flexDirection="column" flexGrow={1} justifyContent="flex-start">
-                <Typography variant="h4">
-                    {user.displayName}
-                </Typography>
-                <Box>
-                    <Link 
+                <Box display="inline-block">
+                    <Typography variant="h4" sx={{wordBreak: "break-word"}} display="inline-block">
+                        {user.displayName}
+                        {user.country ? <ReactCountryFlag style={{marginLeft: 8, marginTop: -8}} title={formatCountryCode(user.country)} countryCode={user.country} svg /> : undefined}
+                    </Typography>
+                </Box>
+                <Box display="inline-flex">
+                    <Link
                         href={`https://www.roblox.com/users/${user.id}/profile`}
                         color="secondary"
                         display="inline-flex"
-                        sx={{verticalAlign: "top"}}
+                        sx={{verticalAlign: "top", wordBreak: "break-word"}}
                     >
-                        <Typography variant="subtitle2" overflow="hidden" whiteSpace="nowrap" >
+                        <Typography variant="subtitle2" >
                             @{user.username}
                         </Typography>
                     </Link>
