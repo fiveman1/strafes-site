@@ -124,7 +124,7 @@ function RanksCard(props: IRanksCardProps) {
     return (
     <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: height, "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
         <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
-            <Typography variant="caption" flexGrow={1} marginRight={2}>
+            <Typography variant="caption">
                 Ranks
             </Typography>
         </Box>
