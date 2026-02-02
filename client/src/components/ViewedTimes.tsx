@@ -49,7 +49,7 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
 
     return (
     <DataGrid
-        className="viewTimesGrid"
+        className="viewedTimesGrid"
         columns={makeColumns()}
         rows={times}
         pagination
