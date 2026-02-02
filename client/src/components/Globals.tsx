@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
-import TimesCard, { makeUserColumn } from "./TimesCard";
+import TimesCard from "./TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
@@ -14,6 +14,7 @@ import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
 import DateDisplay from "./DateDisplay";
+import { makeUserColumn } from "../util/columns";
 
 function Globals() {
     const [game, setGame] = useGame();

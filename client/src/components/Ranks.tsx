@@ -1,26 +1,28 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Typography } from "@mui/material";
+import { Paper, Typography, useMediaQuery } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
 import GameSelector, { useGame } from "./GameSelector";
 import StyleSelector, { useStyle } from "./StyleSelector";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
 import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { makeUserColumn } from "./TimesCard";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { makeUserColumn } from "../util/columns";
+import { numDigits } from "../util/utils";
 
-function makeColumns() {
+function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
 
     cols.push({
         type: "number",
         field: "placement",
         headerName: "#",
-        width: 64,
-        sortable: false
+        width: placementWidth,
+        sortable: false,
+        valueFormatter: (value) => value
     });
     
     cols.push(makeUserColumn<Rank>(240));
@@ -70,8 +72,24 @@ function RanksCard(props: IRanksCardProps) {
 
     const [rowCount, setRowCount] = useState(-1);
     const [isLoading, setIsLoading] = useState(false);
+    const [maxPage, setMaxPage] = useState(0);
+    const [placementWidth, setPlacementWidth] = useState(50);
+    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
 
-    const gridCols = makeColumns();
+    const gridCols = makeColumns(placementWidth);
+
+    useEffect(() => {
+        if (numDigits(maxPage) > 3) {
+            setPlacementWidth(62);
+        }
+        else {
+            setPlacementWidth(50);
+        }
+    }, [maxPage]);
+
+    const onPageChange = useCallback((model: GridPaginationModel) => {
+        setMaxPage((model.page + 1) * model.pageSize);
+    }, []);
 
     const gridKey = useMemo(() => {
         return `${game},${style}`;
@@ -104,11 +122,14 @@ function RanksCard(props: IRanksCardProps) {
     }), [updateRowData]);
 
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: height }}>
-        <Typography variant="caption" marginBottom={1}>
-            Ranks
-        </Typography>
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: height, "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
+        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
+            <Typography variant="caption" flexGrow={1} marginRight={2}>
+                Ranks
+            </Typography>
+        </Box>
         <DataGrid
+            className="ranksGrid"
             columns={gridCols}
             key={gridKey}
             loading={isLoading}
@@ -127,6 +148,7 @@ function RanksCard(props: IRanksCardProps) {
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
+            onPaginationModelChange={onPageChange}
         />
     </Paper>
     );

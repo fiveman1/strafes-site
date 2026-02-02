@@ -1,18 +1,18 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
 import { Time } from "../api/interfaces";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "./TimesCard";
+import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
 
 interface IViewedTimesProps {
     times: Time[]
 }
 
 function ViewedTimes(props: IViewedTimesProps) {
-
+    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: 720}}>
-        <Box marginBottom={1} display="flex">
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: 720, "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
+        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
             <Typography variant="caption" flexGrow={1} marginRight={2}>
                 Viewed Times
             </Typography>
@@ -49,6 +49,7 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
 
     return (
     <DataGrid
+        className="viewTimesGrid"
         columns={makeColumns()}
         rows={times}
         pagination
