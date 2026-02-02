@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
-import { Card, CardActionArea, CardContent, CardMedia, colors, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Card, CardActionArea, CardContent, CardMedia, colors, darken, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
 import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
@@ -46,10 +46,20 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
     const theme = useTheme();
 
     const isLightMode = theme.palette.mode === "light";
+    const isUnreleased = new Date() < new Date(map.date);
+    
+    const titleColor = isLightMode && selected ? "white" : undefined;
     const creatorColor = selected ? (isLightMode ? colors.grey[50] : colors.grey[200]) : theme.palette.text.secondary;
-    const bgColor = selected ? (theme.palette.primary[isLightMode ? 400 : 600]) : undefined;
-    const hoverColor = selected ? (theme.palette.primary[isLightMode ? 300 : 500]) : undefined;
-    const titleColor = isLightMode && selected ? "common.white" : undefined;
+    let bgColor = selected ? theme.palette.primary[500] : undefined;
+    let hoverColor = selected ? (theme.palette.primary[isLightMode ? 600 : 400]) : undefined;
+    const questionMarkColor = selected ? "white" : undefined;
+    const border = isUnreleased ? colors.amber[900] : undefined;
+
+    if (isUnreleased) {
+        bgColor = selected ? colors.amber[900] : undefined;
+        hoverColor = selected ? (isLightMode ? colors.amber[800] : darken(colors.amber[900], 0.1)) : undefined;
+    }
+
     const real_height = CARD_SIZE - 16;
     
     let allowedGame = map.game;
@@ -68,7 +78,10 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
                 height: real_height, 
                 display: "flex",
                 flexDirection: "row",
-                ":hover": { boxShadow: 10 }
+                ":hover": { boxShadow: 10 },
+                border: border ? 2 : undefined,
+                borderColor: border,
+                
             }}
         >
             <CardActionArea
@@ -76,6 +89,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
                 sx={{ 
                     height: "100%",
                     backgroundColor: bgColor,
+                    borderRadius: border ? 0 : undefined,
                     display: "flex",
                     flexDirection: "row",
                     transition: "background-color .3s ease",
@@ -106,7 +120,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
                     />
                     
                 </Box>
-                : <QuestionMarkIcon sx={{ fontSize: real_height, color: selected ? "#ffffff" : undefined }} />}
+                : <QuestionMarkIcon sx={{ fontSize: real_height, color: questionMarkColor }} />}
                 <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{ 
                     padding: 0.5,
                     overflow:"hidden", 
@@ -189,13 +203,16 @@ function MapInfoCard(props: {selectedMap?: Map}) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
     const theme = useTheme();
 
+    const isLightMode = theme.palette.mode === "light";
+
     if (!selectedMap) {
         return undefined;
     }
 
     const imageSize = smallScreen ? 250 : 300;
     const mapDate = new Date(selectedMap.date);
-    let releasedText = mapDate.getTime() > Date.now() ? "Releases on " : "Released on ";
+    const isUnreleased = new Date() < mapDate;
+    let releasedText = isUnreleased ? "Releases on " : "Released on ";
     releasedText += mapDateFormat.format(mapDate);
 
     return (
@@ -207,7 +224,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                     </Typography>
                     <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
                         <Typography variant="h4" fontWeight="bold" margin={0.5} sx={{
-                            background: `radial-gradient(circle, ${theme.palette.primary.main}, ${theme.palette.mode === "dark" ? theme.palette.text.primary : lighten(theme.palette.primary.main, 0.25)})`,
+                            background: `radial-gradient(circle, ${theme.palette.primary.main}, ${isLightMode ? lighten(theme.palette.primary.main, 0.25) : theme.palette.text.primary})`,
                             WebkitBackgroundClip: "text",
                             WebkitTextFillColor: "transparent"
                         }}>
@@ -219,6 +236,12 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                     </Box>
                 </Box>
                 <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                    {isUnreleased ? 
+                    <Typography variant="body2" color={colors.amber[900]}>
+                        Unreleased
+                    </Typography>
+                    : 
+                    <></>}
                     <Typography variant="body2">
                         {releasedText}
                     </Typography>

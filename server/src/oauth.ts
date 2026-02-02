@@ -266,6 +266,10 @@ export async function updateSettings(request: Request, response: Response) {
 }
 
 export async function setProfileInfoForList(array: ({userId: string | number, userCountry?: string})[]) {
+    if (array.length < 1) {
+        return;
+    }
+
     const query = `SELECT * FROM settings WHERE userId IN (?);`;
     const [rows] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [array.map((val) => val.userId)]);
     if (!rows) {
