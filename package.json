@@ -10,7 +10,7 @@
         "concurrently": "^9.2.0"
     },
     "scripts": {
-        "dev:frontend": "yarn workspace client start",
+        "dev:frontend": "yarn workspace client run dev",
         "dev:backend": "yarn workspace server run dev",
         "dev": "concurrently -n \"FRONTEND,BACKEND\" -c \"red,blue\" -p \"[{name}]\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
         "build": "yarn workspace client run build && yarn workspace server run build",

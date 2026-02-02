@@ -269,7 +269,7 @@ export async function setProfileInfoForList(array: ({userId: string | number, us
     const query = `SELECT * FROM settings WHERE userId IN (?);`;
     const [rows] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [array.map((val) => val.userId)]);
     if (!rows) {
-        return undefined;
+        return;
     }
 
     const userIdToSettings = new Map<number, SettingsRow>();
