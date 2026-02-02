@@ -8,7 +8,8 @@ if (!STRAFES_KEY) {
     exit(1);
 }
 
-const isDebug = process.env.DEBUG === "true";
+const IS_DEBUG = process.env.DEBUG === "true";
+const DISABLE_ROPROXY = process.env.DISABLE_ROPROXY === "true";
 
 export const tryGetCached = memoize(tryGetRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
 export const tryPostCached = memoize(tryPostRequest, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
@@ -30,11 +31,14 @@ async function tryGetMapsCore(end_of_url: string, params?: any) {
 }
 
 export async function tryGetRequest(url: string, params?: any, headers?: any) {
+    if (DISABLE_ROPROXY) {
+        url = url.replace("roproxy.com", "roblox.com");
+    }
     try {
         return await axios.get(url, {params: params, headers: headers, timeout: 10000});
     } 
     catch (err) {
-        if (isDebug) {
+        if (IS_DEBUG) {
             console.log(err);
         }
         return undefined;
@@ -46,7 +50,7 @@ export async function tryPostRequest(url: string, params?: any) {
         return await axios.post(url, params, {timeout: 5000});
     } 
     catch (err) {
-        if (isDebug) {
+        if (IS_DEBUG) {
             console.log(err);
         }
         return undefined;
