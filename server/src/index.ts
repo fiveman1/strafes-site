@@ -961,7 +961,7 @@ app.get("*splat", async (req, res): Promise<any> => {
         let html = readFileSync(path.resolve(buildDir, "index.html"), "utf8");
         let title = "strafes";
         let description = "Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)";
-        const url = (req.params as {splat: string[]}).splat.slice(1); // why isn't this automatically typed...
+        const url = req.params.splat.slice(1);
         const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
         const style = req.query.style ? formatStyle(+req.query.style) : formatStyle(Style.autohop);
         if (url[0] === "") {

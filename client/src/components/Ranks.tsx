@@ -30,7 +30,7 @@ function makeColumns(placementWidth: number) {
     cols.push({
         type: "number",
         field: "mainWrs",
-        renderHeader: (params) => <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />,
+        renderHeader: () => <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />,
         align: "center",
         headerAlign: "center",
         width: 64,

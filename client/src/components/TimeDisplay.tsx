@@ -1,9 +1,6 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { formatDiff, formatTime } from "../util/format";
-import { green, red } from "@mui/material/colors";
-import { darken, useTheme } from "@mui/material";
-import { convertToHSL, HSLToHex } from "../util/colors";
+import { formatTime } from "../util/format";
 import DiffDisplay from "./DiffDisplay";
 
 interface ITimeDisplayProps {

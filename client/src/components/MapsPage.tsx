@@ -16,6 +16,7 @@ import { download, generateCsv, mkConfig } from "export-to-csv";
 import MapSortSelector, { MapTimesSort, useMapSort } from "./MapSortSelector";
 import { sortMapsByName } from "../util/sort";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
+import { AcceptedData } from "export-to-csv/output/lib/types";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -420,7 +421,7 @@ function MapsPage() {
         const csvConfig = mkConfig({ filename: "maps", columnHeaders: [
             "id", "name", "creator", "game", "release_date", "load_count", "courses"
         ]});
-        const mapData: any[] = [];
+        const mapData: Record<string, AcceptedData>[] = [];
         for (const map of sortedMaps) {
             mapData.push({
                 id: map.id,

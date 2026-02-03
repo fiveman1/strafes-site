@@ -206,7 +206,14 @@ function CompareCard(props: ICompareCardProps) {
             height={smallScreen ? 250 : 350}
             width={smallScreen ? 250 : 350}
             
-            onItemClick={(_event, item) => {item.dataIndex === selectedSlice ? setSelectedSlice(undefined) : setSelectedSlice(item.dataIndex)}}
+            onItemClick={(_event, item) => {
+                if (item.dataIndex === selectedSlice) {
+                    setSelectedSlice(undefined)
+                } 
+                else {
+                    setSelectedSlice(item.dataIndex)
+                }
+            }}
             slotProps={{
                 legend: {
                     direction: "horizontal"
@@ -267,7 +274,7 @@ function Compare() {
     const [userTimes, setUserTimesState] = useState<UserToTimes>({});
     const setUserTimes = (userId: string, game: Game, style: Style, loading: boolean, times?: Time[]) => {
         setUserTimesState((userToTimes) => {
-            let key = `${userId},${game},${style}`
+            const key = `${userId},${game},${style}`
             let info = userToTimes[key];
             if (!info) {
                 info = {loading: loading};

@@ -107,6 +107,7 @@ export interface ContextParams {
     loggedInUser: LoginUser | undefined
     setSettings: (val: React.SetStateAction<SettingsValues>) => void
     setMode: (mode: PaletteMode) => void
+    isAuthorized: boolean
 }
 
 export function getAllowedStyles(game: Game) {

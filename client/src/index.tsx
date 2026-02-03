@@ -16,7 +16,7 @@ const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );
 
-function Index() {
+export default function Index() {
     return (
     <React.StrictMode>
         <BrowserRouter>

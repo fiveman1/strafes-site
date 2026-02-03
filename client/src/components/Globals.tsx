@@ -71,7 +71,7 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "count",
-        renderHeader: (params) => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Main</Typography></>,
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Main</Typography></>,
         flex: 20,
         minWidth: 110,
         sortingOrder: ["desc", "asc"],
@@ -81,7 +81,7 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "bonusCount",
-        renderHeader: (params) => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Bonus</Typography></>,
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Bonus</Typography></>,
         flex: 20,
         minWidth: 95,
         sortable: false,

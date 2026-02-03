@@ -1,24 +1,21 @@
 import axios, { AxiosResponse } from "axios";
 import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues } from "./interfaces";
+import { JsonObject } from "../util/utils";
 
-export function delay(ms: number) {
-    return new Promise( resolve => setTimeout(resolve, ms) );
-}
-
-async function tryGetRequest(url: string, params?: any) {
+async function tryGetRequest(url: string, params?: JsonObject) {
     try {
         return await axios.get("/api/" + url, {params: params, timeout: 15000});
     } 
-    catch (err) {
+    catch {
         return undefined;
     }
 }
 
-export async function tryPostRequest(url: string, params?: any) {
+export async function tryPostRequest(url: string, params?: JsonObject) {
     try {
         return await axios.post("/api/" + url, params, {timeout: 5000});
     } 
-    catch (err) {
+    catch {
         return undefined;
     }
 }

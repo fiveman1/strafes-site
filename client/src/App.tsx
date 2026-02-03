@@ -43,36 +43,10 @@ function App() {
     const location = useLocation();
 
     useEffect(() => {
-        getMaps().then(setMaps);
-        setLoggedInUserLoading(true);
-        getLoggedInUser().then((user) => {
-            setLoggedInUser(user);
-            setLoggedInUserLoading(false);
-        });
-    }, []);
-
-    useEffect(() => {
-        getSettings().then((result) => {
-            if (result) {
-                setSettings(() => {
-                    return {...result}
-                })
-                saveSettingsToLocalStorage(result);
-                setMode(result.theme);
-            }
-        });
-    }, [setSettings]);
-
-    useEffect(() => {
         window.addEventListener("resize", checkHeaderHeight);
         window.addEventListener("orientationchange", checkHeaderHeight);
         checkHeaderHeight();
-    }, [])
-
-    // If user navigates off the settings page, reset the theme
-    useEffect(() => {
-        setMode(settings.theme);
-    }, [location.pathname, settings.theme]);
+    }, []);
 
     const mapInfo = useMemo(() => {
         const counts : MapCount = {
@@ -111,10 +85,38 @@ function App() {
             mapCounts: mapInfo.mapCounts,
             settings: settings,
             loggedInUser: loggedInUser,
+            isAuthorized: loggedInUser !== undefined,
             setSettings: setSettings,
             setMode: setMode
         };
     }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, setSettings, settings]);
+
+    useEffect(() => {
+        getMaps().then(setMaps);
+        getLoggedInUser().then((user) => {
+            setLoggedInUser(user);
+            setLoggedInUserLoading(false);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (contextParams.isAuthorized) {
+            getSettings().then((result) => {
+                if (result) {
+                    setSettings(() => {
+                        return {...result}
+                    })
+                    saveSettingsToLocalStorage(result);
+                    setMode(result.theme);
+                }
+            });
+        }
+    }, [contextParams.isAuthorized, setSettings]);
+
+    // If user navigates off the settings page, reset the theme
+    useEffect(() => {
+        setMode(settings.theme);
+    }, [location.pathname, settings.theme]);
 
     const theme = useMemo(() => createTheme({
         palette: {

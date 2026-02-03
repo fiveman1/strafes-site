@@ -3,7 +3,7 @@ import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
 import { ALL_COURSES } from "../util/format";
 import { getTimeData } from "../api/api";
-import { DataGrid, GridCallbackDetails, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortDirection, GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
@@ -166,7 +166,7 @@ function TimesGrid(props: ITimesCardProps) {
         setMaxPage((model.page + 1) * model.pageSize);
     }, []);
 
-    const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>, details: GridCallbackDetails) => {
+    const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
         if (isCompact && !onlyWRs && params.field === "time") {
             event.preventDefault();
             event.defaultMuiPrevented = true;

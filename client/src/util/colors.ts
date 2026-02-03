@@ -28,12 +28,12 @@ export function RGBToHSL(rgb: {
     const g = g255 / 255;
     const b = b255 / 255;
 
-    let max = Math.max(r, g, b);
-    let min = Math.min(r, g, b);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
 
     let h = (max + min) / 2;
     let s = h;
-    let l = h;
+    const l = h;
 
     if (max === min) {
         // Achromatic

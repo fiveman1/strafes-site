@@ -9,3 +9,13 @@ export function sleep(ms: number) {
 export function normalize(val: number, minVal: number, maxVal: number, newMin: number, newMax: number) {
   return newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal);
 };
+
+export type JsonPrimitive = string | number | boolean | null | undefined;
+
+export type JsonObject = {
+    [key: string]: JsonValue;
+};
+
+export type JsonArray = Array<JsonValue>;
+
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;

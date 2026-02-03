@@ -1,0 +1,13 @@
+// tsconfig.eslint.json
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        // Prevents tsc from emitting any files when run with this config
+        "noEmit": true
+    },
+    "include": [
+        "./src/**/*",
+        "eslint.config.ts"
+    ],
+}

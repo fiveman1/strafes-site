@@ -6,7 +6,13 @@ export default defineConfig([
     tseslint.configs.recommended,
     {
         files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
-        languageOptions: { globals: globals.node },
+        languageOptions: { 
+            globals: globals.node,
+            parserOptions: {
+                project: ['./tsconfig.eslint.json'],
+                tsconfigRootDir: import.meta.dirname
+            }
+        },
         rules: { 
             semi: "error",
             "@typescript-eslint/no-unused-vars": "warn",
