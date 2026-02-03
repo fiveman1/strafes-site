@@ -128,7 +128,7 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <Box height="100%" display="flex" flexDirection="column">
+            <Box height="100%" display="flex" flexDirection="column" sx={{overflowY: "scroll"}}>
                 <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
                     <Outlet context={contextParams}/>
