@@ -1,14 +1,15 @@
-import { Box, Typography } from "@mui/material";
-import { Game, Style, Time, UserRole } from "../api/interfaces";
+import { Box, IconButton, Typography } from "@mui/material";
+import { Game, Style, Time, TimeSortBy, UserRole } from "../api/interfaces";
 import { formatCourse, formatGame, formatPlacement, formatStyle } from "../util/format";
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
 import UserLink from "../components/UserLink";
 import DateDisplay from "../components/DateDisplay";
 import TimeDisplay from "../components/TimeDisplay";
 import MapLink from "../components/MapLink";
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 
 export function makeMapColumn(isCompact?: boolean): GridColDef {
@@ -16,8 +17,8 @@ export function makeMapColumn(isCompact?: boolean): GridColDef {
         type: "string",
         field: "map",
         headerName: "Map",
-        flex: 350,
-        minWidth: 200,
+        flex: 330,
+        minWidth: 185,
         sortable: false,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
@@ -42,7 +43,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
         field: "username",
         headerName: "User",
         flex: flex,
-        minWidth: 160,
+        minWidth: 150,
         sortable: false,
         renderCell: noLink ? undefined : (params: GridRenderCellParams<T, string>) => {
             const time = params.row;
@@ -83,8 +84,8 @@ export function makePlacementColumn(sortable: boolean, isCompact?: boolean): Gri
     return {
         type: "number",
         field: "placement",
-        headerName: "Placement",
-        width: sortable ? 115 : (isCompact ? 90 : 100),
+        headerName: isCompact ? "Place" : "Placement",
+        width: sortable ? 115 : (isCompact ? 78 : 100),
         sortable: sortable,
         sortingOrder: sortable ? ["asc", "desc"] : [],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
@@ -128,6 +129,50 @@ export function makeTimeColumn(sortable: boolean): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDisplay ms={time.time} diff={time.wrDiff} />
+        }
+    };
+}
+
+export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): GridColDef {
+    const isTimeSort = sortBy === TimeSortBy.TimeAsc || sortBy === TimeSortBy.TimeDesc;
+    const isAsc = sortBy === TimeSortBy.TimeAsc || sortBy === TimeSortBy.DateAsc;
+    return {
+        type: "string",
+        field: "time",
+        headerAlign: "center",
+        renderHeader: () => {
+            return (
+                <Box display="flex" flexDirection="row" alignItems="center">
+                    <Box display="flex" flexDirection="column" alignItems="center" ml="5px">
+                        <Typography variant="inherit" fontWeight={500} color={!isTimeSort ? "textSecondary" : undefined}>
+                            Time
+                        </Typography>
+                        <Typography variant="inherit" fontWeight={500} color={isTimeSort ? "textSecondary" : undefined}>
+                            Date
+                        </Typography>
+                    </Box>
+                    <IconButton size="small" sx={{height: 28, width: 28, ml: 0.5}} disabled>
+                        {isAsc ?
+                        <ArrowDownwardIcon fontSize="inherit" />
+                        :
+                        <ArrowUpwardIcon fontSize="inherit" />}
+                    </IconButton>
+                </Box>
+            );
+        },
+        flex: 160,
+        minWidth: 130,
+        sortingOrder: sortable ? ["asc", "desc"] : [],
+        sortable: sortable,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            const time = params.row;
+            return (
+                <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center" alignItems="center">
+                    <TimeDisplay ms={time.time} diff={time.wrDiff} multiLine />
+                    <Box height={"2px"} />
+                    <DateDisplay date={time.date} color="text.secondary" fontWeight={200} />
+                </Box>
+            );
         }
     };
 }

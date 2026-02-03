@@ -98,11 +98,11 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
                 }}
             >
                 <CardContent sx={{height: "100%", padding: 1.5, width: real_height, display: "flex", flexDirection: "column", overflowWrap: "break-word"}}>
-                    <Box flexGrow={1}>
-                        <Typography variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor} maxHeight={96}>
+                    <Box display="flex" flexDirection="column" maxHeight="100%">
+                        <Typography variant="h6" overflow="hidden" textOverflow="ellipsis" color={titleColor} minHeight={32} maxHeight={96}>
                             {map.name}
                         </Typography>
-                        <Typography variant="subtitle1" overflow="hidden" textOverflow="ellipsis" color={creatorColor} >
+                        <Typography variant="subtitle1" overflow="hidden" textOverflow="ellipsis" color={creatorColor}>
                             {map.creator}
                         </Typography>
                     </Box>

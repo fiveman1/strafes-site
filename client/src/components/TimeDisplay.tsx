@@ -8,6 +8,7 @@ import { convertToHSL, HSLToHex } from "../util/colors";
 interface ITimeDisplayProps {
     ms: number,
     diff?: number
+    multiLine?: boolean
 }
 
 function normalize(val: number, minVal: number, maxVal: number, newMin: number, newMax: number) {
@@ -15,7 +16,7 @@ function normalize(val: number, minVal: number, maxVal: number, newMin: number, 
 };
 
 function TimeDisplay(props: ITimeDisplayProps) {
-    const { ms, diff } = props;
+    const { ms, diff, multiLine } = props;
     
     const theme = useTheme();
 
@@ -45,6 +46,23 @@ function TimeDisplay(props: ITimeDisplayProps) {
     else if (diff && diff < 0) {
         diffText = `-${formatDiff(Math.abs(diff))}`;
     }
+
+    if (multiLine) {
+        return (
+            <Box display="flex" alignContent="flex-start">
+                <Box display="flex" flexDirection="column" alignItems="center">
+                    <Typography variant="inherit">
+                        {formatTime(ms)}
+                    </Typography>
+                    {diff !== undefined ? 
+                    <Box display={multiLine ? "column" : "row"} color={diffColor}>
+                        {`(${diffText})`}
+                    </Box>
+                    : <></>}
+                </Box>
+            </Box>
+        );
+    }
     
     return (
         <Box display="flex" flexDirection="row" alignItems="center">
@@ -52,7 +70,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                 {formatTime(ms)}
             </Typography>
             {diff !== undefined ? 
-            <Box display="inline-block"  color={diffColor}>
+            <Box display="inline-block" color={diffColor}>
                 {`(${diffText})`}
             </Box>
             : <></>}

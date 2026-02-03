@@ -6,10 +6,10 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { ContextParams, formatUserRole, getUserRoleColor } from "../util/format";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { dateTimeFormat, relativeTimeFormatter } from "./DateDisplay";
 import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
 import { formatCountryCode } from "./CountrySelect";
+import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
 
 interface IUserDisplayProps {
     user: User

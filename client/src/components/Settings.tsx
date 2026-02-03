@@ -8,12 +8,12 @@ import NumberSpinner from "./NumberSpinner";
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CloseIcon from '@mui/icons-material/Close';
-import { dateFormat, relativeTimeFormat } from "./DateDisplay";
 import { updateSettings } from "../api/api";
 import { grey } from "@mui/material/colors";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/format";
 import CountrySelect from "./CountrySelect";
+import { dateFormat, relativeTimeFormat } from "../util/datetime";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
