@@ -13,7 +13,7 @@ import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined, 
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined, 
-    notSortable: boolean | undefined, placementWidth: number) {
+    notSortable: boolean | undefined, placementWidth: number, isCompact: boolean) {
     const cols: GridColDef[] = [];
 
     if (showPlacement && !showPlacementOrdinals) {
@@ -28,8 +28,14 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
     }
 
     if (!hideMap) {
-        cols.push(makeMapColumn());
-        if (!hideCourse) {
+        if (hideCourse) {
+            cols.push(makeMapColumn());
+        }
+        else if (isCompact) {
+            cols.push(makeMapColumn(true));
+        }
+        else {
+            cols.push(makeMapColumn(false));
             cols.push(makeCourseColumn());
         }
     }
@@ -39,7 +45,7 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
     }
 
     if (showPlacement && showPlacementOrdinals) {
-        cols.push(makePlacementColumn(false));
+        cols.push(makePlacementColumn(false, isCompact));
     }
 
     cols.push(makeTimeColumn(!notSortable));
@@ -106,6 +112,7 @@ function TimesGrid(props: ITimesCardProps) {
     const [sortBy, setSortBy] = useState<TimeSortBy>(defaultSort);
     const [maxPage, setMaxPage] = useState(0);
     const [placementWidth, setPlacementWidth] = useState(50);
+    const smallScreen = useMediaQuery("@media screen and (max-width: 900px)");
 
     if (gridApiRef) {
         apiRef = gridApiRef;
@@ -146,8 +153,8 @@ function TimesGrid(props: ITimesCardProps) {
     }, []);
     
     const gridCols = useMemo(() => {
-        return makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth);
-    }, [course, game, hideMap, hideUser, onlyWRs, placementWidth, showPlacement, showPlacementOrdinals, style]);
+        return makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth, smallScreen);
+    }, [course, game, hideMap, hideUser, onlyWRs, placementWidth, showPlacement, showPlacementOrdinals, smallScreen, style]);
 
     const gridKey = useMemo(() => {
         // Set row count to unknown when changing settings in WR only mode

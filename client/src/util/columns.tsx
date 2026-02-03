@@ -11,18 +11,18 @@ import TimeDisplay from "../components/TimeDisplay";
 import MapLink from "../components/MapLink";
 
 
-export function makeMapColumn(): GridColDef {
+export function makeMapColumn(isCompact?: boolean): GridColDef {
     return {
         type: "string",
         field: "map",
         headerName: "Map",
         flex: 350,
-        minWidth: 215,
+        minWidth: 200,
         sortable: false,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return (
-                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} />
+                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} includeCourse={isCompact} />
             );
         }
     }
@@ -79,12 +79,12 @@ export function makeDateColumn(sortable: boolean): GridColDef {
     }
 }
 
-export function makePlacementColumn(sortable: boolean): GridColDef {
+export function makePlacementColumn(sortable: boolean, isCompact?: boolean): GridColDef {
     return {
         type: "number",
         field: "placement",
         headerName: "Placement",
-        width: sortable ? 115 : 100,
+        width: sortable ? 115 : (isCompact ? 90 : 100),
         sortable: sortable,
         sortingOrder: sortable ? ["asc", "desc"] : [],
         renderCell: (params: GridRenderCellParams<Time, string>) => {

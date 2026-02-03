@@ -1,6 +1,6 @@
 import { Box, Link, Typography } from "@mui/material";
 import { Game, Style } from "../api/interfaces";
-import { ContextParams } from "../util/format";
+import { ContextParams, formatCourse } from "../util/format";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
@@ -13,10 +13,11 @@ interface IMapLinkProps {
     style: Style
     game: Game
     course: number
+    includeCourse?: boolean
 }
 
 function MapLink(props: IMapLinkProps) {
-    const { id, name, style, game, course } = props;
+    const { id, name, style, game, course, includeCourse } = props;
     const { maps } = useOutletContext() as ContextParams;
     const mapInfo = maps[id];
     
@@ -30,12 +31,22 @@ function MapLink(props: IMapLinkProps) {
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
             component={RouterLink} 
-            underline="hover" 
+            underline="none" 
             fontWeight="bold" 
-            display="inline-block"
+            display="inline-flex"
             maxWidth="100%"
+            height="100%"
+            alignItems="center"
+            sx={{
+                textDecoration: "none",
+                ":hover": {
+                    "& .map-name": {
+                        textDecoration: "underline"
+                    }
+                }
+            }}
         >
-            <Box display="flex" flexDirection="row" alignItems="center">
+            <Box display="inline-flex" flexDirection="row" alignItems="center" maxHeight={MAP_THUMB_SIZE} height="100%" maxWidth="100%">
             {
                 thumb ? 
                 <Box 
@@ -43,17 +54,41 @@ function MapLink(props: IMapLinkProps) {
                     height={MAP_THUMB_SIZE} 
                     width={MAP_THUMB_SIZE} 
                     src={thumb} 
-                    alt={name} 
-                    marginRight="10px"
+                    alt={name}
                     border={isUnreleased ? 1 : 0}
                     borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
                 />
                 : 
-                <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE, marginRight: "10px" }} />
+                <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE }} />
             }
-                <Typography variant="inherit" color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-                    {name}
-                </Typography>
+                <Box display="inline-flex" marginLeft="10px" flexDirection="column" maxWidth="100%" minWidth={0} >
+                    <Typography 
+                        className="map-name"
+                        lineHeight="normal"
+                        variant="inherit"
+                        fontWeight="bold"
+                        color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined} 
+                        overflow="hidden" 
+                        textOverflow="ellipsis" 
+                        whiteSpace="nowrap"
+                    >
+                        {name}
+                    </Typography>
+                    {includeCourse ? 
+                    <Typography
+                        marginTop={0.25}
+                        lineHeight="normal"
+                        variant="caption"
+                        fontWeight="normal"
+                        color={"white"} 
+                        overflow="hidden" 
+                        textOverflow="ellipsis" 
+                        whiteSpace="nowrap"
+                    >
+                        {formatCourse(course)}
+                    </Typography>
+                : <></>}
+                </Box>
             </Box>
         </Link>
     );
