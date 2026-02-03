@@ -46,13 +46,47 @@ function getCurrentPage(path: string) {
     return undefined;
 }
 
-function MainAppBar(props: IMainAppBarProps) {
-    const { loggedInUser, isUserLoading } = props;
+interface IAppMenuProps {
+    loggedInUser: LoginUser | undefined
+}
+
+function AppLinks(props: IAppMenuProps) {
+    const { loggedInUser } = props;
+    const location = useLocation();
+    const navPage = getCurrentPage(location.pathname);
+
+    let userLink = "/users";
+    if (loggedInUser) {
+        userLink += `/${loggedInUser.userId}`
+    }
+
+    return (
+        <Box display="flex" flexDirection="row" justifyContent="space-evenly" width="80%" height="100%">
+            <Button href={userLink} color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Users ? "2px solid white" : undefined}}>
+                {NavigatorPage.Users}
+            </Button>
+            <Button href="/globals" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Gloabls ? "2px solid white" : undefined}}>
+                {NavigatorPage.Gloabls}
+            </Button>
+            <Button href="/maps" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Maps ? "2px solid white" : undefined}}>
+                {NavigatorPage.Maps}
+            </Button>
+            <Button href="/ranks" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Ranks ? "2px solid white" : undefined}}>
+                {NavigatorPage.Ranks}
+            </Button>
+            <Button href="/compare" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Compare ? "2px solid white" : undefined}}>
+                {NavigatorPage.Compare}
+            </Button>
+        </Box>
+    );
+}
+
+function AppMenu(props: IAppMenuProps) {
+    const { loggedInUser } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const location = useLocation();
     const navPage = getCurrentPage(location.pathname);
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     let userLink = "/users";
     if (loggedInUser) {
@@ -67,12 +101,60 @@ function MainAppBar(props: IMainAppBarProps) {
         setAnchorEl(null);
     };
 
+    const navMenuWidth = 125;
+
+    return (
+        <Box>
+            <Button sx={{width: navMenuWidth, textTransform: "none"}} size="large" variant="outlined" color="inherit" endIcon={open ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />} onClick={openNavMenu} >
+                {navPage ?? NavigatorPage.Home}
+            </Button>
+            <Menu anchorEl={anchorEl} open={open} onClose={closeNavMenu} slotProps={{list: {sx: {width: navMenuWidth}}}} >
+                <Link href="/" variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Home} >
+                        {NavigatorPage.Home}
+                    </MenuItem>
+                </Link>
+                <Link href={userLink} variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Users} >
+                        {NavigatorPage.Users}
+                    </MenuItem>
+                </Link>
+                <Link href="/globals" variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Gloabls} >
+                        {NavigatorPage.Gloabls}
+                    </MenuItem>
+                </Link>
+                <Link href="/maps" variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Maps} >
+                        {NavigatorPage.Maps}
+                    </MenuItem>
+                </Link>
+                <Link href="/ranks" variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
+                        {NavigatorPage.Ranks}
+                    </MenuItem>
+                </Link>
+                <Link href="/compare" variant="inherit" color="inherit" underline="none">
+                    <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Compare} >
+                        {NavigatorPage.Compare}
+                    </MenuItem>
+                </Link>
+            </Menu>
+        </Box>
+    );
+}
+
+function MainAppBar(props: IMainAppBarProps) {
+    const { loggedInUser, isUserLoading } = props;
+    const location = useLocation();
+    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const useAppMenu = useMediaQuery("@media screen and (max-width: 800px)");
+
     const onLogin = async () => {
         const url = await login();
         if (url) window.location.href = url; // Force external redirect
     };
 
-    const navMenuWidth = 125;
     const outerWidth = smallScreen ? 75 : 100;
 
     return (
@@ -81,43 +163,7 @@ function MainAppBar(props: IMainAppBarProps) {
                 <Link href="/" variant="h6" color="inherit" underline="hover" minWidth={outerWidth} >
                     strafes
                 </Link>
-                <Box>
-                    <Button sx={{width: navMenuWidth, textTransform: "none"}} size="large" variant="outlined" color="inherit" endIcon={open ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />} onClick={openNavMenu} >
-                        {navPage ?? NavigatorPage.Home}
-                    </Button>
-                    <Menu anchorEl={anchorEl} open={open} onClose={closeNavMenu} slotProps={{list: {sx: {width: navMenuWidth}}}} >
-                        <Link href="/" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Home} >
-                                {NavigatorPage.Home}
-                            </MenuItem>
-                        </Link>
-                        <Link href={userLink} variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Users} >
-                                {NavigatorPage.Users}
-                            </MenuItem>
-                        </Link>
-                        <Link href="/globals" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Gloabls} >
-                                {NavigatorPage.Gloabls}
-                            </MenuItem>
-                        </Link>
-                        <Link href="/maps" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Maps} >
-                                {NavigatorPage.Maps}
-                            </MenuItem>
-                        </Link>
-                        <Link href="/ranks" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Ranks} >
-                                {NavigatorPage.Ranks}
-                            </MenuItem>
-                        </Link>
-                        <Link href="/compare" variant="inherit" color="inherit" underline="none">
-                            <MenuItem onClick={closeNavMenu} selected={navPage === NavigatorPage.Compare} >
-                                {NavigatorPage.Compare}
-                            </MenuItem>
-                        </Link>
-                    </Menu>
-                </Box>
+                {useAppMenu ? <AppMenu loggedInUser={loggedInUser} /> : <AppLinks loggedInUser={loggedInUser} />}
                 <Box minWidth={outerWidth} display="flex" justifyContent="flex-end">
                     <ButtonGroup>
                         {loggedInUser ? 
