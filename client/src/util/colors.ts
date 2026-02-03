@@ -1,3 +1,4 @@
+import { colors } from "@mui/material";
 
 export function convertToHSL(colorStr: string) {
     if (colorStr.startsWith('#')) {
@@ -123,3 +124,5 @@ export function HexToHSL(hex: string): { h: number; s: number; l: number } {
 
     return { h, s, l };
 }
+
+export const UNRELEASED_MAP_COLOR = colors.amber[900];

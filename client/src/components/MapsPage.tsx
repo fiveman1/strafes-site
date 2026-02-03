@@ -15,6 +15,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { download, generateCsv, mkConfig } from "export-to-csv";
 import MapSortSelector, { MapTimesSort, useMapSort } from "./MapSortSelector";
 import { sortMapsByName } from "../util/sort";
+import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -53,11 +54,11 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
     let bgColor = selected ? theme.palette.primary[500] : undefined;
     let hoverColor = selected ? (theme.palette.primary[isLightMode ? 600 : 400]) : undefined;
     const questionMarkColor = selected ? "white" : undefined;
-    const border = isUnreleased ? colors.amber[900] : undefined;
+    const border = isUnreleased ? UNRELEASED_MAP_COLOR : undefined;
 
     if (isUnreleased) {
-        bgColor = selected ? colors.amber[900] : undefined;
-        hoverColor = selected ? (isLightMode ? colors.amber[800] : darken(colors.amber[900], 0.1)) : undefined;
+        bgColor = selected ? UNRELEASED_MAP_COLOR : undefined;
+        hoverColor = selected ? (isLightMode ? colors.amber[800] : darken(UNRELEASED_MAP_COLOR, 0.1)) : undefined;
     }
 
     const real_height = CARD_SIZE - 16;
@@ -237,7 +238,7 @@ function MapInfoCard(props: {selectedMap?: Map}) {
                 </Box>
                 <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
                     {isUnreleased ? 
-                    <Typography variant="body2" color={colors.amber[900]}>
+                    <Typography variant="body2" color={UNRELEASED_MAP_COLOR}>
                         Unreleased
                     </Typography>
                     : 

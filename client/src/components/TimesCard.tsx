@@ -9,6 +9,7 @@ import { MAP_THUMB_SIZE } from "./MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
+import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined, 
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined, 
@@ -76,13 +77,21 @@ interface ITimesCardProps {
 }
 
 function TimesCard(props: ITimesCardProps) {
+    const { hideMap } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
     <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 590, "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
-        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
-            <Typography variant="caption">
+        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
+            <Typography variant="caption" flexGrow={1} marginRight={1}>
                 {props.title ?? "Times"}
             </Typography>
+            {hideMap ? <></> : 
+            <>
+            <Box bgcolor={UNRELEASED_MAP_COLOR} width="12px" height="12px" minWidth="12px" boxSizing="border-box" marginBottom="2px" />
+            <Typography variant="caption" marginLeft={0.75}>
+                = unreleased
+            </Typography>
+            </>}
         </Box>
         <TimesGrid {...props} />
     </Paper>

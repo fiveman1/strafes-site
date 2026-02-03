@@ -3,6 +3,7 @@ import { Game, Style } from "../api/interfaces";
 import { ContextParams } from "../util/format";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
 export const MAP_THUMB_SIZE = 50;
 
@@ -23,6 +24,8 @@ function MapLink(props: IMapLinkProps) {
     if (mapInfo?.smallThumb) {
         thumb = mapInfo.smallThumb;
     }
+
+    const isUnreleased = !mapInfo ? false : new Date() < new Date(mapInfo.date);
     
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
@@ -42,11 +45,13 @@ function MapLink(props: IMapLinkProps) {
                     src={thumb} 
                     alt={name} 
                     marginRight="10px"
+                    border={isUnreleased ? 1 : 0}
+                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
                 />
                 : 
                 <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE, marginRight: "10px" }} />
             }
-                <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                <Typography variant="inherit" color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                     {name}
                 </Typography>
             </Box>
