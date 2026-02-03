@@ -153,9 +153,9 @@ export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): Gr
                     </Box>
                     <IconButton size="small" sx={{height: 28, width: 28, ml: 0.5}} disabled>
                         {isAsc ?
-                        <ArrowDownwardIcon fontSize="inherit" />
+                        <ArrowUpwardIcon fontSize="inherit" />
                         :
-                        <ArrowUpwardIcon fontSize="inherit" />}
+                        <ArrowDownwardIcon fontSize="inherit" />}
                     </IconButton>
                 </Box>
             );
