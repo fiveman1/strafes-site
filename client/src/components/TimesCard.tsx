@@ -194,9 +194,7 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [apiRef, getSort, isCompact, onlyWRs]);
     
-    const gridCols = useMemo(() => {
-        return makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth, isCompact, currentSortBy);
-    }, [course, game, hideMap, hideUser, onlyWRs, placementWidth, showPlacement, showPlacementOrdinals, isCompact, currentSortBy, style]);
+    const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth, isCompact, currentSortBy);
 
     const gridKey = useMemo(() => {
         // Set row count to unknown when changing settings in WR only mode
