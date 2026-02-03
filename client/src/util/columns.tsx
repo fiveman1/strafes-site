@@ -10,6 +10,7 @@ import TimeDisplay from "../components/TimeDisplay";
 import MapLink from "../components/MapLink";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import TimeDateColumn from "../components/TimeDateColumn";
 
 
 export function makeMapColumn(isCompact?: boolean): GridColDef {
@@ -166,13 +167,7 @@ export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): Gr
         sortable: sortable,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
-            return (
-                <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center" alignItems="center">
-                    <TimeDisplay ms={time.time} diff={time.wrDiff} multiLine />
-                    <Box height={"2px"} />
-                    <DateDisplay date={time.date} color="text.secondary" fontWeight={200} />
-                </Box>
-            );
+            return <TimeDateColumn time={time} />;
         }
     };
 }
