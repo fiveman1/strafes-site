@@ -170,8 +170,6 @@ function TimesGrid(props: ITimesCardProps) {
         if (isCompact && !onlyWRs && params.field === "time") {
             event.preventDefault();
             event.defaultMuiPrevented = true;
-            console.log(event.target);
-            console.log(event);
             let field = "time";
             let direction: GridSortDirection = "asc";
             const model = apiRef.current?.getSortModel();
