@@ -122,7 +122,7 @@ function TimesGrid(props: ITimesCardProps) {
     const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(defaultSort);
     const [maxPage, setMaxPage] = useState(0);
     const [placementWidth, setPlacementWidth] = useState(50);
-    const isCompact = useMediaQuery(`@media screen and (max-width: ${hideMap ? "720px" : "800px"})`);
+    const isCompact = useMediaQuery(`@media screen and (max-width: 800px)`);
 
     if (gridApiRef) {
         apiRef = gridApiRef;
