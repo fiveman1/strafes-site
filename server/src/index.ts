@@ -17,6 +17,7 @@ import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirec
 const app = express();
 const PORT = process.env.PORT ?? "8080";
 const IS_DEBUG = process.env.DEBUG === "true";
+const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 const cache = apicache.options(IS_DEBUG ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 80, validate: {xForwardedForHeader: false} });
@@ -1023,6 +1024,10 @@ app.get("*splat", async (req, res): Promise<any> => {
         // Don't give Roblox or Quat/itzaname an XSS attack (safeQuoteText)
         html = html.replace("__META_OG_TITLE__", safeQuoteText(title));
         html = html.replaceAll("__META_DESCRIPTION__", safeQuoteText(description));
+
+        if (GOOGLE_SITE_VERIFICATION) {
+            html = html.replace("__GOOGLE_SITE_VERIFICATION__", GOOGLE_SITE_VERIFICATION);
+        }
         return res.send(html);
     }
     catch {
