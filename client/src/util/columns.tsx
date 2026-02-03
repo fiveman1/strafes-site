@@ -144,7 +144,7 @@ export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): Gr
         renderHeader: () => {
             return (
                 <Box display="flex" flexDirection="row" alignItems="center">
-                    <Box display="flex" flexDirection="column" alignItems="center" ml="5px">
+                    <Box display="flex" flexDirection="column" alignItems="center" mr={0.5} ml={0.5}>
                         <Typography variant="inherit" fontWeight={500} color={!isTimeSort ? "textSecondary" : undefined}>
                             Time
                         </Typography>
@@ -152,12 +152,10 @@ export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): Gr
                             Date
                         </Typography>
                     </Box>
-                    <IconButton size="small" sx={{height: 28, width: 28, ml: 0.5}} disabled>
-                        {isAsc ?
-                        <ArrowUpwardIcon fontSize="inherit" />
-                        :
-                        <ArrowDownwardIcon fontSize="inherit" />}
-                    </IconButton>
+                    {isAsc ?
+                    <ArrowUpwardIcon sx={{height: 18, width: 18, m: 0.5}} fontSize="inherit" />
+                    :
+                    <ArrowDownwardIcon sx={{height: 18, width: 18, m: 0.5}} fontSize="inherit" />}
                 </Box>
             );
         },
