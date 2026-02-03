@@ -61,20 +61,70 @@ function AppLinks(props: IAppMenuProps) {
     }
 
     return (
-        <Box display="flex" flexDirection="row" justifyContent="space-evenly" width="80%" height="100%">
-            <Button href={userLink} color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Users ? "2px solid white" : undefined}}>
+        <Box display="flex" flexDirection="row" justifyContent="space-evenly" width="80%" height="var(--sl-header-height)">
+            <Button href={userLink} 
+                color="inherit" 
+                size="large" 
+                fullWidth 
+                sx={{
+                    transition: "border .3s ease",
+                    borderRadius: 0, 
+                    textTransform: "none", 
+                    borderBottom: navPage === NavigatorPage.Users ? "2px solid white" : "2px solid transparent",
+                    marginTop: "2px"
+                }}>
                 {NavigatorPage.Users}
             </Button>
-            <Button href="/globals" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Gloabls ? "2px solid white" : undefined}}>
+            <Button href="/globals" 
+                color="inherit" 
+                size="large" 
+                fullWidth 
+                sx={{
+                    transition: "border .3s ease",
+                    borderRadius: 0, 
+                    textTransform: "none", 
+                    borderBottom: navPage === NavigatorPage.Gloabls ? "2px solid white" : "2px solid transparent",
+                    marginTop: "2px"
+                }}>
                 {NavigatorPage.Gloabls}
             </Button>
-            <Button href="/maps" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Maps ? "2px solid white" : undefined}}>
+            <Button href="/maps" 
+                color="inherit" 
+                size="large" 
+                fullWidth 
+                sx={{
+                    transition: "border .3s ease",
+                    borderRadius: 0, 
+                    textTransform: "none", 
+                    borderBottom: navPage === NavigatorPage.Maps ? "2px solid white" : "2px solid transparent",
+                    marginTop: "2px"
+                }}>
                 {NavigatorPage.Maps}
             </Button>
-            <Button href="/ranks" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Ranks ? "2px solid white" : undefined}}>
+            <Button href="/ranks" 
+                color="inherit" 
+                size="large" 
+                fullWidth 
+                sx={{
+                    transition: "border .3s ease",
+                    borderRadius: 0, 
+                    textTransform: "none", 
+                    borderBottom: navPage === NavigatorPage.Ranks ? "2px solid white" : "2px solid transparent",
+                    marginTop: "2px"
+                }}>
                 {NavigatorPage.Ranks}
             </Button>
-            <Button href="/compare" color="inherit" size="large" fullWidth sx={{borderRadius: 0, textTransform: "none", borderBottom: navPage === NavigatorPage.Compare ? "2px solid white" : undefined}}>
+            <Button href="/compare" 
+                color="inherit" 
+                size="large" 
+                fullWidth 
+                sx={{
+                    transition: "border .3s ease",
+                    borderRadius: 0, 
+                    textTransform: "none", 
+                    borderBottom: navPage === NavigatorPage.Compare ? "2px solid white" : "2px solid transparent",
+                    marginTop: "2px"
+                }}>
                 {NavigatorPage.Compare}
             </Button>
         </Box>

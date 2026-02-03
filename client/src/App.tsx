@@ -24,6 +24,15 @@ const LinkBehavior = React.forwardRef<
     return <RouterLink ref={ref} to={href} {...other} />;
 });
 
+function checkHeaderHeight() {
+    const header = document.querySelector("header");
+    if (header) {
+        const styles = window.getComputedStyle(header);
+        const headerHeight = styles.height;
+        document.documentElement.style.setProperty("--sl-header-height", headerHeight);
+    }
+}
+
 function App() {
     const [maps, setMaps] = useState<Maps>({});
     const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
@@ -53,6 +62,12 @@ function App() {
             }
         });
     }, [setSettings]);
+
+    useEffect(() => {
+        window.addEventListener("resize", checkHeaderHeight);
+        window.addEventListener("orientationchange", checkHeaderHeight);
+        checkHeaderHeight();
+    }, [])
 
     // If user navigates off the settings page, reset the theme
     useEffect(() => {
@@ -128,12 +143,12 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <Box height="100%" display="flex" flexDirection="column" sx={{overflowY: "scroll"}}>
-                <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
-                <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2}>
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
+            <Box height="calc(100vh - var(--sl-header-height))" display="flex" flexDirection="column" overflow="auto">
+                <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
                     <Outlet context={contextParams}/>
                 </Box>
-                <Box marginTop="auto">
+                <Box>
                     <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>
                         <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
                             bhop
