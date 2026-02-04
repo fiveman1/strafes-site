@@ -9,6 +9,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import { LoginUser } from "../api/interfaces";
 import { login } from "../api/api";
 import AccountMenu from "./AccountMenu";
+import useAppBarHeight from "../util/states";
 
 interface IMainAppBarProps {
     loggedInUser: LoginUser | undefined
@@ -55,6 +56,7 @@ function AppLinks(props: IAppMenuProps) {
     const { loggedInUser } = props;
     const location = useLocation();
     const navPage = getCurrentPage(location.pathname);
+    const appBarHeight = useAppBarHeight();
 
     let userLink = "/users";
     if (loggedInUser) {
@@ -62,7 +64,7 @@ function AppLinks(props: IAppMenuProps) {
     }
 
     return (
-        <Box display="flex" flexDirection="row" justifyContent="space-evenly" width="80%" height="var(--sl-header-height)">
+        <Box display="flex" flexDirection="row" justifyContent="space-evenly" width="80%" height={`${appBarHeight}px`}>
             <Button href={userLink} 
                 color="inherit" 
                 size="large" 
