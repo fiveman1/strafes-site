@@ -9,7 +9,7 @@ import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, User
 import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
-import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
+import { tryGetCached, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
 import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, setProfileInfoForList, updateSettings } from "./oauth.js";
@@ -98,6 +98,24 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
             id: result.contentId.toString(),
             previousUsernames: result.previousUsernames
         });
+    }
+
+    const thumbRes = await tryGetRequest("https://thumbnails.roproxy.com/v1/users/avatar-headshot", {
+        userIds: usernames.map((user) => user.id),
+        size: "75x75",
+        format: "Webp",
+        isCircular: false
+    });
+
+    if (thumbRes) {
+        const idToThumb = new Map<number, string>();
+        for (const thumbInfo of thumbRes?.data.data) {
+            idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
+        }
+        for (const user of usernames) {
+            if (user.id === undefined) continue;
+            user.thumbnail = idToThumb.get(+user.id);
+        }
     }
 
     res.status(200).json({usernames: usernames});

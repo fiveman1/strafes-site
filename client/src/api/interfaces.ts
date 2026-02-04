@@ -118,7 +118,8 @@ export enum ModerationStatus {
 export interface UserSearchData {
     username: string
     id?: string
-    previousUsernames?: string[]
+    previousUsernames?: string[] | null
+    thumbnail?: string
 }
 
 export enum UserRole {

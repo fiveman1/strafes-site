@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Autocomplete, Box, debounce, Paper, TextField, Typography } from "@mui/material";
+import { Autocomplete, Avatar, Box, debounce, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
 import { UserSearchData } from "../api/interfaces";
 import { UserSearchInfo } from "../util/states";
+import { grey } from "@mui/material/colors";
 
 interface IUserSearchProps {
     minHeight: number
@@ -26,6 +27,7 @@ function UserSearch(props: IUserSearchProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const [hasError, setHasError] = useState(false);
+    const theme = useTheme();
 
     const fetchSearchOptions = useMemo(() => debounce(async (searchText: string, callback: (usernames: UserSearchData[]) => void) => {
         const usernames = await searchByUsername(searchText);
@@ -162,6 +164,16 @@ function UserSearch(props: IUserSearchProps) {
                             }}
                         />
                     }
+                    renderOption={({key, ...props}, option) => (
+                        <Box
+                            component="li"
+                            key={key}
+                            {...props}
+                        >
+                            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, flexShrink: 0 }} alt={option.username} src={option.thumbnail} />
+                            {option.username}
+                        </Box>
+                    )}
                     getOptionLabel={(option) => typeof option === "string" ? option : option.username}
                 />
             </Box>

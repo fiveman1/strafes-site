@@ -119,6 +119,7 @@ export interface UserSearchData {
     username: string
     id?: string
     previousUsernames?: string[]
+    thumbnail?: string
 }
 
 export enum UserRole {
