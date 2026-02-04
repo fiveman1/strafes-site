@@ -1,22 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
 import { Game, Style } from "../api/interfaces";
-import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
-import { useLocation, useNavigate, useOutletContext } from "react-router";
+import { formatGame, getAllowedStyles } from "../util/format";
+import { useLocation, useNavigate } from "react-router";
 
-export function useGame(paramName: string = "game", defaultGame?: Game) {
-    const location = useLocation();
-    const context = useOutletContext() as ContextParams;
-    const queryParams = new URLSearchParams(location.search);
-    let paramGame = defaultGame ?? context.settings.defaultGame;
-    const gameParam = queryParams.get(paramName);
-    if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined) {
-        paramGame = +gameParam;
-    }
-    return useState(paramGame);
-}
-
-export interface IGameSelectorProps {
+interface IGameSelectorProps {
     game: Game
     setGame: (game: Game) => void
     style?: Style

@@ -20,9 +20,10 @@ export default defineConfig([
             }
         },
         rules: {
-            "react-hooks/set-state-in-effect": "warn",
+            "react-hooks/set-state-in-effect": "off",
             "react-refresh/only-export-components": "warn",
-            "react-hooks/set-state-in-render": "warn",
+            "react-hooks/set-state-in-render": "off",
+            "react-hooks/preserve-manual-memoization": "off"
         }
 	},
 ]);

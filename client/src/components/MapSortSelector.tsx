@@ -3,26 +3,9 @@ import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChang
 import { useLocation, useNavigate } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { isMapSort, MapTimesSort, MapTimesSortRaw } from "../util/states";
 
-export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc";
-type MapTimesSortRaw = "name" | "creator" | "date" | "count";
-const SORTS = ["nameAsc" , "nameDesc" , "creatorAsc" , "creatorDesc" , "dateAsc" , "dateDesc" , "countAsc" , "countDesc"];
-function isMapSort(value: string): value is MapTimesSort {
-    return SORTS.includes(value);
-}
-
-export function useMapSort() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
-    let paramSort: MapTimesSort = "nameAsc";
-    const sortParam = queryParams.get("sort");
-    if (sortParam && isMapSort(sortParam)) {
-        paramSort = sortParam;
-    }
-    return useState<MapTimesSort>(paramSort);
-}
-
-export interface IMapSortSelectorProps {
+interface IMapSortSelectorProps {
     setSort: (sort: MapTimesSort) => void
 }
 

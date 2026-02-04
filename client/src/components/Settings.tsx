@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
+import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography, useTheme } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
@@ -14,46 +14,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/format";
 import CountrySelect from "./CountrySelect";
 import { dateFormat, relativeTimeFormat } from "../util/datetime";
-
-export function useSettings() {
-    const theme = localStorage.getItem("theme") as PaletteMode || "dark";
-    
-    const sGame = localStorage.getItem("game");
-    let game = Game.bhop;
-    if (sGame && Game[+sGame] !== undefined) {
-        game = +sGame;
-    }
-
-    const sStyle = localStorage.getItem("style");
-    let style = Style.autohop;
-    if (sStyle && Style[+sStyle] !== undefined) {
-        style = +sStyle;
-    }
-
-    const sMaxDays = localStorage.getItem("maxDays");
-    let maxDays = 30;
-    if (sMaxDays && !isNaN(+sMaxDays) && +sMaxDays >= 0) {
-        maxDays = +sMaxDays;
-    }
-
-    const country = localStorage.getItem("country") ?? undefined;
-
-    return useState<SettingsValues>({
-        defaultGame: game,
-        defaultStyle: style,
-        maxDaysRelativeDates: maxDays,
-        theme: theme,
-        country: country
-    });
-}
-
-export function saveSettingsToLocalStorage(settings: SettingsValues) {
-    localStorage.setItem("game", settings.defaultGame.toString());
-    localStorage.setItem("style", settings.defaultStyle.toString());
-    localStorage.setItem("theme", settings.theme);
-    localStorage.setItem("maxDays", settings.maxDaysRelativeDates.toString());
-    localStorage.setItem("country", settings.country ?? "");
-}
+import { saveSettingsToLocalStorage } from "../util/states";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -66,10 +27,15 @@ function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
 function Settings() {
     const { settings, setSettings, setMode, loggedInUser } = useOutletContext() as ContextParams;
 
-    const [mockSettings, setMockSettings] = useSettings();
+    const [mockSettings, setMockSettings] = useState({...settings});
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const theme = useTheme();
+
+    useEffect(() => {
+        setMode(settings.theme);
+    }, [setMode, settings.theme])
 
     useEffect(() => {
         if (!loggedInUser) {
@@ -111,8 +77,8 @@ function Settings() {
         });
     };
 
-    const handleExit = useCallback(() => {
-        setMode(settings.theme);
+    const handleExit = useCallback((theme?: PaletteMode) => {
+        setMode(theme ?? settings.theme);
         const backUrl = searchParams.get("backUrl");
         const url = backUrl ? decodeURIComponent(backUrl) : "/";
         navigate(url);
@@ -125,11 +91,9 @@ function Settings() {
         if (!success) {
             return;
         }
-        setSettings(() => {
-            saveSettingsToLocalStorage(mockSettings);
-            return {...mockSettings};
-        });
-        handleExit();
+        setSettings({...mockSettings});
+        saveSettingsToLocalStorage(mockSettings);
+        handleExit(mockSettings.theme);
     }, [handleExit, mockSettings, setSettings]);
 
     const threeDaysAgo = new Date().getTime() - (3 * 24 * 60 * 60 * 1000);
@@ -146,7 +110,7 @@ function Settings() {
                     Settings
                 </Typography>
                 <Box display="flex" alignItems="flex-start">
-                    <IconButton onClick={handleExit} sx={{marginTop: 1}}>
+                    <IconButton onClick={() => handleExit()} sx={{marginTop: 1}}>
                         <CloseIcon />
                     </IconButton>
                 </Box>
@@ -207,7 +171,7 @@ function Settings() {
             </Typography>
             <Box padding={2}>
                 <ThemeSelector 
-                    themeMode={mockSettings.theme} 
+                    themeMode={theme.palette.mode} 
                     setThemeMode={setThemeMode} 
                 />
             </Box>
@@ -242,7 +206,7 @@ function Settings() {
                 </Button>
                 <Button variant="outlined" size="large" sx={{ width: "120px" }}
                     startIcon={<CancelIcon />} 
-                    onClick={handleExit}
+                    onClick={() => handleExit()}
                 >
                     Cancel
                 </Button>

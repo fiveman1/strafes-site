@@ -1,5 +1,5 @@
 import Box from "@mui/material/Box";
-import { formatDiff, formatTime } from "../util/format";
+import { formatDiff } from "../util/format";
 import { green, red } from "@mui/material/colors";
 import { darken, useTheme } from "@mui/material";
 import { convertToHSL, HSLToHex } from "../util/colors";

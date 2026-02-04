@@ -3,11 +3,11 @@ import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
 import TimesCard from "./TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy } from "../api/interfaces";
-import GameSelector, { useGame } from "./GameSelector";
-import StyleSelector, { useStyle } from "./StyleSelector";
+import GameSelector from "./GameSelector";
+import StyleSelector from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { ALL_COURSES, MAIN_COURSE } from "../util/format";
-import IncludeBonusCheckbox, { useIncludeBonuses } from "./IncludeBonusCheckbox";
+import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
 import { Game, Style } from "../api/interfaces";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
@@ -15,6 +15,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
 import DateDisplay from "./DateDisplay";
 import { makeUserColumn } from "../util/columns";
+import { useGame, useIncludeBonuses, useStyle } from "../util/states";
 
 function Globals() {
     const [game, setGame] = useGame();

@@ -13,7 +13,7 @@ import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, LoginUser, Map } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
-import { saveSettingsToLocalStorage, useSettings } from "./components/Settings";
+import { saveSettingsToLocalStorage, useSettings } from "./util/states";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -39,6 +39,7 @@ function App() {
     const [loggedInUserLoading, setLoggedInUserLoading] = useState(true);
     const [settings, setSettings] = useSettings();
     const [mode, setMode] = useState<PaletteMode>(settings.theme);
+    const [areSettingsReady, setSettingsReady] = useState(false);
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
 
@@ -102,10 +103,9 @@ function App() {
     useEffect(() => {
         if (contextParams.isAuthorized) {
             getSettings().then((result) => {
+                setSettingsReady(true);
                 if (result) {
-                    setSettings(() => {
-                        return {...result}
-                    })
+                    setSettings({...result})
                     saveSettingsToLocalStorage(result);
                     setMode(result.theme);
                 }
@@ -113,40 +113,40 @@ function App() {
         }
     }, [contextParams.isAuthorized, setSettings]);
 
-    // If user navigates off the settings page, reset the theme
-    useEffect(() => {
-        setMode(settings.theme);
-    }, [location.pathname, settings.theme]);
+    const settingsOpen = location.pathname.startsWith("/settings");
+    const currentMode = settingsOpen ? mode : settings.theme;
 
-    const theme = useMemo(() => createTheme({
-        palette: {
-            // SrafesNET red: #c61926
-            primary: pink,
-            secondary: lightBlue,
-            mode: mode,
-            DataGrid: {
-                bg: mode === "light" ? "#ffffff" : "#121212"
-            }
-        },
-        components: {
-            MuiLink: {
-                defaultProps: {
-                    component: LinkBehavior,
-                } as LinkProps,
+    const theme = useMemo(() => {
+        return createTheme({
+            palette: {
+                // SrafesNET red: #c61926
+                primary: pink,
+                secondary: lightBlue,
+                mode: currentMode,
+                DataGrid: {
+                    bg: currentMode === "light" ? "#ffffff" : "#121212"
+                }
             },
-            MuiButtonBase: {
-                defaultProps: {
-                    LinkComponent: LinkBehavior,
+            components: {
+                MuiLink: {
+                    defaultProps: {
+                        component: LinkBehavior,
+                    } as LinkProps,
+                },
+                MuiButtonBase: {
+                    defaultProps: {
+                        LinkComponent: LinkBehavior,
+                    },
                 },
             },
-        },
-    }), [mode]);
+        }
+    )}, [currentMode]);
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} />
-            <Box height="calc(100vh - var(--sl-header-height))" display="flex" flexDirection="column" overflow="auto">
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={!areSettingsReady || location.pathname.startsWith("/settings")} />
+            <Box height="calc(100vh - var(--sl-header-height, 64px))" display="flex" flexDirection="column" overflow="auto">
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
                     <Outlet context={contextParams}/>
                 </Box>

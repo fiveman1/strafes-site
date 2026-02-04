@@ -3,26 +3,9 @@ import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChang
 import { useLocation, useNavigate } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { CompareTimesSort, CompareTimesSortRaw, isCompareTimesSort } from "../util/states";
 
-export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
-type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
-const SORTS = ["mapAsc" , "mapDesc" , "dateAsc" , "dateDesc" , "timeAsc" ,"timeDesc", "diffAsc", "diffDesc"];
-function isCompareTimesSort(value: string): value is CompareTimesSort {
-    return SORTS.includes(value);
-}
-
-export function useCompareSort() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
-    let paramSort: CompareTimesSort = "diffAsc";
-    const sortParam = queryParams.get("sort");
-    if (sortParam && isCompareTimesSort(sortParam)) {
-        paramSort = sortParam;
-    }
-    return useState<CompareTimesSort>(paramSort);
-}
-
-export interface ICompareSortSelectorProps {
+interface ICompareSortSelectorProps {
     setSort: (sort: CompareTimesSort) => void
 }
 

@@ -3,49 +3,12 @@ import { Autocomplete, Box, debounce, Paper, TextField, Typography } from "@mui/
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
 import { UserSearchData } from "../api/interfaces";
+import { UserSearchInfo } from "../util/states";
 
-export interface UserSearchInfo {
-    userText: string
-    setUserText: (text: string) => void
-    selectedUser: UserSearchData
-    setSelectedUser: (user: UserSearchData) => void
-    options: readonly UserSearchData[]
-    setOptions: (options: readonly UserSearchData[]) => void
-    loadingOptions: boolean
-    setIsLoadingOptions: (loading: boolean) => void
-}
-
-export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => void] {
-    const [userText, setUserText] = useState("");
-    const [selectedUser, setSelectedUser] = useState<UserSearchData>({username: ""});
-    const [options, setOptions] = useState<readonly UserSearchData[]>([]);
-    const [loadingOptions, setIsLoadingOptions] = useState(false);
-
-    const search = {
-        userText: userText,
-        setUserText: setUserText,
-        selectedUser: selectedUser,
-        setSelectedUser: setSelectedUser,
-        options: options,
-        setOptions: setOptions,
-        loadingOptions: loadingOptions,
-        setIsLoadingOptions: setIsLoadingOptions
-    };
-
-    const setUserSearch = (search: UserSearchInfo) => {
-        setUserText(search.userText);
-        setSelectedUser(search.selectedUser);
-        setOptions(search.options);
-        setIsLoadingOptions(search.loadingOptions);
-    }
-
-    return [search, setUserSearch];
-}
-
-export interface IUserSearchProps {
+interface IUserSearchProps {
     minHeight: number
-    setUserId: (value?: string) => void
-    noNavigate?: boolean
+    setUserId: React.Dispatch<React.SetStateAction<string | undefined>>
+    disableNavigate?: boolean
     userSearch: UserSearchInfo
 }
 
@@ -57,7 +20,7 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 }
 
 function UserSearch(props: IUserSearchProps) {
-    const { minHeight, setUserId, noNavigate, userSearch } = props;
+    const { minHeight, setUserId, disableNavigate, userSearch } = props;
     const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
 
     const location = useLocation();
@@ -127,7 +90,7 @@ function UserSearch(props: IUserSearchProps) {
         if (!search) {
             setSelectedUser({username: ""});
             setUserId(undefined);
-            if (!noNavigate) navigate("/users");
+            if (!disableNavigate) navigate("/users");
             return;
         }
 
@@ -145,7 +108,7 @@ function UserSearch(props: IUserSearchProps) {
         }
 
         if (userId !== undefined) {
-            if (!noNavigate) {
+            if (!disableNavigate) {
                 navigate({pathname: `/users/${userId}`, search: new URLSearchParams(location.search).toString()});
             }
             else {
@@ -155,7 +118,7 @@ function UserSearch(props: IUserSearchProps) {
         else {
             setHasError(true);
         }
-    }, [location.search, navigate, noNavigate, setSelectedUser, setUserId]);
+    }, [location.search, navigate, disableNavigate, setSelectedUser, setUserId]);
 
     return (<>
         <Paper elevation={2} sx={{padding: 3, minHeight: minHeight, display:"flex", alignItems: "center"}}>

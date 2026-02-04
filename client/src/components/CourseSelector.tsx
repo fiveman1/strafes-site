@@ -1,21 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
 import { Map } from "../api/interfaces";
 import { formatCourse } from "../util/format";
 import { useLocation, useNavigate } from "react-router";
 
-export function useCourse() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
-    let paramCourse = 0;
-    const styleParam = queryParams.get("course");
-    if (styleParam !== null && !isNaN(+styleParam) && +styleParam >= 0) {
-        paramCourse = +styleParam;
-    }
-    return useState(paramCourse);
-}
-
-export interface ICourseSelectorProps {
+interface ICourseSelectorProps {
     map?: Map
     course: number
     setCourse: (course: number) => void;

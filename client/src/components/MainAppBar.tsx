@@ -13,6 +13,7 @@ import AccountMenu from "./AccountMenu";
 interface IMainAppBarProps {
     loggedInUser: LoginUser | undefined
     isUserLoading: boolean
+    disableSettings: boolean
 }
 
 enum NavigatorPage {
@@ -195,8 +196,7 @@ function AppMenu(props: IAppMenuProps) {
 }
 
 function MainAppBar(props: IMainAppBarProps) {
-    const { loggedInUser, isUserLoading } = props;
-    const location = useLocation();
+    const { loggedInUser, isUserLoading, disableSettings } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const useAppMenu = useMediaQuery("@media screen and (max-width: 800px)");
 
@@ -217,7 +217,7 @@ function MainAppBar(props: IMainAppBarProps) {
                 <Box minWidth={outerWidth} display="flex" justifyContent="flex-end">
                     <ButtonGroup>
                         {loggedInUser ? 
-                        <AccountMenu user={loggedInUser} settingsOpen={location.pathname.startsWith("/settings")} /> 
+                        <AccountMenu user={loggedInUser} disableSettings={disableSettings} /> 
                         : 
                         (isUserLoading ? 
                         <Box width="50px" height="50px" padding="5px" display="flex" justifyContent="center" alignItems="center">

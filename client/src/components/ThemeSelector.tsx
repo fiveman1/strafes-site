@@ -4,7 +4,7 @@ import Sunny from "@mui/icons-material/Sunny";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import { Button } from '@mui/material';
 
-export interface IThemeSelectorProps {
+interface IThemeSelectorProps {
     themeMode: PaletteMode;
     setThemeMode: (value: PaletteMode) => void;
 }

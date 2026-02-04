@@ -1,9 +1,9 @@
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Avatar, Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import GameSelector, { useGame } from "./GameSelector";
-import StyleSelector, { useStyle } from "./StyleSelector";
-import UserSearch, { useUserSearch } from "./UserSearch";
+import GameSelector from "./GameSelector";
+import StyleSelector from "./StyleSelector";
+import UserSearch from "./UserSearch";
 import UserCard from "./UserCard";
 import { Game, Style, Time, User } from "../api/interfaces";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
@@ -16,9 +16,10 @@ import { ContextParams, formatDiff, formatStyle, formatTime } from "../util/form
 import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
-import CompareSortSelector, { CompareTimesSort, useCompareSort } from "./CompareSortSelector";
+import CompareSortSelector from "./CompareSortSelector";
 import InfoIcon from '@mui/icons-material/Info';
 import DateDisplay from "./DateDisplay";
+import { CompareTimesSort, useCompareSort, useGame, useStyle, useUserSearch } from "../util/states";
 
 const CARD_SIZE = 240;
 const TIE_COLOR = blue["A400"];
@@ -433,7 +434,7 @@ function Compare() {
                     setUserId={setFirstUserId} 
                     minHeight={185} 
                     userSearch={firstUserSearch}
-                    noNavigate 
+                    disableNavigate 
                 />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
@@ -451,7 +452,7 @@ function Compare() {
                     setUserId={setSecondUserId} 
                     minHeight={185} 
                     userSearch={secondUserSearch}
-                    noNavigate 
+                    disableNavigate 
                 />
             </Box>
             <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>

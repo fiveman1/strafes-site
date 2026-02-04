@@ -1,17 +1,5 @@
 import { Box, Checkbox, FormControlLabel, FormGroup, FormHelperText, useMediaQuery } from "@mui/material";
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-
-export function useIncludeBonuses() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
-
-    let paramBonuses = true;
-    if (queryParams.get("bonuses") === "false") {
-        paramBonuses = false;
-    }
-    return useState(paramBonuses);
-}
 
 interface IIncludeCheckboxParams {
     includeBonuses: boolean

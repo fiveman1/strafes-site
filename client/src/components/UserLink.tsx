@@ -4,9 +4,9 @@ import { Game, Style, UserRole } from "../api/interfaces";
 import { ContextParams, getUserRoleColor } from "../util/format";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import ReactCountryFlag from "react-country-flag";
-import { formatCountryCode } from "./CountrySelect";
+import { formatCountryCode } from "../util/countries";
 
-export interface IUserLinkProps extends LinkProps {
+interface IUserLinkProps extends LinkProps {
     userId: string | number
     username: string
     userRole?: UserRole

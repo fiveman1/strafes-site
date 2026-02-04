@@ -5,16 +5,17 @@ import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
 import TimesCard from "./TimesCard";
-import UserSearch, { useUserSearch } from "./UserSearch";
+import UserSearch from "./UserSearch";
 import { Time, TimeSortBy, User } from "../api/interfaces";
-import GameSelector, { useGame } from "./GameSelector";
-import StyleSelector, { useStyle } from "./StyleSelector";
+import GameSelector from "./GameSelector";
+import StyleSelector from "./StyleSelector";
 import { getUserData } from "../api/api";
 import ViewedTimes from "./ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
 import { ALL_COURSES, MAIN_COURSE } from "../util/format";
-import IncludeBonusCheckbox, { useIncludeBonuses } from "./IncludeBonusCheckbox";
+import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
+import { useGame, useIncludeBonuses, useStyle, useUserSearch } from "../util/states";
 
 function Users() {
     const { id } = useParams();

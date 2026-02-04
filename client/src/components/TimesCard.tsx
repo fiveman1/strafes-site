@@ -117,12 +117,13 @@ function TimesCard(props: ITimesCardProps) {
 function TimesGrid(props: ITimesCardProps) {
     const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, gridApiRef } = props;
     let apiRef = useGridApiRef();
-    const [rowCount, setRowCount] = useState(onlyWRs ? -1 : 0);
+    const [rowCountState, setRowCount] = useState(onlyWRs ? -1 : 0);
     const [isLoading, setIsLoading] = useState(false);
     const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(defaultSort);
     const [maxPage, setMaxPage] = useState(0);
-    const [placementWidth, setPlacementWidth] = useState(50);
     const isCompact = useMediaQuery(`@media screen and (max-width: 800px)`);
+
+    const rowCount = onlyWRs ? -1 : rowCountState;
 
     if (gridApiRef) {
         apiRef = gridApiRef;
@@ -134,14 +135,7 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [onlyWRs, apiRef]);
 
-    useEffect(() => {
-        if (currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3) {
-            setPlacementWidth(62);
-        }
-        else {
-            setPlacementWidth(50);
-        }
-    }, [maxPage, currentSortBy]);
+    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? 62 : 50;
 
     const getSort = useCallback((model: GridSortModel) => {
         const sort = model[0];
@@ -157,14 +151,14 @@ function TimesGrid(props: ITimesCardProps) {
         return sortBy;
     }, [defaultSort]);
 
-    const onSortChanged = useCallback((model: GridSortModel) => {
+    const onSortChanged = (model: GridSortModel) => {
         const sortBy = getSort(model);
         setCurrentSortBy(sortBy);
-    }, [getSort]);
+    };
 
-    const onPageChange = useCallback((model: GridPaginationModel) => {
+    const onPageChange = (model: GridPaginationModel) => {
         setMaxPage((model.page + 1) * model.pageSize);
-    }, []);
+    };
 
     const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
         if (isCompact && !onlyWRs && params.field === "time") {
@@ -196,13 +190,7 @@ function TimesGrid(props: ITimesCardProps) {
     
     const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth, isCompact, currentSortBy);
 
-    const gridKey = useMemo(() => {
-        // Set row count to unknown when changing settings in WR only mode
-        if (onlyWRs) {
-            setRowCount(-1);
-        }
-        return `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
-    }, [course, game, map, onlyWRs, style, userId]);
+    const gridKey = `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
         if (!allowOnlyWRs && !userId && !map) {

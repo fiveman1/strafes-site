@@ -6,17 +6,18 @@ import { ContextParams, formatGame, getAllowedStyles } from "../util/format";
 import { Game, Map, Style, TimeSortBy } from "../api/interfaces";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
-import StyleSelector, { useStyle } from "./StyleSelector";
+import StyleSelector from "./StyleSelector";
 import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import GameSelector, { useGame } from "./GameSelector";
-import CourseSelector, { useCourse } from "./CourseSelector";
+import GameSelector from "./GameSelector";
+import CourseSelector from "./CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { download, generateCsv, mkConfig } from "export-to-csv";
-import MapSortSelector, { MapTimesSort, useMapSort } from "./MapSortSelector";
+import MapSortSelector from "./MapSortSelector";
 import { sortMapsByName } from "../util/sort";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
 import { AcceptedData } from "export-to-csv/output/lib/types";
+import { MapTimesSort, useCourse, useGame, useMapSort, useStyle } from "../util/states";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {

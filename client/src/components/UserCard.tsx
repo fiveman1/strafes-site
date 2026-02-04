@@ -8,8 +8,8 @@ import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
-import { formatCountryCode } from "./CountrySelect";
 import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
+import { formatCountryCode } from "../util/countries";
 
 interface IUserDisplayProps {
     user: User

@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography, useMediaQuery } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
-import GameSelector, { useGame } from "./GameSelector";
-import StyleSelector, { useStyle } from "./StyleSelector";
+import GameSelector from "./GameSelector";
+import StyleSelector from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
 import { formatRank, formatSkill } from "../util/format";
 import { getRanks } from "../api/api";
@@ -12,6 +12,7 @@ import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
+import { useGame, useStyle } from "../util/states";
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];

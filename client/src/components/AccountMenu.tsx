@@ -18,11 +18,11 @@ import { Typography } from '@mui/material';
 
 interface IAccountMenuProps {
     user: LoginUser
-    settingsOpen: boolean
+    disableSettings: boolean
 }
 
 function AccountMenu(props: IAccountMenuProps) {
-    const { user, settingsOpen } = props;
+    const { user, disableSettings } = props;
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
@@ -111,7 +111,7 @@ function AccountMenu(props: IAccountMenuProps) {
                     </ListItemIcon>
                     Profile
                 </MenuItem>
-                <MenuItem disabled={settingsOpen} onClick={() => {
+                <MenuItem disabled={disableSettings} onClick={() => {
                     handleClose();
                     navigate(`/settings?backUrl=${encodeURIComponent(location.pathname + location.search)}`);
                 }}>
