@@ -6,7 +6,7 @@ import { ContextParams } from "./format";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
-    
+
     const sGame = localStorage.getItem("game");
     let game = Game.bhop;
     if (sGame && Game[+sGame] !== undefined) {
@@ -46,7 +46,7 @@ export function saveSettingsToLocalStorage(settings: SettingsValues) {
 
 export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc";
 export type MapTimesSortRaw = "name" | "creator" | "date" | "count";
-const MAP_SORTS = ["nameAsc" , "nameDesc" , "creatorAsc" , "creatorDesc" , "dateAsc" , "dateDesc" , "countAsc" , "countDesc"];
+const MAP_SORTS = ["nameAsc", "nameDesc", "creatorAsc", "creatorDesc", "dateAsc", "dateDesc", "countAsc", "countDesc"];
 export function isMapSort(value: string): value is MapTimesSort {
     return MAP_SORTS.includes(value);
 }
@@ -64,7 +64,7 @@ export function useMapSort() {
 
 export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
 export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
-const COMPARE_SORTS = ["mapAsc" , "mapDesc" , "dateAsc" , "dateDesc" , "timeAsc" ,"timeDesc", "diffAsc", "diffDesc"];
+const COMPARE_SORTS = ["mapAsc", "mapDesc", "dateAsc", "dateDesc", "timeAsc", "timeDesc", "diffAsc", "diffDesc"];
 export function isCompareTimesSort(value: string): value is CompareTimesSort {
     return COMPARE_SORTS.includes(value);
 }
@@ -107,7 +107,7 @@ export function useStyle() {
     const location = useLocation();
     const context = useOutletContext() as ContextParams;
     const queryParams = new URLSearchParams(location.search);
-    
+
     let paramStyle = context.settings.defaultStyle;
     const styleParam = queryParams.get("style");
     if (styleParam !== null && !isNaN(+styleParam) && Style[+styleParam] !== undefined) {
@@ -140,7 +140,7 @@ export interface UserSearchInfo {
 
 export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => void] {
     const [userText, setUserText] = useState("");
-    const [selectedUser, setSelectedUser] = useState<UserSearchData>({username: ""});
+    const [selectedUser, setSelectedUser] = useState<UserSearchData>({ username: "" });
     const [options, setOptions] = useState<readonly UserSearchData[]>([]);
     const [loadingOptions, setIsLoadingOptions] = useState(false);
 
@@ -163,4 +163,25 @@ export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => vo
     }
 
     return [search, setUserSearch];
+}
+
+import { useMediaQuery, useTheme } from '@mui/material';
+
+// https://github.com/mui/material-ui/issues/10739#issuecomment-1484828925
+export default function useAppBarHeight(): number {
+    const {
+        mixins: { toolbar },
+        breakpoints,
+    } = useTheme();
+
+    const queryDesktop = breakpoints.up("sm");
+    const queryLandscape = `${breakpoints.up("xs")} and (orientation: landscape)`;
+
+    const isDesktop = useMediaQuery(queryDesktop);
+    const isLandscape = useMediaQuery(queryLandscape);
+
+    const cssToolbar =
+        toolbar[isDesktop ? queryDesktop : isLandscape ? queryLandscape : ""];
+
+    return ((cssToolbar ?? toolbar) as { minHeight: number })?.minHeight ?? 0;
 }

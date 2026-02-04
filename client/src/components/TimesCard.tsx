@@ -7,7 +7,7 @@ import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRo
 import { GridSortDirection, GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
-import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
+import { makeCourseColumn, makeDateColumn, makeGameColumn, makeGameStyleColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
@@ -62,12 +62,16 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
         cols.push(makeDateColumn(!notSortable));
     }
 
-    if (game === Game.all) {
-        cols.push(makeGameColumn());
+    if (isCompact && game === Game.all && style === Style.all) {
+        cols.push(makeGameStyleColumn());
     }
-
-    if (style === Style.all) {
-        cols.push(makeStyleColumn());
+    else {
+        if (game === Game.all) {
+            cols.push(makeGameColumn());
+        }
+        if (style === Style.all) {
+            cols.push(makeStyleColumn());
+        }
     }
     
     return cols;
@@ -121,7 +125,16 @@ function TimesGrid(props: ITimesCardProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(defaultSort);
     const [maxPage, setMaxPage] = useState(0);
-    const isCompact = useMediaQuery(`@media screen and (max-width: 800px)`);
+    const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
+    const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
+    
+    let isCompact = false;
+    if (game === Game.all || style === Style.all) {
+        isCompact = under1000px;
+    }
+    else {
+        isCompact = under800px
+    }
 
     const rowCount = onlyWRs ? -1 : rowCountState;
 

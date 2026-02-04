@@ -13,7 +13,7 @@ import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, LoginUser, Map, SettingsValues } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
-import { saveSettingsToLocalStorage, useSettings } from "./util/states";
+import useAppBarHeight, { saveSettingsToLocalStorage, useSettings } from "./util/states";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -24,15 +24,6 @@ const LinkBehavior = React.forwardRef<
     return <RouterLink ref={ref} to={href} {...other} />;
 });
 
-function checkHeaderHeight() {
-    const header = document.querySelector("header");
-    if (header) {
-        const styles = window.getComputedStyle(header);
-        const headerHeight = styles.height;
-        document.documentElement.style.setProperty("--sl-header-height", headerHeight);
-    }
-}
-
 function App() {
     const [maps, setMaps] = useState<Maps>({});
     const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
@@ -42,18 +33,7 @@ function App() {
     const [areSettingsReady, setSettingsReady] = useState(false);
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
-
-    useEffect(() => {
-        window.addEventListener("resize", checkHeaderHeight);
-        window.addEventListener("orientationchange", checkHeaderHeight);
-        
-        checkHeaderHeight();
-        
-        return () => {
-            window.removeEventListener("resize", checkHeaderHeight);
-            window.removeEventListener("orientationchange", checkHeaderHeight);
-        }
-    }, []);
+    const appBarHeight = useAppBarHeight();
 
     const setSettings = useCallback((settings: SettingsValues) => {
         setMode(settings.theme);
@@ -91,18 +71,16 @@ function App() {
         };
     }, [maps]);
 
-    const contextParams: ContextParams = useMemo(() => {
-        return {
-            maps: mapInfo.maps,
-            sortedMaps: mapInfo.sortedMaps,
-            mapCounts: mapInfo.mapCounts,
-            settings: settings,
-            loggedInUser: loggedInUser,
-            isAuthorized: loggedInUser !== undefined,
-            setSettings: setSettings,
-            setMode: setMode
-        };
-    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, setSettings, settings]);
+    const contextParams: ContextParams = {
+        maps: mapInfo.maps,
+        sortedMaps: mapInfo.sortedMaps,
+        mapCounts: mapInfo.mapCounts,
+        settings: settings,
+        loggedInUser: loggedInUser,
+        isAuthorized: loggedInUser !== undefined,
+        setSettings: setSettings,
+        setMode: setMode
+    };
 
     useEffect(() => {
         getMaps().then(setMaps);
@@ -158,8 +136,8 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={!areSettingsReady || location.pathname.startsWith("/settings")} />
-            <Box height="calc(100vh - var(--sl-header-height, 64px))" display="flex" flexDirection="column" overflow="auto">
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={!areSettingsReady || settingsOpen} />
+            <Box height={`calc(100vh - ${appBarHeight}px)`} display="flex" flexDirection="column" overflow="auto">
                 <Box display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
                     <Outlet context={contextParams}/>
                 </Box>

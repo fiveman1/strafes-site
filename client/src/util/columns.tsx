@@ -196,6 +196,41 @@ export function makeStyleColumn(): GridColDef {
     }
 }
 
+export function makeGameStyleColumn(): GridColDef {
+    return {
+        type: "string",
+        field: "game",
+        renderHeader: () => {
+            return (
+                <Box display="flex" flexDirection="column">
+                    <Typography variant="inherit" fontWeight={500}>
+                        Game
+                    </Typography>
+                    <Typography variant="inherit" fontWeight={500} color="textSecondary">
+                        Style
+                    </Typography>
+                </Box>
+            );
+        },
+        flex: 150,
+        minWidth: 110,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<Time, string>) => {
+            const time = params.row;
+            return (
+                <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center">
+                    <Typography variant="inherit">
+                        {formatGame(time.game)}
+                    </Typography>
+                    <Typography variant="inherit" color="textSecondary">
+                        {formatStyle(time.style)}
+                    </Typography>
+                </Box>
+            );
+        }
+    };
+}
+
 export function makeCourseColumn(): GridColDef {
     return {
         type: "string",
