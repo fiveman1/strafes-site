@@ -33,7 +33,7 @@ function Globals() {
             Globals
         </Typography>
         <Typography variant="body2" padding={1}>
-            Each record in the list below is a world record (1st place). This list gets updated hourly.
+            Each record in the list below is a world record (1st place). This list is updated hourly.
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />

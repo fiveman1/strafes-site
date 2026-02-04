@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Typography, useMediaQuery } from "@mui/material";
+import { Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
-import { formatRank, formatSkill } from "../util/format";
+import { formatRank, formatSkill, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { yellow } from "@mui/material/colors";
@@ -13,6 +13,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
 import { useGame, useStyle } from "../util/states";
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
@@ -31,7 +32,11 @@ function makeColumns(placementWidth: number) {
     cols.push({
         type: "number",
         field: "mainWrs",
-        renderHeader: () => <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />,
+        renderHeader: () => (
+            <Tooltip title="World Records" >
+                <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />
+            </Tooltip>
+        ),
         align: "center",
         headerAlign: "center",
         width: 64,
@@ -42,7 +47,14 @@ function makeColumns(placementWidth: number) {
     cols.push({
         type: "string",
         field: "rank",
-        headerName: "Rank",
+        renderHeader: () => (
+            <Tooltip arrow title={RANK_HELP_TEXT} placement="top-start">
+                <Typography variant="inherit" fontWeight={500}>
+                    Rank
+                    <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
+                </Typography>
+            </Tooltip>
+        ),
         flex: 240,
         minWidth: 128, // min width to not cutoff Getting There (7)
         sortingOrder: ["asc"],
@@ -52,7 +64,14 @@ function makeColumns(placementWidth: number) {
     cols.push({
         type: "string",
         field: "skill",
-        headerName: "Skill",
+        renderHeader: () => (
+            <Tooltip arrow title={SKILL_HELP_TEXT} placement="top-start">
+                <Typography variant="inherit" fontWeight={500}>
+                    Skill
+                    <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
+                </Typography>
+            </Tooltip>
+        ),
         flex: 160,
         minWidth: 101, // min width to not cutoff column header when sorted
         sortingOrder: ["asc"],
@@ -167,6 +186,9 @@ function Ranks() {
     <Box display="flex" flexDirection="column" flexGrow={1}>
         <Typography variant="h2" padding={1}>
             Ranks
+        </Typography>
+        <Typography variant="body2" padding={1}>
+            Ranks are calculated hourly.
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />

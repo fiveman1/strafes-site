@@ -4,7 +4,7 @@ import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
 import { getCompletionsForUser, getNumWRsForUser, getUserRank, WRCount } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import { ContextParams, formatRank, formatSkill } from "../util/format";
+import { ContextParams, formatRank, formatSkill, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
 import { yellow } from "@mui/material/colors";
@@ -153,10 +153,10 @@ function ProfileCard(props: IProfileCardProps) {
         <Box display="flex" flexWrap="wrap">
             <Box flex="1 0 20%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
-                    <Tooltip sx={{marginRight: "auto"}} arrow title="Rank is based on the weighted sum of a user's times. Better placements are worth more." placement="top-start">
+                    <Tooltip sx={{marginRight: "auto"}} arrow title={RANK_HELP_TEXT} placement="top-start">
                         <Typography variant="subtitle1">
                             Rank
-                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="info" />
+                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     </Tooltip>
                     {rankLoading ? <CircularProgress size="32px" /> : 
@@ -167,10 +167,10 @@ function ProfileCard(props: IProfileCardProps) {
             </Box>
             <Box flex="1 0 20%" padding={1} minWidth={150}>
                 <Box display="flex" flexDirection="column">
-                    <Tooltip sx={{marginRight: "auto"}} arrow title="Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight." placement="top-start">
+                    <Tooltip sx={{marginRight: "auto"}} arrow title={SKILL_HELP_TEXT} placement="top-start">
                         <Typography variant="subtitle1">
                             Skill
-                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="info" />
+                            <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     </Tooltip>
                     {rankLoading ? <CircularProgress size="32px" /> : 
@@ -194,7 +194,7 @@ function ProfileCard(props: IProfileCardProps) {
                     {
                         <Typography variant="h6">
                             {formattedStatus}
-                            <InfoOutlineIcon sx={{marginLeft: "6px"}} fontSize="inherit" color="info" />
+                            <InfoOutlineIcon sx={{marginLeft: "6px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     }
                     </Tooltip> : 
