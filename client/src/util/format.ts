@@ -105,7 +105,7 @@ export interface ContextParams {
     mapCounts: MapCount
     settings: SettingsValues
     loggedInUser: LoginUser | undefined
-    setSettings: (val: React.SetStateAction<SettingsValues>) => void
+    setSettings: (val: SettingsValues) => void
     setMode: (mode: PaletteMode) => void
     isAuthorized: boolean
 }

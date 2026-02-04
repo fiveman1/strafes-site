@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainAppBar from "./components/MainAppBar";
@@ -10,7 +10,7 @@ import Link, { LinkProps } from '@mui/material/Link';
 import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
-import { Game, LoginUser, Map } from "./api/interfaces";
+import { Game, LoginUser, Map, SettingsValues } from "./api/interfaces";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
 import { saveSettingsToLocalStorage, useSettings } from "./util/states";
@@ -37,8 +37,8 @@ function App() {
     const [maps, setMaps] = useState<Maps>({});
     const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
     const [loggedInUserLoading, setLoggedInUserLoading] = useState(true);
-    const [settings, setSettings] = useSettings();
-    const [mode, setMode] = useState<PaletteMode>(settings.theme);
+    const [settings, setSettingsState] = useSettings();
+    const [mode, setMode] = useState<PaletteMode>(localStorage.getItem("theme") as PaletteMode || "dark");
     const [areSettingsReady, setSettingsReady] = useState(false);
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
@@ -46,8 +46,20 @@ function App() {
     useEffect(() => {
         window.addEventListener("resize", checkHeaderHeight);
         window.addEventListener("orientationchange", checkHeaderHeight);
+        
         checkHeaderHeight();
+        
+        return () => {
+            window.removeEventListener("resize", checkHeaderHeight);
+            window.removeEventListener("orientationchange", checkHeaderHeight);
+        }
     }, []);
+
+    const setSettings = useCallback((settings: SettingsValues) => {
+        setMode(settings.theme);
+        setSettingsState({...settings});
+        saveSettingsToLocalStorage(settings);
+    }, [setSettingsState]);
 
     const mapInfo = useMemo(() => {
         const counts : MapCount = {
@@ -105,16 +117,17 @@ function App() {
             getSettings().then((result) => {
                 setSettingsReady(true);
                 if (result) {
-                    setSettings({...result})
-                    saveSettingsToLocalStorage(result);
-                    setMode(result.theme);
+                    setSettings(result);
                 }
             });
         }
     }, [contextParams.isAuthorized, setSettings]);
 
     const settingsOpen = location.pathname.startsWith("/settings");
-    const currentMode = settingsOpen ? mode : settings.theme;
+    useEffect(() => {
+        // Potentially reset theme when navigating to/from settings
+        setMode(settings.theme);
+    }, [settings.theme, settingsOpen]);
 
     const theme = useMemo(() => {
         return createTheme({
@@ -122,9 +135,9 @@ function App() {
                 // SrafesNET red: #c61926
                 primary: pink,
                 secondary: lightBlue,
-                mode: currentMode,
+                mode: mode,
                 DataGrid: {
-                    bg: currentMode === "light" ? "#ffffff" : "#121212"
+                    bg: mode === "light" ? "#ffffff" : "#121212"
                 }
             },
             components: {
@@ -140,7 +153,7 @@ function App() {
                 },
             },
         }
-    )}, [currentMode]);
+    )}, [mode]);
 
     return (
         <ThemeProvider theme={theme}>

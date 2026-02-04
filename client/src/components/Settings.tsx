@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography, useTheme } from "@mui/material";
+import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "../api/interfaces";
 import GameSelector from "./GameSelector";
@@ -14,7 +14,6 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/format";
 import CountrySelect from "./CountrySelect";
 import { dateFormat, relativeTimeFormat } from "../util/datetime";
-import { saveSettingsToLocalStorage } from "../util/states";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -31,11 +30,6 @@ function Settings() {
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const theme = useTheme();
-
-    useEffect(() => {
-        setMode(settings.theme);
-    }, [setMode, settings.theme])
 
     useEffect(() => {
         if (!loggedInUser) {
@@ -77,12 +71,11 @@ function Settings() {
         });
     };
 
-    const handleExit = useCallback((theme?: PaletteMode) => {
-        setMode(theme ?? settings.theme);
+    const handleExit = useCallback(() => {
         const backUrl = searchParams.get("backUrl");
         const url = backUrl ? decodeURIComponent(backUrl) : "/";
         navigate(url);
-    }, [navigate, searchParams, setMode, settings.theme]);
+    }, [navigate, searchParams]);
 
     const onSave = useCallback(async () => {
         setIsSaving(true);
@@ -92,8 +85,7 @@ function Settings() {
             return;
         }
         setSettings({...mockSettings});
-        saveSettingsToLocalStorage(mockSettings);
-        handleExit(mockSettings.theme);
+        handleExit();
     }, [handleExit, mockSettings, setSettings]);
 
     const threeDaysAgo = new Date().getTime() - (3 * 24 * 60 * 60 * 1000);
@@ -171,7 +163,7 @@ function Settings() {
             </Typography>
             <Box padding={2}>
                 <ThemeSelector 
-                    themeMode={theme.palette.mode} 
+                    themeMode={mockSettings.theme} 
                     setThemeMode={setThemeMode} 
                 />
             </Box>
