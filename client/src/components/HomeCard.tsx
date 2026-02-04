@@ -15,7 +15,7 @@ function HomeCard(props: IHomeCardProps) {
     const size = smallScreen ? "156px" : "200px";
 
     return (
-    <Card sx={{width: size, height: size, ":hover": {boxShadow: 20}}} elevation={3}>
+    <Card sx={{width: size, height: size, ":hover": {boxShadow: 8}}} elevation={3}>
         <CardActionArea href={href} sx={{height: "100%"}}>
             <CardContent sx={{height: "100%"}}>
                 <Box display="flex" alignItems="center">
