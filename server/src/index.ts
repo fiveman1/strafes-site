@@ -336,15 +336,16 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
         const data = ranks[i];
         const rank = calcRank(data.rank);
+        const userId = (data.user.id as number).toString();
         rankArr.push({
             id: data.id,
             style: +style,
             game: +game,
             rank: rank,
             skill: data.skill,
-            userId: (data.user.id as number).toString(),
+            userId: userId,
             username: data.user.username,
-            userRole: roles.get(data.user.id),
+            userRole: roles.get(userId),
             placement: ((page - 1) * 100) + i + 1
         });
     }
@@ -791,12 +792,13 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
                 continue;
             }
             timeIds.add(time.id);
+            const timeUserId = (time.user.id as number).toString();
             timeArr.push({
                 map: time.map.display_name,
                 mapId: time.map.id,
                 username: time.user.username,
-                userId: (time.user.id as number).toString(),
-                userRole: roles.get(time.user.id),
+                userId: timeUserId,
+                userRole: roles.get(timeUserId),
                 time: time.time,
                 date: time.date,
                 game: time.game_id,
@@ -943,12 +945,13 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             continue;
         }
         timeIds.add(time.id);
+        const timeUserId = (time.user.id as number).toString();
         timeArr.push({
             map: time.map.display_name,
             mapId: time.map.id,
             username: time.user.username,
-            userId: (time.user.id as number).toString(),
-            userRole: roles.get(time.user.id),
+            userId: timeUserId,
+            userRole: roles.get(timeUserId),
             time: time.time,
             date: time.date,
             game: time.game_id,
