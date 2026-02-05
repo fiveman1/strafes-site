@@ -2,7 +2,7 @@ import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, darken, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLocation, useOutletContext, useParams } from "react-router";
-import { ContextParams } from "../util/format";
+import { ContextParams } from "../util/common";
 import { Game, Map, Style, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";

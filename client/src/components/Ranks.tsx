@@ -5,7 +5,7 @@ import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
-import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
+import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/common";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { yellow } from "@mui/material/colors";

@@ -2,7 +2,7 @@ import { PaletteMode } from "@mui/material";
 import { useState } from "react";
 import { Game, SettingsValues, Style, UserSearchData } from "shared";
 import { useLocation, useOutletContext } from "react-router";
-import { ContextParams } from "./format";
+import { ContextParams } from "./common";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";

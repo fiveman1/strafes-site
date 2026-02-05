@@ -8,7 +8,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
-import { ContextParams } from "../util/format";
+import { ContextParams } from "../util/common";
 
 function Home() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");

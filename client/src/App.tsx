@@ -8,7 +8,7 @@ import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
-import { ContextParams, MapCount } from "./util/format";
+import { ContextParams, MapCount } from "./util/common";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, LoginUser, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';

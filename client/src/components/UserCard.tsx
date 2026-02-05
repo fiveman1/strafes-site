@@ -3,7 +3,7 @@ import { grey } from "@mui/material/colors";
 import { User, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { ContextParams, getUserRoleColor } from "../util/format";
+import { ContextParams, getUserRoleColor } from "../util/common";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
