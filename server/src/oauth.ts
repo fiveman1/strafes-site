@@ -1,7 +1,7 @@
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
-import { Game, LoginUser, SettingsValues, Style } from "./interfaces.js";
+import { Game, LoginUser, SettingsValues, Style } from "shared";
 import { createHash, randomBytes } from "crypto";
 
 // Environment params
@@ -23,7 +23,7 @@ const config = await client.discovery(
     CLIENT_SECRET
 );
 
-const pool = mysql.createPool({
+export const AUTH_POOL = mysql.createPool({
     host: "localhost",
     user: process.env.AUTH_DB_USER ?? "",
     password: process.env.AUTH_DB_PASSWORD ?? "",
@@ -66,7 +66,7 @@ interface RobloxClaims {
     picture: string // URL
 }
 
-interface SettingsRow {
+export interface SettingsRow {
     userId: string
     theme: "dark" | "light"
     game: number
@@ -139,22 +139,14 @@ export async function authorizeAndSetTokens(request: Request, response: Response
 }
 
 export async function getLoggedInUser(request: Request, response: Response): Promise<LoginUser | undefined> {
-    // Clear out old style of cookies, can remove later once no one is still using them
-    if (request.signedCookies.accessToken) {
-        response.clearCookie("accessToken");
-    }
-    if (request.signedCookies.refreshToken) {
-        response.clearCookie("refreshToken");
-    }
-
     const session = await loadSession(request, response);
     if (!session) {
         return undefined;
     }
 
-    let userInfo;
+    let userInfo: RobloxClaims;
     try {
-        userInfo = await client.fetchUserInfo(config, session.accessToken, session.userId) as unknown as RobloxClaims;
+        userInfo = await client.fetchUserInfo(config, session.accessToken, session.userId) as client.UserInfoResponse & RobloxClaims;
     }
     catch {
         // Refresh and try again
@@ -162,7 +154,7 @@ export async function getLoggedInUser(request: Request, response: Response): Pro
         if (!newSession) {
             return undefined;
         }
-        userInfo = await client.fetchUserInfo(config, newSession.accessToken, newSession.userId) as unknown as RobloxClaims;
+        userInfo = await client.fetchUserInfo(config, newSession.accessToken, newSession.userId) as client.UserInfoResponse & RobloxClaims;
     }
 
     return {
@@ -265,30 +257,6 @@ export async function updateSettings(request: Request, response: Response) {
     response.status(200).json({success: true});
 }
 
-export async function setProfileInfoForList(array: ({userId: string | number, userCountry?: string})[]) {
-    if (array.length < 1) {
-        return;
-    }
-
-    const query = `SELECT * FROM settings WHERE userId IN (?);`;
-    const [rows] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [array.map((val) => val.userId)]);
-    if (!rows) {
-        return;
-    }
-
-    const userIdToSettings = new Map<number, SettingsRow>();
-    for (const row of rows) {
-        userIdToSettings.set(+row.userId, row);
-    }
-
-    for (const val of array) {
-        const settings = userIdToSettings.get(+val.userId);
-        if (settings) {
-             val.userCountry = settings.countryCode ?? undefined;
-        }
-    }
-}
-
 // Helpers
 async function loadSession(request: Request, response: Response, noRefresh?: boolean): Promise<Session | undefined> {
     const cookies = request.signedCookies as AuthCookies;
@@ -303,7 +271,7 @@ async function loadSessionFromDB(response: Response, sessionToken: string, noRef
     const hash = hashSessionToken(sessionToken);
     
     const query = "SELECT * FROM sessions WHERE sessionHash = ?;";
-    const [[row]] = await pool.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
+    const [[row]] = await AUTH_POOL.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
     if (!row) {
         response.clearCookie("session");
         return undefined;
@@ -369,17 +337,17 @@ async function insertSessionToDB(session: SessionRow) {
         session.accessExpiresAt,
         session.userId
     ];
-    await pool.query(query, [[values]]);
+    await AUTH_POOL.query(query, [[values]]);
 }
 
 async function deleteSessionFromDB(session: SessionRow) {
     const query = `DELETE FROM sessions WHERE sessionHash=?;`;
-    await pool.query(query, [session.sessionHash]);
+    await AUTH_POOL.query(query, [session.sessionHash]);
 }
 
 export async function loadSettingsFromDB(userId: string): Promise<SettingsValues | undefined> {
     const query = `SELECT * FROM settings WHERE userId=?`;
-    const [[row]] = await pool.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
+    const [[row]] = await AUTH_POOL.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
     if (!row) {
         return undefined;
     }
@@ -412,7 +380,7 @@ async function updateSettingsToDB(settings: SettingsRow) {
         settings.maxDaysRelative,
         settings.countryCode
     ];
-    await pool.query(query, [[values]]);
+    await AUTH_POOL.query(query, [[values]]);
 }
 
 // async function deleteSessionsByUserFromDB(userId: string) {

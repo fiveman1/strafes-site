@@ -10,7 +10,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-import { LoginUser } from '../api/interfaces';
+import { LoginUser } from 'shared';
 import { grey } from '@mui/material/colors';
 import { logout } from '../api/api';
 import { useLocation, useNavigate } from 'react-router';

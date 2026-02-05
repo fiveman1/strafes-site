@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { bhop_styles, Game, Style } from "../api/interfaces";
-import { formatStyle, getAllowedStyles } from "../util/format";
+import { bhop_styles, Game, Style, formatStyle, getAllowedStyles } from "shared";
 import { useLocation, useNavigate } from "react-router";
 
 interface IStyleSelectorProps {

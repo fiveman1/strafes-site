@@ -4,7 +4,8 @@
     "private": true,
     "workspaces": [
         "client",
-        "server"
+        "server",
+        "shared"
     ],
     "devDependencies": {
         "concurrently": "^9.2.0"
@@ -12,8 +13,9 @@
     "scripts": {
         "dev:frontend": "yarn workspace client run dev",
         "dev:backend": "yarn workspace server run dev",
-        "dev": "concurrently -n \"FRONTEND,BACKEND\" -c \"red,blue\" -p \"[{name}]\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
-        "build": "yarn workspace client run build && yarn workspace server run build",
+        "dev:shared": "yarn workspace shared run dev",
+        "dev": "yarn workspace shared run dev-start && concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
+        "build": "yarn workspace shared run build && yarn workspace client run build && yarn workspace server run build",
         "start": "yarn workspace server run start",
         "prod": "yarn run build && yarn run start"
     }

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
-import { Game, Map, TimeSortBy, Style, Time } from "../api/interfaces";
-import { ALL_COURSES } from "../util/format";
+import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { GridSortDirection, GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
@@ -41,7 +40,7 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
     }
 
     if (!hideUser) {
-        cols.push(makeUserColumn<Time>(280));
+        cols.push(makeUserColumn<Time>(300));
     }
 
     if (showPlacement && showPlacementOrdinals) {

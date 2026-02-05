@@ -8,7 +8,8 @@
         "strict": true,
         "noFallthroughCasesInSwitch": true,
         "module": "nodenext",
-        "moduleResolution": "nodenext"
+        "moduleResolution": "nodenext",
+        "preserveWatchOutput": true
     },
     "include": [
         "./src/**/*"

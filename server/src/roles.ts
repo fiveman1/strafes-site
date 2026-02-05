@@ -1,5 +1,5 @@
 import memoize from "memoize";
-import { UserRole } from "./interfaces.js";
+import { UserRole } from "shared";
 import { tryGetRequest } from "./requests.js";
 
 const RBHOP_GROUP_ID = 2607715;

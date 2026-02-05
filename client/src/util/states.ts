@@ -1,6 +1,6 @@
 import { PaletteMode } from "@mui/material";
 import { useState } from "react";
-import { Game, SettingsValues, Style, UserSearchData } from "../api/interfaces";
+import { Game, SettingsValues, Style, UserSearchData } from "shared";
 import { useLocation, useOutletContext } from "react-router";
 import { ContextParams } from "./format";
 

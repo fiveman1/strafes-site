@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, ModerationStatus, Rank, Style, User } from "../api/interfaces";
+import { Game, ModerationStatus, Rank, Style, User, formatRank, formatSkill } from "shared";
 import { getCompletionsForUser, getNumWRsForUser, getUserRank, WRCount } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import { ContextParams, formatRank, formatSkill, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
+import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
 import { yellow } from "@mui/material/colors";

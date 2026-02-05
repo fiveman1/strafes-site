@@ -1,4 +1,4 @@
-import { Map } from "../api/interfaces";
+import { Map } from "shared";
 
 export function sortMapsByName(a: Map, b: Map) {
     const nameA = a.name.toLowerCase();

@@ -1,0 +1,25 @@
+{
+    "name": "shared",
+    "version": "1.0.0",
+    "private": true,
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "require": "./dist/index.js",
+            "import": "./dist/index.mjs"
+        }
+    },
+    "scripts": {
+        "dev-start": "tsup src/index.ts --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts --format cjs,esm --dts --watch --no-clean",
+        "build": "tsup src/index.ts --format cjs,esm --dts --clean --minify"
+    },
+    "devDependencies": {
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "tsup": "^8.5.1"
+    }
+}

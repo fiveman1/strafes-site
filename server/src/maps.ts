@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import { getPool } from "./globals.js";
-import { Game, Map as StrafesMap } from "./interfaces.js";
+import { Game, Map as StrafesMap } from "shared";
 import { tryGetMaps, tryGetRequest } from "./requests.js";
 
 interface MapSQL {

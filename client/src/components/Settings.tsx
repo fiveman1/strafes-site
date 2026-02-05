@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Game, SettingsValues, Style } from "../api/interfaces";
+import { Game, SettingsValues, Style } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import ThemeSelector from "./ThemeSelector";

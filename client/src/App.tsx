@@ -10,7 +10,7 @@ import Link, { LinkProps } from '@mui/material/Link';
 import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./util/format";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
-import { Game, LoginUser, Map, SettingsValues } from "./api/interfaces";
+import { Game, LoginUser, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./util/sort";
 import useAppBarHeight, { saveSettingsToLocalStorage, useSettings } from "./util/states";

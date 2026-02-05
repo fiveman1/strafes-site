@@ -1,9 +1,9 @@
 import { Avatar, Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { User } from "../api/interfaces";
+import { User, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { ContextParams, formatUserRole, getUserRoleColor } from "../util/format";
+import { ContextParams, getUserRoleColor } from "../util/format";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";

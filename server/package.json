@@ -5,7 +5,7 @@
     "description": "Server for strafes.fiveman1.net",
     "type": "module",
     "scripts": {
-        "dev": "tsx --watch --env-file ../.env src/index.ts --dev",
+        "dev": "tsx watch --clear-screen=false --env-file ../.env src/index.ts --dev",
         "start": "node --env-file ../.env dist/index.js",
         "build": "rm -rf dist && npx tsc"
     },
@@ -20,7 +20,8 @@
         "express-rate-limit": "^7.5.1",
         "memoize": "^10.1.0",
         "mysql2": "^3.16.0",
-        "openid-client": "^6.8.1"
+        "openid-client": "^6.8.1",
+        "shared": "^1.0.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.29.0",

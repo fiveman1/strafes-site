@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import TimeDisplay from "./TimeDisplay";
 import DateDisplay from "./DateDisplay";
-import { Time } from "../api/interfaces";
+import { Time } from "shared";
 import DiffDisplay from "./DiffDisplay";
 
 function TimeDateColumn(props: {time: Time}) {

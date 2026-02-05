@@ -1,6 +1,6 @@
 import { Box, Link, Typography } from "@mui/material";
-import { Game, Style } from "../api/interfaces";
-import { ContextParams, formatCourse } from "../util/format";
+import { Game, Style, formatCourse } from "shared";
+import { ContextParams } from "../util/format";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";

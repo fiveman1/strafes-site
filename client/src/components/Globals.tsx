@@ -2,13 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Typography } from "@mui/material";
 import TimesCard from "./TimesCard";
-import { LeaderboardCount, LeaderboardSortBy, TimeSortBy } from "../api/interfaces";
+import { LeaderboardCount, LeaderboardSortBy, TimeSortBy, ALL_COURSES, MAIN_COURSE } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { ALL_COURSES, MAIN_COURSE } from "../util/format";
 import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
-import { Game, Style } from "../api/interfaces";
+import { Game, Style } from "shared";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -67,7 +66,7 @@ function Globals() {
 function makeColumns(game: Game, style: Style) {
     const cols: GridColDef[] = [];
 
-    cols.push(makeUserColumn<LeaderboardCount>(50, false, game, style))
+    cols.push(makeUserColumn<LeaderboardCount>(60, false, game, style))
 
     cols.push({
         type: "number",

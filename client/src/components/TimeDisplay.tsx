@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { formatTime } from "../util/format";
+import { formatTime } from "shared";
 import DiffDisplay from "./DiffDisplay";
 
 interface ITimeDisplayProps {

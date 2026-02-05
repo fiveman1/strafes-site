@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
-import { Game, Rank, RankSortBy, Style } from "../api/interfaces";
+import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
-import { formatRank, formatSkill, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
+import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/format";
 import { getRanks } from "../api/api";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { yellow } from "@mui/material/colors";
@@ -27,7 +27,7 @@ function makeColumns(placementWidth: number) {
         valueFormatter: (value) => value
     });
     
-    cols.push(makeUserColumn<Rank>(240));
+    cols.push(makeUserColumn<Rank>(270));
 
     cols.push({
         type: "number",

@@ -1,5 +1,5 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, LeaderboardSortBy, Style } from "./interfaces.js";
+import { Game, LeaderboardSortBy, Style } from "shared";
 
 export interface Record {
     time_id: string,

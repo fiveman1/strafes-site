@@ -5,14 +5,15 @@ import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy } from "./interfaces.js";
-import { calcRank, formatCourse, formatGame, formatStyle, MAIN_COURSE, safeQuoteText, validatePositiveInt } from "./util.js";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE } from "shared";
+import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
 import { tryGetCached, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
-import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, setProfileInfoForList, updateSettings } from "./oauth.js";
+import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
+import { setUserInfoForList } from "./users.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
@@ -95,13 +96,13 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
     for (const result of searchRes.data.searchResults[0].contents) {
         usernames.push({
             username: result.username,
-            id: result.contentId.toString(),
+            userId: result.contentId.toString(),
             previousUsernames: result.previousUsernames
         });
     }
 
     const thumbRes = await tryGetRequest("https://thumbnails.roproxy.com/v1/users/avatar-headshot", {
-        userIds: usernames.map((user) => user.id),
+        userIds: usernames.map((user) => user.userId),
         size: "75x75",
         format: "Webp",
         isCircular: false
@@ -113,8 +114,8 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
             idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
         }
         for (const user of usernames) {
-            if (user.id === undefined) continue;
-            user.thumbnail = idToThumb.get(+user.id);
+            if (user.userId === undefined) continue;
+            user.userThumb = idToThumb.get(+user.userId);
         }
     }
 
@@ -252,7 +253,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     }
 
     const data = await Promise.all(promises);
-    await setProfileInfoForList(data);
+    await setUserInfoForList(data);
 
     res.status(200).json({
         total: pageRes.total,
@@ -363,7 +364,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         });
     }
 
-    await setProfileInfoForList(rankArr);
+    await setUserInfoForList(rankArr);
 
     const promises = [];
     for (const rank of rankArr) {
@@ -792,7 +793,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         });
     }
 
-    await setProfileInfoForList(timeArr);
+    await setUserInfoForList(timeArr);
 
     const pageInfo = timeRes.data.pagination;
     const pagination: Pagination = {
@@ -948,7 +949,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         promises.push(setTimePlacements(timeArr));
     }
     promises.push(setTimeDiffs(timeArr));
-    promises.push(setProfileInfoForList(timeArr));
+    promises.push(setUserInfoForList(timeArr));
 
     await Promise.all(promises);
 

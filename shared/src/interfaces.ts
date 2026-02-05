@@ -49,6 +49,7 @@ export interface Rank {
     userId: string
     userRole?: UserRole
     userCountry?: string
+    userThumb?: string
     mainWrs?: number
     bonusWrs?: number
     placement?: number
@@ -61,6 +62,7 @@ export interface Time {
     userId: number
     userRole?: UserRole
     userCountry?: string
+    userThumb?: string
     time: number
     date: string
     game: Game
@@ -117,9 +119,9 @@ export enum ModerationStatus {
 
 export interface UserSearchData {
     username: string
-    id?: string
+    userId?: string
     previousUsernames?: string[] | null
-    thumbnail?: string
+    userThumb?: string
 }
 
 export enum UserRole {
@@ -139,6 +141,7 @@ export interface LeaderboardCount {
     username: string
     userRole?: UserRole
     userCountry?: string
+    userThumb?: string
     count: number
     earliestDate: string
     latestDate: string

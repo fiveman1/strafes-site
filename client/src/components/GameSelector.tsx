@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { Game, Style } from "../api/interfaces";
-import { formatGame, getAllowedStyles } from "../util/format";
+import { Game, Style, formatGame, getAllowedStyles } from "shared";
 import { useLocation, useNavigate } from "react-router";
 
 interface IGameSelectorProps {

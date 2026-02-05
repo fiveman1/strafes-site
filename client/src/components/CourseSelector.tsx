@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { Map } from "../api/interfaces";
-import { formatCourse } from "../util/format";
+import { Map, formatCourse } from "shared";
 import { useLocation, useNavigate } from "react-router";
 
 interface ICourseSelectorProps {

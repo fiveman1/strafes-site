@@ -1,5 +1,5 @@
 import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
-import { Time } from "../api/interfaces";
+import { Time } from "shared";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { makeCourseColumn, makeDateColumn, makeGameColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeColumn, makeUserColumn } from "../util/columns";

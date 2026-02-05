@@ -1,26 +1,29 @@
-import { Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
+import { Avatar, Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
 import { Link as RouterLink, useOutletContext } from "react-router";
-import { Game, Style, UserRole } from "../api/interfaces";
+import { Game, Style, UserRole } from "shared";
 import { ContextParams, getUserRoleColor } from "../util/format";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import ReactCountryFlag from "react-country-flag";
 import { formatCountryCode } from "../util/countries";
+import { grey } from "@mui/material/colors";
 
 interface IUserLinkProps extends LinkProps {
     userId: string | number
     username: string
     userRole?: UserRole
     userCountry?: string
+    userThumb?: string
     game: Game
     strafesStyle: Style
 }
 
 function UserLink(props: IUserLinkProps) {
-    const { userId, username, userRole, userCountry, game, strafesStyle, ...linkProps }  = props;
+    const { userId, username, userRole, userCountry, userThumb, game, strafesStyle, ...linkProps }  = props;
     const theme = useTheme();
     const { loggedInUser } = useOutletContext() as ContextParams;
 
     const isCurrentUser = loggedInUser && +userId === +loggedInUser.userId;
+    console.log(userThumb);
 
     return (
     <Link {...linkProps} 
@@ -31,6 +34,7 @@ function UserLink(props: IUserLinkProps) {
         maxWidth="100%"
     >
         <Box display="flex" flexDirection="row" alignItems="center">
+            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, width: "28px", height: "28px" }} alt={username} src={userThumb} />
             <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                 {username}
             </Typography>

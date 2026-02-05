@@ -1,6 +1,5 @@
 import { Box, IconButton, Typography } from "@mui/material";
-import { Game, Style, Time, TimeSortBy, UserRole } from "../api/interfaces";
-import { formatCourse, formatGame, formatPlacement, formatStyle } from "../util/format";
+import { Game, Style, Time, TimeSortBy, UserRole, formatCourse, formatGame, formatPlacement, formatStyle } from "shared";
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
@@ -35,6 +34,7 @@ interface UserRowInfo {
     username: string
     userRole?: UserRole
     userCountry?: string
+    userThumb?: string
     game?: Game
     style?: Style
 }
@@ -44,7 +44,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
         field: "username",
         headerName: "User",
         flex: flex,
-        minWidth: 150,
+        minWidth: 180,
         sortable: false,
         renderCell: noLink ? undefined : (params: GridRenderCellParams<T, string>) => {
             const time = params.row;
@@ -56,6 +56,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
                     username={time.username} 
                     userRole={time.userRole} 
                     userCountry={time.userCountry} 
+                    userThumb={time.userThumb}
                     game={linkGame} 
                     strafesStyle={linkStyle} 
                     fontWeight="bold" 

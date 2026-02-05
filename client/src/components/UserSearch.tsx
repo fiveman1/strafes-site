@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Autocomplete, Avatar, Box, debounce, Paper, TextField, Typography, useTheme } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
-import { UserSearchData } from "../api/interfaces";
+import { UserSearchData } from "shared";
 import { UserSearchInfo } from "../util/states";
 import { grey } from "@mui/material/colors";
 
@@ -103,7 +103,7 @@ function UserSearch(props: IUserSearchProps) {
         }
         else {
             setSelectedUser(search);
-            userId = search.id;
+            userId = search.userId;
             if (!userId) {
                 userId = await getUserIdFromName(search.username);
             }
@@ -170,7 +170,7 @@ function UserSearch(props: IUserSearchProps) {
                             key={key}
                             {...props}
                         >
-                            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, flexShrink: 0 }} alt={option.username} src={option.thumbnail} />
+                            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, flexShrink: 0 }} alt={option.username} src={option.userThumb} />
                             {option.username}
                         </Box>
                     )}
