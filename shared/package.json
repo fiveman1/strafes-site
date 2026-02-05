@@ -12,14 +12,14 @@
         }
     },
     "scripts": {
-        "dev-start": "tsup src/index.ts --format cjs,esm --dts --clean",
-        "dev": "tsup src/index.ts --format cjs,esm --dts --watch --no-clean",
-        "build": "tsup src/index.ts --format cjs,esm --dts --clean --minify"
+        "dev-start": "tsup src/index.ts --format esm --dts --clean",
+        "dev": "tsup src/index.ts --format esm --dts --watch --no-clean",
+        "build": "tsup src/index.ts --format esm --dts --clean --minify"
     },
     "devDependencies": {
-        "typescript": "^5.8.3"
-    },
-    "dependencies": {
+        "eslint": "^9.39.2",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.54.0",
         "tsup": "^8.5.1"
     }
 }

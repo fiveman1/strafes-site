@@ -24,7 +24,7 @@ type MapSQLRow = MapSQL & RowDataPacket;
 async function getMapFromDB(mapId: string | number): Promise<StrafesMap | undefined> {
     const pool = getPool();
     if (!pool) {
-        return undefined;;
+        return undefined;
     }
 
     const query = `SELECT * FROM maps WHERE map_id = ?;`;

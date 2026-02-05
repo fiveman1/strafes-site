@@ -24,14 +24,12 @@
         "shared": "^1.0.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.29.0",
         "@tsconfig/node21": "^21.0.4",
         "@types/apicache": "^1.6.7",
         "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.3",
         "@types/node": "^24.0.4",
         "eslint": "^9.39.2",
-        "jiti": "^2.6.1",
         "tsx": "^4.20.3",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.54.0"
