@@ -451,7 +451,7 @@ function MapsPage() {
             <Paper elevation={2} sx={{padding: 3, display:"flex", alignItems: "center"}}>
                 <Box width="100%">
                     <Typography variant="subtitle1" marginBottom={2}>Search by name or creator as you type</Typography>
-                    <TextField onChange={onSearchTextChanged} fullWidth label="Name" variant="outlined" type="search" />
+                    <TextField onChange={onSearchTextChanged} fullWidth label="Name" variant="outlined" type="search" slotProps={{htmlInput: {autoComplete: "one-time-code"}}}/>
                 </Box>
             </Paper>
         </Box>
