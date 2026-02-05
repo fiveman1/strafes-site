@@ -8,7 +8,7 @@ interface MapSQL {
     name: string
     creator: string
     game: Game
-    date: string
+    date: Date
     created_at: string
     updated_at: string
     submitter: string
@@ -40,7 +40,7 @@ async function getMapFromDB(mapId: string | number): Promise<StrafesMap | undefi
         name: row.name,
         creator: row.creator,
         game: row.game,
-        date: new Date(row.date).toISOString(), // ISO strings for consistency
+        date: row.date.toISOString(), // ISO strings for consistency
         modes: row.modes,
         loadCount: row.load_count,
         smallThumb: row.small_thumb ?? undefined,
@@ -88,7 +88,7 @@ async function getAllMapsFromDB() {
             name: row.name,
             creator: row.creator,
             game: row.game,
-            date: new Date(row.date).toISOString(), // ISO strings for consistency
+            date: row.date.toISOString(), // ISO strings for consistency
             modes: row.modes,
             loadCount: row.load_count,
             smallThumb: row.small_thumb ?? undefined,

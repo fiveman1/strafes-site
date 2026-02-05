@@ -62,15 +62,14 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
     }
 }
 
-export function makeDateColumn(sortable: boolean): GridColDef {
+export function makeDateColumn(): GridColDef {
     return {
         type: "string",
         field: "date",
         headerName: "Date",
         flex: 180,
         minWidth: 125,
-        sortingOrder: sortable ? ["desc", "asc"] : [],
-        sortable: sortable,
+        sortingOrder: ["desc", "asc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             return <DateDisplay date={params.row.date} />
         }
@@ -114,15 +113,14 @@ export function makePlacementColumn(sortable: boolean, isCompact?: boolean): Gri
     }
 }
 
-export function makeTimeColumn(sortable: boolean): GridColDef {
+export function makeTimeColumn(): GridColDef {
     return {
         type: "string",
         field: "time",
         headerName: "Time",
         flex: 200,
         minWidth: 165,
-        sortingOrder: sortable ? ["asc", "desc"] : [],
-        sortable: sortable,
+        sortingOrder: ["asc", "desc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDisplay ms={time.time} diff={time.wrDiff} />
@@ -130,7 +128,7 @@ export function makeTimeColumn(sortable: boolean): GridColDef {
     };
 }
 
-export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): GridColDef {
+export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
     const isTimeSort = sortBy === TimeSortBy.TimeAsc || sortBy === TimeSortBy.TimeDesc;
     const isAsc = sortBy === TimeSortBy.TimeAsc || sortBy === TimeSortBy.DateAsc;
     return {
@@ -159,8 +157,7 @@ export function makeTimeAndDateColumn(sortable: boolean, sortBy: TimeSortBy): Gr
         },
         flex: 160,
         minWidth: 130,
-        sortingOrder: sortable ? ["asc", "desc"] : [],
-        sortable: sortable,
+        sortingOrder: ["asc", "desc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDateColumn time={time} />;

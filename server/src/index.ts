@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, LeaderboardCount, UserRole, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete } from "shared";
 import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
-import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record, updateWRs } from "./globals.js";
+import { getMapWR, getUserWRs, getWRLeaderboardPage, getWRList, GlobalCountSQL, updateWRs } from "./globals.js";
 import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
@@ -245,11 +245,12 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     });
 });
 
-async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style, roles: Map<number, UserRole>): Promise<LeaderboardCount> {
+async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style, roles: Map<string, UserRole>): Promise<LeaderboardCount> {
     const wrs = await getUserWRs(page.userId, game, style) || [];
 
     let bonusCount = 0;
-    let earliestDate, latestDate;
+    let earliestDate: Date | undefined;
+    let latestDate: Date | undefined;
     for (const wr of wrs) {
         if (wr.course !== 0) {
             ++bonusCount;
@@ -267,7 +268,7 @@ async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style
     return {
         userId: page.userId,
         username: page.username,
-        userRole: roles.get(+page.userId),
+        userRole: roles.get(page.userId),
         count: +page.count,
         bonusCount: bonusCount,
         earliestDate: earliestDate ? earliestDate.toISOString() : "",
@@ -343,7 +344,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
             skill: data.skill,
             userId: (data.user.id as number).toString(),
             username: data.user.username,
-            userRole: roles.get(+data.user.id),
+            userRole: roles.get(data.user.id),
             placement: ((page - 1) * 100) + i + 1
         });
     }
@@ -493,7 +494,7 @@ app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async 
     res.status(200).json(getUserWRCounts(wrs));
 });
 
-function getUserWRCounts(wrs?: Record[]) {
+function getUserWRCounts(wrs?: Time[]) {
     let mainWrs = 0;
     let bonusWrs = 0;
     let loaded = false;
@@ -642,7 +643,7 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
         return;
     }
 
-    const mapToWR = new Map<string, Record>();
+    const mapToWR = new Map<string, Time>();
     const keys = new Set<string>();
     for (const time of times) {
         keys.add(getMapKey(time));
@@ -740,62 +741,82 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
 });
 
 async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
-    const page = Math.floor(+start / 100) + 1;
-
-    const timeRes = await tryGetStrafes(onlyWR ? "time/worldrecord" : "time", {
-        user_id: userId,
-        game_id: game === Game.all ? undefined : game,
-        style_id: style === Style.all ? undefined : style,
-        mode_id: course >= 0 ? course : undefined,
-        page_number: page,
-        page_size: 100,
-        sort_by: +sort
-    });
-
-    if (!timeRes) {
-        return undefined;
-    }
-
+    let timeArr: Time[] = [];
+    let pagination: Pagination;
     const roles = await getAllUsersToRoles();
 
-    const pageStart = (+start % 100);
-    const pageEnd = (+end % 100);
-    const resTimes = timeRes.data.data;
+    if (onlyWR) {
+        const { total, wrs } = await getWRList(start, end, game ?? Game.all, style ?? Style.all, sort, course, userId);
+        
+        if (!wrs) return undefined;
 
-    const timeArr: Time[] = [];
-    const timeIds = new Set<number>();
-    for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
-        const time = resTimes[i];
-        if (timeIds.has(time.id)) {
-            // There is a bug with the API where sometimes it returns duplicate times! Awesome!
-            continue;
+        for (const wr of wrs) {
+            wr.userRole = roles.get(wr.userId);
         }
-        timeIds.add(time.id);
-        timeArr.push({
-            map: time.map.display_name,
-            mapId: time.map.id,
-            username: time.user.username,
-            userId: (time.user.id as number).toString(),
-            userRole: roles.get(+time.user.id),
-            time: time.time,
-            date: time.date,
-            game: time.game_id,
-            style: time.style_id,
-            id: time.id,
-            course: time.mode_id,
-            placement: onlyWR ? 1 : undefined
+
+        timeArr = wrs;
+        pagination = {
+            page: -1,
+            pageSize: -1,
+            totalItems: total,
+            totalPages: -1
+        };
+    }
+    else {
+        const page = Math.floor(+start / 100) + 1;
+        const pageStart = (+start % 100);
+        const pageEnd = (+end % 100);
+
+        const timeRes = await tryGetStrafes("time", {
+            user_id: userId,
+            game_id: game === Game.all ? undefined : game,
+            style_id: style === Style.all ? undefined : style,
+            mode_id: course >= 0 ? course : undefined,
+            page_number: page,
+            page_size: 100,
+            sort_by: +sort
         });
+
+        if (!timeRes) {
+            return undefined;
+        }
+
+        const resTimes = timeRes.data.data;
+
+        const timeIds = new Set<number>();
+        for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
+            const time = resTimes[i];
+            if (timeIds.has(time.id)) {
+                // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+                continue;
+            }
+            timeIds.add(time.id);
+            timeArr.push({
+                map: time.map.display_name,
+                mapId: time.map.id,
+                username: time.user.username,
+                userId: (time.user.id as number).toString(),
+                userRole: roles.get(time.user.id),
+                time: time.time,
+                date: time.date,
+                game: time.game_id,
+                style: time.style_id,
+                id: time.id,
+                course: time.mode_id,
+                placement: onlyWR ? 1 : undefined
+            });
+        }
+
+        const pageInfo = timeRes.data.pagination;
+        pagination = {
+            page: pageInfo.page,
+            pageSize: pageInfo.page_size,
+            totalItems: onlyWR ? -1 : pageInfo.total_items,
+            totalPages: onlyWR ? -1 : pageInfo.total_pages
+        };
     }
 
     await setUserInfoForList(timeArr);
-
-    const pageInfo = timeRes.data.pagination;
-    const pagination: Pagination = {
-        page: pageInfo.page,
-        pageSize: pageInfo.page_size,
-        totalItems: onlyWR ? -1 : pageInfo.total_items,
-        totalPages: onlyWR ? -1 : pageInfo.total_pages
-    };
 
     return {
         data: timeArr,
@@ -927,7 +948,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             mapId: time.map.id,
             username: time.user.username,
             userId: (time.user.id as number).toString(),
-            userRole: roles.get(+time.user.id),
+            userRole: roles.get(time.user.id),
             time: time.time,
             date: time.date,
             game: time.game_id,
@@ -1090,7 +1111,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
 
     const strafesUserRes = await strafesUserReq;
     const userRoles = await userRolesReq;
-    const role = userRoles.get(+userId);
+    const role = userRoles.get(userId);
     const settings = await settingsPromise;
 
     if (!strafesUserRes) {

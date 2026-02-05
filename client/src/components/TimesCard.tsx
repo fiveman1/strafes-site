@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { getTimeData } from "../api/api";
@@ -11,7 +11,7 @@ import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined, 
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined, 
-    notSortable: boolean | undefined, placementWidth: number, isCompact: boolean, sortBy: TimeSortBy) {
+    placementWidth: number, isCompact: boolean, sortBy: TimeSortBy) {
     const cols: GridColDef[]  = [];
 
     if (showPlacement && !showPlacementOrdinals) {
@@ -47,17 +47,16 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
     }
 
     if (isCompact) {
-        cols.push(makeTimeAndDateColumn(!notSortable, sortBy));
+        cols.push(makeTimeAndDateColumn(sortBy));
         cols.push({
             type: "string",
             field: "date",
-            sortingOrder: !notSortable ? ["asc", "desc"] : [],
-            sortable: !notSortable,
+            sortingOrder: ["asc", "desc"]
         });
     }
     else {
-        cols.push(makeTimeColumn(!notSortable));
-        cols.push(makeDateColumn(!notSortable));
+        cols.push(makeTimeColumn());
+        cols.push(makeDateColumn());
     }
 
     if (isCompact && game === Game.all && style === Style.all) {
@@ -138,12 +137,6 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef = gridApiRef;
     }
 
-    useEffect(() => {
-        if (onlyWRs) {
-            apiRef.current?.sortColumn("date", "desc");
-        }
-    }, [onlyWRs, apiRef]);
-
     const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? 62 : 50;
 
     const getSort = useCallback((model: GridSortModel) => {
@@ -170,7 +163,7 @@ function TimesGrid(props: ITimesCardProps) {
     };
 
     const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
-        if (isCompact && !onlyWRs && params.field === "time") {
+        if (isCompact && params.field === "time") {
             event.preventDefault();
             event.defaultMuiPrevented = true;
             let field = "time";
@@ -195,9 +188,9 @@ function TimesGrid(props: ITimesCardProps) {
             }
             apiRef.current?.sortColumn(field, direction);
         }
-    }, [apiRef, getSort, isCompact, onlyWRs]);
+    }, [apiRef, getSort, isCompact]);
     
-    const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, onlyWRs, placementWidth, isCompact, currentSortBy);
+    const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, placementWidth, isCompact, currentSortBy);
 
     const gridKey = `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
 
@@ -215,34 +208,14 @@ function TimesGrid(props: ITimesCardProps) {
             onLoadTimes(timeData.times);
         }
 
-        if (onlyWRs) {
-            if (!timeData) {
-                setRowCount(0);
-                return { rows: [], pageInfo: { hasNextPage: false } }
-            }
-            const times = timeData.times;
-            const hasMore = times.length >= (end - start);
-            if (!hasMore) {
-                setRowCount(start + times.length);
-            }
-            else {
-                setRowCount(-1);
-            }
-            return {
-                rows: times,
-                pageInfo: {hasNextPage: hasMore}
-            }
+        if (!timeData) {
+            setRowCount(0);
+            return { rows: [], rowCount: 0 }
         }
-        else {
-            if (!timeData) {
-                setRowCount(0);
-                return { rows: [], rowCount: 0 }
-            }
-            setRowCount(timeData.pagination.totalItems);
-            return {
-                rows: timeData.times,
-                rowCount: timeData.pagination.totalItems
-            }
+        setRowCount(timeData.pagination.totalItems);
+        return {
+            rows: timeData.times,
+            rowCount: timeData.pagination.totalItems
         }
     }, [allowOnlyWRs, course, game, map, onLoadTimes, onlyWRs, style, userId]);
 
