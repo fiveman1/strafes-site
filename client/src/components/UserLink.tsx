@@ -23,7 +23,6 @@ function UserLink(props: IUserLinkProps) {
     const { loggedInUser } = useOutletContext() as ContextParams;
 
     const isCurrentUser = loggedInUser && +userId === +loggedInUser.userId;
-    console.log(userThumb);
 
     return (
     <Link {...linkProps} 

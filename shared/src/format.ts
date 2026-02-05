@@ -71,14 +71,14 @@ export function formatTime(time: number) {
         }
         return `~${days} days`;
     }
-    const millis = formatTimeHelper(time % 1000, 3)
-    const seconds = formatTimeHelper(Math.floor(time / 1000) % 60, 2)
-    const minutes = formatTimeHelper(Math.floor(time / (1000 * 60)) % 60, 2)
-    const hours = formatTimeHelper(Math.floor(time / (1000 * 60 * 60)) % 24, 2)
+    const millis = formatTimeHelper(time % 1000, 3);
+    const seconds = formatTimeHelper(Math.floor(time / 1000) % 60, 2);
+    const minutes = formatTimeHelper(Math.floor(time / (1000 * 60)) % 60, 2);
+    const hours = formatTimeHelper(Math.floor(time / (1000 * 60 * 60)) % 24, 2);
     if (hours === "00") {
-        return minutes + ":" + seconds + "." + millis
+        return minutes + ":" + seconds + "." + millis;
     }
-    return hours + ":" + minutes + ":" + seconds
+    return hours + ":" + minutes + ":" + seconds;
 }
 
 const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"];
@@ -88,7 +88,7 @@ export function formatRank(rank: number) {
 }
 
 export function formatSkill(skill: number) {
-    return `${(skill * 100).toFixed(3)}%`
+    return `${(skill * 100).toFixed(3)}%`;
 }
 
 export function getAllowedStyles(game: Game) {
@@ -124,7 +124,12 @@ export function formatPlacement(placement?: number) {
 
 export function formatDiff(diffMs: number) {
     const diff = diffMs / 1000;
-    if (diff >= 60) {
+    if (diff >= 3600) {
+        const hours = Math.floor(diff / 3600);
+        const minutes = Math.round((diff / 60) % 60);
+        return `${hours}h ${minutes}m`;
+    }
+    else if (diff >= 60) {
         let minutes = Math.floor(diff / 60);
         let seconds = Math.round(diff % 60);
         if (seconds === 60) {
