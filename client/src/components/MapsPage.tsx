@@ -16,7 +16,6 @@ import { download, generateCsv, mkConfig } from "export-to-csv";
 import MapSortSelector from "./MapSortSelector";
 import { sortMapsByName } from "../util/sort";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
-import { AcceptedData } from "export-to-csv/output/lib/types";
 import { MapTimesSort, useCourse, useGame, useMapSort, useStyle } from "../util/states";
 
 const CARD_SIZE = 180;
@@ -422,7 +421,7 @@ function MapsPage() {
         const csvConfig = mkConfig({ filename: "maps", columnHeaders: [
             "id", "name", "creator", "game", "release_date", "load_count", "courses"
         ]});
-        const mapData: Record<string, AcceptedData>[] = [];
+        const mapData: Record<string, number | string | boolean | null | undefined>[] = [];
         for (const map of sortedMaps) {
             mapData.push({
                 id: map.id,

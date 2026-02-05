@@ -1,18 +1,13 @@
 import { Avatar, Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
 import { Link as RouterLink, useOutletContext } from "react-router";
-import { Game, Style, UserRole } from "shared";
+import { Game, Style, UserInfo } from "shared";
 import { ContextParams, getUserRoleColor } from "../util/common";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import ReactCountryFlag from "react-country-flag";
 import { formatCountryCode } from "../util/countries";
 import { grey } from "@mui/material/colors";
 
-interface IUserLinkProps extends LinkProps {
-    userId: string | number
-    username: string
-    userRole?: UserRole
-    userCountry?: string
-    userThumb?: string
+interface IUserLinkProps extends LinkProps, UserInfo {
     game: Game
     strafesStyle: Style
 }
@@ -22,7 +17,7 @@ function UserLink(props: IUserLinkProps) {
     const theme = useTheme();
     const { loggedInUser } = useOutletContext() as ContextParams;
 
-    const isCurrentUser = loggedInUser && +userId === +loggedInUser.userId;
+    const isCurrentUser = loggedInUser && userId === loggedInUser.userId;
 
     return (
     <Link {...linkProps} 

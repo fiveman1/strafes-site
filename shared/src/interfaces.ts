@@ -10,6 +10,14 @@ export interface User {
     country?: string
 }
 
+export interface UserInfo {
+    userId: string
+    username: string
+    userRole?: UserRole
+    userCountry?: string
+    userThumb?: string
+}
+
 export enum Game {
     bhop = 1,
     surf = 2,
@@ -39,30 +47,20 @@ export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.h
 export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity];
 export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe];
 
-export interface Rank {
+export interface Rank extends UserInfo {
     id: number
     style: Style
     game: Game
     rank: number
     skill: number
-    username: string
-    userId: string
-    userRole?: UserRole
-    userCountry?: string
-    userThumb?: string
     mainWrs?: number
     bonusWrs?: number
     placement?: number
 }
 
-export interface Time {
+export interface Time extends UserInfo {
     map: string
     mapId: number
-    username: string
-    userId: number
-    userRole?: UserRole
-    userCountry?: string
-    userThumb?: string
     time: number
     date: string
     game: Game
@@ -124,6 +122,12 @@ export interface UserSearchData {
     userThumb?: string
 }
 
+export interface UserSearchDataComplete extends UserSearchData {
+    userId: string
+    previousUsernames: string[] | null
+    userThumb?: string
+}
+
 export enum UserRole {
     Faste = 17639145,
     MapMaker = 17307028,
@@ -136,12 +140,7 @@ export enum UserRole {
     GameCreator = 17295536
 }
 
-export interface LeaderboardCount {
-    userId: string
-    username: string
-    userRole?: UserRole
-    userCountry?: string
-    userThumb?: string
+export interface LeaderboardCount extends UserInfo {
     count: number
     earliestDate: string
     latestDate: string

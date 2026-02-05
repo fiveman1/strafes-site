@@ -5,15 +5,15 @@ import path from "path";
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, UserRole, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, LeaderboardCount, UserRole, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete } from "shared";
 import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
-import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record } from "./globals.js";
-import { tryGetCached, tryGetRequest, tryGetStrafes, tryPostCached } from "./requests.js";
+import { getMapWR, getUserWRs, getWRLeaderboardPage, GlobalCountSQL, Record, updateWRs } from "./globals.js";
+import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
 import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
-import { setUserInfoForList } from "./users.js";
+import { setUserInfoForList, setUserThumbsForList } from "./users.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
@@ -81,7 +81,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
         return;
     }
 
-    const usernames: UserSearchData[] = [];
+    const usernames: UserSearchDataComplete[] = [];
     const searchRes = await tryGetCached("https://apis.roproxy.com/search-api/omni-search", {
         verticalType: "user",
         searchQuery: username,
@@ -101,23 +101,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
         });
     }
 
-    const thumbRes = await tryGetRequest("https://thumbnails.roproxy.com/v1/users/avatar-headshot", {
-        userIds: usernames.map((user) => user.userId),
-        size: "75x75",
-        format: "Webp",
-        isCircular: false
-    });
-
-    if (thumbRes) {
-        const idToThumb = new Map<number, string>();
-        for (const thumbInfo of thumbRes?.data.data) {
-            idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
-        }
-        for (const user of usernames) {
-            if (user.userId === undefined) continue;
-            user.userThumb = idToThumb.get(+user.userId);
-        }
-    }
+    await setUserThumbsForList(usernames);
 
     res.status(200).json({usernames: usernames});
 
@@ -357,7 +341,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
             game: +game,
             rank: rank,
             skill: data.skill,
-            userId: data.user.id,
+            userId: (data.user.id as number).toString(),
             username: data.user.username,
             userRole: roles.get(+data.user.id),
             placement: ((page - 1) * 100) + i + 1
@@ -441,10 +425,8 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     }
 
     if (!onlyWR) {
-        const promises = [];
-        promises.push(setTimePlacements(timeInfo.data));
-        promises.push(setTimeDiffs(timeInfo.data));
-        await Promise.all(promises);
+        await setTimePlacements(timeInfo.data);
+        await setTimeDiffs(timeInfo.data); // Has to happen after placements
     }
 
     res.status(200).json(timeInfo);
@@ -615,7 +597,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
                 map: time.map.display_name,
                 mapId: time.map.id,
                 username: time.user.username,
-                userId: time.user.id,
+                userId: (time.user.id as number).toString(),
                 time: time.time,
                 date: time.date,
                 game: time.game_id,
@@ -655,7 +637,7 @@ async function setTimePlacements(times: Time[]) {
     }
 }
 
-async function setTimeDiffs(times: Time[]) {
+async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     if (times.length < 1) {
         return;
     }
@@ -680,12 +662,24 @@ async function setTimeDiffs(times: Time[]) {
 
     await Promise.all(promises);
 
+    const newWrs: Time[] = [];
+    
     for (const time of times) {
         const mapKey = getMapKey(time);
         const wr = mapToWR.get(mapKey);
         if (wr) {
             time.wrDiff = time.time - wr.time;
+            
         }
+
+        if (!skipUpdate && time.placement === 1 && time.wrDiff !== 0) {
+            newWrs.push(time);
+        }
+    }
+
+    if (newWrs.length > 0) {
+        await updateWRs(newWrs);
+        await setTimeDiffs(times, true); // Recalculate
     }
 }
 
@@ -781,7 +775,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             map: time.map.display_name,
             mapId: time.map.id,
             username: time.user.username,
-            userId: time.user.id,
+            userId: (time.user.id as number).toString(),
             userRole: roles.get(+time.user.id),
             time: time.time,
             date: time.date,
@@ -932,7 +926,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             map: time.map.display_name,
             mapId: time.map.id,
             username: time.user.username,
-            userId: time.user.id,
+            userId: (time.user.id as number).toString(),
             userRole: roles.get(+time.user.id),
             time: time.time,
             date: time.date,
@@ -948,10 +942,10 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     if (+sort === TimeSortBy.DateAsc || +sort == TimeSortBy.DateDesc) {
         promises.push(setTimePlacements(timeArr));
     }
-    promises.push(setTimeDiffs(timeArr));
     promises.push(setUserInfoForList(timeArr));
 
     await Promise.all(promises);
+    await setTimeDiffs(timeArr); // Has to happen after placements are calculated
 
     res.status(200).json({
         data: timeArr,

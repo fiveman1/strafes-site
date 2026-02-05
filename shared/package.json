@@ -11,7 +11,6 @@
         }
     },
     "scripts": {
-        "dev-start": "tsup src/index.ts --format esm --dts --clean",
         "dev": "tsup src/index.ts --format esm --dts --watch --no-clean",
         "build": "tsup src/index.ts --format esm --dts --clean --minify"
     },

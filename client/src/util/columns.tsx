@@ -1,5 +1,5 @@
 import { Box, IconButton, Typography } from "@mui/material";
-import { Game, Style, Time, TimeSortBy, UserRole, formatCourse, formatGame, formatPlacement, formatStyle } from "shared";
+import { Game, Style, Time, TimeSortBy, UserInfo, formatCourse, formatGame, formatPlacement, formatStyle } from "shared";
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
@@ -29,12 +29,7 @@ export function makeMapColumn(isCompact?: boolean): GridColDef {
     }
 }
 
-interface UserRowInfo {
-    userId: string | number
-    username: string
-    userRole?: UserRole
-    userCountry?: string
-    userThumb?: string
+interface UserRowInfo extends UserInfo {
     game?: Game
     style?: Style
 }

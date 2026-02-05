@@ -2,8 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { getTimeData } from "../api/api";
-import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
-import { GridSortDirection, GridSortModel } from "@mui/x-data-grid/models/gridSortModel";
+import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import { makeCourseColumn, makeDateColumn, makeGameColumn, makeGameStyleColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
@@ -120,7 +119,7 @@ function TimesCard(props: ITimesCardProps) {
 function TimesGrid(props: ITimesCardProps) {
     const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, gridApiRef } = props;
     let apiRef = useGridApiRef();
-    const [rowCountState, setRowCount] = useState(onlyWRs ? -1 : 0);
+    const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(defaultSort);
     const [maxPage, setMaxPage] = useState(0);
@@ -132,10 +131,8 @@ function TimesGrid(props: ITimesCardProps) {
         isCompact = under1000px;
     }
     else {
-        isCompact = under800px
+        isCompact = under800px;
     }
-
-    const rowCount = onlyWRs ? -1 : rowCountState;
 
     if (gridApiRef) {
         apiRef = gridApiRef;
@@ -220,12 +217,16 @@ function TimesGrid(props: ITimesCardProps) {
 
         if (onlyWRs) {
             if (!timeData) {
+                setRowCount(0);
                 return { rows: [], pageInfo: { hasNextPage: false } }
             }
             const times = timeData.times;
             const hasMore = times.length >= (end - start);
             if (!hasMore) {
                 setRowCount(start + times.length);
+            }
+            else {
+                setRowCount(-1);
             }
             return {
                 rows: times,

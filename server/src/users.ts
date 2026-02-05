@@ -1,9 +1,10 @@
 import { RowDataPacket } from "mysql2/promise";
 import { AUTH_POOL, SettingsRow } from "./oauth.js";
 import { tryGetRequest } from "./requests.js";
+import { UserInfo } from "shared";
 
 
-export async function setUserInfoForList(users: ({userId: string | number, userCountry?: string, userThumb?: string})[]) {
+export async function setUserInfoForList(users: UserInfo[]) {
     if (users.length < 1) {
         return;
     }
@@ -11,7 +12,7 @@ export async function setUserInfoForList(users: ({userId: string | number, userC
     await Promise.all([setProfileInfoForList(users), setUserThumbsForList(users)]);
 }
 
-async function setProfileInfoForList(users: ({userId: string | number, userCountry?: string})[]) {
+async function setProfileInfoForList(users: UserInfo[]) {
     const query = `SELECT * FROM settings WHERE userId IN (?);`;
     const [rows] = await AUTH_POOL.query<(SettingsRow & RowDataPacket)[]>(query, [users.map((val) => val.userId)]);
     if (!rows) {
@@ -31,7 +32,7 @@ async function setProfileInfoForList(users: ({userId: string | number, userCount
     }
 }
 
-async function setUserThumbsForList(users: {userId: string | number, userThumb?: string}[]) {
+export async function setUserThumbsForList(users: UserInfo[]) {
     const thumbRes = await tryGetRequest("https://thumbnails.roproxy.com/v1/users/avatar-headshot", {
         userIds: users.map((user) => user.userId),
         size: "75x75",
@@ -49,7 +50,6 @@ async function setUserThumbsForList(users: {userId: string | number, userThumb?:
     }
 
     for (const user of users) {
-        if (user.userId === undefined) continue;
         user.userThumb = idToThumb.get(+user.userId);
     }
 }

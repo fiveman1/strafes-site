@@ -1,5 +1,5 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, LeaderboardSortBy, Style } from "shared";
+import { Game, LeaderboardSortBy, Style, Time } from "shared";
 
 export interface Record {
     time_id: string,
@@ -53,6 +53,72 @@ export async function getMapWR(mapId: string, game: Game, style: Style, course: 
         return undefined;
     }
     return record;
+}
+
+export async function updateWRs(wrs: Time[]) {
+    if (!pool || wrs.length < 1) {
+        return;
+    }
+
+    if (!(await wrsHaveMapsLoaded(wrs))) {
+        // Don't want to cause a foreign key constraint not met error
+        return;
+    }
+
+    const userIdSet = new Set<string>();
+    const userRows = [];
+    for (const wr of wrs) {
+        if (userIdSet.has(wr.userId)) continue;
+        userIdSet.add(wr.userId);
+        userRows.push([wr.userId, wr.username]);
+    }
+
+    let query = `INSERT INTO users (user_id, username) VALUES ? AS new ON DUPLICATE KEY UPDATE username=new.username;`;
+    await pool.query(query, [userRows]);
+
+    const wrRows = wrs.map((record) => [
+        record.id,
+        record.userId,
+        record.mapId,
+        record.game,
+        record.style,
+        record.course,
+        new Date(record.date),
+        record.time
+    ]);
+
+    query = `INSERT INTO globals (time_id, user_id, map_id, game, style, course, date, time) 
+        VALUES ? AS new 
+        ON DUPLICATE KEY UPDATE
+            time_id=new.time_id,
+            user_id=new.user_id,
+            map_id=new.map_id,
+            game=new.game,
+            style=new.style,
+            course=new.course,
+            date=new.date,
+            time=new.time
+    ;`;
+
+    await pool.query(query, [wrRows]);
+}
+
+async function wrsHaveMapsLoaded(wrs: Time[]) {
+    if (!pool || wrs.length < 1) {
+        return false;
+    }
+
+    const mapIdSet = new Set<number>();
+    const mapIds: number[] = [];
+    for (const wr of wrs) {
+        if (mapIdSet.has(wr.mapId)) continue;
+        mapIdSet.add(wr.mapId);
+        mapIds.push(wr.mapId);
+    }
+
+    const query = `SELECT map_id FROM maps WHERE map_id IN (?);`;
+    const [rows] = await pool.query<RowDataPacket[]>(query, [mapIds]);
+    return rows.length === mapIds.length;
 }
 
 export async function getUserWRs(userId: string, game: Game, style: Style): Promise<Record[] | undefined> {
