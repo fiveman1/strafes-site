@@ -8,6 +8,7 @@
         "@emotion/styled": "^11.14.0",
         "@mui/icons-material": "^7.1.2",
         "@mui/material": "^7.1.2",
+        "@mui/system": "^7.3.7",
         "@mui/x-charts": "^8.8.0",
         "@mui/x-data-grid": "^8.6.0",
         "axios": "^1.10.0",
