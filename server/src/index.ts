@@ -1,5 +1,4 @@
 import apicache from "apicache";
-import { AxiosResponse } from "axios";
 import express from "express";
 import path from "path";
 import { rateLimit } from 'express-rate-limit';
@@ -9,11 +8,13 @@ import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, Lead
 import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, getWRList, GlobalCountSQL, updateWRs } from "./globals.js";
-import { tryGetCached, tryGetStrafes, tryPostCached } from "./requests.js";
+import { tryGetCached, tryPostCached } from "./requests.js";
 import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
 import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
 import { setUserInfoForList, setUserThumbsForList } from "./users.js";
+import { getPlacements, getRanks, getTimes, getUserInfo, getUserRank } from "./strafes_api/api.js";
+import { PagedTotalResponseTime } from "./strafes_api/client.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
@@ -159,19 +160,13 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
         return;
     }
 
-    const rankRes = await tryGetStrafes(`user/${userId}/rank`, {
-        id: userId,
-        game_id: game,
-        style_id: style,
-        mode_id: 0
-    });
+    const data = await getUserRank(userId, +game, +style);
 
-    if (!rankRes) {
+    if (!data) {
         res.status(404).json({error: "Not found"});
         return;
     }
 
-    const data = rankRes.data.data;
     const rank = calcRank(data.rank);
 
     const rankData : Rank = {
@@ -293,12 +288,12 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         return;
     }
 
-    if (!game || isNaN(+game) || Game[+game] === undefined) {
+    if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         res.status(400).json({error: "Invalid game"});
         return;
     }
 
-    if (!style || isNaN(+style) || Style[+style] === undefined) {
+    if (!style || isNaN(+style) || Style[+style] === undefined || +style === Style.all) {
         res.status(400).json({error: "Invalid style"});
         return;
     }
@@ -313,30 +308,23 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const ranksRes = await tryGetStrafes("rank", {
-        game_id: +game === Game.all ? undefined : +game,
-        style_id: +style === Style.all ? undefined : +style,
-        mode_id: 0,
-        page_number: page,
-        page_size: 100,
-        sort_by: +sort
-    });
+    const ranksData = await getRanks(100, page, +game, +style, +sort);
 
-    if (!ranksRes) {
+    if (!ranksData) {
         res.status(404).json({error: "Not found"});
         return;
     }
 
     const pageStart = (+start % 100);
     const pageEnd = (+end % 100);
-    const ranks = ranksRes.data.data as any[];
+    const ranks = ranksData.data;
     const rankArr: Rank[] = [];
     const roles = await getAllUsersToRoles();
 
     for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
         const data = ranks[i];
         const rank = calcRank(data.rank);
-        const userId = (data.user.id as number).toString();
+        const userId = data.user.id.toString();
         rankArr.push({
             id: data.id,
             style: +style,
@@ -439,7 +427,7 @@ app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minu
     const game = req.query.game;
     const style = req.query.style;
 
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -454,20 +442,14 @@ app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minu
         return;
     }
 
-    const timeRes = await tryGetStrafes("time", {
-        user_id: userId,
-        game_id: game,
-        style_id: style,
-        mode_id: 0,
-        page_size: 1
-    });
+    const timeData = await getTimes(userId, undefined, 1, 1, +game, +style, 0);
 
-    if (!timeRes) {
+    if (!timeData) {
         res.status(404).json({error: "Not found"});
         return;
     }
 
-    res.status(200).json({completions: timeRes.data.pagination.total_items});
+    res.status(200).json({completions: timeData.pagination.total_items});
 });
 
 app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -524,7 +506,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     const qGame = req.query.game;
     const qStyle = req.query.style;
 
-    if (!validatePositiveInt(userId)) {
+    if (typeof userId !== "string" || !validatePositiveInt(userId)) {
         res.status(400).json({error: "Invalid user ID"});
         return;
     }
@@ -542,21 +524,13 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     const game: Game = +qGame;
     const style: Style = +qStyle;
 
-    const firstTimeRes = await tryGetStrafes("time", {
-        user_id: userId,
-        game_id: game,
-        style_id: style,
-        mode_id: 0,
-        page_number: 1,
-        page_size: 100,
-        sort_by: TimeSortBy.DateDesc
-    });
+    const firstTimeData = await getTimes(userId, undefined, 100, 1, game, style, 0, TimeSortBy.DateDesc);
 
-    if (!firstTimeRes) {
+    if (!firstTimeData) {
         return undefined;
     }
 
-    const pageInfo = firstTimeRes.data.pagination;
+    const pageInfo = firstTimeData.pagination;
     const pagination: Pagination = {
         page: pageInfo.page,
         pageSize: pageInfo.page_size,
@@ -564,32 +538,24 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
         totalPages: pageInfo.total_pages
     };
 
-    const promises: Promise<AxiosResponse<any, any> | undefined>[] = [];
+    const promises: Promise<PagedTotalResponseTime | undefined>[] = [];
     for (let i = 2; i <= pagination.totalPages; ++i) {
-        promises.push(tryGetStrafes("time", {
-            user_id: userId,
-            game_id: game,
-            style_id: style,
-            mode_id: 0,
-            page_number: i,
-            page_size: 100,
-            sort_by: TimeSortBy.DateDesc
-        }));
+        promises.push(getTimes(userId, undefined, 100, i, game, style, 0, TimeSortBy.DateDesc));
     }
     const resolved = await Promise.all(promises);
-    const allTimes = [firstTimeRes];
-    for (const timeRes of resolved) {
-        if (!timeRes) {
+    const allTimes = [firstTimeData];
+    for (const timeData of resolved) {
+        if (!timeData) {
             res.status(404).json({error: "Not found"});
             return;
         }
-        allTimes.push(timeRes);
+        allTimes.push(timeData);
     }
 
     const timeArr: Time[] = [];
-    const timeIds = new Set<number>();
-    for (const timeRes of allTimes) {
-        for (const time of timeRes.data.data) {
+    const timeIds = new Set<string>();
+    for (const timeData of allTimes) {
+        for (const time of timeData.data) {
             if (timeIds.has(time.id)) {
                 // There is a bug with the API where sometimes it returns duplicate times! Awesome!
                 continue;
@@ -625,15 +591,16 @@ async function setTimePlacements(times: Time[]) {
     for (const time of times) {
         timeIds.push(time.id);
     }
-    const placementRes = await tryGetStrafes("time/placement", {
-        ids: timeIds.join(",")
-    });
+
+    const placementData = await getPlacements(timeIds);
+    
     const idToPlacement = new Map<string, number>();
-    if (placementRes) {
-        for (const placementInfo of placementRes.data.data) {
+    if (placementData) {
+        for (const placementInfo of placementData) {
             idToPlacement.set(placementInfo.id, placementInfo.placement);
         }
     }
+
     for (const time of times) {
         time.placement = idToPlacement.get(time.id);
     }
@@ -768,23 +735,14 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         const pageStart = (+start % 100);
         const pageEnd = (+end % 100);
 
-        const timeRes = await tryGetStrafes("time", {
-            user_id: userId,
-            game_id: game === Game.all ? undefined : game,
-            style_id: style === Style.all ? undefined : style,
-            mode_id: course >= 0 ? course : undefined,
-            page_number: page,
-            page_size: 100,
-            sort_by: +sort
-        });
+        const data = await getTimes(userId, undefined, 100, page, game, style, course, +sort);
 
-        if (!timeRes) {
+        if (!data) {
             return undefined;
         }
+        const resTimes = data.data;
 
-        const resTimes = timeRes.data.data;
-
-        const timeIds = new Set<number>();
+        const timeIds = new Set<string>();
         for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
             const time = resTimes[i];
             if (timeIds.has(time.id)) {
@@ -792,7 +750,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
                 continue;
             }
             timeIds.add(time.id);
-            const timeUserId = (time.user.id as number).toString();
+            const timeUserId = time.user.id.toString();
             timeArr.push({
                 map: time.map.display_name,
                 mapId: time.map.id,
@@ -809,7 +767,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             });
         }
 
-        const pageInfo = timeRes.data.pagination;
+        const pageInfo = data.pagination;
         pagination = {
             page: pageInfo.page,
             pageSize: pageInfo.page_size,
@@ -852,7 +810,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const end = req.query.end;
     const sort = req.query.sort;
 
-    if (!validatePositiveInt(mapId)) {
+    if (typeof mapId !== "string" || !validatePositiveInt(mapId)) {
         res.status(400).json({error: "Invalid map ID"});
         return;
     }
@@ -893,17 +851,9 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const firstTimeRes = await tryGetStrafes("time", {
-        map_id: mapId,
-        game_id: game,
-        style_id: style,
-        mode_id: course >= 0 ? course : undefined,
-        page_number: page + 1,
-        page_size: 100,
-        sort_by: +sort
-    });
+    const firstTimeData = await getTimes(undefined, mapId, 100, page + 1, +game, +style, course, +sort);
 
-    if (!firstTimeRes) {
+    if (!firstTimeData) {
         res.status(404).json({error: "Not found"});
         return;
     }
@@ -912,7 +862,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 
     const pageStart = (+start % 100);
     const pageEnd = (+end % 100);
-    const firstTimes = firstTimeRes.data.data;
+    const firstTimes = firstTimeData.data;
 
     if (+sort === TimeSortBy.TimeAsc) {
         sortTimes(firstTimes, true);
@@ -921,7 +871,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         sortTimes(firstTimes, false);
     }
 
-    const pageInfo = firstTimeRes.data.pagination;
+    const pageInfo = firstTimeData.pagination;
     const pagination: Pagination = {
         page: pageInfo.page,
         pageSize: pageInfo.page_size,
@@ -930,7 +880,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     };
 
     const timeArr: Time[] = [];
-    const timeIds = new Set<number>();
+    const timeIds = new Set<string>();
     for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
         const time = firstTimes[i];
         let placement: number | undefined;
@@ -945,7 +895,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
             continue;
         }
         timeIds.add(time.id);
-        const timeUserId = (time.user.id as number).toString();
+        const timeUserId = time.user.id.toString();
         timeArr.push({
             map: time.map.display_name,
             mapId: time.map.id,
@@ -1098,7 +1048,7 @@ async function getUserData(userId: string): Promise<undefined | User> {
         format: "Png",
         isCircular: false
     });
-    const strafesUserReq = tryGetStrafes("user/" + userId);
+    const strafesUserReq = getUserInfo(userId);
     const userRolesReq = getAllUsersToRoles();
     const settingsPromise = loadSettingsFromDB(userId);
 
@@ -1112,12 +1062,12 @@ async function getUserData(userId: string): Promise<undefined | User> {
         url = thumbRes.data.data[0].imageUrl;
     }
 
-    const strafesUserRes = await strafesUserReq;
+    const strafesUserData = await strafesUserReq;
     const userRoles = await userRolesReq;
     const role = userRoles.get(userId);
     const settings = await settingsPromise;
 
-    if (!strafesUserRes) {
+    if (!strafesUserData) {
         return {
             displayName: user.displayName,
             id: userId,
@@ -1128,7 +1078,6 @@ async function getUserData(userId: string): Promise<undefined | User> {
             country: settings?.country
         };
     }
-    const strafesData = strafesUserRes.data.data;
 
     return {
         displayName: user.displayName,
@@ -1136,8 +1085,8 @@ async function getUserData(userId: string): Promise<undefined | User> {
         username: user.name,
         joinedOn: user.created,
         thumbUrl: url,
-        status: strafesData.state_id,
-        muted: strafesData.muted,
+        status: strafesUserData.state_id,
+        muted: strafesUserData.muted,
         role: role,
         country: settings?.country
     };

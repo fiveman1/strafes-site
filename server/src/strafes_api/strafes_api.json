@@ -1,0 +1,939 @@
+{
+    "schemes": [],
+    "swagger": "2.0",
+    "info": {
+        "description": "Obtain an api key at https://dev.strafes.net\nRequires Data:Read permission",
+        "title": "StrafesNET Data API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "",
+    "basePath": "/api/v1",
+    "paths": {
+        "/map": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of maps",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "maps"
+                ],
+                "summary": "List maps",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedResponse-Map"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/map/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific map by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "maps"
+                ],
+                "summary": "Get map by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Map ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-Map"
+                        }
+                    },
+                    "404": {
+                        "description": "Map not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/rank": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of ranks with pagination and filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ranks"
+                ],
+                "summary": "List ranks",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 2,
+                        "minimum": 1,
+                        "enum": [
+                            1,
+                            2
+                        ],
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Sort by (1: rank asc, 2: skill)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "mode_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "style_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedResponse-Rank"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/time": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of times",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "times"
+                ],
+                "summary": "List times",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "map_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "mode_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "style_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "0",
+                            "1",
+                            "2",
+                            "3"
+                        ],
+                        "type": "string",
+                        "default": "0",
+                        "description": "Sort field (time ASC, time DESC, date ASC, date DESC)",
+                        "name": "sort_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedTotalResponse-Time"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/time/placement": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get placement information for multiple times\nInvalid or not found time IDs are omitted in the response",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "times"
+                ],
+                "summary": "Get placement batch",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Comma-separated array of time IDs (25 Limit)",
+                        "name": "ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-array_TimePlacement"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/time/worldrecord": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of world records sorted by most recent\nNOTE: World records are recalutated once every hour and this endpoint is not realtime",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "times"
+                ],
+                "summary": "Get world records",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "map_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "mode_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "style_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedResponse-Time"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/time/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific time by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "times"
+                ],
+                "summary": "Get time by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Time ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-Time"
+                        }
+                    },
+                    "404": {
+                        "description": "Time not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/user": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "state_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedResponse-User"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific user by their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-User"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{id}/rank": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific rank for a user by their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get rank by user ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "name": "mode_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "name": "style_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-Rank"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "Map": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "thumbnail": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PagedResponse-Map": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Map"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    ]
+                }
+            }
+        },
+        "PagedResponse-Rank": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Rank"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    ]
+                }
+            }
+        },
+        "PagedResponse-Time": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Time"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    ]
+                }
+            }
+        },
+        "PagedResponse-User": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/User"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    ]
+                }
+            }
+        },
+        "PagedTotalResponse-Time": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Time"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/PaginationWithTotal"
+                        }
+                    ]
+                }
+            }
+        },
+        "Pagination": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "Number of items per page",
+                    "type": "integer"
+                }
+            }
+        },
+        "PaginationWithTotal": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "Number of items per page",
+                    "type": "integer"
+                },
+                "total_items": {
+                    "description": "Total number of items across all pages",
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "description": "Total number of pages",
+                    "type": "integer"
+                }
+            }
+        },
+        "Rank": {
+            "type": "object",
+            "properties": {
+                "game_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mode_id": {
+                    "type": "integer"
+                },
+                "rank": {
+                    "type": "number"
+                },
+                "skill": {
+                    "type": "number"
+                },
+                "style_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "Response-Map": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Map"
+                        }
+                    ]
+                }
+            }
+        },
+        "Response-Rank": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Rank"
+                        }
+                    ]
+                }
+            }
+        },
+        "Response-Time": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Time"
+                        }
+                    ]
+                }
+            }
+        },
+        "Response-User": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/User"
+                        }
+                    ]
+                }
+            }
+        },
+        "Response-array_TimePlacement": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TimePlacement"
+                    }
+                }
+            }
+        },
+        "Time": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "has_bot": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "map": {
+                    "$ref": "#/definitions/Map"
+                },
+                "mode_id": {
+                    "type": "integer"
+                },
+                "style_id": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "integer"
+                },
+                "user": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "TimePlacement": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "placement": {
+                    "type": "integer"
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "muted": {
+                    "type": "boolean"
+                },
+                "state_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        }
+    }
+}
