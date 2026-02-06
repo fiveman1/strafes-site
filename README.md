@@ -35,14 +35,12 @@ COOKIE_SECRET=<a randomly generated secret of your choice>
 
 ### Setup strafes_globals DB
 
-You will need to setup and run https://github.com/fiveman1/strafes-globals-db, then add
+You will need to setup and run https://github.com/fiveman1/strafes-globals-db then add the following to your `.env`
 
 ```sh
 STRAFES_DB_USER=<your MySQL user>
 STRAFES_DB_PASSWORD=<your MySQL password>
 ```
-
-to your `.env`
 
 ## How to build/run/dev
 
