@@ -27,7 +27,7 @@
     },
     "scripts": {
         "build": "vite build",
-        "dev": "vite --force"
+        "dev": "vite"
     },
     "devDependencies": {
         "@nabla/vite-plugin-eslint": "^2.0.6",

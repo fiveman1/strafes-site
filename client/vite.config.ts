@@ -21,6 +21,9 @@ export default defineConfig(() => {
 					changeOrigin: true,
 					secure: false
 				}
+			},
+			watch: {
+				ignored: ["!**/node_modules/shared/**"]
 			}
 		},
 		build: {
