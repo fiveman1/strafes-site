@@ -19,8 +19,10 @@ export interface UserInfo {
 }
 
 export enum Game {
+    testing = 0,
     bhop = 1,
     surf = 2,
+    kz = 3,
     fly_trials = 5,
     all = 999
 }

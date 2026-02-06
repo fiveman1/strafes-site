@@ -2,10 +2,14 @@ import { bhop_styles, fly_trials_styles, Game, Style, surf_styles, UserRole } fr
 
 export function formatGame(game: Game) {
     switch (game) {
+        case Game.testing:
+            return "testing";
         case Game.bhop:
             return "bhop";
         case Game.surf:
             return "surf";
+        case Game.kz:
+            return "kz";
         case Game.fly_trials:
             return "fly trials";
         case Game.all:
