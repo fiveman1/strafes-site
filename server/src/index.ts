@@ -17,6 +17,11 @@ import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js
 
 const app = express();
 
+const TRUST_PROXY = process.env.TRUST_PROXY;
+if (TRUST_PROXY) {
+    app.set("trust proxy", +TRUST_PROXY);
+}
+
 const PORT = process.env.PORT ?? "8080";
 const IS_DEBUG = process.env.DEBUG === "true";
 const IS_DEV_MODE = process.argv.splice(2)[0] === "--dev";
@@ -33,6 +38,11 @@ const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.json());
+
+// am i using a proxy
+app.get('/ip', (request, response) => {
+	response.send(request.ip);
+});
 
 app.get("/api/login", async (req, res) => {
     await redirectToAuthURL(res);
