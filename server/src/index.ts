@@ -638,7 +638,6 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
         const wr = mapToWR.get(mapKey);
         if (wr) {
             time.wrDiff = time.time - wr.time;
-            
         }
 
         if (!skipUpdate && time.placement === 1 && time.wrDiff !== 0) {
