@@ -372,7 +372,9 @@ function MapsPage() {
        
         const map = maps[mapId];
         if (map) {
-            onSelectMap(map);
+            document.title = `maps - ${map.name} - strafes`;
+            setInitalLoadComplete(true);
+            setSelectedMap(map);
         }
     }, [id, initalLoadComplete, maps, onSelectMap, selectedMap]);
 
