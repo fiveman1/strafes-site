@@ -16,6 +16,7 @@ import { getPlacements, getRanks, getTimes, getUserInfo, getUserRank } from "./s
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT ?? "8080";
 const IS_DEBUG = process.env.DEBUG === "true";
 const IS_DEV_MODE = process.argv.splice(2)[0] === "--dev";
