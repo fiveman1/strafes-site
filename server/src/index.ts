@@ -39,11 +39,6 @@ app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.json());
 
-// am i using a proxy
-app.get('/ip', (request, response) => {
-	response.send(request.ip);
-});
-
 app.get("/api/login", async (req, res) => {
     await redirectToAuthURL(res);
 });
