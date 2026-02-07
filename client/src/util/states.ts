@@ -108,7 +108,7 @@ export function useGame(searchName: string = "game", defaultGame?: Game, allowAl
         setSearchParams((params) => {
             params.set(searchName, game.toString());
             return params;
-        });
+        }, {replace: true});
     };
     return [game, setGame];
 }
@@ -144,7 +144,7 @@ export function useGameStyle(defaultGame?: Game, allowAll?: boolean, disableNav?
             params.set("game", game.toString());
             params.set("style", newStyle.toString());
             return params;
-        });
+        }, {replace: true});
         return newStyle;
     }
 
@@ -155,7 +155,7 @@ export function useGameStyle(defaultGame?: Game, allowAll?: boolean, disableNav?
             params.set("game", game.toString());
             params.set("style", style.toString());
             return params;
-        });
+        }, {replace: true});
     }
 
     return {game, setGame, style, setStyle};
