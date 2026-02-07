@@ -34,17 +34,7 @@ export async function getMap(mapId: string | number): Promise<StrafesMap | undef
         return undefined;
     }
 
-    return {
-        id: +row.map_id,
-        name: row.name,
-        creator: row.creator,
-        game: row.game,
-        date: row.date.toISOString(), // ISO strings for consistency
-        modes: row.modes,
-        loadCount: row.load_count,
-        smallThumb: row.small_thumb ?? undefined,
-        largeThumb: row.large_thumb ?? undefined
-    };
+    return rowToMap(row);
 }
 
 export async function getAllMaps() {
@@ -56,21 +46,19 @@ export async function getAllMaps() {
     const query = `SELECT * FROM maps;`;
     const [rows] = await pool.query<MapSQLRow[]>(query);
 
-    const maps: StrafesMap[] = [];
+    return rows.map(rowToMap);
+}
 
-    for (const row of rows) {
-        maps.push({
-            id: +row.map_id,
-            name: row.name,
-            creator: row.creator,
-            game: row.game,
-            date: row.date.toISOString(), // ISO strings for consistency
-            modes: row.modes,
-            loadCount: row.load_count,
-            smallThumb: row.small_thumb ?? undefined,
-            largeThumb: row.large_thumb ?? undefined
-        });
-    }
-
-    return maps;
+function rowToMap(row: MapSQLRow): StrafesMap {
+    return {
+        id: +row.map_id,
+        name: row.name,
+        creator: row.creator,
+        game: row.game,
+        date: row.date.toISOString(), // ISO strings for consistency
+        modes: row.modes,
+        loadCount: row.load_count,
+        smallThumb: row.small_thumb ?? undefined,
+        largeThumb: row.large_thumb ?? undefined
+    };
 }
