@@ -14,6 +14,6 @@ CREATE TABLE settings (
     game smallint NOT NULL,
     style smallint NOT NULL,
     maxDaysRelative smallint NOT NULL,
-    countryCode char(6),
+    countryCode varchar(6),
     PRIMARY KEY (userId)
 );
