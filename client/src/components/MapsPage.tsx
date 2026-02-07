@@ -1,7 +1,7 @@
-import React, { CSSProperties, useEffect, useRef, useState } from "react";
+import React, { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, darken, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { useOutletContext, useParams } from "react-router";
+import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import { ContextParams, getAllowedGameForMap } from "../util/common";
 import { Game, Map, Style, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -24,16 +24,47 @@ const dateFormat = Intl.DateTimeFormat(undefined, {
     month: "short"
 });
 
-function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style, game: Game, sort: MapTimesSort, filterGame: Game, selectedMap?: Map}, index: number, style: CSSProperties}) {
+interface MapCoreProps {
+    mapStyle: Style
+    game: Game
+    onSelectMap: (map: Map | undefined, href: string) => void
+}
+
+interface MapListProps extends MapCoreProps {
+    width: number
+    maps: Map[]
+    selectedMap?: Map
+    sort: MapTimesSort
+    filterGame: Game
+}
+
+interface MapRowProps {
+    data: MapRowData
+    index: number
+    style: CSSProperties
+}
+
+interface MapRowData extends MapCoreProps {
+    itemsPerRow: number
+    maps: Map[]
+    selectedMap?: Map
+}
+
+interface MapCardProps extends MapCoreProps {
+    map: Map
+    selected: boolean
+}
+
+function MapRow(props: MapRowProps) {
     const { data, index, style } = props;
-    const { maps, itemsPerRow, mapStyle, game, sort, filterGame, selectedMap } = data;
+    const { maps, itemsPerRow, selectedMap, ...coreProps } = data;
 
     const rowMaps: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
     const toIndex = Math.min(fromIndex + itemsPerRow, maps.length);
     for (let i = fromIndex; i < toIndex; ++i) {
         const selected = selectedMap?.id === maps[i].id;
-        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} style={mapStyle} game={game} sort={sort} filterGame={filterGame}/>);
+        rowMaps.push(<MapCard key={i} map={maps[i]} selected={selected} {...coreProps} />);
     }
 
     return (
@@ -43,9 +74,10 @@ function MapRow(props: {data: {itemsPerRow: number, maps: Map[], mapStyle: Style
     );
 }
 
-function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game, sort: MapTimesSort, filterGame: Game}) {
-    const { map, selected, style, game, sort, filterGame } = props;
+function MapCard(props: MapCardProps) {
+    const { map, selected, mapStyle, game, onSelectMap } = props;
     const theme = useTheme();
+    const [searchParams] = useSearchParams();
 
     const isLightMode = theme.palette.mode === "light";
     const isUnreleased = new Date() < new Date(map.date);
@@ -69,9 +101,14 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
         allowedGame = Game.fly_trials;
     }
     const allowedStyles = getAllowedStyles(allowedGame);
-    const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
+    const styleForLink = allowedStyles.includes(mapStyle) ? mapStyle : allowedStyles[0];
     let href = selected ? "/maps" : `/maps/${map.id}`;
-    href += `?style=${styleForLink}&game=${allowedGame}&course=0&sort=${sort}&filterGame=${filterGame}`;
+    href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
+
+    searchParams.forEach((value, key) => {
+        if (key === "game" || key === "style" || key === "course") return;
+        href += `&${key}=${value}`;
+    });
 
     return (
     <Box padding="8px">
@@ -87,7 +124,7 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
             }}
         >
             <CardActionArea
-                href={href}
+                onClick={() => onSelectMap(selected ? undefined : map, href)}
                 sx={{ 
                     height: "100%",
                     backgroundColor: bgColor,
@@ -152,18 +189,19 @@ function MapCard(props: {map: Map, selected?: boolean, style: Style, game: Game,
     );
 }
 
-function MapList(props: {width: number, filteredMaps: Map[], style: Style, game: Game, sort: MapTimesSort, filterGame: Game, selectedMap?: Map}) {
-    const { width, filteredMaps, style, game, sort, filterGame, selectedMap } = props;
+function MapList(props: MapListProps) {
+    const { width, maps, selectedMap, sort, filterGame, ...coreProps } = props;
+    
     const listRef = useRef<FixedSizeList>(null);
 
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE * 2)) || 1;
-    const rowCount = Math.ceil(filteredMaps.length / itemsPerRow);
+    const rowCount = Math.ceil(maps.length / itemsPerRow);
 
     useEffect(() => {
         if (selectedMap && listRef.current) {
             let selectedIndex = -1;
-            for (let i = 0; i < filteredMaps.length; ++i) {
-                const map = filteredMaps[i];
+            for (let i = 0; i < maps.length; ++i) {
+                const map = maps[i];
                 if (map.id === selectedMap.id) {
                     selectedIndex = i;
                     break;
@@ -184,7 +222,7 @@ function MapList(props: {width: number, filteredMaps: Map[], style: Style, game:
         <FixedSizeList 
             style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
             itemCount={rowCount} itemSize={CARD_SIZE} ref={listRef}
-            itemData={{maps: filteredMaps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, mapStyle: style, game: game, sort: sort, filterGame: filterGame}}
+            itemData={{maps: maps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, ...coreProps}}
         >
             {MapRow}
         </FixedSizeList>
@@ -293,6 +331,7 @@ function MapsPage() {
     const { id } = useParams();
     const { maps, sortedMaps } = useOutletContext() as ContextParams;
 
+    const [initalLoadComplete, setInitalLoadComplete] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [selectedMap, setSelectedMap] = useState<Map>();
     const [filterGame, setFilterGame] = useGame("filterGame", Game.all);
@@ -300,27 +339,42 @@ function MapsPage() {
     const [course, setCourse] = useCourse();
     const [sort, setSort] = useMapSort();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const navigate = useNavigate();
 
     useEffect(() => {
-        document.title = selectedMap ? `maps - ${selectedMap.name} - strafes` : "maps - strafes";
-    }, [selectedMap]);
+        document.title = "maps - strafes";
+    }, []);
+
+    const onSelectMap = useCallback((map: Map | undefined, href?: string) => {
+        document.title = map ? `maps - ${map.name} - strafes` : "maps - strafes";
+
+        setInitalLoadComplete(true);
+        setSelectedMap(map);
+
+        // Make sure game is set to a valid game
+        const allowedGames = getAllowedGameForMap(map);
+        if (!allowedGames.includes(game)) {
+            setGame(allowedGames[0]);
+        }
+
+        // Reset course to main
+        setCourse(0);
+
+        if (href) navigate(href, {replace: true});
+    }, [game, navigate, setCourse, setGame]);
     
     useEffect(() => {
+        // Load map on initial load
+        if (initalLoadComplete || selectedMap !== undefined) return;
+        
         const mapId = id && !isNaN(+id) ? +id : undefined;
-        if (mapId) {
-            const map = maps[mapId];
-            setSelectedMap(map);
-
-            const allowedGames = getAllowedGameForMap(map);
-
-            if (!allowedGames.includes(game)) {
-                setGame(allowedGames[0]);
-            }
+        if (mapId === undefined) return;
+       
+        const map = maps[mapId];
+        if (map) {
+            onSelectMap(map);
         }
-        else {
-            setSelectedMap(undefined);
-        }
-    }, [game, id, maps, setGame]);
+    }, [id, initalLoadComplete, maps, onSelectMap, selectedMap]);
 
     const onSearchTextChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchText(event.target.value);
@@ -445,7 +499,7 @@ function MapsPage() {
         </Box>
         <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}} paddingRight={smallScreen ? 1 : 0} paddingLeft={smallScreen ? 1 : 0}>
             <AutoSizer disableHeight>
-            {({ width }) => <MapList width={width} filteredMaps={filteredMaps} style={style} game={game} sort={sort} filterGame={filterGame} selectedMap={selectedMap} />}
+            {({ width }) => <MapList width={width} maps={filteredMaps} mapStyle={style} game={game} sort={sort} filterGame={filterGame} selectedMap={selectedMap} onSelectMap={onSelectMap} />}
             </AutoSizer>
         </Grid>
         <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">

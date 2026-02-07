@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { useLocation, useNavigate } from "react-router";
+import { useSearchParams } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { CompareTimesSort, CompareTimesSortRaw, isCompareTimesSort } from "../util/states";
@@ -24,15 +24,13 @@ function convertToSort(sortVal: CompareTimesSortRaw, isAsc: boolean): CompareTim
 
 function CompareSortSelector(props: ICompareSortSelectorProps) {
     const { setSort } = props;
+    const [searchParams, setSearchParams] = useSearchParams();
     
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-    const location = useLocation();
-    const navigate = useNavigate();
 
     let paramRawSort: CompareTimesSortRaw = "diff";
     let paramIsAsc = true;
-    const queryParams = new URLSearchParams(location.search);
-    const sortParam = queryParams.get("sort");
+    const sortParam = searchParams.get("sort");
     if (sortParam && isCompareTimesSort(sortParam)) {
         switch (sortParam) {
             case "mapAsc":
@@ -74,9 +72,10 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
 
     const handleChangeSort = (event: SelectChangeEvent<CompareTimesSortRaw>) => {
         const sortVal = convertToSort(event.target.value, isAsc);
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("sort", sortVal);
-        navigate({ search: queryParams.toString() }, { replace: true });
+        setSearchParams((params) => {
+            params.set("sort", sortVal);
+            return params;
+        }, {replace: true});
         setRawSort(event.target.value);
         setSort(sortVal);
     };
@@ -84,9 +83,10 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
     const onSwitchAsc = () => {
         const newIsAsc = !isAsc;
         const sortVal = convertToSort(rawSort, newIsAsc);
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("sort", sortVal);
-        navigate({ search: queryParams.toString() }, { replace: true });
+        setSearchParams((params) => {
+            params.set("sort", sortVal);
+            return params;
+        }, {replace: true});
         setIsAsc(newIsAsc);
         setSort(sortVal);
     }

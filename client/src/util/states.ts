@@ -80,15 +80,26 @@ export function useCompareSort() {
     return useState<CompareTimesSort>(paramSort);
 }
 
-export function useCourse() {
-    const [queryParams] = useSearchParams();
+export function useCourse(): [number, (course: number) => void] {
+    const [searchParams, setSearchParams] = useSearchParams();
 
     let paramCourse = 0;
-    const styleParam = queryParams.get("course");
+    const styleParam = searchParams.get("course");
     if (styleParam !== null && !isNaN(+styleParam) && +styleParam >= 0) {
         paramCourse = +styleParam;
     }
-    return useState(paramCourse);
+
+    const [course, setCourseState] = useState(paramCourse);
+
+    const setCourse = (course: number) => {
+        setCourseState(course);
+        setSearchParams((params) => {
+            params.set("course", course.toString());
+            return params;
+        }, {replace: true});
+    };
+
+    return [course, setCourse];
 }
 
 export function useGame(searchName: string = "game", defaultGame?: Game, allowAll?: boolean, disableNav?: boolean): [Game, (game: Game, disableNav?: boolean) => void] {
@@ -113,7 +124,7 @@ export function useGame(searchName: string = "game", defaultGame?: Game, allowAl
     return [game, setGame];
 }
 
-export function useStyle(allowAll?: boolean): [Style, (style: Style) => void] {
+function useStyle(allowAll?: boolean): [Style, (style: Style) => void] {
     const [searchParams] = useSearchParams();
     const context = useOutletContext() as ContextParams;
 
