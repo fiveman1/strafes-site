@@ -1,8 +1,8 @@
 import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, darken, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { useLocation, useOutletContext, useParams } from "react-router";
-import { ContextParams } from "../util/common";
+import { useOutletContext, useParams } from "react-router";
+import { ContextParams, getAllowedGameForMap } from "../util/common";
 import { Game, Map, Style, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
@@ -16,7 +16,7 @@ import { download, generateCsv, mkConfig } from "export-to-csv";
 import MapSortSelector from "./MapSortSelector";
 import { sortMapsByName } from "../util/sort";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
-import { MapTimesSort, useCourse, useGame, useMapSort, useStyle } from "../util/states";
+import { MapTimesSort, useCourse, useGame, useGameStyle, useMapSort } from "../util/states";
 
 const CARD_SIZE = 180;
 const dateFormat = Intl.DateTimeFormat(undefined, {
@@ -295,11 +295,9 @@ function MapsPage() {
 
     const [searchText, setSearchText] = useState("");
     const [selectedMap, setSelectedMap] = useState<Map>();
-    const [game, setGame] = useGame();
     const [filterGame, setFilterGame] = useGame("filterGame", Game.all);
-    const [style, setStyle] = useStyle();
+    const {game, setGame, style, setStyle} = useGameStyle();
     const [course, setCourse] = useCourse();
-    const location = useLocation();
     const [sort, setSort] = useMapSort();
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
@@ -312,16 +310,17 @@ function MapsPage() {
         if (mapId) {
             const map = maps[mapId];
             setSelectedMap(map);
-            const queryParams = new URLSearchParams(location.search);
-            const gameParam = queryParams.get("game");
-            if (gameParam) {
-                setGame(+gameParam);
+
+            const allowedGames = getAllowedGameForMap(map);
+
+            if (!allowedGames.includes(game)) {
+                setGame(allowedGames[0]);
             }
         }
         else {
             setSelectedMap(undefined);
         }
-    }, [selectedMap, id, maps, setGame, location.search]);
+    }, [game, id, maps, setGame]);
 
     const onSearchTextChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchText(event.target.value);
@@ -403,16 +402,6 @@ function MapsPage() {
 
     filteredMaps.sort(compareFunc);
 
-    let allowedGames: Game[] | undefined;
-    if (selectedMap) {
-        if (selectedMap.game === Game.fly_trials) {
-            allowedGames = [Game.fly_trials];
-        }
-        else {
-            allowedGames = [selectedMap.game, Game.fly_trials];
-        }
-    }
-
     const onDownloadMapCsv = () => {
         if (sortedMaps.length < 1) {
             return;
@@ -443,7 +432,7 @@ function MapsPage() {
             Maps
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={filterGame} setGame={setFilterGame} label="Filter by game" paramName="filterGame" allowSelectAll />
+            <GameSelector game={filterGame} setGame={setFilterGame} label="Filter by game" allowSelectAll />
             <MapSortSelector setSort={setSort} />
         </Box>
         <Box padding={1} marginBottom={1}>
@@ -460,7 +449,7 @@ function MapsPage() {
             </AutoSizer>
         </Grid>
         <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowedGames={allowedGames} />
+            <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
             <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
         </Box>

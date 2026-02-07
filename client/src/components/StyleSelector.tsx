@@ -1,42 +1,20 @@
-import { useEffect } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { bhop_styles, Game, Style, formatStyle, getAllowedStyles } from "shared";
-import { useLocation, useNavigate } from "react-router";
+import { bhop_styles, Style, formatStyle, getAllowedStyles, Game } from "shared";
 
 interface IStyleSelectorProps {
-    game?: Game
+    game: Game
     style: Style
     setStyle: (style: Style) => void
     allowSelectAll?: boolean
     label?: string
-    disableNavigate?: boolean
 }
 
 function StyleSelector(props: IStyleSelectorProps) {
-    const { game, style, setStyle, allowSelectAll, label, disableNavigate } = props;
+    const { game, style, setStyle, allowSelectAll, label } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-    const location = useLocation();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        if (game === undefined) {
-            return;
-        }
-        const allowedStyles = getAllowedStyles(game);
-        if (!allowedStyles.includes(style) && !(allowSelectAll && style === Style.all)) {
-            const defaultStyle = allowedStyles[0] ?? Style.autohop;
-            const queryParams = new URLSearchParams(location.search);
-            queryParams.set("style", defaultStyle.toString());
-            if (!disableNavigate) navigate({ search: queryParams.toString() }, { replace: true });
-            setStyle(defaultStyle);
-        }
-    }, [game, style, setStyle, location.search, navigate, allowSelectAll, disableNavigate]);
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
         const style = event.target.value;
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("style", style.toString());
-        if (!disableNavigate) navigate({ search: queryParams.toString() }, { replace: true });
         setStyle(style);
     };
 

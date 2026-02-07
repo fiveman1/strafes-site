@@ -19,7 +19,7 @@ import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
 import CompareSortSelector from "./CompareSortSelector";
 import InfoIcon from '@mui/icons-material/Info';
 import DateDisplay from "./DateDisplay";
-import { CompareTimesSort, useCompareSort, useGame, useStyle, useUserSearch } from "../util/states";
+import { CompareTimesSort, useCompareSort, useGameStyle, useUserSearch } from "../util/states";
 
 const CARD_SIZE = 240;
 const TIE_COLOR = blue["A400"];
@@ -247,8 +247,7 @@ function getUserTimesFromState(userToTimes: UserToTimes, userId: string, game: G
 }
 
 function Compare() {
-    const [game, setGame] = useGame();
-    const [style, setStyle] = useStyle();
+    const {game, setGame, style, setStyle} = useGameStyle();
     const [selectedSlice, setSelectedSlice] = useState<CompareSlice>();
 
     const location = useLocation();
@@ -460,7 +459,7 @@ function Compare() {
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
+            <GameSelector game={game} setGame={setGame} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1}>

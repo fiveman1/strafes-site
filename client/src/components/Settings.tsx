@@ -14,6 +14,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/common";
 import CountrySelect from "./CountrySelect";
 import { dateFormat, relativeTimeFormat } from "../util/datetime";
+import { useGameStyle } from "../util/states";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -27,6 +28,7 @@ function Settings() {
     const { settings, setSettings, setMode, loggedInUser } = useOutletContext() as ContextParams;
 
     const [mockSettings, setMockSettings] = useState({...settings});
+    const {game, setGame: setGameState, style, setStyle: setStyleState} = useGameStyle(settings.defaultGame, undefined, true);
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -43,11 +45,14 @@ function Settings() {
     }, [mockSettings, settings]);
 
     const setGame = (game: Game) => setMockSettings((settings) => {
+        const newStyle = setGameState(game);
         settings.defaultGame = game;
+        settings.defaultStyle = newStyle;
         return {...settings};
     });
 
     const setStyle = (style: Style) => setMockSettings((settings) => {
+        setStyleState(style);
         settings.defaultStyle = style;
         return {...settings};
     });
@@ -142,17 +147,13 @@ function Settings() {
             </Typography>
             <Box marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector 
-                    game={mockSettings.defaultGame} 
+                    game={game} 
                     setGame={setGame} 
-                    style={mockSettings.defaultStyle}
-                    setStyle={setStyle}
-                    disableNavigate
                 />
                 <StyleSelector
-                    style={mockSettings.defaultStyle}
+                    style={style}
                     setStyle={setStyle} 
-                    game={mockSettings.defaultGame}
-                    disableNavigate
+                    game={game}
                 />
             </Box>
             <Typography variant="h6" padding={1}>

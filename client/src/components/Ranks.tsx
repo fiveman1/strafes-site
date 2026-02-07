@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
@@ -12,7 +12,7 @@ import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
-import { useGame, useStyle } from "../util/states";
+import { useGameStyle } from "../util/states";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 function makeColumns(placementWidth: number) {
@@ -175,8 +175,7 @@ function RanksCard(props: IRanksCardProps) {
 }
 
 function Ranks() {
-    const [game, setGame] = useGame();
-    const [style, setStyle] = useStyle();
+    const {game, setGame, style, setStyle} = useGameStyle();
     
     useEffect(() => {
         document.title = "ranks - strafes"
@@ -191,7 +190,7 @@ function Ranks() {
             Ranks are calculated hourly.
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} />
+            <GameSelector game={game} setGame={setGame} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
         <Box padding={1} flexGrow={1} minHeight={550}>

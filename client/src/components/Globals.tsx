@@ -14,11 +14,10 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
 import DateDisplay from "./DateDisplay";
 import { makeUserColumn } from "../util/columns";
-import { useGame, useIncludeBonuses, useStyle } from "../util/states";
+import { useGameStyle, useIncludeBonuses } from "../util/states";
 
 function Globals() {
-    const [game, setGame] = useGame();
-    const [style, setStyle] = useStyle();
+    const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
 
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
@@ -35,7 +34,7 @@ function Globals() {
             Each record in the list below is a world record (1st place). This list is updated hourly.
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
+            <GameSelector game={game} setGame={setGame} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
             <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>

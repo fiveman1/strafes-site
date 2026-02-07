@@ -106,7 +106,7 @@ export function getAllowedStyles(game: Game) {
         case Game.all:
             return surf_styles;
         default:
-            return [];
+            return surf_styles;
     }
 }
 

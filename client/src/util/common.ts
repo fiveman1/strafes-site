@@ -1,6 +1,6 @@
 import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { LoginUser, Map, SettingsValues, UserRole } from "shared";
+import { Game, LoginUser, Map, SettingsValues, UserRole } from "shared";
 
 export interface MapCount {
     bhop: number
@@ -59,3 +59,16 @@ function getUserRoleColorCore(role: UserRole) {
 
 export const RANK_HELP_TEXT = "Rank is based on the weighted sum of a user's times. Better placements are worth more.";
 export const SKILL_HELP_TEXT = "Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight.";
+
+export function getAllowedGameForMap(map: Map | undefined) {
+    if (map === undefined) {
+        return [Game.bhop, Game.surf, Game.fly_trials];
+    }
+
+    const allowedGames = [map.game];
+    if (map.game !== Game.fly_trials) {
+        allowedGames.push(Game.fly_trials);
+    }
+
+    return allowedGames;
+}

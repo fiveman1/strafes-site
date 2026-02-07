@@ -1,7 +1,7 @@
 import { PaletteMode } from "@mui/material";
 import { useState } from "react";
-import { Game, SettingsValues, Style, UserSearchData } from "shared";
-import { useLocation, useOutletContext } from "react-router";
+import { Game, getAllowedStyles, SettingsValues, Style, UserSearchData } from "shared";
+import { useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "./common";
 
 export function useSettings() {
@@ -52,8 +52,8 @@ export function isMapSort(value: string): value is MapTimesSort {
 }
 
 export function useMapSort() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
+    const [queryParams] = useSearchParams();
+
     let paramSort: MapTimesSort = "nameAsc";
     const sortParam = queryParams.get("sort");
     if (sortParam && isMapSort(sortParam)) {
@@ -70,8 +70,8 @@ export function isCompareTimesSort(value: string): value is CompareTimesSort {
 }
 
 export function useCompareSort() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
+    const [queryParams] = useSearchParams();
+
     let paramSort: CompareTimesSort = "diffAsc";
     const sortParam = queryParams.get("sort");
     if (sortParam && isCompareTimesSort(sortParam)) {
@@ -81,8 +81,8 @@ export function useCompareSort() {
 }
 
 export function useCourse() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
+    const [queryParams] = useSearchParams();
+
     let paramCourse = 0;
     const styleParam = queryParams.get("course");
     if (styleParam !== null && !isNaN(+styleParam) && +styleParam >= 0) {
@@ -91,34 +91,78 @@ export function useCourse() {
     return useState(paramCourse);
 }
 
-export function useGame(paramName: string = "game", defaultGame?: Game) {
-    const location = useLocation();
+export function useGame(searchName: string = "game", defaultGame?: Game, allowAll?: boolean, disableNav?: boolean): [Game, (game: Game, disableNav?: boolean) => void] {
+    const [searchParams, setSearchParams] = useSearchParams();
     const context = useOutletContext() as ContextParams;
-    const queryParams = new URLSearchParams(location.search);
+    
     let paramGame = defaultGame ?? context.settings.defaultGame;
-    const gameParam = queryParams.get(paramName);
-    if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined) {
+    const gameParam = searchParams.get(searchName);
+    if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined && (allowAll || +gameParam !== Game.all)) {
         paramGame = +gameParam;
     }
-    return useState(paramGame);
+    
+    const [game, setGameState] = useState(paramGame);
+    const setGame = (game: Game) => {
+        setGameState(game);
+        if (disableNav) return;
+        setSearchParams((params) => {
+            params.set(searchName, game.toString());
+            return params;
+        });
+    };
+    return [game, setGame];
 }
 
-export function useStyle() {
-    const location = useLocation();
+export function useStyle(allowAll?: boolean): [Style, (style: Style) => void] {
+    const [searchParams] = useSearchParams();
     const context = useOutletContext() as ContextParams;
-    const queryParams = new URLSearchParams(location.search);
 
     let paramStyle = context.settings.defaultStyle;
-    const styleParam = queryParams.get("style");
-    if (styleParam !== null && !isNaN(+styleParam) && Style[+styleParam] !== undefined) {
+    const styleParam = searchParams.get("style");
+    if (styleParam !== null && !isNaN(+styleParam) && Style[+styleParam] !== undefined && (allowAll || +styleParam !== Style.all)) {
         paramStyle = +styleParam;
     }
+
     return useState(paramStyle);
 }
 
+export function useGameStyle(defaultGame?: Game, allowAll?: boolean, disableNav?: boolean) {
+    const [, setSearchParams] = useSearchParams();
+    const [game, setGameState] = useGame("game", defaultGame, allowAll, true);
+    const [style, setStyleState] = useStyle(allowAll);
+
+    const setGame = (game: Game) => {
+        setGameState(game);
+        const allowedStyles = getAllowedStyles(game);
+        let newStyle = style;
+        if (!allowedStyles.includes(style) && !(allowAll && style === Style.all)) {
+            newStyle = allowedStyles[0];
+            setStyleState(newStyle);
+        }
+        if (disableNav) return newStyle;
+        setSearchParams((params) => {
+            params.set("game", game.toString());
+            params.set("style", newStyle.toString());
+            return params;
+        });
+        return newStyle;
+    }
+
+    const setStyle = (style: Style) => {
+        setStyleState(style);
+        if (disableNav) return;
+        setSearchParams((params) => {
+            params.set("game", game.toString());
+            params.set("style", style.toString());
+            return params;
+        });
+    }
+
+    return {game, setGame, style, setStyle};
+}
+
 export function useIncludeBonuses() {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
+    const [queryParams] = useSearchParams();
 
     let paramBonuses = true;
     if (queryParams.get("bonuses") === "false") {

@@ -14,13 +14,12 @@ import ViewedTimes from "./ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
 import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
-import { useGame, useIncludeBonuses, useStyle, useUserSearch } from "../util/states";
+import { useGameStyle, useIncludeBonuses, useUserSearch } from "../util/states";
 
 function Users() {
     const { id } = useParams();
     const [userId, setUserId] = useState<string>();
-    const [game, setGame] = useGame();
-    const [style, setStyle] = useStyle();
+    const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
     
     const [user, setUserInfo] = useState<User>();
     const [userLoading, setIsUserLoading] = useState(false);
@@ -126,7 +125,7 @@ function Users() {
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} style={style} setGame={setGame} setStyle={setStyle} allowSelectAll />
+            <GameSelector game={game} setGame={setGame} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
             <Box padding={smallScreen ? 1 : 1.5}>
                 <FormGroup>
