@@ -7,7 +7,7 @@ export function formatCountryCode(code: string) {
 export interface CountryType {
     code: string;
     label: string;
-    phone: string;
+    phone?: string;
     suggested?: boolean;
 }
 
@@ -149,6 +149,10 @@ export const COUNTRIES: CountryType[] = [
     },
     { code: 'GA', label: 'Gabon', phone: '241' },
     { code: 'GB', label: 'United Kingdom', phone: '44' },
+    { code: "GB-ENG", label: "England" },
+    { code: "GB-NIR", label: "Northern Ireland" },
+    { code: "GB-SCT", label: "Scotland" },
+    { code: "GB-WLS", label: "Wales" },
     { code: 'GD', label: 'Grenada', phone: '1-473' },
     { code: 'GE', label: 'Georgia', phone: '995' },
     { code: 'GF', label: 'French Guiana', phone: '594' },

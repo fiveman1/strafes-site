@@ -233,7 +233,7 @@ export async function updateSettings(request: Request, response: Response) {
         return;
     }
 
-    if (country && (typeof country !== "string" || country.length !== 2)) {
+    if (country && (typeof country !== "string" || country.length > 6)) {
         response.status(400).json({error: "Invalid country"});
         return;
     }
