@@ -19,6 +19,7 @@
         "express": "^5.1.0",
         "express-rate-limit": "^7.5.1",
         "memoize": "^10.1.0",
+        "memory-cache": "^0.2.0",
         "mysql2": "^3.16.0",
         "openid-client": "^6.8.1",
         "shared": "^1.0.0"
@@ -28,6 +29,7 @@
         "@types/apicache": "^1.6.7",
         "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.3",
+        "@types/memory-cache": "^0.2.6",
         "@types/node": "^24.0.4",
         "eslint": "^9.39.2",
         "swagger-typescript-api": "^13.2.16",
