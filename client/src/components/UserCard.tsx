@@ -1,6 +1,6 @@
 import { Avatar, Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { User, formatUserRole } from "shared";
+import { User, formatCountryCode, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ContextParams, getUserRoleColor } from "../util/common";
@@ -9,7 +9,6 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
 import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
-import { formatCountryCode } from "../util/countries";
 
 interface IUserDisplayProps {
     user: User

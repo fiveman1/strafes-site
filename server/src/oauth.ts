@@ -1,7 +1,7 @@
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
-import { Game, LoginUser, SettingsValues, Style } from "shared";
+import { CODE_TO_COUNTRY, Game, LoginUser, SettingsValues, Style } from "shared";
 import { createHash, randomBytes } from "crypto";
 
 // Environment params
@@ -233,7 +233,7 @@ export async function updateSettings(request: Request, response: Response) {
         return;
     }
 
-    if (country && (typeof country !== "string" || country.length > 6)) {
+    if (country && (typeof country !== "string" || CODE_TO_COUNTRY.get(country) === undefined)) {
         response.status(400).json({error: "Invalid country"});
         return;
     }

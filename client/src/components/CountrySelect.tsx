@@ -3,7 +3,7 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import { InputAdornment, useMediaQuery } from '@mui/material';
 import ReactCountryFlag from 'react-country-flag';
-import { CODE_TO_COUNTRY, COUNTRIES } from '../util/countries';
+import { CODE_TO_COUNTRY, COUNTRIES } from 'shared';
 
 // I stole this and adapted it from some random code sandbox https://stackblitz.com/edit/react-gjelm1-onjy2v3d?file=index.tsx,demo.tsx
 
