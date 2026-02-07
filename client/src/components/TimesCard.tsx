@@ -97,7 +97,7 @@ function TimesCard(props: ITimesCardProps) {
     const { hideMap } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: props.height ?? 590, "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", height: props.height ?? 590, "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
         <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
             <Typography variant="caption" flexGrow={1} marginRight={1}>
                 {props.title ?? "Times"}

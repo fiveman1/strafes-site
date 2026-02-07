@@ -33,9 +33,9 @@ function makeColumns() {
 
     cols.push(makePlacementColumn(true));
 
-    cols.push(makeTimeColumn(true));
+    cols.push(makeTimeColumn());
 
-    cols.push(makeDateColumn(true));
+    cols.push(makeDateColumn());
     
     cols.push(makeGameColumn());
     
