@@ -27,7 +27,7 @@ function UserLink(props: IUserLinkProps) {
         maxWidth="100%"
     >
         <Box display="flex" flexDirection="row" alignItems="center">
-            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, width: "28px", height: "28px" }} alt={username} src={userThumb} />
+            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800], mr: 1, width: "28px", height: "28px" }} alt={username} src={userThumb} />
             <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                 {username}
             </Typography>

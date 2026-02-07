@@ -1,21 +1,16 @@
-export interface User {
-    displayName: string
-    id: string
-    username: string
-    joinedOn: string
-    thumbUrl: string
-    status?: ModerationStatus
-    muted?: boolean
-    role?: UserRole
-    country?: string
-}
-
 export interface UserInfo {
     userId: string
     username: string
     userRole?: UserRole
     userCountry?: string
     userThumb?: string
+}
+
+export interface User extends UserInfo {
+    displayName: string
+    joinedOn: string
+    status?: ModerationStatus
+    muted?: boolean
 }
 
 export enum Game {

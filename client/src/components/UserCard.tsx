@@ -14,7 +14,7 @@ interface IUserDisplayProps {
     user: User
 }
 
-export interface IUserCardProps {
+interface IUserCardProps {
     minHeight?: number
     loading?: boolean
     user?: User
@@ -25,11 +25,11 @@ function UserAvatar(props: IUserDisplayProps) {
     const { loggedInUser } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
-    const isCurrentUser = loggedInUser && user && +user.id === +loggedInUser.userId;
+    const isCurrentUser = loggedInUser && user && +user.userId === +loggedInUser.userId;
 
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <Avatar sx={{height: 120, width: 120, bgcolor: grey[100]}} alt={user.displayName} src={user.thumbUrl} />
+            <Avatar sx={{height: 120, width: 120, bgcolor: grey[100], color: theme.palette.mode === "light" ? grey[500] : grey[800]}} alt={user.displayName} src={user.userThumb} />
             {isCurrentUser ?
             <Box
                 title="You" 
@@ -65,12 +65,12 @@ function UserDisplay(props: IUserDisplayProps) {
                 <Box display="inline-block">
                     <Typography variant="h4" sx={{wordBreak: "break-word"}} display="inline-block">
                         {user.displayName}
-                        {user.country ? <ReactCountryFlag style={{marginLeft: 8, marginTop: -8}} title={formatCountryCode(user.country)} countryCode={user.country} svg /> : undefined}
+                        {user.userCountry ? <ReactCountryFlag style={{marginLeft: 8, marginTop: -8}} title={formatCountryCode(user.userCountry)} countryCode={user.userCountry} svg /> : undefined}
                     </Typography>
                 </Box>
                 <Box display="inline-flex">
                     <Link
-                        href={`https://www.roblox.com/users/${user.id}/profile`}
+                        href={`https://www.roblox.com/users/${user.userId}/profile`}
                         color="secondary"
                         display="inline-flex"
                         sx={{verticalAlign: "top", wordBreak: "break-word"}}
@@ -81,13 +81,13 @@ function UserDisplay(props: IUserDisplayProps) {
                     </Link>
                 </Box>
                 <Typography variant="body2" color="textSecondary">
-                    {user.id}
+                    {user.userId}
                 </Typography>
             </Box>
             <Box display="flex" flexDirection="column">
-                {user.role === undefined ? undefined :
-                <Typography variant="body2" color={getUserRoleColor(user.role, theme)}>
-                    {formatUserRole(user.role)}
+                {user.userRole === undefined ? undefined :
+                <Typography variant="body2" color={getUserRoleColor(user.userRole, theme)}>
+                    {formatUserRole(user.userRole)}
                 </Typography>
                 }
                 <Box display="inline-flex">

@@ -86,12 +86,12 @@ function CompareCard(props: ICompareCardProps) {
     const theme = useTheme();
 
     const series: PieSeriesType<PieValueType>[] = useMemo(() => {
-        if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.id === secondUser.id) {
+        if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.userId === secondUser.userId) {
             return [];
         }
 
-        const firstUserId = firstUser.id;
-        const secondUserId = secondUser.id;
+        const firstUserId = firstUser.userId;
+        const secondUserId = secondUser.userId;
         const mapToTime = new Map<number, Map<string, Time>>();
         for (const time of firstTimes) {
             mapToTime.set(time.mapId, new Map<string, Time>([[firstUserId, time]]));
@@ -176,8 +176,8 @@ function CompareCard(props: ICompareCardProps) {
         }]
     }, [firstTimes, firstUser, secondTimes, secondUser, selectedSlice, userColors]);
 
-    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.id === secondUser.id) {
-        const mainText = firstUser && secondUser && firstUser.id === secondUser.id ? "😡" : "Waiting...";
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || firstUser.userId === secondUser.userId) {
+        const mainText = firstUser && secondUser && firstUser.userId === secondUser.userId ? "😡" : "Waiting...";
         return (
         <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
             <Typography variant="caption">
@@ -521,7 +521,7 @@ interface CompareTimeInfo {
 interface CompareTime {
     username: string
     userId: string
-    userThumb: string
+    userThumb?: string
     userColor: string
     time: number
     date: string
@@ -534,7 +534,7 @@ function CompareTimesCard(props: ICompareTimesCardProps) {
 
     const [sort, setSort] = useCompareSort();
 
-    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.id === secondUser.id) {
+    if (!firstUser || !secondUser || firstTimes === undefined || secondTimes === undefined || isLoading || firstUser.userId === secondUser.userId) {
         return <></>;
     }
 
@@ -584,7 +584,7 @@ function CompareList(props: ICompareListProps) {
     const { maps } = useOutletContext() as ContextParams;
 
     const times = useMemo(() => {
-        if (isLoading || firstUser.id === secondUser.id) {
+        if (isLoading || firstUser.userId === secondUser.userId) {
             return [];
         }
         
@@ -596,8 +596,8 @@ function CompareList(props: ICompareListProps) {
                 mapThumb: maps[time.mapId]?.largeThumb,
                 times: [{
                     username: firstUser.username,
-                    userId: firstUser.id,
-                    userThumb: firstUser.thumbUrl,
+                    userId: firstUser.userId,
+                    userThumb: firstUser.userThumb,
                     userColor: userColors[0],
                     time: time.time,
                     date: time.date,
@@ -611,8 +611,8 @@ function CompareList(props: ICompareListProps) {
             const timeList = mapToTime.get(time.mapId);
             const compareTime: CompareTime = {
                 username: secondUser.username,
-                userId: secondUser.id,
-                userThumb: secondUser.thumbUrl,
+                userId: secondUser.userId,
+                userThumb: secondUser.userThumb,
                 userColor: userColors[1],
                 time: time.time,
                 date: time.date,
@@ -636,7 +636,7 @@ function CompareList(props: ICompareListProps) {
         let times = Array.from(mapToTime.values());
 
         if (selectedSlice !== undefined) {
-            times = times.filter((info) => shouldIncludeTimes(info.times, [firstUser.id, secondUser.id], selectedSlice))
+            times = times.filter((info) => shouldIncludeTimes(info.times, [firstUser.userId, secondUser.userId], selectedSlice))
         }
 
         if (sort === "dateAsc") {
@@ -666,7 +666,7 @@ function CompareList(props: ICompareListProps) {
         return times;
     }, [firstTimes, firstUser, isLoading, maps, secondTimes, secondUser, sort, userColors, selectedSlice]);
 
-    if (isLoading || firstUser.id === secondUser.id) {
+    if (isLoading || firstUser.userId === secondUser.userId) {
         return <></>;
     }
     

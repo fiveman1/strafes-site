@@ -1,26 +1,27 @@
 import apicache from "apicache";
 import express from "express";
 import path from "path";
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, LeaderboardCount, UserRole, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo } from "shared";
 import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
 import { getMapWR, getUserWRs, getWRLeaderboardPage, getWRList, GlobalCountSQL, updateWRs } from "./globals.js";
 import { tryGetCached, tryPostCached } from "./requests.js";
-import { getAllUsersToRoles } from "./roles.js";
 import { getAllMaps, getMap } from "./maps.js";
-import { authorizeAndSetTokens, getSettings, loadSettingsFromDB, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
+import { authorizeAndSetTokens, getSettings, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
 import { setUserInfoForList, setUserThumbsForList } from "./users.js";
 import { getPlacements, getRanks, getTimes, getUserInfo, getUserRank } from "./strafes_api/api.js";
-import { PagedTotalResponseTime } from "./strafes_api/client.js";
+import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 
 const app = express();
 const PORT = process.env.PORT ?? "8080";
 const IS_DEBUG = process.env.DEBUG === "true";
+const IS_DEV_MODE = process.argv.splice(2)[0] === "--dev";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
-const cache = apicache.options(IS_DEBUG ? {headers: {"cache-control": "no-cache"}} : {}).middleware as (duration?: string | number) => any;
+
+const cache = (IS_DEV_MODE ? apicache.options({headers: {"cache-control": "no-cache"}}).middleware : apicache.middleware) as (duration?: string | number) => any;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 25, validate: {xForwardedForHeader: false} });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 80, validate: {xForwardedForHeader: false} });
 
@@ -102,26 +103,9 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
         });
     }
 
-    await setUserThumbsForList(usernames);
+    await setUserThumbsForList(usernames, false);
 
     res.status(200).json({usernames: usernames});
-
-    // Below is an implementation using the web API that is actually documented, but it seems to not perform as well
-
-    // const searchRes = await tryGetCached("https://users.roproxy.com/v1/users/search", {
-    //     keyword: username,
-    // });
-
-    // if (!searchRes) {
-    //     res.status(404).json({error: "Not found"});
-    //     return;
-    // }
-
-    // for (const result of searchRes.data.data) {
-    //     usernames.push(result.name);
-    // }
-
-    // res.status(200).json({usernames: usernames});
 });
 
 app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -225,10 +209,9 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
         return;
     }
 
-    const roles = await getAllUsersToRoles();
     const promises = [];
     for (const page of pageRes.data) {
-        promises.push(convertToLeaderboardCount(page, +game, +style, roles));
+        promises.push(convertToLeaderboardCount(page, +game, +style));
     }
 
     const data = await Promise.all(promises);
@@ -240,7 +223,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     });
 });
 
-async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style, roles: Map<string, UserRole>): Promise<LeaderboardCount> {
+async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style): Promise<LeaderboardCount> {
     const wrs = await getUserWRs(page.userId, game, style) || [];
 
     let bonusCount = 0;
@@ -263,7 +246,6 @@ async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style
     return {
         userId: page.userId,
         username: page.username,
-        userRole: roles.get(page.userId),
         count: +page.count,
         bonusCount: bonusCount,
         earliestDate: earliestDate ? earliestDate.toISOString() : "",
@@ -319,7 +301,6 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     const pageEnd = (+end % 100);
     const ranks = ranksData.data;
     const rankArr: Rank[] = [];
-    const roles = await getAllUsersToRoles();
 
     for (let i = pageStart; (i < ranks.length) && (i <= pageEnd); ++i) {
         const data = ranks[i];
@@ -333,7 +314,6 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
             skill: data.skill,
             userId: userId,
             username: data.user.username,
-            userRole: roles.get(userId),
             placement: ((page - 1) * 100) + i + 1
         });
     }
@@ -407,7 +387,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, onlyWR, userId, +game, +style);
+    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, onlyWR, +game, +style, {userId: userId});
     
     if (!timeInfo) {
         res.status(404).json({error: "Not found"});
@@ -561,18 +541,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
                 continue;
             }
             timeIds.add(time.id);
-            timeArr.push({
-                map: time.map.display_name,
-                mapId: time.map.id,
-                username: time.user.username,
-                userId: (time.user.id as number).toString(),
-                time: time.time,
-                date: time.date,
-                game: time.game_id,
-                style: time.style_id,
-                course: time.mode_id,
-                id: time.id
-            });
+            timeArr.push(apiTimeToTime(time));
         }
     }
 
@@ -697,7 +666,7 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, true, undefined, +game, +style);
+    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, true, +game, +style, {});
     
     if (!timeInfo) {
         res.status(404).json({error: "Not found"});
@@ -707,21 +676,17 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
     res.status(200).json(timeInfo);
 });
 
-async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, userId?: string, game?: Game, style?: Style) {
-    let timeArr: Time[] = [];
+async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: {userId?: string, mapId?: string}) {
+    let times: Time[];
     let pagination: Pagination;
-    const roles = await getAllUsersToRoles();
+    const { userId, mapId } = searchInfo;
 
     if (onlyWR) {
-        const { total, wrs } = await getWRList(start, end, game ?? Game.all, style ?? Style.all, sort, course, userId);
+        const { total, wrs } = await getWRList(start, end, game, style, sort, course, userId);
         
         if (!wrs) return undefined;
 
-        for (const wr of wrs) {
-            wr.userRole = roles.get(wr.userId);
-        }
-
-        timeArr = wrs;
+        times = wrs;
         pagination = {
             page: -1,
             pageSize: -1,
@@ -734,13 +699,14 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         const pageStart = (+start % 100);
         const pageEnd = (+end % 100);
 
-        const data = await getTimes(userId, undefined, 100, page, game, style, course, +sort);
+        const data = await getTimes(userId, mapId, 100, page, game, style, course, +sort);
 
         if (!data) {
             return undefined;
         }
         const resTimes = data.data;
 
+        times = [];
         const timeIds = new Set<string>();
         for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
             const time = resTimes[i];
@@ -749,37 +715,40 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
                 continue;
             }
             timeIds.add(time.id);
-            const timeUserId = time.user.id.toString();
-            timeArr.push({
-                map: time.map.display_name,
-                mapId: time.map.id,
-                username: time.user.username,
-                userId: timeUserId,
-                userRole: roles.get(timeUserId),
-                time: time.time,
-                date: time.date,
-                game: time.game_id,
-                style: time.style_id,
-                id: time.id,
-                course: time.mode_id,
-                placement: onlyWR ? 1 : undefined
-            });
+            times.push(apiTimeToTime(time));
         }
 
         const pageInfo = data.pagination;
         pagination = {
             page: pageInfo.page,
             pageSize: pageInfo.page_size,
-            totalItems: onlyWR ? -1 : pageInfo.total_items,
-            totalPages: onlyWR ? -1 : pageInfo.total_pages
+            totalItems: pageInfo.total_items,
+            totalPages: pageInfo.total_pages
         };
     }
 
-    await setUserInfoForList(timeArr);
+    if (userId === undefined) {
+        await setUserInfoForList(times);
+    }
 
     return {
-        data: timeArr,
+        data: times,
         pagination: pagination
+    };
+}
+
+function apiTimeToTime(time: ApiTime): Time {
+    return {
+        map: time.map.display_name,
+        mapId: time.map.id,
+        username: time.user.username,
+        userId: time.user.id.toString(),
+        time: time.time,
+        date: time.date,
+        game: time.game_id,
+        style: time.style_id,
+        id: time.id,
+        course: time.mode_id
     };
 }
 
@@ -805,8 +774,8 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const game = req.query.game;
     const style = req.query.style;
     const qCourse = req.query.course;
-    const start = req.query.start;
-    const end = req.query.end;
+    const qEnd = req.query.end;
+    const qStart = req.query.start;
     const sort = req.query.sort;
 
     if (typeof mapId !== "string" || !validatePositiveInt(mapId)) {
@@ -814,15 +783,17 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
-    if (start === undefined || isNaN(+start) || +start < 0) {
+    if (qStart === undefined || isNaN(+qStart) || +qStart < 0) {
         res.status(400).json({error: "Invalid start"});
         return;
     }
+    const start = +qStart;
 
-    if (end === undefined || isNaN(+end) || +end < 0) {
+    if (qEnd === undefined || isNaN(+qEnd) || +qEnd < 0) {
         res.status(400).json({error: "Invalid end"});
         return;
     }
+    const end = +qEnd;
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
         res.status(400).json({error: "Invalid game"});
@@ -845,85 +816,49 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         return;
     }
 
-    const page = Math.floor(+start / 100);
-    if (+start >= +end) {
+    if (start >= end) {
         res.status(400).json({error: "Start must be higher than end"});
     }
 
-    const firstTimeData = await getTimes(undefined, mapId, 100, page + 1, +game, +style, course, +sort);
+    const timeData = await getTimesPaged(start, end, +sort, +course, false, +game, +style, {mapId: mapId});
 
-    if (!firstTimeData) {
+    if (!timeData) {
         res.status(404).json({error: "Not found"});
         return;
     }
 
-    const roles = await getAllUsersToRoles();
-
-    const pageStart = (+start % 100);
-    const pageEnd = (+end % 100);
-    const firstTimes = firstTimeData.data;
+    const times = timeData.data;
 
     if (+sort === TimeSortBy.TimeAsc) {
-        sortTimes(firstTimes, true);
+        sortTimes(times, true);
     }
     else if (+sort === TimeSortBy.TimeDesc) {
-        sortTimes(firstTimes, false);
-    }
-
-    const pageInfo = firstTimeData.pagination;
-    const pagination: Pagination = {
-        page: pageInfo.page,
-        pageSize: pageInfo.page_size,
-        totalItems: pageInfo.total_items,
-        totalPages: pageInfo.total_pages
-    };
-
-    const timeArr: Time[] = [];
-    const timeIds = new Set<string>();
-    for (let i = pageStart; (i < firstTimes.length) && (i <= pageEnd); ++i) {
-        const time = firstTimes[i];
-        let placement: number | undefined;
-        if (+sort === TimeSortBy.TimeAsc) {
-            placement = (page * 100) + i + 1;
-        }
-        else if (+sort === TimeSortBy.TimeDesc) {
-            placement =  pageInfo.total_items - ((page * 100) + i);
-        }
-        if (timeIds.has(time.id)) {
-            // There is a bug with the API where sometimes it returns duplicate times! Awesome!
-            continue;
-        }
-        timeIds.add(time.id);
-        const timeUserId = time.user.id.toString();
-        timeArr.push({
-            map: time.map.display_name,
-            mapId: time.map.id,
-            username: time.user.username,
-            userId: timeUserId,
-            userRole: roles.get(timeUserId),
-            time: time.time,
-            date: time.date,
-            game: time.game_id,
-            style: time.style_id,
-            id: time.id,
-            course: time.mode_id,
-            placement: placement
-        });
+        sortTimes(times, false);
     }
 
     const promises = [];
     if (+sort === TimeSortBy.DateAsc || +sort == TimeSortBy.DateDesc) {
-        promises.push(setTimePlacements(timeArr));
+        promises.push(setTimePlacements(times));
     }
-    promises.push(setUserInfoForList(timeArr));
+    else {
+        let i = 1;
+        for (const time of times) {
+            if (+sort === TimeSortBy.TimeAsc) {
+                time.placement = start + i;
+            }
+            else if (+sort === TimeSortBy.TimeDesc) {
+                time.placement = timeData.pagination.totalItems - (start + i) + 1;
+            }
+            ++i;
+        }
+    }
+
+    promises.push(setUserInfoForList(times));
 
     await Promise.all(promises);
-    await setTimeDiffs(timeArr); // Has to happen after placements are calculated
+    await setTimeDiffs(times); // Has to happen after placements are calculated
 
-    res.status(200).json({
-        data: timeArr,
-        pagination: pagination
-    });
+    res.status(200).json(timeData);
 });
 
 app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
@@ -1041,52 +976,35 @@ async function getUserId(username: string): Promise<undefined | string> {
 
 async function getUserData(userId: string): Promise<undefined | User> {
     const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
-    const thumbReq = tryGetCached("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
-        userIds: userId,
-        size: "180x180",
-        format: "Png",
-        isCircular: false
-    });
     const strafesUserReq = getUserInfo(userId);
-    const userRolesReq = getAllUsersToRoles();
-    const settingsPromise = loadSettingsFromDB(userId);
+
+    const partialUser: UserInfo = {
+        userId: userId,
+        username: ""
+    };
+    const setUserInfoPromise = setUserInfoForList([partialUser], true);
 
     const userRes = await userReq;
     if (!userRes) return undefined;
-    const user = userRes.data;
-
-    let url = "";
-    const thumbRes = await thumbReq;
-    if (thumbRes) {
-        url = thumbRes.data.data[0].imageUrl;
-    }
+    const user = userRes.data as {name: string, displayName: string, created: string};
 
     const strafesUserData = await strafesUserReq;
-    const userRoles = await userRolesReq;
-    const role = userRoles.get(userId);
-    const settings = await settingsPromise;
+    await setUserInfoPromise;
 
-    if (!strafesUserData) {
-        return {
-            displayName: user.displayName,
-            id: userId,
-            username: user.name,
-            joinedOn: user.created,
-            thumbUrl: url,
-            role: role,
-            country: settings?.country
-        };
+    const userInfo: User = {
+        userId: userId,
+        username: user.name,
+        displayName: user.displayName,
+        joinedOn: user.created,
+        userThumb: partialUser.userThumb,
+        userRole: partialUser.userRole,
+        userCountry: partialUser.userCountry
+    };
+
+    if (strafesUserData) {
+        userInfo.status = strafesUserData.state_id;
+        userInfo.muted = strafesUserData.muted;
     }
 
-    return {
-        displayName: user.displayName,
-        id: userId,
-        username: user.name,
-        joinedOn: user.created,
-        thumbUrl: url,
-        status: strafesUserData.state_id,
-        muted: strafesUserData.muted,
-        role: role,
-        country: settings?.country
-    };
+    return userInfo;
 }
