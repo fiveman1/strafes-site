@@ -84,17 +84,19 @@ function UserDisplay(props: IUserDisplayProps) {
                     {user.id}
                 </Typography>
             </Box>
-            <Box>
+            <Box display="flex" flexDirection="column">
                 {user.role === undefined ? undefined :
                 <Typography variant="body2" color={getUserRoleColor(user.role, theme)}>
                     {formatUserRole(user.role)}
                 </Typography>
                 }
-                <Tooltip placement="bottom-start" title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
-                    <Typography variant="body2">
-                        Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} />
-                    </Typography>
-                </Tooltip>
+                <Box display="inline-flex">
+                    <Tooltip title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
+                        <Typography variant="body2">
+                            Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} />
+                        </Typography>
+                    </Tooltip>
+                </Box>
             </Box>
         </Box>
         <Box minWidth="128px" padding={0.25} display="flex" alignItems="center" justifyContent="right" flexGrow={1}>
