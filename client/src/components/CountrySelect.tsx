@@ -5,7 +5,7 @@ import { InputAdornment, useMediaQuery } from '@mui/material';
 import ReactCountryFlag from 'react-country-flag';
 import { CODE_TO_COUNTRY, COUNTRIES } from 'shared';
 
-// I stole this and adapted it from some random code sandbox https://stackblitz.com/edit/react-gjelm1-onjy2v3d?file=index.tsx,demo.tsx
+// Adapted from the Country select example here https://mui.com/material-ui/react-autocomplete/
 
 interface ICountrySelectProps {
     country: string | undefined

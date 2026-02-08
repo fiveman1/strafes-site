@@ -72,7 +72,7 @@ export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boole
         return;
     }
 
-    const thumbRes = await tryGetRequest("https://thumbnails.roproxy.com/v1/users/avatar-headshot", {
+    const thumbRes = await tryGetRequest("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
         userIds: Array.from(notCachedIds),
         size: largeThumbs ? "180x180" : "75x75",
         format: "Webp",

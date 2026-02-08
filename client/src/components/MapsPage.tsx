@@ -1,11 +1,11 @@
-import React, { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { Card, CardActionArea, CardContent, CardMedia, colors, darken, Grid, IconButton, lighten, Paper, TextField, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import { ContextParams, getAllowedGameForMap } from "../util/common";
 import { Game, Map, Style, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { FixedSizeList } from "react-window";
+import { List as VirtualizedList, RowComponentProps, useListCallbackRef } from "react-window";
 import StyleSelector from "./StyleSelector";
 import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
@@ -38,13 +38,7 @@ interface MapListProps extends MapCoreProps {
     filterGame: Game
 }
 
-interface MapRowProps {
-    data: MapRowData
-    index: number
-    style: CSSProperties
-}
-
-interface MapRowData extends MapCoreProps {
+interface MapRowProps extends MapCoreProps {
     itemsPerRow: number
     maps: Map[]
     selectedMap?: Map
@@ -55,9 +49,8 @@ interface MapCardProps extends MapCoreProps {
     selected: boolean
 }
 
-function MapRow(props: MapRowProps) {
-    const { data, index, style } = props;
-    const { maps, itemsPerRow, selectedMap, ...coreProps } = data;
+function MapRow(props: RowComponentProps<MapRowProps>) {
+    const { maps, itemsPerRow, selectedMap, index, style, ...coreProps } = props;
 
     const rowMaps: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
@@ -192,13 +185,13 @@ function MapCard(props: MapCardProps) {
 function MapList(props: MapListProps) {
     const { width, maps, selectedMap, sort, filterGame, ...coreProps } = props;
     
-    const listRef = useRef<FixedSizeList>(null);
+    const [list, setList] = useListCallbackRef(null);
 
     const itemsPerRow = Math.floor((width - 12) / (CARD_SIZE * 2)) || 1;
     const rowCount = Math.ceil(maps.length / itemsPerRow);
 
     useEffect(() => {
-        if (selectedMap && listRef.current) {
+        if (selectedMap && list) {
             let selectedIndex = -1;
             for (let i = 0; i < maps.length; ++i) {
                 const map = maps[i];
@@ -209,23 +202,24 @@ function MapList(props: MapListProps) {
             }
             if (selectedIndex !== -1) {
                 const selectedRow = Math.floor(selectedIndex / itemsPerRow);
-                listRef.current.scrollToItem(selectedRow);
+                list.scrollToRow({index: selectedRow});
             }
         }
     // Not including itemsPerRow or filteredMaps as deps because I only want to scroll to the selected row when:
     // 1. Loading a map for the first time (from a direct link), or
     // 2. Clicking on a map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedMap, listRef, sort, filterGame])
+    }, [selectedMap, list, sort, filterGame])
     
     return (
-        <FixedSizeList 
-            style={{scrollbarWidth: "thin"}} height={CARD_SIZE * 2} width={width} 
-            itemCount={rowCount} itemSize={CARD_SIZE} ref={listRef}
-            itemData={{maps: maps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, ...coreProps}}
-        >
-            {MapRow}
-        </FixedSizeList>
+        <VirtualizedList 
+            listRef={setList}
+            rowComponent={MapRow}
+            rowHeight={CARD_SIZE}
+            rowCount={rowCount}
+            rowProps={{maps: maps, itemsPerRow: itemsPerRow, selectedMap: selectedMap, ...coreProps}}
+            style={{scrollbarWidth: "thin", width: width, height: CARD_SIZE * 2}}
+        />
     );
 }
 
@@ -499,7 +493,7 @@ function MapsPage() {
                 </Box>
             </Paper>
         </Box>
-        <Grid container height={CARD_SIZE * 2} sx={{scrollbarWidth: "thin"}} paddingRight={smallScreen ? 1 : 0} paddingLeft={smallScreen ? 1 : 0}>
+        <Grid container height={CARD_SIZE * 2} paddingRight={smallScreen ? 1 : 0} paddingLeft={smallScreen ? 1 : 0}>
             <AutoSizer disableHeight>
             {({ width }) => <MapList width={width} maps={filteredMaps} mapStyle={style} game={game} sort={sort} filterGame={filterGame} selectedMap={selectedMap} onSelectMap={onSelectMap} />}
             </AutoSizer>

@@ -1,4 +1,4 @@
-import React, { CSSProperties, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector from "./GameSelector";
@@ -11,7 +11,7 @@ import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 import { getAllTimesForUser, getUserData } from "../api/api";
 import percentRound from "percent-round";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { FixedSizeList } from "react-window";
+import { List as VirtualizedList, RowComponentProps } from "react-window";
 import { ContextParams } from "../util/common";
 import { blue, green, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
@@ -676,25 +676,23 @@ function CompareList(props: ICompareListProps) {
     const rowCount = Math.ceil(times.length / itemsPerRow);
     
     return (
-        <FixedSizeList 
-            style={{scrollbarWidth: "thin"}} height={card_height * 2} width={width} 
-            itemCount={rowCount} itemSize={card_height}
-            itemData={{itemsPerRow: itemsPerRow, times: times}}
-        >
-            {CompareRow}
-        </FixedSizeList>
+        <VirtualizedList
+            rowComponent={CompareRow}
+            rowHeight={card_height}
+            rowCount={rowCount}
+            rowProps={{itemsPerRow: itemsPerRow, times: times}}
+            style={{scrollbarWidth: "thin", width: width, height: card_height * 2}}
+        />
     );
 }
 
 interface ICompareRowProps {
-    data: {itemsPerRow: number, times: CompareTimeInfo[]}
-    index: number
-    style: CSSProperties
+    itemsPerRow: number
+    times: CompareTimeInfo[]
 }
 
-function CompareRow(props: ICompareRowProps) {
-    const { data, index, style } = props;
-    const { itemsPerRow, times } = data;
+function CompareRow(props: RowComponentProps<ICompareRowProps>) {
+    const { itemsPerRow, times, index, style } = props;
 
     const rowTimes: React.ReactElement[] = [];
     const fromIndex = index * itemsPerRow;
