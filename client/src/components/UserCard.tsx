@@ -1,5 +1,4 @@
-import { Avatar, Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import { Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
 import { User, formatCountryCode, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -9,6 +8,7 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
 import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
+import UserAvatar from "./UserAvatar";
 
 interface IUserDisplayProps {
     user: User
@@ -20,7 +20,7 @@ interface IUserCardProps {
     user?: User
 }
 
-function UserAvatar(props: IUserDisplayProps) {
+function UserCardAvatar(props: IUserDisplayProps) {
     const { user } = props;
     const { loggedInUser } = useOutletContext() as ContextParams;
     const theme = useTheme();
@@ -29,7 +29,7 @@ function UserAvatar(props: IUserDisplayProps) {
 
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <Avatar sx={{height: 120, width: 120, bgcolor: grey[100], color: theme.palette.mode === "light" ? grey[500] : grey[800]}} alt={user.displayName} src={user.userThumb} />
+            <UserAvatar sx={{height: 120, width: 120}} username={user.username} userThumb={user.userThumb} />
             {isCurrentUser ?
             <Box
                 title="You" 
@@ -100,7 +100,7 @@ function UserDisplay(props: IUserDisplayProps) {
             </Box>
         </Box>
         <Box minWidth="128px" padding={0.25} display="flex" alignItems="center" justifyContent="right" flexGrow={1}>
-            <UserAvatar user={user} />
+            <UserCardAvatar user={user} />
         </Box>
     </>);
 }

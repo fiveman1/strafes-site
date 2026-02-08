@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Avatar, Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import UserSearch from "./UserSearch";
@@ -13,13 +13,14 @@ import percentRound from "percent-round";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import { ContextParams } from "../util/common";
-import { blue, green, grey, pink, purple, red } from "@mui/material/colors";
+import { blue, green, pink, purple, red } from "@mui/material/colors";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
 import CompareSortSelector from "./CompareSortSelector";
 import InfoIcon from '@mui/icons-material/Info';
 import DateDisplay from "./DateDisplay";
 import { CompareTimesSort, useCompareSort, useGameStyle, useUserSearch } from "../util/states";
+import UserAvatar from "./UserAvatar";
 
 const CARD_SIZE = 240;
 const TIE_COLOR = blue["A400"];
@@ -868,7 +869,7 @@ function CompareCardTimeCell(props: ICompareCardTimeCellProps) {
     return (
     <Box height="48px" display="flex" flexDirection="row" width="100%">
         <Tooltip placement="top" title={time.username} arrow>
-            <Avatar sx={{bgcolor: grey[100], height: "40px", width: "40px", alignSelf: "center"}} alt={time.username} src={time.userThumb} />
+            <UserAvatar sx={{height: "40px", width: "40px", alignSelf: "center"}} username={time.username} userThumb={time.userThumb} />
         </Tooltip>
         <Box display="flex" flexDirection="column" alignItems="flex-end" width="100%">
             {mainText}

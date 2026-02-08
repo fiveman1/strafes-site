@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
+import { Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "shared";
 import GameSelector from "./GameSelector";
@@ -9,12 +9,12 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CloseIcon from '@mui/icons-material/Close';
 import { updateSettings } from "../api/api";
-import { grey } from "@mui/material/colors";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/common";
 import CountrySelect from "./CountrySelect";
 import { dateFormat, relativeTimeFormat } from "../util/datetime";
 import { useGameStyle } from "../util/states";
+import UserAvatar from "./UserAvatar";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -113,7 +113,7 @@ function Settings() {
                 </Box>
             </Box>
             <Box display="flex" alignItems="center" padding={1.5}>
-                <Avatar sx={{ width: 48, height: 48, bgcolor: grey[100], marginRight: 1.25 }} alt={loggedInUser.displayName} src={loggedInUser.thumbnailUrl} />
+                <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loggedInUser.username} userThumb={loggedInUser.thumbnailUrl} />
                 <Box display="flex" flexDirection="column">
                     <Typography>
                         {loggedInUser.displayName} 

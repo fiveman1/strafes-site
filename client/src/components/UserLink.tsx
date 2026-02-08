@@ -1,10 +1,10 @@
-import { Avatar, Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
+import { Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import { formatCountryCode, Game, Style, UserInfo } from "shared";
 import { ContextParams, getUserRoleColor } from "../util/common";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import ReactCountryFlag from "react-country-flag";
-import { grey } from "@mui/material/colors";
+import UserAvatar from "./UserAvatar";
 
 interface IUserLinkProps extends LinkProps, UserInfo {
     game: Game
@@ -27,7 +27,7 @@ function UserLink(props: IUserLinkProps) {
         maxWidth="100%"
     >
         <Box display="flex" flexDirection="row" alignItems="center">
-            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800], mr: 1, width: "28px", height: "28px" }} alt={username} src={userThumb} />
+            <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "28px", height: "28px"}} />
             <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                 {username}
             </Typography>

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Autocomplete, Avatar, Box, debounce, Paper, TextField, Typography, useTheme } from "@mui/material";
+import { Autocomplete, Box, debounce, Paper, TextField, Typography } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
 import { UserSearchData } from "shared";
 import { UserSearchInfo } from "../util/states";
-import { grey } from "@mui/material/colors";
+import UserAvatar from "./UserAvatar";
 
 interface IUserSearchProps {
     minHeight: number
@@ -27,7 +27,6 @@ function UserSearch(props: IUserSearchProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const [hasError, setHasError] = useState(false);
-    const theme = useTheme();
 
     const fetchSearchOptions = useMemo(() => debounce(async (searchText: string, callback: (usernames: UserSearchData[]) => void) => {
         const usernames = await searchByUsername(searchText);
@@ -170,7 +169,7 @@ function UserSearch(props: IUserSearchProps) {
                             key={key}
                             {...props}
                         >
-                            <Avatar sx={{ bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : undefined, mr: 1, flexShrink: 0 }} alt={option.username} src={option.userThumb} />
+                            <UserAvatar sx={{ mr: 1, flexShrink: 0 }} username={option.username} userThumb={option.userThumb} />
                             {option.username}
                         </Box>
                     )}

@@ -14,7 +14,8 @@ import { LoginUser } from 'shared';
 import { grey } from '@mui/material/colors';
 import { logout } from '../api/api';
 import { useLocation, useNavigate } from 'react-router';
-import { Typography } from '@mui/material';
+import { Typography, useTheme } from '@mui/material';
+import UserAvatar from './UserAvatar';
 
 interface IAccountMenuProps {
     user: LoginUser
@@ -27,6 +28,7 @@ function AccountMenu(props: IAccountMenuProps) {
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
     const location = useLocation();
+    const theme = useTheme();
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -47,7 +49,7 @@ function AccountMenu(props: IAccountMenuProps) {
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
                     >
-                        <Avatar sx={{ width: 40, height: 40, bgcolor: grey[100] }} alt={user.displayName} src={user.thumbnailUrl} />
+                        <Avatar sx={{ width: 40, height: 40, bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800] }} alt={user.displayName} src={user.thumbnailUrl} />
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -90,7 +92,7 @@ function AccountMenu(props: IAccountMenuProps) {
             >
                 <MenuItem sx={{pointerEvents: "none"}}>
                     <Box display="flex" alignItems="center">
-                        <Avatar sx={{ bgcolor: grey[100] }} alt={user.displayName} src={user.thumbnailUrl} />
+                        <UserAvatar username={user.username} userThumb={user.thumbnailUrl} />
                         <Box display="flex" flexDirection="column">
                             <Typography>
                                 {user.displayName}
