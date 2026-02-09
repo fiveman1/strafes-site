@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Box, Paper, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
@@ -9,10 +9,10 @@ import { makeCourseColumn, makeDateColumn, makeGameColumn, makeGameStyleColumn, 
 import { numDigits } from "../util/utils";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
 
-function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined, 
-    hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined, 
+function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
+    hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,
     placementWidth: number, isCompact: boolean, sortBy: TimeSortBy) {
-    const cols: GridColDef[]  = [];
+    const cols: GridColDef[] = [];
 
     if (showPlacement && !showPlacementOrdinals) {
         cols.push({
@@ -70,7 +70,7 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
             cols.push(makeStyleColumn());
         }
     }
-    
+
     return cols;
 }
 
@@ -89,7 +89,7 @@ interface ITimesCardProps {
     allowOnlyWRs?: boolean
     showPlacementOrdinals?: boolean
     onLoadTimes?: (times: Time[]) => void
-    gridApiRef?: React.RefObject<GridApiCommunity | null> 
+    gridApiRef?: React.RefObject<GridApiCommunity | null>
     pageSize?: number
 }
 
@@ -97,27 +97,27 @@ function TimesCard(props: ITimesCardProps) {
     const { hideMap } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column",  "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
-        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
-            <Typography variant="caption" flexGrow={1} marginRight={1}>
-                {props.title ?? "Times"}
-            </Typography>
-            {hideMap ? <></> : 
-            <>
-            <Box bgcolor={UNRELEASED_MAP_COLOR} width="12px" height="12px" minWidth="12px" boxSizing="border-box" marginBottom="2px" />
-            <Typography variant="caption" marginLeft={0.75}>
-                = unreleased
-            </Typography>
-            </>}
-        </Box>
-        <TimesGrid {...props} />
-    </Paper>
+        <Paper elevation={2} sx={{ padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .timesGrid": { margin: smallScreen ? 0.25 : 0 } }}>
+            <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
+                <Typography variant="caption" flexGrow={1} marginRight={1}>
+                    {props.title ?? "Times"}
+                </Typography>
+                {hideMap ? <></> :
+                    <>
+                        <Box bgcolor={UNRELEASED_MAP_COLOR} width="12px" height="12px" minWidth="12px" boxSizing="border-box" marginBottom="2px" />
+                        <Typography variant="caption" marginLeft={0.75}>
+                            = unreleased
+                        </Typography>
+                    </>}
+            </Box>
+            <TimesGrid {...props} />
+        </Paper>
     );
 }
 
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, 
-        showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, 
+    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap,
+        showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes,
         gridApiRef, pageSize: propPageSize } = props;
 
     let apiRef = useGridApiRef();
@@ -127,8 +127,11 @@ function TimesGrid(props: ITimesCardProps) {
     const [maxPage, setMaxPage] = useState(0);
     const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
-    const pageSize = propPageSize ?? 10;
-    
+    const shortScreen = useMediaQuery("@media screen and (max-height: 1000px)");
+
+    let pageSize = propPageSize ?? 10;
+    if (shortScreen) pageSize = 10;
+
     let isCompact = false;
     if (game === Game.all || style === Style.all) {
         isCompact = under1000px;
@@ -140,6 +143,10 @@ function TimesGrid(props: ITimesCardProps) {
     if (gridApiRef) {
         apiRef = gridApiRef;
     }
+
+    useEffect(() => {
+        apiRef.current?.setPageSize(pageSize);
+    }, [apiRef, pageSize]);
 
     const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? 62 : 50;
 
@@ -193,7 +200,7 @@ function TimesGrid(props: ITimesCardProps) {
             apiRef.current?.sortColumn(field, direction);
         }
     }, [apiRef, getSort, isCompact]);
-    
+
     const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, placementWidth, isCompact, currentSortBy);
 
     const gridKey = `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
@@ -203,7 +210,7 @@ function TimesGrid(props: ITimesCardProps) {
             setRowCount(0);
             return { rows: [], rowCount: 0 }
         }
-        
+
         setIsLoading(true);
         const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, map, onlyWRs);
         setIsLoading(false);
@@ -257,41 +264,47 @@ function TimesGrid(props: ITimesCardProps) {
     }, [hideMap, isCompact])
 
     return (
-    <DataGrid
-        className="timesGrid"
-        columns={gridCols}
-        key={gridKey}
-        apiRef={apiRef}
-        loading={isLoading}
-        pagination
-        dataSource={dataSource}
-        pageSizeOptions={[pageSize]}
-        rowCount={rowCount}
-        rowHeight={rowHeight}
-        columnHeaderHeight={isCompact ? 76 : 56}
-        initialState={{
-            pagination: { 
-                paginationModel: { pageSize: pageSize },
-            },
-            sorting: {
-                sortModel: sort,
-            }
-        }}
-        disableColumnFilter
-        density="compact"
-        disableRowSelectionOnClick
-        onPaginationModelChange={onPageChange}
-        onSortModelChange={onSortChanged}
-        onColumnHeaderClick={onColumnHeaderClicked}
-        columnVisibilityModel={{
-            date: isCompact ? false : true
-        }}
-        sx={{
-            ".MuiDataGrid-iconButtonContainer": {
-                display: isCompact ? "none !Important" : undefined
-            }
-        }}
-    />
+        <DataGrid
+            className="timesGrid"
+            columns={gridCols}
+            key={gridKey}
+            apiRef={apiRef}
+            loading={isLoading}
+            pagination
+            dataSource={dataSource}
+            pageSizeOptions={propPageSize !== undefined && propPageSize !== 10 ? [10, propPageSize] : [10]}
+            rowCount={rowCount}
+            rowHeight={rowHeight}
+            columnHeaderHeight={isCompact ? 76 : 56}
+            initialState={{
+                pagination: { 
+                    paginationModel: { pageSize: pageSize },
+                },
+                sorting: {
+                    sortModel: sort,
+                }
+            }}
+            disableColumnFilter
+            density="compact"
+            disableRowSelectionOnClick
+            onPaginationModelChange={onPageChange}
+            onSortModelChange={onSortChanged}
+            onColumnHeaderClick={onColumnHeaderClicked}
+            columnVisibilityModel={{
+                date: isCompact ? false : true
+            }}
+            sx={{
+                ".MuiDataGrid-iconButtonContainer": {
+                    display: isCompact ? "none !important" : undefined
+                },
+                [`& .${tablePaginationClasses.selectLabel}`]: {
+                    display: "none", // Hide select rows per page
+                },
+                [`& .${tablePaginationClasses.input}`]: {
+                    display: "none", // Hide select rows per page
+                },
+            }}
+        />
     );
 }
 
