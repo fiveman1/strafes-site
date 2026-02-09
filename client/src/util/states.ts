@@ -46,21 +46,6 @@ export function saveSettingsToLocalStorage(settings: SettingsValues) {
 
 export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc";
 export type MapTimesSortRaw = "name" | "creator" | "date" | "count";
-const MAP_SORTS = ["nameAsc", "nameDesc", "creatorAsc", "creatorDesc", "dateAsc", "dateDesc", "countAsc", "countDesc"];
-export function isMapSort(value: string): value is MapTimesSort {
-    return MAP_SORTS.includes(value);
-}
-
-export function useMapSort() {
-    const [queryParams] = useSearchParams();
-
-    let paramSort: MapTimesSort = "nameAsc";
-    const sortParam = queryParams.get("sort");
-    if (sortParam && isMapSort(sortParam)) {
-        paramSort = sortParam;
-    }
-    return useState<MapTimesSort>(paramSort);
-}
 
 export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
 export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";

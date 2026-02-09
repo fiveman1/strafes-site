@@ -121,7 +121,7 @@ function UserSearch(props: IUserSearchProps) {
         }
     }, [location.search, navigate, disableNavigate, setSelectedUser, setUserId]);
 
-    return (<>
+    return (
         <Paper elevation={2} sx={{padding: 3, minHeight: minHeight, display:"flex", alignItems: "center"}}>
             <Box width="100%">
                 <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
@@ -177,8 +177,7 @@ function UserSearch(props: IUserSearchProps) {
                 />
             </Box>
         </Paper>
-    </>)
-    
+    );
 }
 
 export default UserSearch;

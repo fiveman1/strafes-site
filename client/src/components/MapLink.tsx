@@ -57,6 +57,7 @@ function MapLink(props: IMapLinkProps) {
                     alt={name}
                     border={isUnreleased ? 1 : 0}
                     borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
+                    borderRadius="4px"
                 />
                 : 
                 <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE }} />
@@ -80,7 +81,7 @@ function MapLink(props: IMapLinkProps) {
                         lineHeight="normal"
                         variant="caption"
                         fontWeight="normal"
-                        color={"white"} 
+                        color="textPrimary"
                         overflow="hidden" 
                         textOverflow="ellipsis" 
                         whiteSpace="nowrap"
