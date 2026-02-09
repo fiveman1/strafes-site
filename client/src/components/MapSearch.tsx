@@ -1,0 +1,300 @@
+import React, { useCallback, useState } from "react";
+import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, Popper, styled, TextField, Typography, useTheme } from "@mui/material";
+import { formatGame, Game, getAllowedStyles, Map as StrafesMap } from "shared";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import { UNRELEASED_MAP_COLOR } from "../util/colors";
+import { useSearchParams } from "react-router";
+import { List as VirtualizedList, RowComponentProps, useListRef, ListImperativeAPI } from "react-window";
+import { MapDetailsProps } from "../util/common";
+
+// Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
+
+const LISTBOX_PADDING = 8; // px
+
+type ItemData = Array<[React.ReactElement, StrafesMap]>;
+interface MyRowComponentProps {
+    itemData: ItemData
+}
+
+function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
+    const { itemData, index, style } = props;
+    const theme = useTheme();
+
+    const dataSet = itemData[index];
+    const inlineStyle = {
+        ...style,
+        top: ((style.top as number) ?? 0) + LISTBOX_PADDING,
+    };
+
+    const { ...optionProps } = dataSet[0];
+
+    const mapOption = dataSet[1];
+    const thumb = mapOption.smallThumb;
+    const isUnreleased = !mapOption ? false : new Date() < new Date(mapOption.date);
+    return (
+        <Typography
+            component="li"
+            {...optionProps}
+            key={mapOption.id}
+            style={inlineStyle}
+        >
+            {thumb ?
+            <Box
+                component="img"
+                height={70}
+                width={70}
+                src={thumb}
+                alt={mapOption.name}
+                border={isUnreleased ? 1 : 0}
+                borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
+                borderRadius="5px"
+            />
+            :
+            <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: 70 }} />}
+            <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                    <Typography 
+                        variant="h6" 
+                        overflow="hidden" 
+                        color="textPrimary" 
+                        display="inline-block" 
+                        textOverflow="ellipsis" 
+                        flexGrow={1}
+                    >
+                        {mapOption.name}
+                    </Typography>
+                    <Typography 
+                        ml={1}
+                        variant="caption"
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            textAlign: "center", 
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            padding: 0.25
+                        }}
+                    >
+                        {formatGame(mapOption.game)}
+                    </Typography>
+                </Box>
+                <Typography variant="body1" overflow="hidden" color="textSecondary" display="inline-block" textOverflow="ellipsis">
+                    {mapOption.creator}
+                </Typography>
+            </Box>
+        </Typography>
+    );
+}
+
+interface ListboxComponentProps {
+    listRef: React.Ref<ListImperativeAPI>
+}
+
+// Adapter for react-window v2
+const ListboxComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLElement> & ListboxComponentProps> (
+function ListboxComponent(props, ref) {
+    const { children, listRef, ...other } = props;
+    const itemData: ItemData = [];
+
+    (children as ItemData).forEach((item) => {
+        itemData.push(item);
+        if ('children' in item && Array.isArray(item.children)) {
+            itemData.push(...item.children);
+        }
+    });
+
+    const itemCount = itemData.length;
+    const itemSize = 80;
+
+    // Separate className for List, other props for wrapper div (ARIA, handlers)
+    const { className, ...otherProps } = other;
+    delete otherProps.style;
+
+    return (
+        <div ref={ref} {...otherProps}>
+            <VirtualizedList
+                listRef={listRef}
+                className={className}
+                key={itemCount}
+                rowCount={itemCount}
+                rowHeight={itemSize}
+                rowComponent={MapRowComponent}
+                rowProps={{ itemData }}
+                style={{
+                    height: (itemSize * Math.min(itemCount, 8)) + 2 * LISTBOX_PADDING,
+                    width: "100%",
+                }}
+                overscanCount={5}
+                tagName="ul"
+            />
+        </div>
+    );
+});
+
+const StyledPopper = styled(Popper)({
+    [`& .${autocompleteClasses.listbox}`]: {
+        boxSizing: "border-box",
+        "& ul": {
+            padding: 0,
+            margin: 0,
+        },
+    },
+});
+
+interface MapSearchProps extends MapDetailsProps {
+    maps: StrafesMap[]
+}
+
+function MapSearch(props: MapSearchProps) {
+    const { maps, selectedMap, setSelectedMap, game, style } = props;
+    
+    const [ searchParams ] = useSearchParams();
+    
+    const [ open, setOpen ] = useState(false);
+    const listRef = useListRef(null);
+    const [ inputValue, setIntputValue ] = useState("");
+
+    const filterOptions = useCallback((options: StrafesMap[], inputValue: string): StrafesMap[] => {
+        const filteredMaps: StrafesMap[] = [];
+        const alreadyFilteredMaps = new Set<number>();
+        const search = inputValue.toLowerCase();
+
+        // Selected map first
+        if (selectedMap) {
+            filteredMaps.push(selectedMap);
+            alreadyFilteredMaps.add(selectedMap.id);
+        }
+
+        // Exact map name matches
+        for (const map of options) {
+            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().startsWith(search)) {
+                filteredMaps.push(map);
+                alreadyFilteredMaps.add(map.id);
+            }
+        }
+
+        // Near map name matches
+        for (const map of options) {
+            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
+                filteredMaps.push(map);
+                alreadyFilteredMaps.add(map.id);
+            }
+        }
+
+        // Exact creator matches
+        for (const map of options) {
+            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().startsWith(search)) {
+                filteredMaps.push(map);
+                alreadyFilteredMaps.add(map.id);
+            }
+        }
+
+        // Near creator matches
+        for (const map of options) {
+            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().includes(search)) {
+                filteredMaps.push(map);
+                alreadyFilteredMaps.add(map.id);
+            }
+        }
+
+        return filteredMaps;
+    }, [selectedMap]);
+
+    const onSelect = useCallback((map: StrafesMap | undefined, reason: AutocompleteChangeReason) => {
+        if (reason === "clear") {
+            // Always close the seach when clearing it out
+            setOpen(false);
+        }
+
+        let allowedGame = map ? map.game : game;
+
+        if (game === Game.fly_trials) {
+            allowedGame = Game.fly_trials;
+        }
+        const allowedStyles = getAllowedStyles(allowedGame);
+        const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
+
+        let href = map ? `/maps/${map.id}` : "/maps";
+        href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
+
+        searchParams.forEach((value, key) => {
+            if (key === "game" || key === "style" || key === "course") return;
+            href += `&${key}=${value}`;
+        });
+
+        setSelectedMap(map, href);
+    }, [game, searchParams, setSelectedMap, style]);
+
+    // Scroll to right element when using arrow keys
+    const onHighlightChange = useCallback((option: StrafesMap | null, reason: AutocompleteHighlightChangeReason) => {
+        if (reason !== "keyboard" || !option || !listRef.current) {
+            return;
+        }
+
+        const realInputValue = selectedMap?.name === inputValue ? "" : inputValue;
+        const currentOptions = filterOptions(maps, realInputValue);
+        const index = currentOptions.findIndex((val) => val.id === option.id);
+        if (index >= 0) {
+            listRef.current.scrollToRow({index: index});
+        }
+    }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
+
+    return (
+    <Autocomplete
+        sx={{
+            // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+            "[type=\"search\"]::-webkit-search-decoration": { appearance: "none" },
+            "[type=\"search\"]::-webkit-search-cancel-button": { appearance: "none" }
+        }}
+        fullWidth
+        disableListWrap
+        inputMode="search"
+        value={selectedMap ?? null}
+        inputValue={inputValue}
+        filterOptions={(options, state) => filterOptions(options, state.inputValue)}
+        onChange={(e, v, r) => onSelect(v ?? undefined, r)}
+        onInputChange={(e, v) => setIntputValue(v)}
+        open={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+        onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}
+        isOptionEqualToValue={(opt, val) => opt.id === val.id}
+        options={maps}
+        autoComplete
+        blurOnSelect
+        renderInput={(params) =>
+            <TextField {...params}
+                placeholder="Search by name or creator"
+                fullWidth
+                label=""
+                variant="outlined"
+                type="search"
+                slotProps={{
+                    htmlInput: {
+                        ...params.inputProps,
+                        maxLength: 50
+                    },
+                    input: { ...params.InputProps }
+                }}
+            />
+        }
+        renderOption={(props, option) =>
+            [props, option] as React.ReactNode
+        }
+        slots={{
+            popper: StyledPopper,
+        }}
+        slotProps={{
+            listbox: {
+                component: ListboxComponent,
+                listRef: listRef
+            // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any
+        }}
+        getOptionLabel={(option) => option.name}
+    />
+    );
+}
+
+export default MapSearch;

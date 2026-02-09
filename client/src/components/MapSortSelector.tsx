@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { useSearchParams } from "react-router";
+import { useMemo } from "react";
+import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { isMapSort, MapTimesSort, MapTimesSortRaw } from "../util/states";
+import { MapTimesSort, MapTimesSortRaw } from "../util/states";
 
 interface IMapSortSelectorProps {
+    sort: MapTimesSort
     setSort: (sort: MapTimesSort) => void
 }
 
@@ -36,76 +36,51 @@ function translateSort(val: MapTimesSortRaw): string {
 }
 
 function MapSortSelector(props: IMapSortSelectorProps) {
-    const { setSort } = props;
-    const [searchParams, setSearchParams] = useSearchParams();
+    const { sort, setSort } = props;
     
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-
-    let paramRawSort: MapTimesSortRaw = "name";
-    let paramIsAsc = true;
-    const sortParam = searchParams.get("sort");
-    if (sortParam && isMapSort(sortParam)) {
-        switch (sortParam) {
+    // const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const rawSort: MapTimesSortRaw = useMemo(() => {
+        switch (sort) {
             case "nameAsc":
-                paramRawSort = "name";
-                paramIsAsc = true;
-                break;
             case "nameDesc":
-                paramRawSort = "name";
-                paramIsAsc = false;
-                break;
+                return "name"
             case "creatorAsc":
-                paramRawSort = "creator";
-                paramIsAsc = true;
-                break;
             case "creatorDesc":
-                paramRawSort = "creator";
-                paramIsAsc = false;
-                break;
+                return "creator";
             case "dateAsc":
-                paramRawSort = "date";
-                paramIsAsc = true;
-                break;
             case "dateDesc":
-                paramRawSort = "date";
-                paramIsAsc = false;
-                break;
+                return "date";
             case "countAsc":
-                paramRawSort = "count";
-                paramIsAsc = true;
-                break;
             case "countDesc":
-                paramRawSort = "count";
-                paramIsAsc = false;
-                break;
+                return "count";
         }
-    }
-    const [ rawSort, setRawSort ] = useState<MapTimesSortRaw>(paramRawSort);
-    const [ isAsc, setIsAsc ] = useState(paramIsAsc);
+    }, [sort]);
+
+    const isAsc: boolean = useMemo(() => {
+        switch (sort) {
+            case "nameAsc":
+            case "creatorAsc":
+            case "dateAsc":
+            case "countAsc":
+                return true;
+            default:
+                return false
+        }
+    }, [sort]);
 
     const handleChangeSort = (event: SelectChangeEvent<MapTimesSortRaw>) => {
         const sortVal = convertToSort(event.target.value, isAsc);
-        setSearchParams((params) => {
-            params.set("sort", sortVal);
-            return params;
-        }, {replace: true});
-        setRawSort(event.target.value);
         setSort(sortVal);
     };
 
     const onSwitchAsc = () => {
         const newIsAsc = !isAsc;
         const sortVal = convertToSort(rawSort, newIsAsc);
-        setSearchParams((params) => {
-            params.set("sort", sortVal);
-            return params;
-        }, {replace: true});
-        setIsAsc(newIsAsc);
         setSort(sortVal);
-    }
+    };
 
     return (
-        <Box padding={smallScreen ? 1 : 1.5} display="flex" alignItems="center">
+        <Box display="flex" alignItems="center">
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Sort</InputLabel>
                 <Select
