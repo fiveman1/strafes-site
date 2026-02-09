@@ -159,8 +159,8 @@ function MapSearch(props: MapSearchProps) {
         const alreadyFilteredMaps = new Set<number>();
         const search = inputValue.toLowerCase();
 
-        // Selected map first
-        if (selectedMap) {
+        // Selected map first if no input
+        if (search === "" && selectedMap) {
             filteredMaps.push(selectedMap);
             alreadyFilteredMaps.add(selectedMap.id);
         }
@@ -195,6 +195,12 @@ function MapSearch(props: MapSearchProps) {
                 filteredMaps.push(map);
                 alreadyFilteredMaps.add(map.id);
             }
+        }
+
+        // Make sure selected map is in list
+        if (selectedMap && !alreadyFilteredMaps.has(selectedMap.id)) {
+            filteredMaps.push(selectedMap);
+            alreadyFilteredMaps.add(selectedMap.id);
         }
 
         return filteredMaps;
