@@ -408,12 +408,21 @@ function MapsPage() {
 
     return (
         <Box flexGrow={1}>
-            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-                <Link underline="hover" color="inherit" href="/">
-                    Home
-                </Link>
-                {breadcrumbs}
-            </Breadcrumbs>
+            <Box display="flex" alignItems="center">
+                <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1}}>
+                    <Link underline="hover" color="inherit" href="/">
+                        Home
+                    </Link>
+                    {breadcrumbs}
+                </Breadcrumbs>
+                <Box display="flex" width="34px" height="34px">
+                    <Tooltip title="Download maps as .csv" placement="left"  arrow>
+                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
+                            <DownloadIcon />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            </Box>
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
@@ -424,15 +433,6 @@ function MapsPage() {
             </Box>
             <Box padding={1}>
                 <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
-            </Box>
-            <Box padding={1} display="flex" flexDirection="row" justifyContent="flex-end">
-                <Tooltip title="Download maps as .csv" placement="left" arrow>
-                    <Box>
-                        <IconButton disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
-                            <DownloadIcon />
-                        </IconButton>
-                    </Box>
-                </Tooltip>
             </Box>
         </Box>
     );
