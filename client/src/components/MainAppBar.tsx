@@ -212,9 +212,23 @@ function MainAppBar(props: IMainAppBarProps) {
     return (
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: "space-between" }}>
-                <Link href="/" variant="h6" color="inherit" underline="hover" minWidth={outerWidth} >
-                    strafes
-                </Link>
+                <Box minWidth={outerWidth} display="flex">
+                    <Link href="/" height="40px" width="40px">
+                        <Box 
+                            component="img" 
+                            src="/android-chrome-192x192.png" 
+                            height="40px" 
+                            width="40px" 
+                            boxShadow={2}
+                            sx={{
+                                transition: "box-shadow 0.2s ease",
+                                "&:hover": {
+                                    boxShadow: 4
+                                }
+                            }}
+                        />
+                    </Link>
+                </Box>
                 {useAppMenu ? <AppMenu loggedInUser={loggedInUser} /> : <AppLinks loggedInUser={loggedInUser} />}
                 <Box minWidth={outerWidth} display="flex" justifyContent="flex-end">
                     <ButtonGroup>
