@@ -1,4 +1,4 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { Game, formatGame, Map } from "shared";
 import { getAllowedGameForMap } from "../util/common";
 
@@ -13,7 +13,6 @@ interface IGameSelectorProps {
 
 function GameSelector(props: IGameSelectorProps) {
     const { game, setGame, allowSelectAll, label, selectedMap, disablePadding } = props;
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const handleChangeGame = (event: SelectChangeEvent<Game>) => {
         const game = event.target.value;
@@ -26,11 +25,8 @@ function GameSelector(props: IGameSelectorProps) {
     }
     const realGame = games.includes(game) ? game : games[0];
 
-    let padding = 0;
-    if (!disablePadding) padding = smallScreen ? 1 : 1.5;
-
     return (
-        <Box padding={padding}>
+        <Box padding={disablePadding ? 0 : 1}>
             <FormControl sx={{ width: "150px" }} disabled={games.length <= 1}>
                 <InputLabel>{label ?? "Game"}</InputLabel>
                 <Select

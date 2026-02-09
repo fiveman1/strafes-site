@@ -1,4 +1,4 @@
-import { Box, Checkbox, FormControlLabel, FormGroup, FormHelperText, useMediaQuery } from "@mui/material";
+import { Box, Checkbox, FormControlLabel, FormGroup, FormHelperText } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 
 interface IIncludeCheckboxParams {
@@ -11,7 +11,6 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const handleChangeIncludeBonuses = (checked: boolean) => {
         const queryParams = new URLSearchParams(location.search);
@@ -21,7 +20,7 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
     };
     
     return (
-    <Box padding={smallScreen ? 1 : 1.5}>
+    <Box padding={1}>
         <FormGroup>
             <FormControlLabel label="Bonuses" control={
                 <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  

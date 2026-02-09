@@ -162,7 +162,7 @@ function Settings() {
             <Typography variant="body2" padding={1}>
                 Switch between light and dark theme.
             </Typography>
-            <Box padding={2}>
+            <Box padding={1.5}>
                 <ThemeSelector 
                     themeMode={mockSettings.theme} 
                     setThemeMode={setThemeMode} 
@@ -177,7 +177,7 @@ function Settings() {
             <Typography variant="body2" padding={1}>
                 Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
             </Typography>
-            <Box padding={2} marginTop={-1} maxWidth="340px">
+            <Box padding={1.5} marginTop={-1} maxWidth="340px">
                 <NumberSpinner 
                     size="small"
                     label="Max relative days old"

@@ -1,4 +1,4 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { bhop_styles, Style, formatStyle, getAllowedStyles, Game } from "shared";
 
 interface IStyleSelectorProps {
@@ -11,7 +11,6 @@ interface IStyleSelectorProps {
 
 function StyleSelector(props: IStyleSelectorProps) {
     const { game, style, setStyle, allowSelectAll, label } = props;
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
         const style = event.target.value;
@@ -31,7 +30,7 @@ function StyleSelector(props: IStyleSelectorProps) {
     const inputLabel = label ?? "Style";
 
     return (
-        <Box padding={smallScreen ? 1 : 1.5}>
+        <Box padding={1}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>{inputLabel}</InputLabel>
                 <Select

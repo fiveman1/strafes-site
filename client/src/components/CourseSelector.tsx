@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { Map, formatCourse } from "shared";
 
 interface ICourseSelectorProps {
@@ -10,7 +10,6 @@ interface ICourseSelectorProps {
 
 function CourseSelector(props: ICourseSelectorProps) {
     const { map, course, setCourse } = props;
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     const handleChangeCourse = (event: SelectChangeEvent<number>) => {
         const course = event.target.value;
@@ -24,7 +23,7 @@ function CourseSelector(props: ICourseSelectorProps) {
     }
 
     return (
-        <Box padding={smallScreen ? 1 : 1.5}>
+        <Box padding={1}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Course</InputLabel>
                 <Select
