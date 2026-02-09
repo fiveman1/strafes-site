@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, Popper, styled, TextField, Typography, useTheme } from "@mui/material";
+import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
@@ -95,6 +95,7 @@ const ListboxComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
 function ListboxComponent(props, ref) {
     const { children, listRef, ...other } = props;
     const itemData: ItemData = [];
+    const smallScreen = useMediaQuery("@media screen and (max-height: 1000px)");
 
     (children as ItemData).forEach((item) => {
         itemData.push(item);
@@ -105,6 +106,7 @@ function ListboxComponent(props, ref) {
 
     const itemCount = itemData.length;
     const itemSize = 80;
+    const rowCount = smallScreen ? 6 : 8;
 
     // Separate className for List, other props for wrapper div (ARIA, handlers)
     const { className, ...otherProps } = other;
@@ -121,7 +123,7 @@ function ListboxComponent(props, ref) {
                 rowComponent={MapRowComponent}
                 rowProps={{ itemData }}
                 style={{
-                    height: (itemSize * Math.min(itemCount, 8)) + 2 * LISTBOX_PADDING,
+                    height: (itemSize * Math.min(itemCount, rowCount)) + 2 * LISTBOX_PADDING,
                     width: "100%",
                 }}
                 overscanCount={5}
