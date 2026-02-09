@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import { Breadcrumbs, Link, Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
 import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/common";
 import { getRanks } from "../api/api";
-import AutoSizer from "react-virtualized-auto-sizer";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
 import { useGameStyle } from "../util/states";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
@@ -84,11 +84,10 @@ function makeColumns(placementWidth: number) {
 interface IRanksCardProps {
     game: Game
     style: Style
-    height: number
 }
 
 function RanksCard(props: IRanksCardProps) {
-    const { game, style, height } = props;
+    const { game, style } = props;
 
     const [rowCount, setRowCount] = useState(-1);
     const [isLoading, setIsLoading] = useState(false);
@@ -142,7 +141,7 @@ function RanksCard(props: IRanksCardProps) {
     }), [updateRowData]);
 
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: height, "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
         <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
             <Typography variant="caption">
                 Ranks
@@ -155,11 +154,11 @@ function RanksCard(props: IRanksCardProps) {
             loading={isLoading}
             pagination
             dataSource={dataSource}
-            pageSizeOptions={[10, 25, 50]}
+            pageSizeOptions={[20]}
             rowCount={rowCount}
             initialState={{
                 pagination: { 
-                    paginationModel: { pageSize: 25 }
+                    paginationModel: { pageSize: 20 }
                 },
                 sorting: {
                     sortModel: [{ field: "rank", sort: "asc" }],
@@ -183,20 +182,20 @@ function Ranks() {
     
     return (
     <Box display="flex" flexDirection="column" flexGrow={1}>
-        <Typography variant="h2" padding={1}>
-            Ranks
-        </Typography>
-        <Typography variant="body2" padding={1}>
-            Ranks are calculated hourly.
-        </Typography>
+        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+            <Link underline="hover" color="inherit" href="/">
+                Home
+            </Link>
+            <Typography color="textPrimary">
+                Ranks
+            </Typography>
+        </Breadcrumbs>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} setGame={setGame} />
             <StyleSelector game={game} style={style} setStyle={setStyle} />
         </Box>
-        <Box padding={1} flexGrow={1} minHeight={550}>
-            <AutoSizer disableWidth>
-                {({ height }) => <RanksCard game={game} style={style} height={height} />}
-            </AutoSizer>
+        <Box padding={1} flexGrow={1}>
+            <RanksCard game={game} style={style} />
         </Box>
     </Box>
     );

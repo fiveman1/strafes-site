@@ -1,6 +1,6 @@
 import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { Game, LoginUser, Map, SettingsValues, Style, UserRole } from "shared";
+import { Game, LoginUser, Map, SettingsValues, UserRole } from "shared";
 
 export interface MapCount {
     bhop: number
@@ -75,7 +75,5 @@ export function getAllowedGameForMap(map: Map | undefined) {
 
 export interface MapDetailsProps {
     selectedMap: Map | undefined
-    setSelectedMap: (map: Map | undefined, href: string) => void
-    game: Game
-    style: Style
+    setSelectedMap: (map: Map | undefined) => void
 }

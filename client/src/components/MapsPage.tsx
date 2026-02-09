@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { IconButton, lighten, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { useNavigate, useOutletContext, useParams } from "react-router";
+import { Breadcrumbs, IconButton, lighten, Link, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import { ContextParams, getAllowedGameForMap, MapDetailsProps } from "../util/common";
-import { Game, Map, TimeSortBy, formatGame } from "shared";
+import { Game, Map, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import StyleSelector from "./StyleSelector";
 import TimesCard from "./TimesCard";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
@@ -20,6 +20,9 @@ import MapSortSelector from "./MapSortSelector";
 import TuneIcon from '@mui/icons-material/Tune';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import SortIcon from '@mui/icons-material/Sort';
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -51,6 +54,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const [filterGame, setFilterGame] = useState(Game.all);
     const [sort, setSort] = useState<MapTimesSort>("nameAsc");
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [expanded, setExpanded] = useState(false);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -59,6 +63,10 @@ function MapInfoCard(props: MapDetailsProps) {
     const handleClose = () => {
         setAnchorEl(null);
     };
+
+    const handleExpand = (expanded: boolean) => {
+        setExpanded(expanded);
+    }
 
     const open = Boolean(anchorEl);
     const id = open ? "filter-popover" : undefined;
@@ -106,8 +114,11 @@ function MapInfoCard(props: MapDetailsProps) {
                         Map
                     </Typography>
                 </Box>
-                <IconButton aria-describedby={id} size="small"  onClick={handleClick}>
+                <IconButton aria-describedby={id} size="small" onClick={handleClick}>
                     <TuneIcon />
+                </IconButton>
+                <IconButton size="small" sx={{ml: 0.5}} onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined}>
+                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
                 <Popover
                     id={id}
@@ -136,7 +147,9 @@ function MapInfoCard(props: MapDetailsProps) {
                 </Popover>
             </Box>
             <MapSearch {...props} maps={maps} />
+            {selectedMap && expanded ? 
             <MapDetailSection selectedMap={selectedMap} />
+            : undefined}
         </Paper>
     )
 }
@@ -154,7 +167,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
     const isLightMode = theme.palette.mode === "light";
     const imageBgColor = isLightMode ? grey[400] : grey[800];
 
-    const imageSize = smallScreen ? 250 : 300;
+    const imageSize = smallScreen ? 175 : 200;
     const mapDate = new Date(selectedMap.date);
     const isUnreleased = new Date() < mapDate;
     let releasedText = isUnreleased ? "Releases on " : "Released on ";
@@ -199,12 +212,13 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                 </Box>
             </Box>
             <Box
+                minWidth={imageSize}
                 width={imageSize}
                 height={imageSize}
                 borderRadius="10px"
                 bgcolor={imageBgColor}
                 overflow="hidden"
-                position={"relative"}
+                position="relative"
             >
                 {selectedMap.largeThumb ?
                     <Box
@@ -253,13 +267,31 @@ function MapsPage() {
     const { game, setGame, style, setStyle } = useGameStyle();
     const [course, setCourse] = useCourse();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const theme = useTheme();
 
     useEffect(() => {
         document.title = "maps - strafes";
     }, []);
 
-    const onSelectMap = useCallback((map: Map | undefined, href?: string) => {
+    const onSelectMap = useCallback((map: Map | undefined) => {
         document.title = map ? `maps - ${map.name} - strafes` : "maps - strafes";
+
+        let allowedGame = map ? map.game : game;
+
+        if (game === Game.fly_trials) {
+            allowedGame = Game.fly_trials;
+        }
+        const allowedStyles = getAllowedStyles(allowedGame);
+        const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
+
+        let href = map ? `/maps/${map.id}` : "/maps";
+        href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
+
+        searchParams.forEach((value, key) => {
+            if (key === "game" || key === "style" || key === "course") return;
+            href += `&${key}=${value}`;
+        });
 
         setInitalLoadComplete(true);
         setSelectedMap(map);
@@ -274,7 +306,7 @@ function MapsPage() {
         setCourse(0);
 
         if (href) navigate(href, { replace: true });
-    }, [game, navigate, setCourse, setGame]);
+    }, [game, navigate, searchParams, setCourse, setGame, style]);
 
     useEffect(() => {
         // Load map on initial load
@@ -319,13 +351,71 @@ function MapsPage() {
         download(csvConfig)(csv);
     };
 
-    return (
-        <Box flexGrow={1}>
-            <Typography variant="h2" padding={1}>
+    const breadcrumbs: React.ReactElement[] = [];
+    if (selectedMap) {
+        const mapDate = new Date(selectedMap.date);
+        const isUnreleased = new Date() < mapDate;
+
+        breadcrumbs.push(
+            <Link underline="hover" color="inherit" component="button" onClick={() => onSelectMap(undefined)}>
+                Maps
+            </Link>,
+            <Box display="flex" flexDirection="row" alignItems="center">
+                {selectedMap.smallThumb ? 
+                <Box 
+                    component="img" 
+                    height={30} 
+                    width={30} 
+                    src={selectedMap.smallThumb} 
+                    alt={selectedMap.name}
+                    border={isUnreleased ? 1 : 0}
+                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
+                    borderRadius="4px"
+                    mr={1.25}
+                />
+                : 
+                <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: 30, mr: 1 }} />}
+                <Typography color="textPrimary">
+                    {selectedMap.name}
+                    <Typography 
+                        ml={1}
+                        fontWeight="bold" 
+                        variant="caption"
+                        sx={{
+                            padding: 0.25,
+                            overflow: "hidden",
+                            backgroundColor: theme.palette.primary.main,
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px"
+                        }}
+                    >
+                        {formatGame(selectedMap.game)}
+                </Typography>
+                </Typography>
+                
+            </Box>
+        );
+    }
+    else {
+        breadcrumbs.push(
+            <Typography color="textPrimary">
                 Maps
             </Typography>
+        );
+    }
+
+    return (
+        <Box flexGrow={1}>
+            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+                <Link underline="hover" color="inherit" href="/">
+                    Home
+                </Link>
+                {breadcrumbs}
+            </Breadcrumbs>
             <Box padding={1}>
-                <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} game={game} style={style} />
+                <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
             <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
@@ -333,7 +423,7 @@ function MapsPage() {
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
             </Box>
             <Box padding={1}>
-                <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} hideMap showPlacement />
+                <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
             <Box padding={1} display="flex" flexDirection="row" justifyContent="flex-end">
                 <Tooltip title="Download maps as .csv" placement="left" arrow>

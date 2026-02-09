@@ -85,19 +85,19 @@ interface ITimesCardProps {
     hideMap?: boolean
     showPlacement?: boolean
     defaultSort: TimeSortBy
-    height?: number
     title?: string
     allowOnlyWRs?: boolean
     showPlacementOrdinals?: boolean
     onLoadTimes?: (times: Time[]) => void
     gridApiRef?: React.RefObject<GridApiCommunity | null> 
+    pageSize?: number
 }
 
 function TimesCard(props: ITimesCardProps) {
     const { hideMap } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", height: props.height ?? 590, "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column",  "& .timesGrid": {margin: smallScreen ? 0.25 : 0}}}>
         <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
             <Typography variant="caption" flexGrow={1} marginRight={1}>
                 {props.title ?? "Times"}
@@ -116,7 +116,10 @@ function TimesCard(props: ITimesCardProps) {
 }
 
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, gridApiRef } = props;
+    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap, 
+        showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes, 
+        gridApiRef, pageSize: propPageSize } = props;
+
     let apiRef = useGridApiRef();
     const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -124,6 +127,7 @@ function TimesGrid(props: ITimesCardProps) {
     const [maxPage, setMaxPage] = useState(0);
     const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
+    const pageSize = propPageSize ?? 10;
     
     let isCompact = false;
     if (game === Game.all || style === Style.all) {
@@ -261,13 +265,13 @@ function TimesGrid(props: ITimesCardProps) {
         loading={isLoading}
         pagination
         dataSource={dataSource}
-        pageSizeOptions={[25]}
+        pageSizeOptions={[pageSize]}
         rowCount={rowCount}
         rowHeight={rowHeight}
         columnHeaderHeight={isCompact ? 76 : 56}
         initialState={{
             pagination: { 
-                paginationModel: { pageSize: 25 },
+                paginationModel: { pageSize: pageSize },
             },
             sorting: {
                 sortModel: sort,

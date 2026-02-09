@@ -1,9 +1,8 @@
 import React, { useCallback, useState } from "react";
 import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, Popper, styled, TextField, Typography, useTheme } from "@mui/material";
-import { formatGame, Game, getAllowedStyles, Map as StrafesMap } from "shared";
+import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
-import { useSearchParams } from "react-router";
 import { List as VirtualizedList, RowComponentProps, useListRef, ListImperativeAPI } from "react-window";
 import { MapDetailsProps } from "../util/common";
 
@@ -66,6 +65,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                     <Typography 
                         ml={1}
                         variant="caption"
+                        fontWeight="bold" 
                         sx={{
                             backgroundColor: theme.palette.primary.main,
                             textAlign: "center", 
@@ -146,9 +146,7 @@ interface MapSearchProps extends MapDetailsProps {
 }
 
 function MapSearch(props: MapSearchProps) {
-    const { maps, selectedMap, setSelectedMap, game, style } = props;
-    
-    const [ searchParams ] = useSearchParams();
+    const { maps, selectedMap, setSelectedMap } = props;
     
     const [ open, setOpen ] = useState(false);
     const listRef = useListRef(null);
@@ -206,24 +204,8 @@ function MapSearch(props: MapSearchProps) {
             setOpen(false);
         }
 
-        let allowedGame = map ? map.game : game;
-
-        if (game === Game.fly_trials) {
-            allowedGame = Game.fly_trials;
-        }
-        const allowedStyles = getAllowedStyles(allowedGame);
-        const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
-
-        let href = map ? `/maps/${map.id}` : "/maps";
-        href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
-
-        searchParams.forEach((value, key) => {
-            if (key === "game" || key === "style" || key === "course") return;
-            href += `&${key}=${value}`;
-        });
-
-        setSelectedMap(map, href);
-    }, [game, searchParams, setSelectedMap, style]);
+        setSelectedMap(map);
+    }, [setSelectedMap]);
 
     // Scroll to right element when using arrow keys
     const onHighlightChange = useCallback((option: StrafesMap | null, reason: AutocompleteHighlightChangeReason) => {

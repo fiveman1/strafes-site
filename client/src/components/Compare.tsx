@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Button, darken, Divider, IconButton, lighten, LinearProgress, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, Button, darken, Divider, IconButton, lighten, LinearProgress, Link, List, ListItem, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
 import UserSearch from "./UserSearch";
@@ -21,6 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import DateDisplay from "./DateDisplay";
 import { CompareTimesSort, useCompareSort, useGameStyle, useUserSearch } from "../util/states";
 import UserAvatar from "./UserAvatar";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 const CARD_SIZE = 240;
 const TIE_COLOR = blue["A400"];
@@ -422,12 +423,14 @@ function Compare() {
 
     return (
     <Box display="flex" flexDirection="column" flexGrow={1}>
-        <Typography variant="h2" padding={1}>
-            Compare
-        </Typography>
-        <Typography variant="body2" padding={1}>
-            Select two users to compare their times against each other head-to-head.
-        </Typography>
+        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+            <Link underline="hover" color="inherit" href="/">
+                Home
+            </Link>
+            <Typography color="textPrimary">
+                Compare
+            </Typography>
+        </Breadcrumbs>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
                 <UserSearch 

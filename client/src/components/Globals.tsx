@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Paper, Typography } from "@mui/material";
+import { Breadcrumbs, Link, Paper, Typography } from "@mui/material";
 import TimesCard from "./TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy, ALL_COURSES, MAIN_COURSE } from "shared";
 import GameSelector from "./GameSelector";
 import StyleSelector from "./StyleSelector";
-import AutoSizer from "react-virtualized-auto-sizer";
 import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
 import { Game, Style } from "shared";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
@@ -15,6 +14,7 @@ import { getLeaderboardPage } from "../api/api";
 import DateDisplay from "./DateDisplay";
 import { makeUserColumn } from "../util/columns";
 import { useGameStyle, useIncludeBonuses } from "../util/states";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
@@ -27,36 +27,32 @@ function Globals() {
 
     return (
     <Box flexGrow={1} display="flex" flexDirection="column">
-        <Typography variant="h2" padding={1}>
-            Globals
-        </Typography>
-        <Typography variant="body2" padding={1}>
-            Each record in the list below is a world record (1st place). This list is updated hourly.
-        </Typography>
+        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+            <Link underline="hover" color="inherit" href="/">
+                Home
+            </Link>
+            <Typography color="textPrimary">
+                Globals
+            </Typography>
+        </Breadcrumbs>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} setGame={setGame} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
             <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>
-        <Box padding={1} flexGrow={1} minHeight={540}>
-            <AutoSizer disableWidth>
-                {({ height }) => 
-                <TimesCard 
-                    title="World Records" 
-                    height={height} 
-                    defaultSort={TimeSortBy.DateDesc} 
-                    game={game} 
-                    style={style} 
-                    course={includeBonuses ? ALL_COURSES : MAIN_COURSE} 
-                    onlyWRs 
-                    allowOnlyWRs 
-                />}
-            </AutoSizer>
+        <Box padding={1} flexGrow={1}>
+            <TimesCard 
+                title="World Records" 
+                defaultSort={TimeSortBy.DateDesc} 
+                game={game} 
+                style={style} 
+                course={includeBonuses ? ALL_COURSES : MAIN_COURSE} 
+                onlyWRs 
+                allowOnlyWRs 
+            />
         </Box>
-        <Box padding={1} flexGrow={1} minHeight={550}>
-            <AutoSizer disableWidth>
-                {({ height }) => <LeaderboardCard game={game} style={style} height={height} />}
-            </AutoSizer>
+        <Box padding={1} flexGrow={1}>
+            <LeaderboardCard game={game} style={style} />
         </Box>
     </Box>
     );
@@ -117,11 +113,10 @@ function makeColumns(game: Game, style: Style) {
 interface IRanksCardProps {
     game: Game
     style: Style
-    height: number
 }
 
 function LeaderboardCard(props: IRanksCardProps) {
-    const { game, style, height } = props;
+    const { game, style } = props;
 
     const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -163,7 +158,7 @@ function LeaderboardCard(props: IRanksCardProps) {
     }), [updateRowData]);
 
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", maxHeight: height }}>
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
         <Box marginBottom={1} display="flex">
             <Typography variant="caption" flexGrow={1} marginRight={2}>
                 Leaderboards
@@ -175,11 +170,11 @@ function LeaderboardCard(props: IRanksCardProps) {
             loading={isLoading}
             pagination
             dataSource={dataSource}
-            pageSizeOptions={[10, 25, 50]}
+            pageSizeOptions={[15]}
             rowCount={rowCount}
             initialState={{
                 pagination: { 
-                    paginationModel: { pageSize: 25 }
+                    paginationModel: { pageSize: 15 }
                 },
                 sorting: {
                     sortModel: [{ field: "count", sort: "desc" }],

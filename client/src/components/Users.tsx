@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Switch, Typography, useMediaQuery } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Link, Switch, Typography, useMediaQuery } from "@mui/material";
 import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
@@ -15,6 +15,8 @@ import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
 import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
 import { useGameStyle, useIncludeBonuses, useUserSearch } from "../util/states";
+import UserAvatar from "./UserAvatar";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 function Users() {
     const { id } = useParams();
@@ -97,21 +99,36 @@ function Users() {
         apiRef.current?.dataSource.cache.clear();
     };
 
+    const breadcrumbs: React.ReactElement[] = [];
+    if (user) {
+        breadcrumbs.push(
+            <Link underline="hover" color="inherit" component="button" onClick={() => navigate("/users")}>
+                Users
+            </Link>,
+            <Box display="flex" flexDirection="row" alignItems="center">
+                <UserAvatar username={user.username} userThumb={user.userThumb} sx={{width: 32, height: 32, mr: 1.25}}/>
+                <Typography color="textPrimary">
+                    @{user.username}
+                </Typography>
+            </Box>
+        );
+    }
+    else {
+        breadcrumbs.push(
+            <Typography color="textPrimary">
+                Users
+            </Typography>
+        );
+    }
+
     return (
     <Box flexGrow={1}>
-        <Typography variant="h2" padding={1}>
-            Users
-        </Typography>
-        <Box marginLeft={2} marginBottom={0.5}>
-            <FormControlLabel 
-                label="Advanced"
-                control={
-                <Switch 
-                    checked={advanced} 
-                    onChange={(e) => setAdvanced(e.target.checked)} 
-                />}
-            />
-        </Box>
+        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+            <Link underline="hover" color="inherit" href="/">
+                Home
+            </Link>
+            {breadcrumbs}
+        </Breadcrumbs>
         <Box display="flex" flexDirection="row" flexWrap="wrap">
             <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
                 <UserSearch 
@@ -155,13 +172,23 @@ function Users() {
                 showPlacementOrdinals 
             />
         </Box>
+        <Box padding={1} ml={1}>
+            <FormControlLabel 
+                label="Advanced"
+                control={
+                <Switch 
+                    checked={advanced} 
+                    onChange={(e) => setAdvanced(e.target.checked)} 
+                />}
+            />
+            {advanced ? 
+            <Button variant="outlined" startIcon={<CachedIcon />} onClick={onResetViewed}>
+                Clear Viewed
+            </Button>
+            : <></>}
+        </Box>
         {advanced ? 
         <Box padding={1}>
-            <Box marginBottom={2}>
-                <Button variant="outlined" startIcon={<CachedIcon />} onClick={onResetViewed}>
-                    Clear Viewed
-                </Button>
-            </Box>
             <ViewedTimes times={uniqueTimes} />
         </Box>
         : <></>}
