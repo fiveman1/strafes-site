@@ -415,13 +415,13 @@ function MapsPage() {
                     </Link>
                     {breadcrumbs}
                 </Breadcrumbs>
-                <Box display="flex" width="34px" height="34px">
-                    <Tooltip title="Download maps as .csv" placement="left"  arrow>
+                <Tooltip title="Download maps as .csv" placement="left" arrow>
+                    <Box display="flex" width="34px" height="34px">
                         <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
                             <DownloadIcon />
                         </IconButton>
-                    </Tooltip>
-                </Box>
+                    </Box>
+                </Tooltip>
             </Box>
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />

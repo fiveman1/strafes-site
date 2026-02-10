@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
@@ -198,10 +198,10 @@ function MapSearch(props: MapSearchProps) {
         }
 
         // Make sure selected map is in list
-        if (selectedMap && !alreadyFilteredMaps.has(selectedMap.id)) {
-            filteredMaps.push(selectedMap);
-            alreadyFilteredMaps.add(selectedMap.id);
-        }
+        // if (selectedMap && !alreadyFilteredMaps.has(selectedMap.id)) {
+        //     filteredMaps.push(selectedMap);
+        //     alreadyFilteredMaps.add(selectedMap.id);
+        // }
 
         return filteredMaps;
     }, [selectedMap]);
@@ -229,6 +229,9 @@ function MapSearch(props: MapSearchProps) {
         }
     }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
 
+    const isUnreleased = !selectedMap ? false : new Date() < new Date(selectedMap.date);
+    const adornmentSize = 40;
+
     return (
     <Autocomplete
         sx={{
@@ -251,6 +254,7 @@ function MapSearch(props: MapSearchProps) {
         isOptionEqualToValue={(opt, val) => opt.id === val.id}
         options={maps}
         autoComplete
+        autoHighlight
         blurOnSelect
         renderInput={(params) =>
             <TextField {...params}
@@ -264,7 +268,27 @@ function MapSearch(props: MapSearchProps) {
                         ...params.inputProps,
                         maxLength: 50
                     },
-                    input: { ...params.InputProps }
+                    input: { 
+                        ...params.InputProps,
+                        startAdornment: (
+                            selectedMap ?
+                            <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${adornmentSize}px`}}>
+                                {selectedMap.smallThumb ?
+                                <Box
+                                    component="img"
+                                    height={adornmentSize}
+                                    width={adornmentSize}
+                                    src={selectedMap.smallThumb}
+                                    alt={selectedMap.name}
+                                    border={isUnreleased ? 1 : 0}
+                                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
+                                    borderRadius="5px"
+                                />
+                                :
+                                <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: adornmentSize }} />}
+                            </InputAdornment> : undefined
+                        )
+                    }
                 }}
             />
         }
