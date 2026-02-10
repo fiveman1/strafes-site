@@ -16,10 +16,11 @@ export interface IProfileCardProps {
     style: Style
     user?: User
     userLoading: boolean
+    minHeight?: number
 }
 
 function ProfileCard(props: IProfileCardProps) {
-    const { userId, game, style, user, userLoading } = props;
+    const { userId, game, style, user, userLoading, minHeight } = props;
 
     const [rank, setRank] = useState<Rank>();
     const [rankLoading, setRankLoading] = useState(false);
@@ -136,7 +137,7 @@ function ProfileCard(props: IProfileCardProps) {
     const disableButton = !userId || game === Game.all || style === Style.all;
 
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", width: "100%", minHeight: minHeight}}>
         <Box display="flex">
             <Typography variant="caption" flexGrow={1}>
                 Profile

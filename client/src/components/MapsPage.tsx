@@ -23,6 +23,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ColorChip from "./ColorChip";
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -195,9 +196,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                 </Box>
                 <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
                     {isUnreleased ?
-                        <Typography variant="body2" color={UNRELEASED_MAP_COLOR}>
-                            Unreleased
-                        </Typography>
+                        <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />
                         :
                         <></>}
                     <Typography variant="body2">
@@ -205,9 +204,6 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                         Server load count: {selectedMap.loadCount}
-                    </Typography>
-                    <Typography variant="body2" color="primary">
-                        {formatGame(selectedMap.game)}
                     </Typography>
                 </Box>
             </Box>

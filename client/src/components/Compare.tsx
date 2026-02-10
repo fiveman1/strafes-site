@@ -431,36 +431,30 @@ function Compare() {
                 Compare
             </Typography>
         </Breadcrumbs>
-        <Box display="flex" flexDirection="row" flexWrap="wrap">
-            <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch 
-                    setUserId={setFirstUserId} 
-                    minHeight={185} 
-                    userSearch={firstUserSearch}
-                    disableNavigate 
-                />
-            </Box>
-            <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard user={firstUser} loading={isFirstUserLoading} minHeight={185}/>
-            </Box>
+        <Box padding={1}>
+            <UserSearch 
+                setUserId={setFirstUserId} 
+                userSearch={firstUserSearch}
+                disableNavigate 
+            />
+        </Box>
+        <Box padding={1}>
+            <UserCard user={firstUser} loading={isFirstUserLoading} minHeight={160} center />
         </Box>
         <Box padding={1} display="flex" justifyContent="center">
             <Button variant="outlined" size="large" sx={{width: "160px"}} disabled={!firstUserId || !secondUserId} loading={isLoading} startIcon={<SwapCallsIcon />} onClick={onSwap}>
                 Swap
             </Button>
         </Box>
-        <Box display="flex" flexDirection="row" flexWrap="wrap">
-            <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
-                <UserSearch 
-                    setUserId={setSecondUserId} 
-                    minHeight={185} 
-                    userSearch={secondUserSearch}
-                    disableNavigate 
-                />
-            </Box>
-            <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard user={secondUser} loading={isSecondUserLoading} minHeight={185}/>
-            </Box>
+        <Box padding={1}>
+            <UserSearch 
+                setUserId={setSecondUserId}
+                userSearch={secondUserSearch}
+                disableNavigate 
+            />
+        </Box>
+        <Box padding={1}>
+            <UserCard user={secondUser} loading={isSecondUserLoading} minHeight={160} center />
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} setGame={setGame} />

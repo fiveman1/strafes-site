@@ -9,6 +9,7 @@ import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
 import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
 import UserAvatar from "./UserAvatar";
+import ColorChip from "./ColorChip";
 
 interface IUserDisplayProps {
     user: User
@@ -18,6 +19,7 @@ interface IUserCardProps {
     minHeight?: number
     loading?: boolean
     user?: User
+    center?: boolean
 }
 
 function UserCardAvatar(props: IUserDisplayProps) {
@@ -29,7 +31,7 @@ function UserCardAvatar(props: IUserDisplayProps) {
 
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <UserAvatar sx={{height: 120, width: 120}} username={user.username} userThumb={user.userThumb} />
+            <UserAvatar sx={{height: 100, width: 100}} username={user.username} userThumb={user.userThumb} />
             {isCurrentUser ?
             <Box
                 title="You" 
@@ -59,67 +61,70 @@ function UserDisplay(props: IUserDisplayProps) {
     const dateValue = new Date(user.joinedOn);
     const tooltipText = dateTimeFormat.format(dateValue);
 
-    return (<>
-        <Box display="flex" flexDirection="column" minWidth="0" sx={{overflowWrap: "break-word"}}>
-            <Box display="flex" flexDirection="column" flexGrow={1} justifyContent="flex-start">
-                <Box display="inline-block">
-                    <Typography variant="h4" sx={{wordBreak: "break-word"}} display="inline-block">
-                        {user.displayName}
-                        {user.userCountry ? <ReactCountryFlag style={{marginLeft: 8, marginTop: -8}} title={formatCountryCode(user.userCountry)} countryCode={user.userCountry} svg /> : undefined}
+    return (
+        <Box display="flex" flexDirection="row">
+            <Box minWidth="108px" display="flex" alignItems="center" mr={1}>
+                <UserCardAvatar user={user} />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth="0" sx={{overflowWrap: "break-word"}}>
+                <Box display="flex" flexDirection="column" flexGrow={1} justifyContent="flex-start">
+                    <Box display="inline-block">
+                        <Box lineHeight={1} sx={{wordBreak: "break-word", }} display="flex" alignItems="center">
+                            <Typography variant="h5" >
+                                {user.displayName}
+                                {user.userCountry ? <ReactCountryFlag style={{verticalAlign: "text-top", marginLeft: 8}} title={formatCountryCode(user.userCountry)} countryCode={user.userCountry} svg /> : undefined}
+                            </Typography>
+                            
+                        </Box>
+                    </Box>
+                    <Box display="inline-flex">
+                        <Link
+                            href={`https://www.roblox.com/users/${user.userId}/profile`}
+                            color="secondary"
+                            display="inline-flex"
+                            sx={{verticalAlign: "top", wordBreak: "break-word"}}
+                        >
+                            <Typography variant="subtitle2" >
+                                @{user.username}
+                            </Typography>
+                        </Link>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary">
+                        {user.userId}
                     </Typography>
                 </Box>
-                <Box display="inline-flex">
-                    <Link
-                        href={`https://www.roblox.com/users/${user.userId}/profile`}
-                        color="secondary"
-                        display="inline-flex"
-                        sx={{verticalAlign: "top", wordBreak: "break-word"}}
-                    >
-                        <Typography variant="subtitle2" >
-                            @{user.username}
-                        </Typography>
-                    </Link>
-                </Box>
-                <Typography variant="body2" color="textSecondary">
-                    {user.userId}
-                </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column">
-                {user.userRole === undefined ? undefined :
-                <Typography variant="body2" color={getUserRoleColor(user.userRole, theme)}>
-                    {formatUserRole(user.userRole)}
-                </Typography>
-                }
-                <Box display="inline-flex">
-                    <Tooltip title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
-                        <Typography variant="body2">
-                            Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} />
-                        </Typography>
-                    </Tooltip>
+                <Box display="flex" flexDirection="column">
+                    {user.userRole === undefined ? undefined :
+                    <ColorChip color={getUserRoleColor(user.userRole, theme)} label={formatUserRole(user.userRole)} />}
+                    <Box display="inline-flex">
+                        <Tooltip title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
+                            <Typography variant="body2">
+                                Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} />
+                            </Typography>
+                        </Tooltip>
+                    </Box>
                 </Box>
             </Box>
         </Box>
-        <Box minWidth="128px" padding={0.25} display="flex" alignItems="center" justifyContent="right" flexGrow={1}>
-            <UserCardAvatar user={user} />
-        </Box>
-    </>);
+    );
 }
 
 function UserCard(props: IUserCardProps) {
-    const { minHeight, loading, user } = props;
+    const { minHeight, loading, user, center } = props;
     
     return (
-    <Paper elevation={2} sx={{padding: 3, display: "flex", flexDirection: "row", minHeight: minHeight, minWidth: 0}}>
-        {user && !loading ? <UserDisplay user={user} /> 
+    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "row", minHeight: minHeight}}>
+        <Box display="flex" width="100%" flexDirection="row" alignItems="center" justifyContent={center ? "center" : undefined}>
+        {user && !loading ? 
+            <UserDisplay user={user} /> 
         : 
-        <Box display="flex" alignItems="center" width="100%">
-            {loading ? 
+        loading ? 
             <Box flexGrow={1} display="flex" justifyContent="center">
                 <CircularProgress size="72px" />
             </Box>
-            : 
+        : 
             <PermIdentityIcon sx={{ fontSize: 72, flexGrow: 1 }} />}
-        </Box>}
+        </Box>
     </Paper>);
 }
 

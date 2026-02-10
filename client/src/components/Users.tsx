@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Link, Switch, Typography } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Link, Switch, Typography, useMediaQuery } from "@mui/material";
 import UserCard from "./UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
 import ProfileCard from "./ProfileCard";
@@ -29,6 +29,9 @@ function Users() {
     const [userSearch] = useUserSearch();
     const [viewedTimes, setViewedTimes] = useState<Time[]>([]);
     const apiRef = useGridApiRef();
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
+    const smallScreenProfile = useMediaQuery("@media screen and (max-width: 800px)");
 
     const addTimes = useCallback((times: Time[]) => {
         setViewedTimes((viewed) => {
@@ -106,7 +109,7 @@ function Users() {
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">
                 <UserAvatar username={user.username} userThumb={user.userThumb} sx={{width: 32, height: 32, mr: 1.25}}/>
-                <Typography color="textPrimary">
+                <Typography color="textPrimary" mr={1.25}>
                     @{user.username}
                 </Typography>
             </Box>
@@ -122,28 +125,32 @@ function Users() {
 
     return (
     <Box flexGrow={1}>
-        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-            <Link underline="hover" color="inherit" href="/">
-                Home
-            </Link>
-            {breadcrumbs}
-        </Breadcrumbs>
-        <Box display="flex" flexDirection="row" flexWrap="wrap">
-            <Box minWidth={320} padding={1} flexBasis="60%" flexGrow={1}>
+        <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={0.5}>
+            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex"}}>
+                <Link underline="hover" color="inherit" href="/">
+                    Home
+                </Link>
+                {breadcrumbs}
+            </Breadcrumbs>
+            <Box padding={smallScreen ? 1 : 0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
                 <UserSearch 
                     setUserId={setUserId} 
-                    minHeight={185} 
                     userSearch={userSearch}
                 />
             </Box>
-            <Box minWidth={320} padding={1} flexBasis="40%" flexGrow={1}>
-                <UserCard user={user} loading={userLoading} minHeight={185}/>
+        </Box>
+        <Box display="flex" flexDirection={smallScreenProfile ? "column" : "row"} alignItems="center" >
+            <Box padding={1} flexBasis="40%" minWidth={smallScreenProfile ? undefined : 360} maxWidth={smallScreenProfile ? undefined : 500} width={smallScreenProfile ? "100%" : undefined} >
+                <UserCard user={user} loading={userLoading} minHeight={160} center={smallScreenProfile} />
+            </Box>
+            <Box padding={1} flexBasis="60%" flexGrow={1} display="flex" flexWrap="wrap" alignItems="center" >
+                <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} minHeight={160} />
             </Box>
         </Box>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} setGame={setGame} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
-            <Box padding={1}>
+            <Box padding={1} >
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={
                         <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  
@@ -152,9 +159,6 @@ function Users() {
                 <FormHelperText>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
             </Box>
             <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
-        </Box>
-        <Box padding={1}>
-            <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
         </Box>
         <Box padding={1}>
             <TimesCard 

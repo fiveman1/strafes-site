@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Autocomplete, Box, debounce, Paper, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, debounce, InputAdornment, TextField } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
 import { getUserIdFromName, searchByUsername } from "../api/api";
 import { UserSearchData } from "shared";
 import { UserSearchInfo } from "../util/states";
 import UserAvatar from "./UserAvatar";
+import SearchIcon from '@mui/icons-material/Search';
 
 interface IUserSearchProps {
-    minHeight: number
     setUserId: React.Dispatch<React.SetStateAction<string | undefined>>
     disableNavigate?: boolean
     userSearch: UserSearchInfo
@@ -21,7 +21,7 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 }
 
 function UserSearch(props: IUserSearchProps) {
-    const { minHeight, setUserId, disableNavigate, userSearch } = props;
+    const { setUserId, disableNavigate, userSearch } = props;
     const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
 
     const location = useLocation();
@@ -122,61 +122,65 @@ function UserSearch(props: IUserSearchProps) {
     }, [location.search, navigate, disableNavigate, setSelectedUser, setUserId]);
 
     return (
-        <Paper elevation={2} sx={{padding: 3, minHeight: minHeight, display:"flex", alignItems: "center"}}>
-            <Box width="100%">
-                <Typography variant="subtitle1" marginBottom={3.5}>Search by username</Typography>
-                <Autocomplete 
-                    sx={{
-                        // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
-                        "[type=\"search\"]::-webkit-search-decoration": {appearance: "none"},
-                        "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"}
+        <Autocomplete 
+            sx={{
+                // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+                "[type=\"search\"]::-webkit-search-decoration": {appearance: "none"},
+                "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"}
+            }}
+            fullWidth
+            inputMode="search"
+            inputValue={userText}
+            value={selectedUser}
+            onInputChange={(e, v) => onInputChange(v ?? "")}
+            onChange={(e, v) => onSearch(v ?? "")}
+            isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
+            filterOptions={(x) => x}
+            options={options}
+            loading={loadingOptions}
+            autoComplete
+            autoHighlight
+            blurOnSelect
+            freeSolo
+            includeInputInList
+            size="small"
+            renderInput={(params) => 
+                <TextField {...params} 
+                    error={hasError} 
+                    helperText={hasError ? "Invalid username." : ""}
+                    fullWidth 
+                    label="" 
+                    placeholder="Search by username"
+                    variant="outlined"
+                    type="search"
+                    slotProps={{
+                        htmlInput: {
+                            ...params.inputProps, 
+                            maxLength: 50
+                        }, 
+                        input: {
+                            ...params.InputProps,
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            )
+                        }
                     }}
-                    fullWidth
-                    inputMode="search"
-                    inputValue={userText}
-                    value={selectedUser}
-                    onInputChange={(e, v) => onInputChange(v ?? "")}
-                    onChange={(e, v) => onSearch(v ?? "")}
-                    isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
-                    filterOptions={(x) => x}
-                    options={options}
-                    loading={loadingOptions}
-                    autoComplete
-                    autoHighlight
-                    blurOnSelect
-                    freeSolo
-                    includeInputInList
-                    renderInput={(params) => 
-                        <TextField {...params} 
-                            error={hasError} 
-                            helperText={hasError ? "Invalid username." : ""}
-                            fullWidth 
-                            label="Username" 
-                            variant="outlined"
-                            type="search"
-                            slotProps={{
-                                htmlInput: {
-                                    ...params.inputProps, 
-                                    maxLength: 50
-                                }, 
-                                input: {...params.InputProps}
-                            }}
-                        />
-                    }
-                    renderOption={({key, ...props}, option) => (
-                        <Box
-                            component="li"
-                            key={key}
-                            {...props}
-                        >
-                            <UserAvatar sx={{ mr: 1, flexShrink: 0 }} username={option.username} userThumb={option.userThumb} />
-                            {option.username}
-                        </Box>
-                    )}
-                    getOptionLabel={(option) => typeof option === "string" ? option : option.username}
                 />
-            </Box>
-        </Paper>
+            }
+            renderOption={({key, ...props}, option) => (
+                <Box
+                    component="li"
+                    key={key}
+                    {...props}
+                >
+                    <UserAvatar sx={{ mr: 1, flexShrink: 0 }} username={option.username} userThumb={option.userThumb} />
+                    {option.username}
+                </Box>
+            )}
+            getOptionLabel={(option) => typeof option === "string" ? option : option.username}
+        />
     );
 }
 

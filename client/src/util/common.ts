@@ -27,7 +27,7 @@ export function getUserRoleColor(role: UserRole, theme: Theme) {
     }
     
     if (theme.palette.mode === "dark") {
-        return lighten(color, 0.2);
+        return lighten(color, 0.1);
     }
     return color;
 }
@@ -43,9 +43,9 @@ function getUserRoleColorCore(role: UserRole) {
         case UserRole.ChatMod:
             return "#1bcf78";
         case UserRole.InGameMod:
-            return "#c176df";
+            return "#e79ddd";
         case UserRole.InGameHeadMod:
-            return "#ff00d5";
+            return "#e96ed8";
         case UserRole.Dev:
             return "#3b92ff";
         case UserRole.DatabaseMan:

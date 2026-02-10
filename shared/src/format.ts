@@ -169,11 +169,11 @@ export function formatUserRole(role: UserRole) {
         case UserRole.MapAdmin:
             return "map admin";
         case UserRole.ChatMod:
-            return "in-game chat moderator";
+            return "in-game chat mod";
         case UserRole.InGameMod:
-            return "in-game moderator";
+            return "in-game mod";
         case UserRole.InGameHeadMod:
-            return "in-game head moderator";
+            return "in-game head mod";
         case UserRole.Dev:
             return "developer";
         case UserRole.DatabaseMan:
