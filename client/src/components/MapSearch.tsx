@@ -3,7 +3,7 @@ import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, Autocomple
 import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
-import { List as VirtualizedList, RowComponentProps, useListRef, ListImperativeAPI } from "react-window";
+import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../util/common";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
@@ -47,6 +47,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                 border={isUnreleased ? 1 : 0}
                 borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
                 borderRadius="5px"
+                sx={{aspectRatio: 1}} // Makes sure browser reserves the right amount of space while image still loading
             />
             :
             <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: 70 }} />}
@@ -88,13 +89,13 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
 }
 
 interface ListboxComponentProps {
-    listRef: React.Ref<ListImperativeAPI>
+    setListRef: React.Dispatch<React.SetStateAction<ListImperativeAPI | null>>
 }
 
 // Adapter for react-window v2
 const ListboxComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLElement> & ListboxComponentProps> (
 function ListboxComponent(props, ref) {
-    const { children, listRef, ...other } = props;
+    const { children, setListRef, ...other } = props;
     const itemData: ItemData = [];
     const smallScreen = useMediaQuery("@media screen and (max-height: 1000px)");
 
@@ -116,7 +117,7 @@ function ListboxComponent(props, ref) {
     return (
         <div ref={ref} {...otherProps}>
             <VirtualizedList
-                listRef={listRef}
+                listRef={setListRef}
                 className={className}
                 key={itemCount}
                 rowCount={itemCount}
@@ -152,7 +153,7 @@ function MapSearch(props: MapSearchProps) {
     const { maps, selectedMap, setSelectedMap } = props;
     
     const [ open, setOpen ] = useState(false);
-    const listRef = useListRef(null);
+    const [ listRef, setListRef ] = useListCallbackRef(null);
     const [ inputValue, setIntputValue ] = useState("");
 
     const filterOptions = useCallback((options: StrafesMap[], inputValue: string): StrafesMap[] => {
@@ -198,12 +199,6 @@ function MapSearch(props: MapSearchProps) {
             }
         }
 
-        // Make sure selected map is in list
-        // if (selectedMap && !alreadyFilteredMaps.has(selectedMap.id)) {
-        //     filteredMaps.push(selectedMap);
-        //     alreadyFilteredMaps.add(selectedMap.id);
-        // }
-
         return filteredMaps;
     }, [selectedMap]);
 
@@ -218,7 +213,7 @@ function MapSearch(props: MapSearchProps) {
 
     // Scroll to right element when using arrow keys
     const onHighlightChange = useCallback((option: StrafesMap | null, reason: AutocompleteHighlightChangeReason) => {
-        if (reason !== "keyboard" || !option || !listRef.current) {
+        if (reason !== "keyboard" || !option || !listRef) {
             return;
         }
 
@@ -226,7 +221,7 @@ function MapSearch(props: MapSearchProps) {
         const currentOptions = filterOptions(maps, realInputValue);
         const index = currentOptions.findIndex((val) => val.id === option.id);
         if (index >= 0) {
-            listRef.current.scrollToRow({index: index});
+            listRef.scrollToRow({index: index});
         }
     }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
 
@@ -302,7 +297,7 @@ function MapSearch(props: MapSearchProps) {
         slotProps={{
             listbox: {
                 component: ListboxComponent,
-                listRef: listRef
+                setListRef: setListRef
             // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any
