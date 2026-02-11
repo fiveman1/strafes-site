@@ -31,7 +31,7 @@ function translateSort(val: MapTimesSortRaw): string {
         case "date":
             return "release date";
         case "count":
-            return "load count";
+            return "popularity";
     }
 }
 
