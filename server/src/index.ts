@@ -913,7 +913,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 const userId = url[1];
                 const user = await getUserData(userId);
                 if (user) {
-                    title = `users - @${user.username}`;
+                    title = `@${user.username} - users`;
                     description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
                 }
             }
@@ -927,7 +927,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 if (mapInfo) {
                     const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
                     const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
-                    title = `maps - ${mapInfo.name}`;
+                    title = `${mapInfo.name} - maps`;
                     if (course !== "main") {
                         title += ` (${courseAbrev})`;
                     }
@@ -947,7 +947,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 const user1Info = await user1InfoPromise;
                 const user2Info = await user2InfoPromise;
                 if (user1Info && user2Info) {
-                    title = `compare - @${user1Info.username} vs @${user2Info.username}`;
+                    title = `@${user1Info.username} vs @${user2Info.username} - compare`;
                     description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
                 }
             }

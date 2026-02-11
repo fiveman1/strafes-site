@@ -268,7 +268,7 @@ function MapsPage() {
     }, []);
 
     const onSelectMap = useCallback((map: Map | undefined) => {
-        document.title = map ? `maps - ${map.name} - strafes` : "maps - strafes";
+        document.title = map ? `${map.name} - maps - strafes` : "maps - strafes";
 
         let allowedGame = map ? map.game : game;
 
@@ -310,7 +310,7 @@ function MapsPage() {
 
         const map = maps[mapId];
         if (map) {
-            document.title = `maps - ${map.name} - strafes`;
+            document.title = `${map.name} - maps - strafes`;
             setInitalLoadComplete(true);
             setSelectedMap(map);
         }

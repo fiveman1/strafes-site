@@ -402,7 +402,7 @@ function Compare() {
         
         const firstUserName = firstUser ? `@${firstUser.username}` : "<>";
         const secondUserName = secondUser ? `@${secondUser.username}` : "<>";
-        document.title = `compare - ${firstUserName} vs ${secondUserName} - strafes`;
+        document.title = `${firstUserName} vs ${secondUserName} - compare - strafes`;
     }, [firstUser, secondUser]);
     
     const onSwap = () => {
