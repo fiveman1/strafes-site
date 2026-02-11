@@ -173,6 +173,7 @@ function Users() {
                 hideUser 
                 showPlacement 
                 showPlacementOrdinals 
+                pageSize={12}
             />
         </Box>
         <Box padding={1} ml={1}>

@@ -701,16 +701,25 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         };
     }
     else {
-        const page = Math.floor(+start / 100) + 1;
-        const pageStart = (+start % 100);
-        const pageEnd = (+end % 100);
+        const page = Math.floor(start / 100) + 1;
+        const pageStart = (start % 100);
+        const pageEnd = pageStart + (end - start);
 
-        const data = await getTimes(userId, mapId, 100, page, game, style, course, +sort);
+        const promises = [getTimes(userId, mapId, 100, page, game, style, course, sort)];
 
-        if (!data) {
-            return undefined;
+        if (pageEnd >= 100) {
+            promises.push(getTimes(userId, mapId, 100, page + 1, game, style, course, sort));
         }
-        const resTimes = data.data;
+
+        const pages = await Promise.all(promises);
+
+        const resTimes: ApiTime[] = [];
+        for (const page of pages) {
+            if (page === undefined) {
+                return undefined;
+            }
+            resTimes.push(...page.data);
+        }
 
         times = [];
         const timeIds = new Set<string>();
@@ -724,7 +733,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             times.push(apiTimeToTime(time));
         }
 
-        const pageInfo = data.pagination;
+        const pageInfo = pages[0]!.pagination;
         pagination = {
             page: pageInfo.page,
             pageSize: pageInfo.page_size,
