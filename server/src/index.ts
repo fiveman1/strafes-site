@@ -767,12 +767,7 @@ function apiTimeToTime(time: ApiTime): Time {
     };
 }
 
-interface APITime {
-    time: number
-    date: string
-}
-
-function sortTimes(times: APITime[], isAsc: boolean) {
+function sortTimes(times: Time[], isAsc: boolean) {
     times.sort((a, b) => {
         const timeDiff = a.time - b.time;
         if (timeDiff !== 0) {
