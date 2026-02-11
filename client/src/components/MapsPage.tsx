@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, IconButton, lighten, Link, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, IconButton, Link, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
-import { ContextParams, getAllowedGameForMap, MapDetailsProps } from "../util/common";
+import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../util/common";
 import { Game, Map, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import StyleSelector from "./StyleSelector";
 import TimesCard from "./TimesCard";
@@ -173,6 +173,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
     const isUnreleased = new Date() < mapDate;
     let releasedText = isUnreleased ? "Releases on " : "Released on ";
     releasedText += longDateFormat.format(mapDate);
+    const gameColor = getGameColor(selectedMap.game, theme);
 
     return (
         <Box display="flex" flexDirection={smallScreen ? "column" : "row"} marginTop={2} alignItems="center" justifyContent="center">
@@ -182,11 +183,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                         variant="h4"
                         fontWeight="bold"
                         margin={0.5}
-                        sx={{
-                            background: `radial-gradient(circle, ${theme.palette.primary.main}, ${isLightMode ? lighten(theme.palette.primary.main, 0.4) : theme.palette.text.primary})`,
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent"
-                        }}
+                        color={isLightMode ? "primary" : "textPrimary"}
                     >
                         {selectedMap.name}
                     </Typography>
@@ -227,9 +224,9 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                     :
                     <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize, alignSelf: "center", color: "white" }} />}
                 <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{
-                    padding: 0.5,
+                    padding: 0.4,
                     overflow: "hidden",
-                    backgroundColor: theme.palette.primary.main,
+                    backgroundColor: gameColor,
                     textAlign: "center",
                     color: "white",
                     textShadow: "black 1px 1px 1px",
@@ -378,9 +375,9 @@ function MapsPage() {
                         fontWeight="bold" 
                         variant="caption"
                         sx={{
-                            padding: 0.25,
+                            padding: 0.4,
                             overflow: "hidden",
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: getGameColor(selectedMap.game, theme),
                             textAlign: "center",
                             color: "white",
                             textShadow: "black 1px 1px 1px",
@@ -388,9 +385,8 @@ function MapsPage() {
                         }}
                     >
                         {formatGame(selectedMap.game)}
+                    </Typography>
                 </Typography>
-                </Typography>
-                
             </Box>
         );
     }

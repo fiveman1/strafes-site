@@ -23,7 +23,7 @@ export function getUserRoleColor(role: UserRole, theme: Theme) {
     const color = getUserRoleColorCore(role);
     
     if (!color) {
-        return theme.palette.text.primary;
+        return theme.palette.primary.main;
     }
     
     if (theme.palette.mode === "dark") {
@@ -76,4 +76,30 @@ export function getAllowedGameForMap(map: Map | undefined) {
 export interface MapDetailsProps {
     selectedMap: Map | undefined
     setSelectedMap: (map: Map | undefined) => void
+}
+
+export function getGameColor(game: Game, theme: Theme) {
+    const color = getGameColorCore(game);
+
+    if (!color) {
+        return theme.palette.primary.main;
+    }
+
+    if (theme.palette.mode === "dark") {
+        return lighten(color, 0.1);
+    }
+    return color;
+}
+
+function getGameColorCore(game: Game) {
+    switch (game) {
+        case Game.bhop:
+            return "#df2a2a";
+        case Game.surf:
+            return "#186ae4";
+        case Game.fly_trials:
+            return "#31d310";
+        default:
+            return undefined;
+    }
 }

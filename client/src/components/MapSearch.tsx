@@ -4,7 +4,7 @@ import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
 import { List as VirtualizedList, RowComponentProps, useListRef, ListImperativeAPI } from "react-window";
-import { MapDetailsProps } from "../util/common";
+import { getGameColor, MapDetailsProps } from "../util/common";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -66,13 +66,14 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         ml={1}
                         variant="caption"
                         fontWeight="bold" 
+                        lineHeight={1.2}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: getGameColor(mapOption.game, theme),
                             textAlign: "center", 
                             color: "white",
                             textShadow: "black 1px 1px 1px",
                             borderRadius: "6px",
-                            padding: 0.25
+                            padding: 0.4
                         }}
                     >
                         {formatGame(mapOption.game)}
