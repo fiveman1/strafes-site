@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Link, PaletteMode, Typography } from "@mui/material";
+import { Box, Button, Link, PaletteMode, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "shared";
 import GameSelector from "./GameSelector";
@@ -7,7 +7,6 @@ import ThemeSelector from "./ThemeSelector";
 import NumberSpinner from "./NumberSpinner";
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
-import CloseIcon from '@mui/icons-material/Close';
 import { updateSettings } from "../api/api";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../util/common";
@@ -103,14 +102,9 @@ function Settings() {
     <Box display="flex" justifyContent="center" marginBottom={1} flexGrow={1}>
         <Box display="flex" flexDirection="column" width="1024px">
             <Box display="flex">
-                <Typography variant="h2" padding={1} flexGrow={1}>
+                <Typography variant="h4" padding={1} flexGrow={1}>
                     Settings
                 </Typography>
-                <Box display="flex" alignItems="flex-start">
-                    <IconButton onClick={() => handleExit()} sx={{marginTop: 1}}>
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
             </Box>
             <Box display="flex" alignItems="center" padding={1.5}>
                 <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loggedInUser.username} userThumb={loggedInUser.thumbnailUrl} />

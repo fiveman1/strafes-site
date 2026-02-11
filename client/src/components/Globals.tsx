@@ -15,6 +15,7 @@ import DateDisplay from "./DateDisplay";
 import { makeUserColumn } from "../util/columns";
 import { useGameStyle, useIncludeBonuses } from "../util/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import NumberGridPagination from "./NumberGridPagination";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
@@ -184,6 +185,13 @@ function LeaderboardCard(props: IRanksCardProps) {
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
+            slotProps={{
+                basePagination: {
+                    material: {
+                        ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
+                    }
+                }
+            }}
         />
     </Paper>
     );

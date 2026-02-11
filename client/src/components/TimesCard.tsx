@@ -8,6 +8,7 @@ import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import { makeCourseColumn, makeDateColumn, makeGameColumn, makeGameStyleColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
+import NumberGridPagination from "./NumberGridPagination";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,
@@ -148,7 +149,7 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef.current?.setPageSize(pageSize);
     }, [apiRef, pageSize]);
 
-    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? 62 : 50;
+    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
 
     const getSort = useCallback((model: GridSortModel) => {
         const sort = model[0];
@@ -201,7 +202,8 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [apiRef, getSort, isCompact]);
 
-    const gridCols = makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, placementWidth, isCompact, currentSortBy);
+    const gridCols = useMemo(() => makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, placementWidth, isCompact, currentSortBy),
+        [course, currentSortBy, game, hideMap, hideUser, isCompact, placementWidth, showPlacement, showPlacementOrdinals, style]);
 
     const gridKey = `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
 
@@ -277,7 +279,7 @@ function TimesGrid(props: ITimesCardProps) {
             rowHeight={rowHeight}
             columnHeaderHeight={isCompact ? 76 : 56}
             initialState={{
-                pagination: { 
+                pagination: {
                     paginationModel: { pageSize: pageSize },
                 },
                 sorting: {
@@ -292,6 +294,13 @@ function TimesGrid(props: ITimesCardProps) {
             onColumnHeaderClick={onColumnHeaderClicked}
             columnVisibilityModel={{
                 date: isCompact ? false : true
+            }}
+            slotProps={{
+                basePagination: {
+                    material: {
+                        ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
+                    }
+                }
             }}
             sx={{
                 ".MuiDataGrid-iconButtonContainer": {
