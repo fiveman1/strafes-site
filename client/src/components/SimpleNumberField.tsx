@@ -64,6 +64,7 @@ export default function SimpleNumberField(allProps: NumberFieldProps) {
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             onFocus={() => inputRef.current?.select()}
+            onContextMenu={(e) => e.preventDefault()}
             inputRef={inputRef}
             slotProps={{
                 input: {
