@@ -43,7 +43,9 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
                             textAlign: "center",
                             height: "20px",
                             fontSize: "14px",
-                            userSelect: "none"
+                            userSelect: "text",
+                            touchAction: "none",
+                            WebkitTouchCallout: "none"
                         }
                     }}
                     value={calcRowNum(page, rowsPerPage, rowCount)}
