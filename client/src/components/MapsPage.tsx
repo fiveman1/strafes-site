@@ -225,6 +225,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                     <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize, alignSelf: "center", color: "white" }} />}
                 <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{
                     padding: 0.4,
+                    lineHeight: 1.1,
                     overflow: "hidden",
                     backgroundColor: gameColor,
                     textAlign: "center",
@@ -235,7 +236,8 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                     {formatGame(selectedMap.game)}
                 </Typography>
                 <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
-                    padding: 0.5,
+                    padding: 0.7,
+                    lineHeight: 1.1,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     backdropFilter: "blur(8px)",
