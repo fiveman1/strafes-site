@@ -20,7 +20,7 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
     };
     
     return (
-    <Box padding={1}>
+    <Box padding={1} pt={0.25} pb={0.25}>
         <FormGroup>
             <FormControlLabel label="Bonuses" control={
                 <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  

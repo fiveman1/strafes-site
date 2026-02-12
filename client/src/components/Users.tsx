@@ -150,7 +150,7 @@ function Users() {
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
             <GameSelector game={game} setGame={setGame} allowSelectAll />
             <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
-            <Box padding={1} >
+            <Box padding={1} pt={0.25} pb={0.25}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={
                         <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  
