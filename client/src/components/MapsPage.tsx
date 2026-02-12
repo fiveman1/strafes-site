@@ -234,8 +234,8 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                 }}>
                     {formatGame(selectedMap.game)}
                 </Typography>
-                <Typography position="absolute" bottom="6px" right="6px" variant="body1" fontWeight="bold" sx={{
-                    padding: 0.75,
+                <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
+                    padding: 0.5,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     backdropFilter: "blur(8px)",
