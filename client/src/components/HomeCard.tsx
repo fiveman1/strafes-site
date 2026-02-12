@@ -11,8 +11,8 @@ export interface IHomeCardProps {
 function HomeCard(props: IHomeCardProps) {
     const { title, icon, description, href } = props;
 
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-    const size = smallScreen ? "156px" : "200px";
+    const smallScreen = useMediaQuery("@media screen and (max-width: 520px)");
+    const size = smallScreen ? "150px" : "200px";
 
     return (
     <Card sx={{width: size, height: size, ":hover": {boxShadow: 8}}} elevation={3}>

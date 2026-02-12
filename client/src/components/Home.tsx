@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import Box from "@mui/material/Box";
-import { Grid, Typography, useMediaQuery } from "@mui/material";
+import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
 import HomeCard from "./HomeCard";
 import PersonIcon from '@mui/icons-material/Person';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -11,7 +11,8 @@ import { useOutletContext } from "react-router";
 import { ContextParams } from "../util/common";
 
 function Home() {
-    const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+    const smallScreen = useMediaQuery("@media screen and (max-width: 520px)");
+    const theme = useTheme();
     const { loggedInUser } = useOutletContext() as ContextParams;
     
     useEffect(() => {
@@ -24,9 +25,24 @@ function Home() {
     }
 
     return (
-    <Box padding={smallScreen ? 1 : 2} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
-        <Typography padding={2} variant="h3">Go to...</Typography>
-        <Grid container spacing={smallScreen ? 2 : 3} justifyContent="center">
+    <Box padding={smallScreen ? 0.5 : 1.5} display="flex" flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+        <Typography 
+            mb={1.5}
+            padding={1} 
+            lineHeight={1}
+            variant="h4"
+            fontWeight="bold"
+            sx={{
+                backgroundImage: `radial-gradient(${theme.palette.primary.main}, #fb51aa)`,
+                textAlign: "center", 
+                color: "white",
+                textShadow: "black 2px 2px 2px",
+                borderRadius: "12px"
+            }}
+        >
+            strafes
+        </Typography>
+        <Grid container spacing={smallScreen ? 1.5 : 2.5} justifyContent="center">
             <Grid>
                 <HomeCard href={userLink} title="Users" icon={<PersonIcon />} description="Search user profiles and times" />
             </Grid>
