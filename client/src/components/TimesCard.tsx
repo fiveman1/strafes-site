@@ -5,7 +5,7 @@ import { getTimeData } from "../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { MAP_THUMB_SIZE } from "./MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
-import { makeCourseColumn, makeDateColumn, makeGameColumn, makeGameStyleColumn, makeMapColumn, makePlacementColumn, makeStyleColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
+import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
 import { numDigits } from "../util/utils";
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
 import NumberGridPagination from "./NumberGridPagination";
@@ -28,13 +28,13 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
 
     if (!hideMap) {
         if (hideCourse) {
-            cols.push(makeMapColumn());
+            cols.push(makeMapColumn(game === Game.all, style === Style.all));
         }
         else if (isCompact) {
-            cols.push(makeMapColumn(true));
+            cols.push(makeMapColumn(game === Game.all, style === Style.all, true));
         }
         else {
-            cols.push(makeMapColumn(false));
+            cols.push(makeMapColumn(game === Game.all, style === Style.all, false));
             cols.push(makeCourseColumn());
         }
     }
@@ -58,18 +58,6 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
     else {
         cols.push(makeTimeColumn());
         cols.push(makeDateColumn());
-    }
-
-    if (isCompact && game === Game.all && style === Style.all) {
-        cols.push(makeGameStyleColumn());
-    }
-    else {
-        if (game === Game.all) {
-            cols.push(makeGameColumn());
-        }
-        if (style === Style.all) {
-            cols.push(makeStyleColumn());
-        }
     }
 
     return cols;

@@ -1,6 +1,6 @@
 import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { Game, LoginUser, Map, SettingsValues, UserRole } from "shared";
+import { Game, LoginUser, Map, SettingsValues, Style, UserRole } from "shared";
 
 export interface MapCount {
     bhop: number
@@ -101,5 +101,45 @@ function getGameColorCore(game: Game) {
             return "#31d310";
         default:
             return undefined;
+    }
+}
+
+export function getStyleColor(style: Style, theme: Theme) {
+    const color = getStyleColorCore(style);
+
+    if (!color) {
+        return theme.palette.primary.main;
+    }
+
+    return color;
+}
+
+function getStyleColorCore(style: Style) {
+    switch (style) {
+        case Style.autohop:
+        case Style.fly:
+            return "#df5d2a";
+        case Style.scroll:
+        case Style.fly_sustain:
+            return "#74c926";
+        case Style.sideways:
+        case Style.rocket:
+            return "#df2aa9";
+        case Style.hsw:
+        case Style.strafe_3d:
+            return "#e478d5";
+        case Style.wonly:
+        case Style.rocket_strafe:
+            return "#2aa6df";
+        case Style.aonly:
+            return "#2a54df";
+        case Style.backwards:
+            return "#3c2adf";
+        case Style.faste:
+            return "#b92eff";
+        case Style.low_gravity:
+            return "#df2a8e";
+        case Style.all:
+            return "#df2a33";
     }
 }

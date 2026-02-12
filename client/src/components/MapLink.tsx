@@ -1,6 +1,6 @@
-import { Box, Link, Typography } from "@mui/material";
-import { Game, Style, formatCourse } from "shared";
-import { ContextParams } from "../util/common";
+import { Box, Link, Typography, useTheme } from "@mui/material";
+import { Game, Style, formatCourse, formatGame, formatGameShort, formatStyle, formatStyleShort } from "shared";
+import { ContextParams, getGameColor, getStyleColor } from "../util/common";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../util/colors";
@@ -13,12 +13,16 @@ interface IMapLinkProps {
     style: Style
     game: Game
     course: number
-    includeCourse?: boolean
+    showCourse?: boolean
+    showGame?: boolean
+    showStyle?: boolean
 }
 
 function MapLink(props: IMapLinkProps) {
-    const { id, name, style, game, course, includeCourse } = props;
+    const { id, name, style, game, course, showCourse, showGame, showStyle } = props;
     const { maps } = useOutletContext() as ContextParams;
+    const theme = useTheme();
+
     const mapInfo = maps[id];
     
     let thumb = "";
@@ -27,6 +31,7 @@ function MapLink(props: IMapLinkProps) {
     }
 
     const isUnreleased = !mapInfo ? false : new Date() < new Date(mapInfo.date);
+    const useShortNames = showGame && showStyle;
     
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
@@ -46,7 +51,7 @@ function MapLink(props: IMapLinkProps) {
                 }
             }}
         >
-            <Box display="inline-flex" flexDirection="row" alignItems="center" maxHeight={MAP_THUMB_SIZE} height="100%" maxWidth="100%">
+            <Box display="inline-flex" flexDirection="row" alignItems="center" height="100%" maxWidth="100%">
             {
                 thumb ? 
                 <Box 
@@ -62,7 +67,7 @@ function MapLink(props: IMapLinkProps) {
                 : 
                 <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE }} />
             }
-                <Box display="inline-flex" marginLeft="10px" flexDirection="column" maxWidth="100%" minWidth={0} >
+                <Box display="inline-flex" marginLeft="10px" flexDirection="column" maxWidth="100%" minWidth={0} height="calc(100% - 8px)" justifyContent="space-evenly">
                     <Typography 
                         className="map-name"
                         lineHeight="normal"
@@ -75,9 +80,8 @@ function MapLink(props: IMapLinkProps) {
                     >
                         {name}
                     </Typography>
-                    {includeCourse ? 
+                    {showCourse ? 
                     <Typography
-                        marginTop={0.25}
                         lineHeight="normal"
                         variant="caption"
                         fontWeight="normal"
@@ -88,7 +92,46 @@ function MapLink(props: IMapLinkProps) {
                     >
                         {formatCourse(course)}
                     </Typography>
-                : <></>}
+                    : <></>}
+                    {showGame || showStyle ? 
+                    <Box lineHeight="normal" display="inline-flex">
+                        {showGame &&
+                        <Typography
+                            lineHeight="normal"
+                            fontWeight="bold" 
+                            variant="caption"
+                            sx={{
+                                padding: 0.4,
+                                overflow: "hidden",
+                                backgroundColor: getGameColor(game, theme),
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px"
+                            }}
+                        >
+                            {useShortNames ? formatGameShort(game) : formatGame(game)}
+                        </Typography>}
+                        {showStyle &&
+                        <Typography
+                            lineHeight="normal"
+                            fontWeight="bold" 
+                            variant="caption"
+                            ml={showGame ? 1 : 0}
+                            sx={{
+                                padding: 0.4,
+                                overflow: "hidden",
+                                backgroundColor: getStyleColor(style, theme),
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px"
+                            }}
+                        >
+                            {useShortNames ? formatStyleShort(style) : formatStyle(style)}
+                        </Typography>}
+                    </Box>
+                    : <></>}
                 </Box>
             </Box>
         </Link>

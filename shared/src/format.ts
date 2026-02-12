@@ -19,6 +19,25 @@ export function formatGame(game: Game) {
     }
 }
 
+export function formatGameShort(game: Game) {
+    switch (game) {
+        case Game.testing:
+            return "test";
+        case Game.bhop:
+            return "bhop";
+        case Game.surf:
+            return "surf";
+        case Game.kz:
+            return "kz";
+        case Game.fly_trials:
+            return "fly";
+        case Game.all:
+            return "all";
+        default:
+            return "n/a";
+    }
+}
+
 export function formatStyle(style: Style) {
     switch (style) {
         case Style.aonly:
@@ -53,6 +72,43 @@ export function formatStyle(style: Style) {
             return "all";
         default:
             return "unknown";
+    }
+}
+
+export function formatStyleShort(style: Style) {
+    switch (style) {
+        case Style.aonly:
+            return "ao";
+        case Style.autohop:
+            return "auto";
+        case Style.backwards:
+            return "bw";
+        case Style.faste:
+            return "faste";
+        case Style.hsw:
+            return "hsw";
+        case Style.scroll:
+            return "scroll";
+        case Style.sideways:
+            return "sw";
+        case Style.wonly:
+            return "wo";
+        case Style.low_gravity:
+            return "lg";
+        case Style.fly:
+            return "fly";
+        case Style.fly_sustain:
+            return "fly sustain";
+        case Style.rocket:
+            return "rocket";
+        case Style.rocket_strafe:
+            return "rkt strafe";
+        case Style.strafe_3d:
+            return "3d strafe";
+        case Style.all:
+            return "all";
+        default:
+            return "n/a";
     }
 }
 

@@ -1,5 +1,5 @@
 import { Box, IconButton, Typography } from "@mui/material";
-import { Game, Style, Time, TimeSortBy, UserInfo, formatCourse, formatGame, formatPlacement, formatStyle } from "shared";
+import { Game, Style, Time, TimeSortBy, UserInfo, formatCourse, formatPlacement } from "shared";
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
@@ -12,7 +12,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import TimeDateColumn from "../components/TimeDateColumn";
 
 
-export function makeMapColumn(isCompact?: boolean): GridColDef {
+export function makeMapColumn(showGame: boolean, showStyle: boolean, isCompact?: boolean): GridColDef {
     return {
         type: "string",
         field: "map",
@@ -23,7 +23,7 @@ export function makeMapColumn(isCompact?: boolean): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return (
-                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} includeCourse={isCompact} />
+                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} showCourse={isCompact} showGame={showGame} showStyle={showStyle} />
             );
         }
     }
@@ -161,65 +161,6 @@ export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDateColumn time={time} />;
-        }
-    };
-}
-
-export function makeGameColumn(): GridColDef {
-    return {
-        type: "string",
-        field: "game",
-        headerName: "Game",
-        flex: 110,
-        minWidth: 75,
-        valueFormatter: formatGame,
-        sortable: false
-    };
-}
-
-export function makeStyleColumn(): GridColDef {
-    return {
-        type: "string",
-        field: "style",
-        headerName: "Style",
-        flex: 150,
-        minWidth: 110,
-        valueFormatter: formatStyle,
-        sortable: false
-    }
-}
-
-export function makeGameStyleColumn(): GridColDef {
-    return {
-        type: "string",
-        field: "game",
-        renderHeader: () => {
-            return (
-                <Box display="flex" flexDirection="column">
-                    <Typography variant="inherit" fontWeight={500}>
-                        Game
-                    </Typography>
-                    <Typography variant="inherit" fontWeight={500} color="textSecondary">
-                        Style
-                    </Typography>
-                </Box>
-            );
-        },
-        flex: 150,
-        minWidth: 110,
-        sortable: false,
-        renderCell: (params: GridRenderCellParams<Time, string>) => {
-            const time = params.row;
-            return (
-                <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center">
-                    <Typography variant="inherit">
-                        {formatGame(time.game)}
-                    </Typography>
-                    <Typography variant="inherit" color="textSecondary">
-                        {formatStyle(time.style)}
-                    </Typography>
-                </Box>
-            );
         }
     };
 }
