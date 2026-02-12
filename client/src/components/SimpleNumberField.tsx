@@ -70,7 +70,6 @@ export default function SimpleNumberField(allProps: NumberFieldProps) {
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             onClick={handleClick}
-            onContextMenu={(e) => e.preventDefault()}
             inputRef={inputRef}
             autoCapitalize="off"
             autoComplete="off"
