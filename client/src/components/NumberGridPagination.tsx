@@ -5,6 +5,10 @@ import { useGridSelector } from "@mui/x-data-grid/internals";
 import { numDigits } from "../util/utils";
 import SimpleNumberField from "./SimpleNumberField";
 
+function calcRowNum(page: number, rowsPerPage: number, rowCount: number) {
+    return Math.max(1, Math.min((page + 1) * rowsPerPage, rowCount));
+}
+
 interface NumberGridPaginationProps extends TablePaginationActionsProps {
     rowCount: number
 }
@@ -27,9 +31,6 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
     const renderItem = useCallback((item: PaginationRenderItemParams): JSX.Element | null => {
         // There is always exactly 0 or 1 selected page, use that to render our page selector
         if (item.selected && showPageInput) {
-            // Gets the largest number row shown on the current page
-            const realRowNum = Math.max(1, Math.min((page + 1) * rowsPerPage, rowCount));
-
             // Padding on left/right is 14px * 2 = 28. Add 8 per digit that can be shown
             const width = numDigits(rowCount) * 8 + 28;
             return (
@@ -44,8 +45,13 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
                             fontSize: "14px" 
                         }
                     }}
-                    value={realRowNum}
-                    onValueChange={(value) => {onPageChange(null, Math.floor((value - 1) / rowsPerPage))}} 
+                    value={calcRowNum(page, rowsPerPage, rowCount)}
+                    onValueChange={(value) => {
+                        const newPage = Math.floor((value - 1) / rowsPerPage);
+                        onPageChange(null, newPage);
+                        return calcRowNum(newPage, rowsPerPage, rowCount);
+                    }} 
+                    max={rowCount}
                 />
             );
         }
