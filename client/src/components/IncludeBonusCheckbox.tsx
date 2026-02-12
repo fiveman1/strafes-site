@@ -25,8 +25,9 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
             <FormControlLabel label="Bonuses" control={
                 <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  
             />
+            <FormHelperText sx={{mt: -0.5}}>{includeBonuses ? "Showing bonuses" : "Hiding bonuses"}</FormHelperText>
         </FormGroup>
-        <FormHelperText>{includeBonuses ? "Showing bonuses" : "Hiding bonuses"}</FormHelperText>
+        
     </Box>
     );
 }

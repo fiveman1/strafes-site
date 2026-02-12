@@ -156,7 +156,7 @@ function Users() {
                         <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  
                     />
                 </FormGroup>
-                <FormHelperText>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
+                <FormHelperText sx={{mt: -0.5}}>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
             </Box>
             <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>

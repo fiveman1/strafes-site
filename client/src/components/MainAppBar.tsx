@@ -9,7 +9,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import { LoginUser } from "shared";
 import { login } from "../api/api";
 import AccountMenu from "./AccountMenu";
-import useAppBarHeight from "../util/states";
+import { useAppBarHeight } from "../util/states";
 
 interface IMainAppBarProps {
     loggedInUser: LoginUser | undefined

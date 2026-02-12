@@ -418,7 +418,7 @@ function MapsPage() {
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
-            <Box padding={0.5} marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
+            <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
                 <StyleSelector game={game} style={style} setStyle={setStyle} />
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />

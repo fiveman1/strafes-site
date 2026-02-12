@@ -1,45 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="google-site-verification" content="__GOOGLE_SITE_VERIFICATION__" />
-    <meta name="description" content="__META_DESCRIPTION__" />
-    <meta name="og:description" content="__META_DESCRIPTION__" />
-    <meta name="og:title" content="__META_OG_TITLE__" />
-    <meta property="og:image" content="/favicon-32x32.png"/>
-    <meta property="og:site_name" content="strafes" />
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <meta name="viewport" content="initial-scale=1, width=device-width" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#fe54a9" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <!--
+
+<head>
+  <meta name="google-site-verification" content="__GOOGLE_SITE_VERIFICATION__" />
+  <meta name="description" content="__META_DESCRIPTION__" />
+  <meta name="og:description" content="__META_DESCRIPTION__" />
+  <meta name="og:title" content="__META_OG_TITLE__" />
+  <meta property="og:image" content="/favicon-32x32.png" />
+  <meta property="og:site_name" content="strafes" />
+  <meta charset="utf-8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <meta name="viewport" content="initial-scale=1, width=device-width" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#fe54a9" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-    <link rel="manifest" href="/manifest.json" />
-    <title>strafes</title>
-    <script type="module" src="src/index"></script>
-  </head>
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-  </style>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div style="height:100%; margin:0" id="root"></div>
-  </body>
+  <link rel="manifest" href="/manifest.json" />
+  <title>strafes</title>
+  <script type="module" src="src/index"></script>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+  }
+
+  #root {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    scrollbar-gutter: stable both-edges;
+    overflow-y: auto;
+  }
+</style>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+
 </html>

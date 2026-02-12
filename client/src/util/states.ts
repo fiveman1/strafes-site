@@ -208,7 +208,7 @@ export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => vo
 import { useMediaQuery, useTheme } from '@mui/material';
 
 // https://github.com/mui/material-ui/issues/10739#issuecomment-1484828925
-export default function useAppBarHeight(): number {
+export function useAppBarHeight(): number {
     const {
         mixins: { toolbar },
         breakpoints,
