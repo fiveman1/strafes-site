@@ -11,7 +11,7 @@ interface IViewedTimesProps {
 function ViewedTimes(props: IViewedTimesProps) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", maxHeight: 720, "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
+    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
         <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
             <Typography variant="caption">
                 Viewed Times
@@ -49,11 +49,11 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
         columns={makeColumns()}
         rows={times}
         pagination
-        pageSizeOptions={[25, 50, 100]}
+        pageSizeOptions={[20, 50]}
         rowHeight={Math.round(MAP_THUMB_SIZE * 1.6667)}
         initialState={{
             pagination: { 
-                paginationModel: { pageSize: 25 },
+                paginationModel: { pageSize: 20 },
             },
             sorting: {
                 sortModel: [{ field: "placement", sort: "asc" }]
