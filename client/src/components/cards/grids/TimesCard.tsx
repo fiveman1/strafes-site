@@ -297,7 +297,7 @@ function TimesGrid(props: ITimesCardProps) {
             onSortModelChange={onSortChanged}
             onColumnHeaderClick={onColumnHeaderClicked}
             columnVisibilityModel={{
-                date: isCompact ? false : true
+                date: !isCompact
             }}
             slotProps={{
                 basePagination: {
