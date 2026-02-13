@@ -145,6 +145,11 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef.current?.setPageSize(pageSize);
     }, [apiRef, pageSize]);
 
+    // Reset page to 0 when changing something that would load new data
+    useEffect(() => {
+        apiRef.current?.setPage(0);
+    }, [userId, map, game, style, course, onlyWRs, currentSortBy, apiRef]);
+
     const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
 
     const getSort = useCallback((model: GridSortModel) => {
@@ -205,8 +210,6 @@ function TimesGrid(props: ITimesCardProps) {
 
     const gridCols = useMemo(() => makeColumns(game, style, course !== ALL_COURSES, hideUser, hideMap, showPlacement, showPlacementOrdinals, placementWidth, isCompact, currentSortBy),
         [course, currentSortBy, game, hideMap, hideUser, isCompact, placementWidth, showPlacement, showPlacementOrdinals, style]);
-
-    const gridKey = `${userId ?? ""},${map ? map.id : ""},${game},${style},${course},${!!onlyWRs}`;
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
         if (!allowOnlyWRs && !userId && !map) {
@@ -270,7 +273,7 @@ function TimesGrid(props: ITimesCardProps) {
         <DataGrid
             className="timesGrid"
             columns={gridCols}
-            key={gridKey}
+            //key={gridKey}
             apiRef={apiRef}
             loading={isLoading}
             pagination
