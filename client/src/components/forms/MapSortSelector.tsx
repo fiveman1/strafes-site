@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { MapTimesSort, MapTimesSortRaw } from "../util/states";
+import { MapTimesSort, MapTimesSortRaw } from "../../common/states";
 
 interface IMapSortSelectorProps {
     sort: MapTimesSort

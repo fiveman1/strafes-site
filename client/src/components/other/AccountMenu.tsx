@@ -12,10 +12,10 @@ import Logout from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import { LoginUser } from 'shared';
 import { grey } from '@mui/material/colors';
-import { logout } from '../api/api';
+import { logout } from '../../api/api';
 import { useLocation, useNavigate } from 'react-router';
 import { Typography, useTheme } from '@mui/material';
-import UserAvatar from './UserAvatar';
+import UserAvatar from '../displays/UserAvatar';
 
 interface IAccountMenuProps {
     user: LoginUser

@@ -2,8 +2,8 @@ import Box from "@mui/material/Box";
 import { formatDiff } from "shared";
 import { green, red } from "@mui/material/colors";
 import { darken, useTheme } from "@mui/material";
-import { convertToHSL, HSLToHex } from "../util/colors";
-import { normalize } from "../util/utils";
+import { normalize } from "../../common/utils";
+import { convertToHSL, HSLToHex } from "../../common/colors";
 
 interface IDiffDisplayProps {
     ms: number,

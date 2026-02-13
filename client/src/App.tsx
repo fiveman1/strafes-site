@@ -1,22 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import MainAppBar from "./components/MainAppBar";
 import Box from "@mui/material/Box";
 import { pink, lightBlue } from "@mui/material/colors";
 import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
-import { ContextParams, MapCount } from "./util/common";
+import { ContextParams, MapCount } from "./common/common";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, LoginUser, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
-import { sortMapsByName } from "./util/sort";
-import { saveSettingsToLocalStorage, useSettings } from "./util/states";
+import { sortMapsByName } from "./common/sort";
+import { saveSettingsToLocalStorage, useSettings } from "./common/states";
 import RobloxIcon from "./components/icons/RobloxIcon";
-import DiscordIcon from "./components/icons/DIscordIcon";
+import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
+import MainAppBar from "./components/other/MainAppBar";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,

@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
 import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
-import { getTimeData } from "../api/api";
+import { getTimeData } from "../../../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
-import { MAP_THUMB_SIZE } from "./MapLink";
+import { MAP_THUMB_SIZE } from "../../displays/MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
-import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
-import { numDigits } from "../util/utils";
-import { UNRELEASED_MAP_COLOR } from "../util/colors";
-import NumberGridPagination from "./NumberGridPagination";
+import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "./util/columns";
+import { numDigits } from "../../../common/utils";
+import { UNRELEASED_MAP_COLOR } from "../../../common/colors";
 import { useSearchParams } from "react-router";
+import NumberGridPagination from "./NumberGridPagination";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,

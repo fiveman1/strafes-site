@@ -2,9 +2,9 @@ import React, { useCallback, useState } from "react";
 import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, Map as StrafesMap } from "shared";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { UNRELEASED_MAP_COLOR } from "../util/colors";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
-import { getGameColor, MapDetailsProps } from "../util/common";
+import { UNRELEASED_MAP_COLOR } from "../../common/colors";
+import { getGameColor, MapDetailsProps } from "../../common/common";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 

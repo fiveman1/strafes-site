@@ -1,6 +1,5 @@
 import { Box, Link } from "@mui/material";
 
-
 function Privacy() {
     return (
     <Box display="flex" justifyContent="center">

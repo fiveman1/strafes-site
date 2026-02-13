@@ -12,7 +12,7 @@ interface ICountrySelectProps {
     setCountry: (val: string | undefined) => void
 }
 
-export default function CountrySelect(props: ICountrySelectProps) {
+export default function CountrySelector(props: ICountrySelectProps) {
     const { country, setCountry } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 

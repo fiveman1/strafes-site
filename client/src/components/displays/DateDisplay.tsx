@@ -3,8 +3,8 @@ import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import { useOutletContext } from "react-router";
 import TimeAgo from "react-timeago";
-import { ContextParams } from "../util/common";
-import { dateFormat, dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
+import { ContextParams } from "../../common/common";
+import { dateFormat, dateTimeFormat, relativeTimeFormatter } from "../../common/datetime";
 
 const timeFormat = Intl.DateTimeFormat(undefined, {
     hour: "2-digit",

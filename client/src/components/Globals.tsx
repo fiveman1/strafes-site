@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Breadcrumbs, Link, Paper, Typography } from "@mui/material";
-import TimesCard from "./TimesCard";
+import TimesCard from "./cards/grids/TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy, ALL_COURSES, MAIN_COURSE } from "shared";
-import GameSelector from "./GameSelector";
-import StyleSelector from "./StyleSelector";
-import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
+import GameSelector from "./forms/GameSelector";
+import StyleSelector from "./forms/StyleSelector";
+import IncludeBonusCheckbox from "./forms/IncludeBonusCheckbox";
 import { Game, Style } from "shared";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
-import DateDisplay from "./DateDisplay";
-import { makeUserColumn } from "../util/columns";
-import { useGameStyle, useIncludeBonuses } from "../util/states";
+import DateDisplay from "./displays/DateDisplay";
+import { makeUserColumn } from "./cards/grids/util/columns";
+import { useGameStyle, useIncludeBonuses } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import NumberGridPagination from "./NumberGridPagination";
+import NumberGridPagination from "./cards/grids/NumberGridPagination";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(undefined, true);

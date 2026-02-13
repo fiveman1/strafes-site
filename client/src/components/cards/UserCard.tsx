@@ -2,14 +2,14 @@ import { Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
 import { User, formatCountryCode, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
-import { ContextParams, getUserRoleColor } from "../util/common";
+import { ContextParams, getUserRoleColor } from "../../common/common";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
 import ReactCountryFlag from "react-country-flag";
-import { dateTimeFormat, relativeTimeFormatter } from "../util/datetime";
-import UserAvatar from "./UserAvatar";
-import ColorChip from "./ColorChip";
+import { dateTimeFormat, relativeTimeFormatter } from "../../common/datetime";
+import UserAvatar from "../displays/UserAvatar";
+import ColorChip from "../displays/ColorChip";
 
 interface IUserDisplayProps {
     user: User

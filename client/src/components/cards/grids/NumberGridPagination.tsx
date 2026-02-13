@@ -2,8 +2,8 @@ import { JSX, useCallback } from "react";
 import { Pagination, PaginationItem, PaginationRenderItemParams, TablePaginationActionsProps, useMediaQuery } from "@mui/material";
 import { gridPageCountSelector, useGridApiContext } from "@mui/x-data-grid";
 import { useGridSelector } from "@mui/x-data-grid/internals";
-import { numDigits } from "../util/utils";
-import SimpleNumberField from "./SimpleNumberField";
+import { numDigits } from "../../../common/utils";
+import SimpleNumberField from "../../forms/SimpleNumberField";
 
 function calcRowNum(page: number, rowsPerPage: number, rowCount: number) {
     return Math.max(1, Math.min((page + 1) * rowsPerPage, rowCount));

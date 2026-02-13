@@ -1,8 +1,8 @@
 import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
 import { Time } from "shared";
-import { MAP_THUMB_SIZE } from "./MapLink";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeColumn, makeUserColumn } from "../util/columns";
+import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeColumn, makeUserColumn } from "./util/columns";
+import { MAP_THUMB_SIZE } from "../../displays/MapLink";
 
 interface IViewedTimesProps {
     times: Time[]

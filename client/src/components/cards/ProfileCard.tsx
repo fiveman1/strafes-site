@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Rank, Style, User, formatRank, formatSkill } from "shared";
-import { getCompletionsForUser, getNumWRsForUser, getUserRank, WRCount } from "../api/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../util/common";
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { getCompletionsForUser, getNumWRsForUser, getUserRank, WRCount } from "../../api/api";
+import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../../common/common";
 
 export interface IProfileCardProps {
     userId?: string

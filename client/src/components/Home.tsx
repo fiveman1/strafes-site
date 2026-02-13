@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 import Box from "@mui/material/Box";
 import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
-import HomeCard from "./HomeCard";
+import HomeCard from "./cards/HomeCard";
 import PersonIcon from '@mui/icons-material/Person';
 import LayersIcon from '@mui/icons-material/Layers';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
-import { ContextParams } from "../util/common";
+import { ContextParams } from "../common/common";
 
 function Home() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 520px)");

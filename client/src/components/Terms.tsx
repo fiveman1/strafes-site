@@ -1,8 +1,6 @@
 import { Box, Link } from "@mui/material";
 
-
 function Terms() {
-
     return (
     <Box display="flex" justifyContent="center">
         <Box maxWidth="1024px">

@@ -3,7 +3,7 @@ import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChang
 import { useSearchParams } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { CompareTimesSort, CompareTimesSortRaw, isCompareTimesSort } from "../util/states";
+import { CompareTimesSort, CompareTimesSortRaw, isCompareTimesSort } from "../../common/states";
 
 interface ICompareSortSelectorProps {
     setSort: (sort: CompareTimesSort) => void

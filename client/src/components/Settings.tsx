@@ -1,19 +1,19 @@
 import { Box, Button, Link, PaletteMode, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "shared";
-import GameSelector from "./GameSelector";
-import StyleSelector from "./StyleSelector";
-import ThemeSelector from "./ThemeSelector";
-import NumberSpinner from "./NumberSpinner";
+import GameSelector from "./forms/GameSelector";
+import StyleSelector from "./forms/StyleSelector";
+import ThemeSelector from "./forms/ThemeSelector";
+import NumberSpinner from "./forms/NumberSpinner";
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { updateSettings } from "../api/api";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
-import { ContextParams } from "../util/common";
-import CountrySelect from "./CountrySelect";
-import { dateFormat, relativeTimeFormat } from "../util/datetime";
-import { useGameStyle } from "../util/states";
-import UserAvatar from "./UserAvatar";
+import { ContextParams } from "../common/common";
+import CountrySelector from "./forms/CountrySelector";
+import { dateFormat, relativeTimeFormat } from "../common/datetime";
+import { useGameStyle } from "../common/states";
+import UserAvatar from "./displays/UserAvatar";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -132,14 +132,14 @@ function Settings() {
             <Typography variant="body2" padding={1}>
                 These are settings about you that are displayed to other users across the site.
             </Typography>
-            <CountrySelect country={mockSettings.country} setCountry={setCountry} />
+            <CountrySelector country={mockSettings.country} setCountry={setCountry} />
             <Typography variant="h6" padding={1}>
                 Defaults
             </Typography>
             <Typography variant="body2" padding={1}>
                 These are the defaults used when loading a page for the first time (unless there was existing context).
             </Typography>
-            <Box marginTop={1} display="flex" flexWrap="wrap" alignItems="center">
+            <Box display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector 
                     game={game} 
                     setGame={setGame} 

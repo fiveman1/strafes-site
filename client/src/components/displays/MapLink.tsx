@@ -1,9 +1,9 @@
 import { Box, Link, Typography, useTheme } from "@mui/material";
 import { Game, Style, formatCourse, formatGame, formatGameShort, formatStyle, formatStyleShort } from "shared";
-import { ContextParams, getGameColor, getStyleColor } from "../util/common";
+import { ContextParams, getGameColor, getStyleColor } from "../../common/common";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { UNRELEASED_MAP_COLOR } from "../util/colors";
+import { UNRELEASED_MAP_COLOR } from "../../common/colors";
 
 export const MAP_THUMB_SIZE = 50;
 

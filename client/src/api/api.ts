@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues } from "shared";
-import { JsonObject } from "../util/utils";
+import { JsonObject } from "../common/utils";
 
 async function tryGetRequest(url: string, params?: JsonObject) {
     try {

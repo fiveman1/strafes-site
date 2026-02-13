@@ -3,13 +3,13 @@ import { Game, Style, Time, TimeSortBy, UserInfo, formatCourse, formatPlacement 
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { brown, grey, yellow } from "@mui/material/colors";
-import UserLink from "../components/UserLink";
-import DateDisplay from "../components/DateDisplay";
-import TimeDisplay from "../components/TimeDisplay";
-import MapLink from "../components/MapLink";
+import TimeDisplay from "../../../displays/TimeDisplay";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import TimeDateColumn from "../components/TimeDateColumn";
+import TimeDateColumn from "../TimeDateColumn";
+import MapLink from "../../../displays/MapLink";
+import UserLink from "../../../displays/UserLink";
+import DateDisplay from "../../../displays/DateDisplay";
 
 
 export function makeMapColumn(showGame: boolean, showStyle: boolean, isCompact?: boolean): GridColDef {

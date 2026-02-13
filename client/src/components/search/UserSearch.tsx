@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Autocomplete, Box, debounce, InputAdornment, TextField } from "@mui/material";
 import { useLocation, useNavigate } from "react-router";
-import { getUserIdFromName, searchByUsername } from "../api/api";
 import { UserSearchData } from "shared";
-import { UserSearchInfo } from "../util/states";
-import UserAvatar from "./UserAvatar";
 import SearchIcon from '@mui/icons-material/Search';
+import { UserSearchInfo } from "../../common/states";
+import { getUserIdFromName, searchByUsername } from "../../api/api";
+import UserAvatar from "../displays/UserAvatar";
 
 interface IUserSearchProps {
     setUserId: React.Dispatch<React.SetStateAction<string | undefined>>

@@ -1,6 +1,6 @@
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { Game, formatGame, Map } from "shared";
-import { getAllowedGameForMap } from "../util/common";
+import { getAllowedGameForMap } from "../../common/common";
 
 interface IGameSelectorProps {
     game: Game

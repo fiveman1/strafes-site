@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Breadcrumbs, Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Link, Switch, Typography, useMediaQuery } from "@mui/material";
-import UserCard from "./UserCard";
+import UserCard from "./cards/UserCard";
 import { useLocation, useNavigate, useParams } from "react-router";
-import ProfileCard from "./ProfileCard";
-import TimesCard from "./TimesCard";
-import UserSearch from "./UserSearch";
+import ProfileCard from "./cards/ProfileCard";
+import TimesCard from "./cards/grids/TimesCard";
+import UserSearch from "./search/UserSearch";
 import { Time, TimeSortBy, User, ALL_COURSES, MAIN_COURSE } from "shared";
-import GameSelector from "./GameSelector";
-import StyleSelector from "./StyleSelector";
+import GameSelector from "./forms/GameSelector";
+import StyleSelector from "./forms/StyleSelector";
 import { getUserData } from "../api/api";
-import ViewedTimes from "./ViewedTimes";
+import ViewedTimes from "./cards/grids/ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
-import IncludeBonusCheckbox from "./IncludeBonusCheckbox";
-import { useGameStyle, useIncludeBonuses, useUserSearch } from "../util/states";
-import UserAvatar from "./UserAvatar";
+import IncludeBonusCheckbox from "./forms/IncludeBonusCheckbox";
+import { useGameStyle, useIncludeBonuses, useUserSearch } from "../common/states";
+import UserAvatar from "./displays/UserAvatar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 function Users() {

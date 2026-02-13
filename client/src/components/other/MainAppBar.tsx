@@ -7,9 +7,9 @@ import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { useLocation } from "react-router";
 import LoginIcon from '@mui/icons-material/Login';
 import { LoginUser } from "shared";
-import { login } from "../api/api";
+import { useAppBarHeight } from "../../common/states";
+import { login } from "../../api/api";
 import AccountMenu from "./AccountMenu";
-import { useAppBarHeight } from "../util/states";
 
 interface IMainAppBarProps {
     loggedInUser: LoginUser | undefined
