@@ -127,7 +127,7 @@ function TimesGrid(props: ITimesCardProps) {
     if (shortScreen) pageSize = 10;
 
     const initPage = Math.floor(+(searchParams.get("start") ?? 0) / pageSize);
-    const [maxPage, setMaxPage] = useState((initPage + 1) * pageSize);
+    const [maxVisisbleRow, setMaxVisisbleRow] = useState((initPage + 1) * pageSize);
 
     let isCompact = false;
     if (game === Game.all || style === Style.all) {
@@ -145,7 +145,7 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef.current?.setPageSize(pageSize);
     }, [apiRef, pageSize]);
 
-    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxPage) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
+    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
 
     const getSort = useCallback((model: GridSortModel) => {
         const sort = model[0];
@@ -172,7 +172,7 @@ function TimesGrid(props: ITimesCardProps) {
         const start = (model.page * model.pageSize) + 1;
         searchParams.set("start", start.toString());
         setSearchParams(searchParams, {replace: true});
-        setMaxPage((model.page + 1) * model.pageSize);
+        setMaxVisisbleRow((model.page + 1) * model.pageSize);
     };
 
     const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
