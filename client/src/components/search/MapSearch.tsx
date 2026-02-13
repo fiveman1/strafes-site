@@ -5,6 +5,7 @@ import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { UNRELEASED_MAP_COLOR } from "../../common/colors";
 import { getGameColor, MapDetailsProps } from "../../common/common";
+import SearchIcon from '@mui/icons-material/Search';
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -267,9 +268,10 @@ function MapSearch(props: MapSearchProps) {
                     input: { 
                         ...params.InputProps,
                         startAdornment: (
-                            selectedMap ?
                             <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${adornmentSize}px`}}>
-                                {selectedMap.smallThumb ?
+                                {selectedMap ?
+                                
+                                (selectedMap.smallThumb ?
                                 <Box
                                     component="img"
                                     height={adornmentSize}
@@ -280,9 +282,10 @@ function MapSearch(props: MapSearchProps) {
                                     borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
                                     borderRadius="5px"
                                 />
-                                :
-                                <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: adornmentSize }} />}
-                            </InputAdornment> : undefined
+                                : <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: adornmentSize }} />)
+                                
+                                :  <SearchIcon />}
+                            </InputAdornment> 
                         )
                     }
                 }}
