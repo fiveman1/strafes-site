@@ -1,18 +1,17 @@
-import { RowDataPacket } from "mysql2/promise";
-import { AUTH_POOL, SettingsRow } from "./oauth.js";
 import { tryGetRequest } from "./requests.js";
 import { UserInfo } from "shared";
 import memCache from "memory-cache";
 import { getAllUsersToRoles } from "./roles.js";
+import { AuthClient } from "./auth.js";
 
 const cache: memCache.CacheClass<string, string> = new memCache.Cache();
 
-export async function setUserInfoForList(users: UserInfo[], largeThumbs?: boolean) {
+export async function setUserInfoForList(client: AuthClient, users: UserInfo[], largeThumbs?: boolean) {
     if (users.length < 1) {
         return;
     }
 
-    await Promise.all([setProfileInfoForList(users), setUserThumbsForList(users, largeThumbs ?? false), setUserRolesForList(users)]);
+    await Promise.all([setProfileInfoForList(client, users), setUserThumbsForList(users, largeThumbs ?? false), setUserRolesForList(users)]);
 }
 
 async function setUserRolesForList(users: UserInfo[]) {
@@ -23,24 +22,18 @@ async function setUserRolesForList(users: UserInfo[]) {
     }
 }
 
-async function setProfileInfoForList(users: UserInfo[]) {
+async function setProfileInfoForList(client: AuthClient, users: UserInfo[]) {
     const userIds = Array.from(new Set<string>(users.map((val) => val.userId)));
     
-    const query = `SELECT * FROM settings WHERE userId IN (?);`;
-    const [rows] = await AUTH_POOL.query<(SettingsRow & RowDataPacket)[]>(query, [userIds]);
-    if (!rows) {
+    const userIdToSettings = await client.loadSettingsFromDBMulti(userIds);
+    if (!userIdToSettings) {
         return;
     }
 
-    const userIdToSettings = new Map<number, SettingsRow>();
-    for (const row of rows) {
-        userIdToSettings.set(+row.userId, row);
-    }
-
     for (const user of users) {
-        const settings = userIdToSettings.get(+user.userId);
-        if (settings?.countryCode) {
-             user.userCountry = settings.countryCode;
+        const settings = userIdToSettings.get(user.userId);
+        if (settings?.country) {
+             user.userCountry = settings.country;
         }
     }
 }

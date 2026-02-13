@@ -7,13 +7,36 @@ import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo } from "shared";
 import { calcRank, safeQuoteText, validatePositiveInt } from "./util.js";
 import { readFileSync } from "fs";
-import { getMapWR, getUserWRs, getWRLeaderboardPage, getWRList, GlobalCountSQL, updateWRs } from "./globals.js";
+import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached, tryPostCached } from "./requests.js";
-import { getAllMaps, getMap } from "./maps.js";
-import { authorizeAndSetTokens, getSettings, logout, redirectToAuthURL, setLoggedInUser, updateSettings } from "./oauth.js";
+import { AuthClient } from "./auth.js";
 import { setUserInfoForList, setUserThumbsForList } from "./users.js";
 import { getPlacements, getRanks, getTimes, getUserInfo, getUserRank } from "./strafes_api/api.js";
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
+import { exit } from "process";
+
+const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
+const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
+
+if (!STRAFES_DB_USER || !STRAFES_DB_PASSWORD) {
+    console.error("Missing strafes global database user/password");
+    exit(1);
+}
+
+const globalsClient = new GlobalsClient(STRAFES_DB_USER, STRAFES_DB_PASSWORD);
+
+const CLIENT_ID = process.env.ROBLOX_CLIENT_ID;
+const CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET;
+const AUTH_DB_USER = process.env.AUTH_DB_USER;
+const AUTH_DB_PASSWORD = process.env.AUTH_DB_PASSWORD;
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:8080";
+
+if (!CLIENT_ID || !CLIENT_SECRET || !AUTH_DB_USER || !AUTH_DB_PASSWORD) {
+    console.error("Missing client ID/secret or auth DB user/password");
+    exit(1);
+}
+
+const authClient = await AuthClient.Create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL);
 
 const app = express();
 
@@ -27,9 +50,9 @@ const IS_DEBUG = process.env.DEBUG === "true";
 const IS_DEV_MODE = process.argv.splice(2)[0] === "--dev";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
-const cache = (IS_DEV_MODE ? apicache.options({headers: {"cache-control": "no-cache"}}).middleware : apicache.middleware) as (duration?: string | number) => any;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 25, validate: {xForwardedForHeader: !IS_DEV_MODE} });
-const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 80, validate: {xForwardedForHeader: !IS_DEV_MODE} });
+const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 25, validate: { xForwardedForHeader: !IS_DEV_MODE } });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEBUG ? 250 : 80, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
@@ -40,44 +63,44 @@ app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json());
 
 app.get("/api/login", async (req, res) => {
-    await redirectToAuthURL(res);
+    await authClient.redirectToAuthURL(res);
 });
 
 app.get("/api/logout", async (req, res) => {
-    await logout(req, res);
+    await authClient.logout(req, res);
 });
 
 app.get("/oauth/callback", async (req, res) => {
-    await authorizeAndSetTokens(req, res);
+    await authClient.authorizeAndSetTokens(req, res);
 });
 
 app.get("/api/auth/user", async (req, res) => {
-    await setLoggedInUser(req, res);
+    await authClient.setLoggedInUser(req, res);
 });
 
 app.get("/api/settings", async (req, res) => {
-    await getSettings(req, res);
+    await authClient.getSettings(req, res);
 });
 
 app.post("/api/settings", async (req, res) => {
-    await updateSettings(req, res);
+    await authClient.updateSettings(req, res);
 });
 
 app.get("/api/username", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
-    
+
     if (!username || typeof username !== "string" || username.length > 50) {
-        res.status(400).json({error: "Invalid username"});
+        res.status(400).json({ error: "Invalid username" });
         return;
     }
 
     const userId = await getUserId(username);
     if (!userId) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
-    res.status(200).json({id: userId});
+    res.status(200).json({ id: userId });
 });
 
 const searchGUID = crypto.randomUUID();
@@ -85,7 +108,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
     const username = req.query.username;
 
     if (!username) {
-        res.status(400).json({error: "Invalid username"});
+        res.status(400).json({ error: "Invalid username" });
         return;
     }
 
@@ -97,7 +120,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
     });
 
     if (!searchRes || searchRes.data.searchResults.length === 0) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -111,19 +134,19 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
 
     await setUserThumbsForList(usernames, false);
 
-    res.status(200).json({usernames: usernames});
+    res.status(200).json({ usernames: usernames });
 });
 
 app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
     const userId = req.params.id;
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     const user = await getUserData(userId);
     if (!user) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -136,30 +159,30 @@ app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req,
     const style = req.query.style;
 
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     const data = await getUserRank(userId, +game, +style);
 
     if (!data) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
     const rank = calcRank(data.rank);
 
-    const rankData : Rank = {
+    const rankData: Rank = {
         id: data.id,
         style: +style,
         game: +game,
@@ -180,22 +203,22 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     const qSort = req.query.sort;
 
     if (start === undefined || isNaN(+start) || +start < 0) {
-        res.status(400).json({error: "Invalid start"});
+        res.status(400).json({ error: "Invalid start" });
         return;
     }
 
     if (end === undefined || isNaN(+end) || +end < 0) {
-        res.status(400).json({error: "Invalid end"});
+        res.status(400).json({ error: "Invalid end" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
@@ -205,13 +228,13 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     }
 
     if (+start >= +end) {
-        res.status(400).json({error: "Start must be higher than end"});
+        res.status(400).json({ error: "Start must be higher than end" });
     }
 
-    const pageRes = await getWRLeaderboardPage(+start, +end, +game, +style, sort);
+    const pageRes = await globalsClient.getWRLeaderboardPage(+start, +end, +game, +style, sort);
 
     if (!pageRes) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -221,7 +244,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
     }
 
     const data = await Promise.all(promises);
-    await setUserInfoForList(data);
+    await setUserInfoForList(authClient, data);
 
     res.status(200).json({
         total: pageRes.total,
@@ -230,7 +253,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
 });
 
 async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style): Promise<LeaderboardCount> {
-    const wrs = await getUserWRs(page.userId, game, style) || [];
+    const wrs = await globalsClient.getUserWRs(page.userId, game, style) || [];
 
     let bonusCount = 0;
     let earliestDate: Date | undefined;
@@ -267,39 +290,39 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     const sort = req.query.sort;
 
     if (start === undefined || isNaN(+start) || +start < 0) {
-        res.status(400).json({error: "Invalid start"});
+        res.status(400).json({ error: "Invalid start" });
         return;
     }
 
     if (end === undefined || isNaN(+end) || +end < 0) {
-        res.status(400).json({error: "Invalid end"});
+        res.status(400).json({ error: "Invalid end" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined || +style === Style.all) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     if (!sort || isNaN(+sort) || RankSortBy[+sort] === undefined) {
-        res.status(400).json({error: "Invalid sort by"});
+        res.status(400).json({ error: "Invalid sort by" });
         return;
     }
 
     const page = Math.floor(+start / 100) + 1;
     if (+start >= +end) {
-        res.status(400).json({error: "Start must be higher than end"});
+        res.status(400).json({ error: "Start must be higher than end" });
     }
 
     const ranksData = await getRanks(100, page, +game, +style, +sort);
 
     if (!ranksData) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -324,15 +347,15 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
         });
     }
 
-    await setUserInfoForList(rankArr);
+    await setUserInfoForList(authClient, rankArr);
 
     const promises = [];
     for (const rank of rankArr) {
-        promises.push(getUserWRs(rank.userId, +game, +style));
+        promises.push(globalsClient.getUserWRs(rank.userId, +game, +style));
     }
 
     const resolved = await Promise.all(promises);
-    
+
     for (let i = 0; i < resolved.length; ++i) {
         const wrs = resolved[i];
         const counts = getUserWRCounts(wrs);
@@ -355,48 +378,48 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     const sort = req.query.sort;
 
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     if (start === undefined || isNaN(+start) || +start < 0) {
-        res.status(400).json({error: "Invalid start"});
+        res.status(400).json({ error: "Invalid start" });
         return;
     }
 
     if (end === undefined || isNaN(+end) || +end < 0) {
-        res.status(400).json({error: "Invalid end"});
+        res.status(400).json({ error: "Invalid end" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     if (course === undefined || isNaN(+course)) {
-        res.status(400).json({error: "Invalid course"});
+        res.status(400).json({ error: "Invalid course" });
         return;
     }
 
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
-        res.status(400).json({error: "Invalid sort by"});
+        res.status(400).json({ error: "Invalid sort by" });
         return;
     }
 
     if (+start >= +end) {
-        res.status(400).json({error: "Start must be higher than end"});
+        res.status(400).json({ error: "Start must be higher than end" });
     }
 
-    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, onlyWR, +game, +style, {userId: userId});
-    
+    const timeInfo = await getTimesPaged(+start, +end, +sort, +course, onlyWR, +game, +style, { userId: userId });
+
     if (!timeInfo) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -414,28 +437,28 @@ app.get("/api/user/times/completions/:id", pagedRateLimitSettings, cache("5 minu
     const style = req.query.style;
 
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined || +style === Style.all) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     const timeData = await getTimes(userId, undefined, 1, 1, +game, +style, 0);
 
     if (!timeData) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
-    res.status(200).json({completions: timeData.pagination.total_items});
+    res.status(200).json({ completions: timeData.pagination.total_items });
 });
 
 app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
@@ -444,21 +467,21 @@ app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async 
     const style = req.query.style;
 
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
-    const wrs = await getUserWRs(userId, +game, +style);
+    const wrs = await globalsClient.getUserWRs(userId, +game, +style);
 
     res.status(200).json(getUserWRCounts(wrs));
 });
@@ -467,7 +490,7 @@ function getUserWRCounts(wrs?: Time[]) {
     let mainWrs = 0;
     let bonusWrs = 0;
     let loaded = false;
-    
+
     if (wrs !== undefined) {
         loaded = true;
         for (const wr of wrs) {
@@ -493,17 +516,17 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     const qStyle = req.query.style;
 
     if (typeof userId !== "string" || !validatePositiveInt(userId)) {
-        res.status(400).json({error: "Invalid user ID"});
+        res.status(400).json({ error: "Invalid user ID" });
         return;
     }
 
     if (!qGame || isNaN(+qGame) || Game[+qGame] === undefined || +qGame === Game.all) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!qStyle || isNaN(+qStyle) || Style[+qStyle] === undefined || +qStyle == Style.all) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
@@ -532,7 +555,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     const allTimes = [firstTimeData];
     for (const timeData of resolved) {
         if (!timeData) {
-            res.status(404).json({error: "Not found"});
+            res.status(404).json({ error: "Not found" });
             return;
         }
         allTimes.push(timeData);
@@ -561,14 +584,14 @@ async function setTimePlacements(times: Time[]) {
     if (times.length < 1) {
         return;
     }
-    
+
     const timeIds: string[] = [];
     for (const time of times) {
         timeIds.push(time.id);
     }
 
     const placementData = await getPlacements(timeIds);
-    
+
     const idToPlacement = new Map<string, number>();
     if (placementData) {
         for (const placementInfo of placementData) {
@@ -596,7 +619,7 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     for (const mapKey of keys) {
         const promise = async () => {
             const pieces = mapKey.split(",");
-            const wr = await getMapWR(pieces[0], +pieces[1], +pieces[2], +pieces[3]);
+            const wr = await globalsClient.getMapWR(pieces[0], +pieces[1], +pieces[2], +pieces[3]);
             if (wr) {
                 mapToWR.set(mapKey, wr);
             }
@@ -607,7 +630,7 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     await Promise.all(promises);
 
     const newWrs: Time[] = [];
-    
+
     for (const time of times) {
         const mapKey = getMapKey(time);
         const wr = mapToWR.get(mapKey);
@@ -621,7 +644,7 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     }
 
     if (newWrs.length > 0) {
-        await updateWRs(newWrs);
+        await globalsClient.updateWRs(newWrs);
         await setTimeDiffs(times, true); // Recalculate
     }
 }
@@ -639,57 +662,57 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
     const sort = req.query.sort;
 
     if (start === undefined || isNaN(+start) || +start < 0) {
-        res.status(400).json({error: "Invalid start"});
+        res.status(400).json({ error: "Invalid start" });
         return;
     }
 
     if (end === undefined || isNaN(+end) || +end < 0) {
-        res.status(400).json({error: "Invalid end"});
+        res.status(400).json({ error: "Invalid end" });
         return;
     }
 
     if (!game || isNaN(+game) || Game[+game] === undefined) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     if (course === undefined || isNaN(+course)) {
-        res.status(400).json({error: "Invalid course"});
+        res.status(400).json({ error: "Invalid course" });
         return;
     }
 
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
-        res.status(400).json({error: "Invalid sort by"});
+        res.status(400).json({ error: "Invalid sort by" });
         return;
     }
 
     if (+start >= +end) {
-        res.status(400).json({error: "Start must be higher than end"});
+        res.status(400).json({ error: "Start must be higher than end" });
     }
 
     const timeInfo = await getTimesPaged(+start, +end, +sort, +course, true, +game, +style, {});
-    
+
     if (!timeInfo) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
     res.status(200).json(timeInfo);
 });
 
-async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: {userId?: string, mapId?: string}) {
+async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: string, mapId?: string }) {
     let times: Time[];
     let pagination: Pagination;
     const { userId, mapId } = searchInfo;
 
     if (onlyWR) {
-        const { total, wrs } = await getWRList(start, end, game, style, sort, course, userId);
-        
+        const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId);
+
         if (!wrs) return undefined;
 
         times = wrs;
@@ -743,7 +766,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
     }
 
     if (userId === undefined) {
-        await setUserInfoForList(times);
+        await setUserInfoForList(authClient, times);
     }
 
     return {
@@ -789,51 +812,51 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     const sort = req.query.sort;
 
     if (typeof mapId !== "string" || !validatePositiveInt(mapId)) {
-        res.status(400).json({error: "Invalid map ID"});
+        res.status(400).json({ error: "Invalid map ID" });
         return;
     }
 
     if (qStart === undefined || isNaN(+qStart) || +qStart < 0) {
-        res.status(400).json({error: "Invalid start"});
+        res.status(400).json({ error: "Invalid start" });
         return;
     }
     const start = +qStart;
 
     if (qEnd === undefined || isNaN(+qEnd) || +qEnd < 0) {
-        res.status(400).json({error: "Invalid end"});
+        res.status(400).json({ error: "Invalid end" });
         return;
     }
     const end = +qEnd;
 
     if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
-        res.status(400).json({error: "Invalid game"});
+        res.status(400).json({ error: "Invalid game" });
         return;
     }
 
     if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
-        res.status(400).json({error: "Invalid style"});
+        res.status(400).json({ error: "Invalid style" });
         return;
     }
 
     if (qCourse === undefined || isNaN(+qCourse)) {
-        res.status(400).json({error: "Invalid course"});
+        res.status(400).json({ error: "Invalid course" });
         return;
     }
     const course = +qCourse;
 
     if (!sort || isNaN(+sort) || TimeSortBy[+sort] === undefined) {
-        res.status(400).json({error: "Invalid sort by"});
+        res.status(400).json({ error: "Invalid sort by" });
         return;
     }
 
     if (start >= end) {
-        res.status(400).json({error: "Start must be higher than end"});
+        res.status(400).json({ error: "Start must be higher than end" });
     }
 
-    const timeData = await getTimesPaged(start, end, +sort, +course, false, +game, +style, {mapId: mapId});
+    const timeData = await getTimesPaged(start, end, +sort, +course, false, +game, +style, { mapId: mapId });
 
     if (!timeData) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -863,7 +886,7 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         }
     }
 
-    promises.push(setUserInfoForList(times));
+    promises.push(authClient, setUserInfoForList(authClient, times));
 
     await Promise.all(promises);
     await setTimeDiffs(times); // Has to happen after placements are calculated
@@ -872,10 +895,10 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 });
 
 app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
-    const maps = await getAllMaps();
-    
+    const maps = await globalsClient.getAllMaps();
+
     if (!maps) {
-        res.status(404).json({error: "Not found"});
+        res.status(404).json({ error: "Not found" });
         return;
     }
 
@@ -884,7 +907,7 @@ app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
     });
 });
 
-app.use(express.static(buildDir, {index: false}));
+app.use(express.static(buildDir, { index: false }));
 app.get("*splat", async (req, res): Promise<any> => {
     try {
         // Inject meta tags for title and description based on the requested URL
@@ -923,7 +946,7 @@ app.get("*splat", async (req, res): Promise<any> => {
             description = "Browse maps and view the top times";
             if (url.length > 1) {
                 const mapId = url[1];
-                const mapInfo = await getMap(mapId);
+                const mapInfo = await globalsClient.getMap(mapId);
                 if (mapInfo) {
                     const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
                     const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
@@ -973,10 +996,10 @@ app.listen(PORT, () => {
 
 async function getUserId(username: string): Promise<undefined | string> {
     const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
-        usernames: [username] 
+        usernames: [username]
     });
     if (!res) return undefined;
-    
+
     const data = res.data.data as any[];
     if (data.length === 0) return undefined;
 
@@ -992,11 +1015,11 @@ async function getUserData(userId: string): Promise<undefined | User> {
         userId: userId,
         username: ""
     };
-    const setUserInfoPromise = setUserInfoForList([partialUser], true);
+    const setUserInfoPromise = setUserInfoForList(authClient, [partialUser], true);
 
     const userRes = await userReq;
     if (!userRes) return undefined;
-    const user = userRes.data as {name: string, displayName: string, created: string};
+    const user = userRes.data as { name: string, displayName: string, created: string };
 
     const strafesUserData = await strafesUserReq;
     await setUserInfoPromise;
