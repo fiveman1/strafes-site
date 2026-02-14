@@ -202,7 +202,11 @@ export class GlobalsClient {
     }
 
     public async getWRLeaderboardPage(start: number, end: number, game: Game, style: Style, sort: LeaderboardSortBy): Promise<{ total: number; data: GlobalCountSQL[]; }> {
-        let query = "SELECT COUNT(globals.time_id) as count, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount FROM globals INNER JOIN users ON globals.user_id = users.user_id WHERE course = 0";
+        let query = `SELECT COUNT(globals.time_id) as count, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount 
+            FROM globals 
+            INNER JOIN users ON globals.user_id = users.user_id 
+            WHERE course ${sort === LeaderboardSortBy.MainAsc || sort == LeaderboardSortBy.MainDesc ? "=" : "<>"} 0
+        `;
         const values: any[] = [];
 
         if (game !== Game.all) {
@@ -217,7 +221,7 @@ export class GlobalsClient {
 
         query += " GROUP BY globals.user_id ORDER BY ";
         let userDir = "ASC";
-        if (sort === LeaderboardSortBy.MainAsc) {
+        if (sort === LeaderboardSortBy.MainAsc || sort === LeaderboardSortBy.BonusAsc) {
             query += "count ASC";
             userDir = "DESC";
         }

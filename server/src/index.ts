@@ -255,30 +255,34 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
 async function convertToLeaderboardCount(page: GlobalCountSQL, game: Game, style: Style): Promise<LeaderboardCount> {
     const wrs = await globalsClient.getUserWRs(page.userId, game, style) || [];
 
+    let mainCount = 0;
     let bonusCount = 0;
-    let earliestDate: Date | undefined;
-    let latestDate: Date | undefined;
+    let earliestTime: Time | undefined = undefined;
+    let latestTime: Time | undefined = undefined;
     for (const wr of wrs) {
-        if (wr.course !== 0) {
+        if (wr.course === 0) {
+            ++mainCount;
+        }
+        else {
             ++bonusCount;
         }
         const wrDate = new Date(wr.date);
-        if (!earliestDate || wrDate < earliestDate) {
-            earliestDate = wrDate;
+        if (!earliestTime || wrDate < new Date(earliestTime.date)) {
+            earliestTime = wr;
         }
 
-        if (!latestDate || wrDate > latestDate) {
-            latestDate = wrDate;
+        if (!latestTime || wrDate > new Date(latestTime.date)) {
+            latestTime = wr;
         }
     }
 
     return {
         userId: page.userId,
         username: page.username,
-        count: +page.count,
+        count: mainCount,
         bonusCount: bonusCount,
-        earliestDate: earliestDate ? earliestDate.toISOString() : "",
-        latestDate: latestDate ? latestDate.toISOString() : ""
+        earliestTime: earliestTime!,
+        latestTime: latestTime!
     };
 }
 

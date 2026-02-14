@@ -11,11 +11,11 @@ import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsRes
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
-import DateDisplay from "./displays/DateDisplay";
 import { makeUserColumn } from "./cards/grids/util/columns";
 import { useGameStyle, useIncludeBonuses } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NumberGridPagination from "./cards/grids/NumberGridPagination";
+import MapLink, { MAP_THUMB_SIZE } from "./displays/MapLink";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
@@ -80,31 +80,33 @@ function makeColumns(game: Game, style: Style) {
         renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Bonus</Typography></>,
         flex: 20,
         minWidth: 95,
-        sortable: false,
+        sortingOrder: ["desc", "asc"],
         renderCell: (params) => <Typography variant="inherit" color={params.value === 0 ? "textSecondary" : undefined}>{params.value}</Typography>
     });
 
     cols.push({
         type: "string",
-        field: "earliestDate",
+        field: "earliestWR",
         headerName: "Earliest WR",
-        flex: 20,
-        minWidth: 125,
+        flex: 30,
+        minWidth: 185,
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
-            return <DateDisplay date={params.row.earliestDate} />
+            const time = params.row.earliestTime;
+            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game == Game.all} showStyle={style == Style.all} />
         }
     });
 
     cols.push({
         type: "string",
-        field: "latestDate",
+        field: "latestWR",
         headerName: "Latest WR",
-        flex: 20,
-        minWidth: 125,
+        flex: 30,
+        minWidth: 185,
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
-            return <DateDisplay date={params.row.latestDate} />
+            const time = params.row.latestTime;
+            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game == Game.all} showStyle={style == Style.all} />
         }
     });
     
@@ -146,6 +148,11 @@ function LeaderboardCard(props: IRanksCardProps) {
         };
     }, [game, style]);
 
+    const onSortChange = () => {
+        apiRef.current?.setPage(0);
+        apiRef.current?.dataSource.cache.clear(); // The row count might change, so this will force it to update
+    };
+
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
             const sort = params.sortModel.at(0);
@@ -154,10 +161,15 @@ function LeaderboardCard(props: IRanksCardProps) {
                 if (sort.field === "count") {
                     sortBy = sort.sort === "asc" ? LeaderboardSortBy.MainAsc : LeaderboardSortBy.MainDesc;
                 }
+                else if (sort.field === "bonusCount") {
+                    sortBy = sort.sort === "asc" ? LeaderboardSortBy.BonusAsc : LeaderboardSortBy.BonusDesc;
+                }
             }
             return await updateRowData(+params.start, params.end, sortBy);
         }
     }), [updateRowData]);
+
+    const rowHeight = (game === Game.all || style == Style.all) ? 100 : Math.round(MAP_THUMB_SIZE * 1.6667);
 
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
@@ -172,16 +184,18 @@ function LeaderboardCard(props: IRanksCardProps) {
             loading={isLoading}
             pagination
             dataSource={dataSource}
-            pageSizeOptions={[15]}
+            pageSizeOptions={[10]}
             rowCount={rowCount}
+            rowHeight={rowHeight}
             initialState={{
                 pagination: { 
-                    paginationModel: { pageSize: 15 }
+                    paginationModel: { pageSize: 10 }
                 },
                 sorting: {
                     sortModel: [{ field: "count", sort: "desc" }],
                 }
             }}
+            onSortModelChange={onSortChange}
             getRowId={(row) => row.userId}
             disableColumnFilter
             density="compact"

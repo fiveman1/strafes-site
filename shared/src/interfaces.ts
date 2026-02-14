@@ -101,7 +101,9 @@ export enum RankSortBy {
 
 export enum LeaderboardSortBy {
     MainAsc,
-    MainDesc
+    MainDesc,
+    BonusAsc,
+    BonusDesc
 }
 
 export enum ModerationStatus {
@@ -139,9 +141,9 @@ export enum UserRole {
 
 export interface LeaderboardCount extends UserInfo {
     count: number
-    earliestDate: string
-    latestDate: string
     bonusCount: number
+    earliestTime: Time
+    latestTime: Time
 }
 
 export interface LoginUser {
