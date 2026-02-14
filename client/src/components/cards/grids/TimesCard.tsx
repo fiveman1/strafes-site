@@ -273,7 +273,6 @@ function TimesGrid(props: ITimesCardProps) {
         <DataGrid
             className="timesGrid"
             columns={gridCols}
-            //key={gridKey}
             apiRef={apiRef}
             loading={isLoading}
             pagination

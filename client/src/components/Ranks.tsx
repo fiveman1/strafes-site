@@ -4,7 +4,7 @@ import { Breadcrumbs, Link, Paper, Tooltip, Typography, useMediaQuery } from "@m
 import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, useGridApiRef } from "@mui/x-data-grid";
 import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../common/common";
 import { getRanks } from "../api/api";
 import { yellow } from "@mui/material/colors";
@@ -94,6 +94,7 @@ function RanksCard(props: IRanksCardProps) {
     const [maxPage, setMaxPage] = useState(0);
     const [placementWidth, setPlacementWidth] = useState(50);
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
+    const apiRef = useGridApiRef();
 
     const gridCols = makeColumns(placementWidth);
 
@@ -106,13 +107,13 @@ function RanksCard(props: IRanksCardProps) {
         }
     }, [maxPage]);
 
+    useEffect(() => {
+        apiRef.current?.setPage(0);
+    }, [apiRef, game, style]);
+
     const onPageChange = useCallback((model: GridPaginationModel) => {
         setMaxPage((model.page + 1) * model.pageSize);
     }, []);
-
-    const gridKey = useMemo(() => {
-        return `${game},${style}`;
-    }, [game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: RankSortBy) => {
         setIsLoading(true);
@@ -150,7 +151,7 @@ function RanksCard(props: IRanksCardProps) {
         <DataGrid
             className="ranksGrid"
             columns={gridCols}
-            key={gridKey}
+            apiRef={apiRef}
             loading={isLoading}
             pagination
             dataSource={dataSource}

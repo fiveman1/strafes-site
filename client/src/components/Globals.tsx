@@ -7,7 +7,7 @@ import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
 import IncludeBonusCheckbox from "./forms/IncludeBonusCheckbox";
 import { Game, Style } from "shared";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { getLeaderboardPage } from "../api/api";
@@ -121,12 +121,13 @@ function LeaderboardCard(props: IRanksCardProps) {
 
     const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const apiRef = useGridApiRef();
 
     const gridCols = makeColumns(game, style);
 
-    const gridKey = useMemo(() => {
-        return `${game},${style}`;
-    }, [game, style]);
+    useEffect(() => {
+        apiRef.current?.setPage(0);
+    }, [apiRef, game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
         setIsLoading(true);
@@ -167,7 +168,7 @@ function LeaderboardCard(props: IRanksCardProps) {
         </Box>
         <DataGrid
             columns={gridCols}
-            key={gridKey}
+            apiRef={apiRef}
             loading={isLoading}
             pagination
             dataSource={dataSource}
