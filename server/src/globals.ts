@@ -24,6 +24,7 @@ export interface GlobalCountSQL extends WithTotalCount {
     userId: string,
     username: string,
     count: string
+    bonusCount: string
 }
 
 type GlobalCountRow = GlobalCountSQL & RowDataPacket;
@@ -202,31 +203,35 @@ export class GlobalsClient {
     }
 
     public async getWRLeaderboardPage(start: number, end: number, game: Game, style: Style, sort: LeaderboardSortBy): Promise<{ total: number; data: GlobalCountSQL[]; }> {
-        let query = `SELECT COUNT(globals.time_id) as count, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount 
+        let query = `SELECT COUNT(CASE WHEN course = 0 THEN 1 ELSE NULL END) as count, COUNT(CASE WHEN course <> 0 THEN 1 ELSE NULL END) as bonusCount, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount 
             FROM globals 
             INNER JOIN users ON globals.user_id = users.user_id 
-            WHERE course ${sort === LeaderboardSortBy.MainAsc || sort == LeaderboardSortBy.MainDesc ? "=" : "<>"} 0
         `;
         const values: any[] = [];
 
+        let whereClause = "";
         if (game !== Game.all) {
-            query += " AND game = ?";
+            whereClause += " AND game = ?";
             values.push(game);
         }
 
         if (style !== Style.all) {
-            query += " AND style = ?";
+            whereClause += " AND style = ?";
             values.push(style);
+        }
+
+        if (whereClause !== "") {
+            query += " WHERE " + whereClause.slice(5); // Remove the first " AND "
         }
 
         query += " GROUP BY globals.user_id ORDER BY ";
         let userDir = "ASC";
         if (sort === LeaderboardSortBy.MainAsc || sort === LeaderboardSortBy.BonusAsc) {
-            query += "count ASC";
+            query += `${sort == LeaderboardSortBy.MainAsc ? "count" : "bonusCount"} ASC`;
             userDir = "DESC";
         }
         else {
-            query += "count DESC";
+            query += `${sort == LeaderboardSortBy.MainDesc ? "count" : "bonusCount"} DESC`;
         }
 
         query += `, username ${userDir} LIMIT ? OFFSET ?;`;
