@@ -155,8 +155,8 @@ export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
                 </Box>
             );
         },
-        flex: 130,
-        minWidth: 105,
+        flex: 140,
+        minWidth: 118,
         sortingOrder: ["asc", "desc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
