@@ -203,7 +203,12 @@ export class GlobalsClient {
     }
 
     public async getWRLeaderboardPage(start: number, end: number, game: Game, style: Style, sort: LeaderboardSortBy): Promise<{ total: number; data: GlobalCountSQL[]; }> {
-        let query = `SELECT COUNT(CASE WHEN course = 0 THEN 1 ELSE NULL END) as count, COUNT(CASE WHEN course <> 0 THEN 1 ELSE NULL END) as bonusCount, globals.user_id as userId, users.username, COUNT(globals.user_id) OVER() as totalCount 
+        let query = `SELECT 
+            COUNT(CASE WHEN course = 0 THEN 1 ELSE NULL END) as count, 
+            COUNT(CASE WHEN course <> 0 THEN 1 ELSE NULL END) as bonusCount, 
+            globals.user_id as userId, 
+            users.username, 
+            COUNT(globals.user_id) OVER() as totalCount 
             FROM globals 
             INNER JOIN users ON globals.user_id = users.user_id 
         `;
@@ -227,11 +232,21 @@ export class GlobalsClient {
         query += " GROUP BY globals.user_id ORDER BY ";
         let userDir = "ASC";
         if (sort === LeaderboardSortBy.MainAsc || sort === LeaderboardSortBy.BonusAsc) {
-            query += `${sort == LeaderboardSortBy.MainAsc ? "count" : "bonusCount"} ASC`;
             userDir = "DESC";
+            if (sort === LeaderboardSortBy.MainAsc) {
+                query += `count ASC, bonusCount ASC`;
+            }
+            else {
+                query += `bonusCount ASC, count ASC`;
+            }
         }
         else {
-            query += `${sort == LeaderboardSortBy.MainDesc ? "count" : "bonusCount"} DESC`;
+            if (sort === LeaderboardSortBy.MainDesc) {
+                query += `count DESC, bonusCount DESC`;
+            }
+            else {
+                query += `bonusCount DESC, count DESC`;
+            }
         }
 
         query += `, username ${userDir} LIMIT ? OFFSET ?;`;

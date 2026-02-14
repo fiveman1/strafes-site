@@ -150,7 +150,6 @@ function LeaderboardCard(props: IRanksCardProps) {
 
     const onSortChange = () => {
         apiRef.current?.setPage(0);
-        apiRef.current?.dataSource.cache.clear(); // The row count might change, so this will force it to update
     };
 
     const dataSource: GridDataSource = useMemo(() => ({
