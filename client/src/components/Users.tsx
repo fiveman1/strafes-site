@@ -121,14 +121,14 @@ function Users() {
 
     return (
     <Box flexGrow={1}>
-        <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={0.5}>
+        <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={smallScreen ? 0 : 0.5}>
             <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex"}}>
                 <Link underline="hover" color="inherit" href="/">
                     Home
                 </Link>
                 {breadcrumbs}
             </Breadcrumbs>
-            <Box padding={smallScreen ? 1 : 0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
+            <Box padding={smallScreen ? 1 : 0.25} pt={0.25} pb={0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
                 <UserSearch 
                     setUserId={setUserId} 
                     userSearch={userSearch}
