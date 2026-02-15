@@ -100,7 +100,7 @@ function Users() {
     const breadcrumbs: React.ReactElement[] = [];
     if (user) {
         breadcrumbs.push(
-            <Link underline="hover" color="inherit" component="button" onClick={() => navigate("/users")}>
+            <Link underline="hover" color="inherit" component="button" onClick={() => navigate({pathname: "/users", search: location.search})}>
                 Users
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">

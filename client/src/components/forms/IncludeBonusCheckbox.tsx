@@ -1,5 +1,4 @@
 import { Box, Checkbox, FormControlLabel, FormGroup, FormHelperText } from "@mui/material";
-import { useLocation, useNavigate } from "react-router";
 
 interface IIncludeCheckboxParams {
     includeBonuses: boolean
@@ -9,13 +8,7 @@ interface IIncludeCheckboxParams {
 function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
     const {includeBonuses, setIncludeBonuses} = params;
 
-    const location = useLocation();
-    const navigate = useNavigate();
-
     const handleChangeIncludeBonuses = (checked: boolean) => {
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("bonuses", checked ? "true" : "false");
-        navigate({ search: queryParams.toString() }, { replace: true });
         setIncludeBonuses(checked);
     };
     

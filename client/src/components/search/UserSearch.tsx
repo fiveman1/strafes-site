@@ -90,7 +90,7 @@ function UserSearch(props: IUserSearchProps) {
         if (!search) {
             setSelectedUser({username: ""});
             setUserId(undefined);
-            if (!disableNavigate) navigate("/users");
+            if (!disableNavigate) navigate({pathname: "/users", search: location.search});
             return;
         }
 
