@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Autocomplete, Box, debounce, InputAdornment, TextField } from "@mui/material";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
 import { UserSearchInfo } from "../../common/states";
@@ -24,7 +24,6 @@ function UserSearch(props: IUserSearchProps) {
     const { setUserId, disableNavigate, userSearch } = props;
     const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
 
-    const location = useLocation();
     const navigate = useNavigate();
     const [hasError, setHasError] = useState(false);
 
@@ -110,7 +109,7 @@ function UserSearch(props: IUserSearchProps) {
 
         if (userId !== undefined) {
             if (!disableNavigate) {
-                navigate({pathname: `/users/${userId}`, search: new URLSearchParams(location.search).toString()});
+                navigate({pathname: `/users/${userId}`, search: location.search});
             }
             else {
                 setUserId(userId);
@@ -119,7 +118,7 @@ function UserSearch(props: IUserSearchProps) {
         else {
             setHasError(true);
         }
-    }, [location.search, navigate, disableNavigate, setSelectedUser, setUserId]);
+    }, [navigate, disableNavigate, setSelectedUser, setUserId]);
 
     return (
         <Autocomplete 
