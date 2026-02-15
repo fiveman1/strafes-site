@@ -6,7 +6,6 @@ import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } fr
 import { Game, Map, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import StyleSelector from "./forms/StyleSelector";
 import TimesCard from "./cards/grids/TimesCard";
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
@@ -24,6 +23,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ColorChip from "./displays/ColorChip";
+import MapThumb from "./displays/MapThumb";
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -213,16 +213,7 @@ function MapDetailSection(props: { selectedMap?: Map }) {
                 overflow="hidden"
                 position="relative"
             >
-                {selectedMap.largeThumb ?
-                    <Box
-                        width="100%"
-                        height="100%"
-                        component="img"
-                        src={selectedMap.largeThumb}
-                        alt={selectedMap.name}
-                    />
-                    :
-                    <QuestionMarkIcon sx={{ fontSize: imageSize, minWidth: imageSize, alignSelf: "center", color: "white" }} />}
+                <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
                 <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{
                     padding: 0.4,
                     lineHeight: 1.1,
@@ -340,28 +331,12 @@ function MapsPage() {
 
     const breadcrumbs: React.ReactElement[] = [];
     if (selectedMap) {
-        const mapDate = new Date(selectedMap.date);
-        const isUnreleased = new Date() < mapDate;
-
         breadcrumbs.push(
             <Link underline="hover" color="inherit" component="button" onClick={() => onSelectMap(undefined)}>
                 Maps
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">
-                {selectedMap.smallThumb ? 
-                <Box 
-                    component="img" 
-                    height={30} 
-                    width={30} 
-                    src={selectedMap.smallThumb} 
-                    alt={selectedMap.name}
-                    border={isUnreleased ? 1 : 0}
-                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
-                    borderRadius="4px"
-                    mr={1.25}
-                />
-                : 
-                <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: 30, mr: 1 }} />}
+                <MapThumb size={30} map={selectedMap} sx={{mr: 1.25}} />
                 <Typography color="textPrimary">
                     {selectedMap.name}
                     <Typography 

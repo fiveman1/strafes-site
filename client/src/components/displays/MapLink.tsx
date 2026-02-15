@@ -2,8 +2,8 @@ import { Box, Link, Typography, useTheme } from "@mui/material";
 import { Game, Style, formatCourse, formatGame, formatGameShort, formatStyle, formatStyleShort } from "shared";
 import { ContextParams, getGameColor, getStyleColor } from "../../common/common";
 import { Link as RouterLink, useOutletContext } from "react-router";
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { UNRELEASED_MAP_COLOR } from "../../common/colors";
+import MapThumb from "./MapThumb";
 
 export const MAP_THUMB_SIZE = 50;
 
@@ -24,11 +24,6 @@ function MapLink(props: IMapLinkProps) {
     const theme = useTheme();
 
     const mapInfo = maps[id];
-    
-    let thumb = "";
-    if (mapInfo?.smallThumb) {
-        thumb = mapInfo.smallThumb;
-    }
 
     const isUnreleased = !mapInfo ? false : new Date() < new Date(mapInfo.date);
     const useShortNames = showGame && showStyle;
@@ -52,21 +47,7 @@ function MapLink(props: IMapLinkProps) {
             }}
         >
             <Box display="inline-flex" flexDirection="row" alignItems="center" height="100%" maxWidth="100%">
-            {
-                thumb ? 
-                <Box 
-                    component="img" 
-                    height={MAP_THUMB_SIZE} 
-                    width={MAP_THUMB_SIZE} 
-                    src={thumb} 
-                    alt={name}
-                    border={isUnreleased ? 1 : 0}
-                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
-                    borderRadius="4px"
-                />
-                : 
-                <QuestionMarkIcon htmlColor="white" sx={{ fontSize: MAP_THUMB_SIZE }} />
-            }
+                <MapThumb size={MAP_THUMB_SIZE} map={mapInfo} />
                 <Box display="inline-flex" marginLeft="10px" flexDirection="column" maxWidth="100%" minWidth={0} height="calc(100% - 8px)" justifyContent="space-evenly">
                     <Typography 
                         className="map-name"

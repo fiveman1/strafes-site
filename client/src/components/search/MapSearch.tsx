@@ -1,11 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, Map as StrafesMap } from "shared";
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
-import { UNRELEASED_MAP_COLOR } from "../../common/colors";
 import { getGameColor, MapDetailsProps } from "../../common/common";
 import SearchIcon from '@mui/icons-material/Search';
+import MapThumb from "../displays/MapThumb";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -27,10 +26,8 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
     };
 
     const { ...optionProps } = dataSet[0];
-
     const mapOption = dataSet[1];
-    const thumb = mapOption.smallThumb;
-    const isUnreleased = !mapOption ? false : new Date() < new Date(mapOption.date);
+
     return (
         <Typography
             component="li"
@@ -38,20 +35,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
             key={mapOption.id}
             style={inlineStyle}
         >
-            {thumb ?
-            <Box
-                component="img"
-                height={70}
-                width={70}
-                src={thumb}
-                alt={mapOption.name}
-                border={isUnreleased ? 1 : 0}
-                borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
-                borderRadius="5px"
-                sx={{aspectRatio: 1}} // Makes sure browser reserves the right amount of space while image still loading
-            />
-            :
-            <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: 70 }} />}
+            <MapThumb size={70} map={mapOption} />
             <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
                 <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
                     <Typography 
@@ -226,7 +210,6 @@ function MapSearch(props: MapSearchProps) {
         }
     }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
 
-    const isUnreleased = !selectedMap ? false : new Date() < new Date(selectedMap.date);
     const adornmentSize = 40;
 
     return (
@@ -270,21 +253,9 @@ function MapSearch(props: MapSearchProps) {
                         startAdornment: (
                             <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${adornmentSize}px`}}>
                                 {selectedMap ?
-                                
-                                (selectedMap.smallThumb ?
-                                <Box
-                                    component="img"
-                                    height={adornmentSize}
-                                    width={adornmentSize}
-                                    src={selectedMap.smallThumb}
-                                    alt={selectedMap.name}
-                                    border={isUnreleased ? 1 : 0}
-                                    borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
-                                    borderRadius="5px"
-                                />
-                                : <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : "textPrimary"} sx={{ fontSize: adornmentSize }} />)
-                                
-                                :  <SearchIcon />}
+                                <MapThumb size={adornmentSize} map={selectedMap} />
+                                :  
+                                <SearchIcon />}
                             </InputAdornment> 
                         )
                     }
