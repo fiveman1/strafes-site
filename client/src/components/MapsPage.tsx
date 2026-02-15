@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { Breadcrumbs, IconButton, Link, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
+import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../common/common";
 import { Game, Map, TimeSortBy, formatGame, getAllowedStyles } from "shared";
 import StyleSelector from "./forms/StyleSelector";
@@ -262,7 +262,6 @@ function MapsPage() {
     const { game, setGame, style, setStyle } = useGameStyle();
     const [course, setCourse] = useCourse();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const theme = useTheme();
 
     useEffect(() => {
@@ -283,11 +282,6 @@ function MapsPage() {
         let href = map ? `/maps/${map.id}` : "/maps";
         href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
 
-        searchParams.forEach((value, key) => {
-            if (key === "game" || key === "style" || key === "course") return;
-            href += `&${key}=${value}`;
-        });
-
         setInitalLoadComplete(true);
         setSelectedMap(map);
 
@@ -301,7 +295,7 @@ function MapsPage() {
         setCourse(0);
 
         if (href) navigate(href, { replace: true });
-    }, [game, navigate, searchParams, setCourse, setGame, style]);
+    }, [game, navigate, setCourse, setGame, style]);
 
     useEffect(() => {
         // Load map on initial load
@@ -317,8 +311,6 @@ function MapsPage() {
             setSelectedMap(map);
         }
     }, [id, initalLoadComplete, maps, onSelectMap, selectedMap]);
-
-
 
     const onDownloadMapCsv = () => {
         if (sortedMaps.length < 1) {

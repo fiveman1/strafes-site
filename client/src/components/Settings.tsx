@@ -12,7 +12,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../common/common";
 import CountrySelector from "./forms/CountrySelector";
 import { dateFormat, relativeTimeFormat } from "../common/datetime";
-import { useGameStyle } from "../common/states";
+import { useGameStyleNoParams } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
@@ -27,7 +27,7 @@ function Settings() {
     const { settings, setSettings, setMode, loggedInUser } = useOutletContext() as ContextParams;
 
     const [mockSettings, setMockSettings] = useState({...settings});
-    const {game, setGame: setGameState, style, setStyle: setStyleState} = useGameStyle(settings.defaultGame, undefined, true);
+    const {game, setGame: setGameState, style, setStyle: setStyleState} = useGameStyleNoParams();
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();

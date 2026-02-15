@@ -40,9 +40,17 @@ export enum Style {
     all = 999
 }
 
-export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity];
-export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity];
-export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe];
+export const allGames = [Game.bhop, Game.surf, Game.fly_trials, Game.kz, Game.testing] as const;
+export const allGamesWithAll = [Game.bhop, Game.surf, Game.fly_trials, Game.kz, Game.testing, Game.all] as const;
+
+export const allStyles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, 
+    Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe] as const;
+export const allStylesWithAll = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, 
+    Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe, Style.all] as const;
+
+export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity] as const;
+export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity] as const;
+export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe] as const;
 
 export interface Rank extends UserInfo {
     id: number

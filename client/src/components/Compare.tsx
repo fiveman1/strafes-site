@@ -6,7 +6,7 @@ import StyleSelector from "./forms/StyleSelector";
 import UserSearch from "./search/UserSearch";
 import UserCard from "./cards/UserCard";
 import { Game, Style, Time, User, formatDiff, formatStyle, formatTime } from "shared";
-import { useLocation, useNavigate, useOutletContext } from "react-router";
+import { useOutletContext } from "react-router";
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 import { getAllTimesForUser, getUserData } from "../api/api";
 import percentRound from "percent-round";
@@ -22,6 +22,7 @@ import DateDisplay from "./displays/DateDisplay";
 import { CompareTimesSort, useCompareSort, useGameStyle, useUserSearch } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import { parseAsString, useQueryState } from "nuqs";
 
 const CARD_SIZE = 240;
 const TIE_COLOR = blue["A400"];
@@ -252,11 +253,6 @@ function Compare() {
     const {game, setGame, style, setStyle} = useGameStyle();
     const [selectedSlice, setSelectedSlice] = useState<CompareSlice>();
 
-    const location = useLocation();
-    const navigate = useNavigate();
-    
-    const queryParams = new URLSearchParams(location.search);
-
     const [idToUser, setIdToUserState] = useState<IdToUser>({});
     const setIdToUser = (userId: string, loading: boolean, user?: User) => {
         setIdToUserState((idToUser) => {
@@ -290,27 +286,16 @@ function Compare() {
         });
     };
     
-    const [firstUserId, setFirstUserId] = useState(queryParams.get("user1") ?? undefined);
-    const [secondUserId, setSecondUserId] = useState(queryParams.get("user2") ?? undefined);
+    const [firstUserId, setFirstUserId] = useQueryState("user1", 
+        parseAsString
+        .withOptions({ history: "replace" })
+    );
+    const [secondUserId, setSecondUserId] = useQueryState("user2", 
+        parseAsString
+        .withOptions({ history: "replace" })
+    );
     const [firstUserSearch, setFirstUserSearch] = useUserSearch();
     const [secondUserSearch, setSecondUserSearch] = useUserSearch();
-
-    useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        if (firstUserId) {
-            queryParams.set("user1", firstUserId);
-        }
-        else {
-            queryParams.delete("user1");
-        }
-        if (secondUserId) {
-            queryParams.set("user2", secondUserId);
-        }
-        else {
-            queryParams.delete("user2");
-        }
-        navigate({ search: queryParams.toString() }, { replace: true });
-    }, [firstUserId, secondUserId, location.search, navigate]);
 
     useEffect(() => {
         const load = async () => {
@@ -409,10 +394,6 @@ function Compare() {
         if (!firstUserId || !secondUserId || isLoading) {
             return;
         }
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("user1", secondUserId);
-        queryParams.set("user2", firstUserId);
-        navigate({ search: queryParams.toString() }, { replace: true });
         setFirstUserId(secondUserId);
         setSecondUserId(firstUserId);
         setFirstUserSearch(secondUserSearch);
@@ -433,7 +414,7 @@ function Compare() {
         </Breadcrumbs>
         <Box padding={1}>
             <UserSearch 
-                setUserId={setFirstUserId} 
+                setUserId={(id) => setFirstUserId(id ?? null)} 
                 userSearch={firstUserSearch}
                 disableNavigate 
             />
@@ -448,7 +429,7 @@ function Compare() {
         </Box>
         <Box padding={1}>
             <UserSearch 
-                setUserId={setSecondUserId}
+                setUserId={(id) => setSecondUserId(id ?? null)}
                 userSearch={secondUserSearch}
                 disableNavigate 
             />
@@ -542,7 +523,7 @@ function CompareTimesCard(props: ICompareTimesCardProps) {
             Times
         </Typography>
         <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <CompareSortSelector setSort={setSort} />
+            <CompareSortSelector sort={sort} setSort={setSort} />
         </Box>
         <Box>
             <Paper elevation={1} sx={{height: getCardHeight(2) * 2}}>

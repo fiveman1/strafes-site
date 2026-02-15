@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import App from './App';
 import Home from './components/Home';
 import Users from './components/Users';
@@ -16,28 +16,40 @@ const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );
 
+const router = createBrowserRouter([
+    {
+        path: "/",
+        Component: App,
+        children: [
+            { index: true, Component: Home },
+            { 
+                path: "users", 
+                children: [
+                    { index: true, Component: Users },
+                    { path: ":id", Component: Users }
+                ]
+            },
+            { 
+                path: "maps", 
+                children: [
+                    { index: true, Component: MapsPage },
+                    { path: ":id", Component: MapsPage }
+                ]
+            },
+            { path: "ranks", Component: Ranks },
+            { path: "globals", Component: Globals },
+            { path: "compare", Component: Compare },
+            { path: "terms", Component: Terms },
+            { path: "privacy", Component: Privacy },
+            { path: "settings", Component: Settings },
+        ]
+    }
+]);
+
 export default function Index() {
     return (
     <React.StrictMode>
-        <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<App />}>
-                    <Route index element={<Home />} />
-                    <Route path="users" element={<Users />}> 
-                        <Route path=":id" element={<Users />} />
-                    </Route>
-                    <Route path="maps" element={<MapsPage />}>
-                        <Route path=":id" element={<MapsPage />} />
-                    </Route>
-                    <Route path="ranks" element={<Ranks />} />
-                    <Route path="globals" element={<Globals />} />
-                    <Route path="compare" element={<Compare />} />
-                    <Route path="terms" element={<Terms />} />
-                    <Route path="privacy" element={<Privacy />} />
-                    <Route path="settings" element={<Settings />} />
-                </Route>
-            </Routes>
-        </BrowserRouter>
+        <RouterProvider router={router} />
     </React.StrictMode>
     );
 }

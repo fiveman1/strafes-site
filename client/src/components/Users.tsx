@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Breadcrumbs, Button, Checkbox, FormControlLabel, FormGroup, FormHelperText, Link, Switch, Typography, useMediaQuery } from "@mui/material";
 import UserCard from "./cards/UserCard";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import ProfileCard from "./cards/ProfileCard";
 import TimesCard from "./cards/grids/TimesCard";
 import UserSearch from "./search/UserSearch";
@@ -17,11 +17,12 @@ import IncludeBonusCheckbox from "./forms/IncludeBonusCheckbox";
 import { useGameStyle, useIncludeBonuses, useUserSearch } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import { parseAsBoolean, useQueryState } from "nuqs";
 
 function Users() {
     const { id } = useParams();
     const [userId, setUserId] = useState<string>();
-    const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
+    const {game, setGame, style, setStyle} = useGameStyle(true);
     
     const [user, setUserInfo] = useState<User>();
     const [userLoading, setIsUserLoading] = useState(false);
@@ -57,15 +58,13 @@ function Users() {
         return unique;
     }, [advanced, viewedTimes]);
 
-    const location = useLocation();
     const navigate = useNavigate();
-    
-    const queryParams = new URLSearchParams(location.search);
-    let paramWRs = false;
-    if (queryParams.get("wrs") === "true") {
-        paramWRs = true;
-    }
-    const [onlyWRs, setOnlyWRs] = useState(paramWRs);
+
+    const [onlyWRs, setOnlyWRs] = useQueryState("wrs", 
+        parseAsBoolean
+        .withDefault(false)
+        .withOptions({ history: "replace" })
+    );
 
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 
@@ -90,9 +89,6 @@ function Users() {
     }, [userId, setIsUserLoading, setUserInfo]);
 
     const handleChangeOnlyWRs = (checked: boolean) => {
-        const queryParams = new URLSearchParams(location.search);
-        queryParams.set("wrs", checked ? "true" : "false");
-        navigate({ search: queryParams.toString() }, { replace: true });
         setOnlyWRs(checked);
     };
 

@@ -17,6 +17,7 @@ import RobloxIcon from "./components/icons/RobloxIcon";
 import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
 import MainAppBar from "./components/other/MainAppBar";
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -140,7 +141,9 @@ function App() {
             <CssBaseline enableColorScheme />
             <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={!areSettingsReady || settingsOpen} />
             <Box component="main" display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
-                <Outlet context={contextParams}/>
+                <NuqsAdapter>
+                    <Outlet context={contextParams}/>
+                </NuqsAdapter>
             </Box>
             <Box component="footer">
                 <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>

@@ -8,7 +8,7 @@ import { getUserIdFromName, searchByUsername } from "../../api/api";
 import UserAvatar from "../displays/UserAvatar";
 
 interface IUserSearchProps {
-    setUserId: React.Dispatch<React.SetStateAction<string | undefined>>
+    setUserId: (id: string | undefined) => void
     disableNavigate?: boolean
     userSearch: UserSearchInfo
 }

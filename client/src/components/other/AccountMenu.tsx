@@ -13,7 +13,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { LoginUser } from 'shared';
 import { grey } from '@mui/material/colors';
 import { logout } from '../../api/api';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Typography, useTheme } from '@mui/material';
 import UserAvatar from '../displays/UserAvatar';
 
@@ -27,7 +27,6 @@ function AccountMenu(props: IAccountMenuProps) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
-    const location = useLocation();
     const theme = useTheme();
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {

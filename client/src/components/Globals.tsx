@@ -18,7 +18,7 @@ import NumberGridPagination from "./cards/grids/NumberGridPagination";
 import MapLink, { MAP_THUMB_SIZE } from "./displays/MapLink";
 
 function Globals() {
-    const {game, setGame, style, setStyle} = useGameStyle(undefined, true);
+    const {game, setGame, style, setStyle} = useGameStyle(true);
 
     const [includeBonuses, setIncludeBonuses] = useIncludeBonuses();
 

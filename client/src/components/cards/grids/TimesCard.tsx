@@ -8,8 +8,8 @@ import { GridApiCommunity } from "@mui/x-data-grid/internals";
 import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeAndDateColumn, makeTimeColumn, makeUserColumn } from "./util/columns";
 import { numDigits } from "../../../common/utils";
 import { UNRELEASED_MAP_COLOR } from "../../../common/colors";
-import { useSearchParams } from "react-router";
 import NumberGridPagination from "./NumberGridPagination";
+import { parseAsInteger, parseAsNumberLiteral, useQueryState } from "nuqs";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,
@@ -114,7 +114,6 @@ function TimesGrid(props: ITimesCardProps) {
         showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes,
         gridApiRef, pageSize: propPageSize } = props;
 
-    const [searchParams, setSearchParams] = useSearchParams();
     let apiRef = useGridApiRef();
 
     const [rowCount, setRowCount] = useState(0);
@@ -124,15 +123,24 @@ function TimesGrid(props: ITimesCardProps) {
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
     const shortScreen = useMediaQuery("@media screen and (max-height: 1000px)");
 
-    const sortParam = searchParams.get("sort");
-    const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(sortParam ? +sortParam : defaultSort);
+    const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
+        parseAsNumberLiteral([TimeSortBy.DateAsc, TimeSortBy.DateDesc, TimeSortBy.TimeAsc, TimeSortBy.TimeDesc])
+        .withDefault(defaultSort)
+        .withOptions({ history: "replace" })
+    );
+
+    const [start, setStart] = useQueryState("start",
+        parseAsInteger
+        .withDefault(1)
+        .withOptions({ history: "replace" })
+    );
 
     const [gridKey, setGridKey] = useState(getGridKey(userId, mapId, game, style, course, onlyWRs, currentSortBy));
 
     let pageSize = propPageSize ?? 10;
     if (shortScreen) pageSize = 10;
 
-    const initPage = Math.floor(+(searchParams.get("start") ?? 0) / pageSize);
+    const initPage = Math.floor(start / pageSize);
     const [maxVisisbleRow, setMaxVisisbleRow] = useState((initPage + 1) * pageSize);
 
     let isCompact = false;
@@ -178,15 +186,12 @@ function TimesGrid(props: ITimesCardProps) {
 
     const onSortChanged = (model: GridSortModel) => {
         const sortBy = getSort(model);
-        searchParams.set("sort", sortBy.toString());
-        setSearchParams(searchParams, {replace: true});
         setCurrentSortBy(sortBy);
     };
 
     const onPageChange = (model: GridPaginationModel) => {
         const start = (model.page * model.pageSize) + 1;
-        searchParams.set("start", start.toString());
-        setSearchParams(searchParams, {replace: true});
+        setStart(start);
         setMaxVisisbleRow((model.page + 1) * model.pageSize);
     };
 

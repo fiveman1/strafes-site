@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent, useMediaQuery } from "@mui/material";
-import { useSearchParams } from "react-router";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { CompareTimesSort, CompareTimesSortRaw, isCompareTimesSort } from "../../common/states";
+import { CompareTimesSort, CompareTimesSortRaw } from "../../common/states";
 
 interface ICompareSortSelectorProps {
+    sort: CompareTimesSort
     setSort: (sort: CompareTimesSort) => void
 }
 
@@ -23,59 +23,51 @@ function convertToSort(sortVal: CompareTimesSortRaw, isAsc: boolean): CompareTim
 }
 
 function CompareSortSelector(props: ICompareSortSelectorProps) {
-    const { setSort } = props;
-    const [searchParams, setSearchParams] = useSearchParams();
+    const { sort, setSort } = props;
     
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
 
     let paramRawSort: CompareTimesSortRaw = "diff";
     let paramIsAsc = true;
-    const sortParam = searchParams.get("sort");
-    if (sortParam && isCompareTimesSort(sortParam)) {
-        switch (sortParam) {
-            case "mapAsc":
-                paramRawSort = "map";
-                paramIsAsc = true;
-                break;
-            case "mapDesc":
-                paramRawSort = "map";
-                paramIsAsc = false;
-                break;
-            case "dateAsc":
-                paramRawSort = "date";
-                paramIsAsc = true;
-                break;
-            case "dateDesc":
-                paramRawSort = "date";
-                paramIsAsc = false;
-                break;
-            case "timeAsc":
-                paramRawSort = "time";
-                paramIsAsc = true;
-                break;
-            case "timeDesc":
-                paramRawSort = "time";
-                paramIsAsc = false;
-                break;
-            case "diffAsc":
-                paramRawSort = "diff";
-                paramIsAsc = true;
-                break;
-            case "diffDesc":
-                paramRawSort = "diff";
-                paramIsAsc = false;
-                break;
-        }
+    switch (sort) {
+        case "mapAsc":
+            paramRawSort = "map";
+            paramIsAsc = true;
+            break;
+        case "mapDesc":
+            paramRawSort = "map";
+            paramIsAsc = false;
+            break;
+        case "dateAsc":
+            paramRawSort = "date";
+            paramIsAsc = true;
+            break;
+        case "dateDesc":
+            paramRawSort = "date";
+            paramIsAsc = false;
+            break;
+        case "timeAsc":
+            paramRawSort = "time";
+            paramIsAsc = true;
+            break;
+        case "timeDesc":
+            paramRawSort = "time";
+            paramIsAsc = false;
+            break;
+        case "diffAsc":
+            paramRawSort = "diff";
+            paramIsAsc = true;
+            break;
+        case "diffDesc":
+            paramRawSort = "diff";
+            paramIsAsc = false;
+            break;
     }
     const [ rawSort, setRawSort ] = useState<CompareTimesSortRaw>(paramRawSort);
     const [ isAsc, setIsAsc ] = useState(paramIsAsc);
 
     const handleChangeSort = (event: SelectChangeEvent<CompareTimesSortRaw>) => {
         const sortVal = convertToSort(event.target.value, isAsc);
-        setSearchParams((params) => {
-            params.set("sort", sortVal);
-            return params;
-        }, {replace: true});
         setRawSort(event.target.value);
         setSort(sortVal);
     };
@@ -83,13 +75,9 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
     const onSwitchAsc = () => {
         const newIsAsc = !isAsc;
         const sortVal = convertToSort(rawSort, newIsAsc);
-        setSearchParams((params) => {
-            params.set("sort", sortVal);
-            return params;
-        }, {replace: true});
         setIsAsc(newIsAsc);
         setSort(sortVal);
-    }
+    };
 
     return (
         <Box padding={smallScreen ? 0.5 : 1.5} display="flex" alignItems="center">

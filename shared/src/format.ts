@@ -141,7 +141,7 @@ export function formatTime(time: number) {
     return hours + ":" + minutes + ":" + seconds;
 }
 
-const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"];
+const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"] as const;
 
 export function formatRank(rank: number) {
     return `${ranks[rank - 1]} (${rank})`;
@@ -151,18 +151,18 @@ export function formatSkill(skill: number) {
     return `${(skill * 100).toFixed(3)}%`;
 }
 
-export function getAllowedStyles(game: Game) {
+export function getAllowedStyles(game: Game): Style[] {
     switch (game) {
         case Game.bhop:
-            return bhop_styles;
+            return [...bhop_styles];
         case Game.surf:
-            return surf_styles;
+            return [...surf_styles];
         case Game.fly_trials:
-            return fly_trials_styles;
+            return [...fly_trials_styles];
         case Game.all:
-            return surf_styles;
+            return [...surf_styles];
         default:
-            return surf_styles;
+            return [...surf_styles];
     }
 }
 

@@ -1,8 +1,9 @@
 import { PaletteMode } from "@mui/material";
 import { useState } from "react";
-import { Game, getAllowedStyles, SettingsValues, Style, UserSearchData } from "shared";
-import { useOutletContext, useSearchParams } from "react-router";
+import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, SettingsValues, Style, UserSearchData } from "shared";
+import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
+import { parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsStringEnum, useQueryState } from "nuqs";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -49,83 +50,47 @@ export type MapTimesSortRaw = "name" | "creator" | "date" | "count";
 
 export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
 export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
-const COMPARE_SORTS = ["mapAsc", "mapDesc", "dateAsc", "dateDesc", "timeAsc", "timeDesc", "diffAsc", "diffDesc"];
-export function isCompareTimesSort(value: string): value is CompareTimesSort {
-    return COMPARE_SORTS.includes(value);
-}
+const COMPARE_SORTS: CompareTimesSort[] = ["mapAsc", "mapDesc", "dateAsc", "dateDesc", "timeAsc", "timeDesc", "diffAsc", "diffDesc"] as const;
 
 export function useCompareSort() {
-    const [queryParams] = useSearchParams();
-
-    let paramSort: CompareTimesSort = "diffAsc";
-    const sortParam = queryParams.get("sort");
-    if (sortParam && isCompareTimesSort(sortParam)) {
-        paramSort = sortParam;
-    }
-    return useState<CompareTimesSort>(paramSort);
+    return useQueryState("sort", 
+        parseAsStringEnum<CompareTimesSort>(COMPARE_SORTS)
+        .withDefault("diffAsc")
+        .withOptions({ history: "replace" })
+    );
 }
 
-export function useCourse(): [number, (course: number) => void] {
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    let paramCourse = 0;
-    const styleParam = searchParams.get("course");
-    if (styleParam !== null && !isNaN(+styleParam) && +styleParam >= 0) {
-        paramCourse = +styleParam;
-    }
-
-    const [course, setCourseState] = useState(paramCourse);
-
-    const setCourse = (course: number) => {
-        setCourseState(course);
-        setSearchParams((params) => {
-            params.set("course", course.toString());
-            return params;
-        }, {replace: true});
-    };
-
-    return [course, setCourse];
+export function useCourse() {
+    return useQueryState("course", 
+        parseAsInteger
+        .withDefault(0)
+        .withOptions({ history: "replace" })
+    );
 }
 
-export function useGame(searchName: string = "game", defaultGame?: Game, allowAll?: boolean, disableNav?: boolean): [Game, (game: Game, disableNav?: boolean) => void] {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const context = useOutletContext() as ContextParams;
-    
-    let paramGame = defaultGame ?? context.settings.defaultGame;
-    const gameParam = searchParams.get(searchName);
-    if (gameParam !== null && !isNaN(+gameParam) && Game[+gameParam] !== undefined && (allowAll || +gameParam !== Game.all)) {
-        paramGame = +gameParam;
-    }
-    
-    const [game, setGameState] = useState(paramGame);
-    const setGame = (game: Game) => {
-        setGameState(game);
-        if (disableNav) return;
-        setSearchParams((params) => {
-            params.set(searchName, game.toString());
-            return params;
-        }, {replace: true});
-    };
-    return [game, setGame];
-}
-
-function useStyle(allowAll?: boolean): [Style, (style: Style) => void] {
-    const [searchParams] = useSearchParams();
+export function useGame(allowAll?: boolean) {
     const context = useOutletContext() as ContextParams;
 
-    let paramStyle = context.settings.defaultStyle;
-    const styleParam = searchParams.get("style");
-    if (styleParam !== null && !isNaN(+styleParam) && Style[+styleParam] !== undefined && (allowAll || +styleParam !== Style.all)) {
-        paramStyle = +styleParam;
-    }
-
-    return useState(paramStyle);
+    return useQueryState("game", 
+        parseAsNumberLiteral(allowAll ? allGamesWithAll : allGames)
+        .withDefault(context.settings.defaultGame)
+        .withOptions({ history: "replace", clearOnDefault: false })
+    );
 }
 
-export function useGameStyle(defaultGame?: Game, allowAll?: boolean, disableNav?: boolean) {
-    const [, setSearchParams] = useSearchParams();
-    const [game, setGameState] = useGame("game", defaultGame, allowAll, true);
-    const [style, setStyleState] = useStyle(allowAll);
+function useStyle(allowAll?: boolean) {
+    const context = useOutletContext() as ContextParams;
+
+    return useQueryState("style", 
+        parseAsNumberLiteral(allowAll ? allStylesWithAll : allStyles)
+        .withDefault(context.settings.defaultStyle)
+        .withOptions({ history: "replace", clearOnDefault: false })
+    );
+}
+
+export function useGameStyle(allowAll?: boolean) {
+    const [game, setGameState] = useGame(allowAll);
+    const [style, setStyle] = useStyle(allowAll);
 
     const setGame = (game: Game) => {
         setGameState(game);
@@ -133,38 +98,39 @@ export function useGameStyle(defaultGame?: Game, allowAll?: boolean, disableNav?
         let newStyle = style;
         if (!allowedStyles.includes(style) && !(allowAll && style === Style.all)) {
             newStyle = allowedStyles[0];
-            setStyleState(newStyle);
+            setStyle(newStyle);
         }
-        if (disableNav) return newStyle;
-        setSearchParams((params) => {
-            params.set("game", game.toString());
-            params.set("style", newStyle.toString());
-            return params;
-        }, {replace: true});
         return newStyle;
-    }
+    };
 
-    const setStyle = (style: Style) => {
-        setStyleState(style);
-        if (disableNav) return;
-        setSearchParams((params) => {
-            params.set("game", game.toString());
-            params.set("style", style.toString());
-            return params;
-        }, {replace: true});
-    }
+    return {game, setGame, style, setStyle};
+}
+
+export function useGameStyleNoParams() {
+    const context = useOutletContext() as ContextParams;
+    const [game, setGameState] = useState(context.settings.defaultGame);
+    const [style, setStyle] = useState(context.settings.defaultStyle);
+
+    const setGame = (game: Game) => {
+        setGameState(game);
+        const allowedStyles = getAllowedStyles(game);
+        let newStyle = style;
+        if (!allowedStyles.includes(style)) {
+            newStyle = allowedStyles[0];
+            setStyle(newStyle);
+        }
+        return newStyle;
+    };
 
     return {game, setGame, style, setStyle};
 }
 
 export function useIncludeBonuses() {
-    const [queryParams] = useSearchParams();
-
-    let paramBonuses = true;
-    if (queryParams.get("bonuses") === "false") {
-        paramBonuses = false;
-    }
-    return useState(paramBonuses);
+    return useQueryState("bonuses", 
+        parseAsBoolean
+        .withDefault(true)
+        .withOptions({ history: "replace" })
+    );
 }
 
 export interface UserSearchInfo {
@@ -200,7 +166,7 @@ export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => vo
         setSelectedUser(search.selectedUser);
         setOptions(search.options);
         setIsLoadingOptions(search.loadingOptions);
-    }
+    };
 
     return [search, setUserSearch];
 }
