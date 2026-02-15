@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
-import { Game, Map, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
+import { Game, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { getTimeData } from "../../../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { MAP_THUMB_SIZE } from "../../displays/MapLink";
@@ -66,7 +66,7 @@ function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, 
 
 interface ITimesCardProps {
     userId?: string
-    map?: Map
+    mapId?: string
     game: Game
     style: Style
     course: number
@@ -105,8 +105,12 @@ function TimesCard(props: ITimesCardProps) {
     );
 }
 
+function getGridKey(userId: string | undefined, mapId: string | undefined, game: Game, style: Style, course: number, onlyWRs: boolean | undefined, currentSortBy: TimeSortBy) {
+    return `${userId ?? ""}|${mapId ?? ""}|${game}|${style}|${course}|${!!onlyWRs}|${currentSortBy}`;
+}
+
 function TimesGrid(props: ITimesCardProps) {
-    const { userId, map, game, style, course, onlyWRs, hideUser, hideMap,
+    const { userId, mapId, game, style, course, onlyWRs, hideUser, hideMap,
         showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes,
         gridApiRef, pageSize: propPageSize } = props;
 
@@ -122,6 +126,8 @@ function TimesGrid(props: ITimesCardProps) {
 
     const sortParam = searchParams.get("sort");
     const [currentSortBy, setCurrentSortBy] = useState<TimeSortBy>(sortParam ? +sortParam : defaultSort);
+
+    const [gridKey, setGridKey] = useState(getGridKey(userId, mapId, game, style, course, onlyWRs, currentSortBy));
 
     let pageSize = propPageSize ?? 10;
     if (shortScreen) pageSize = 10;
@@ -147,8 +153,12 @@ function TimesGrid(props: ITimesCardProps) {
 
     // Reset page to 0 when changing something that would load new data
     useEffect(() => {
-        apiRef.current?.setPage(0);
-    }, [userId, map, game, style, course, onlyWRs, currentSortBy, apiRef]);
+        const newKey = getGridKey(userId, mapId, game, style, course, onlyWRs, currentSortBy);
+        if (newKey !== gridKey) {
+            apiRef.current?.setPage(0);
+            setGridKey(newKey);
+        }
+    }, [userId, mapId, game, style, course, onlyWRs, currentSortBy, apiRef, gridKey]);
 
     const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
 
@@ -212,13 +222,13 @@ function TimesGrid(props: ITimesCardProps) {
         [course, currentSortBy, game, hideMap, hideUser, isCompact, placementWidth, showPlacement, showPlacementOrdinals, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
-        if (!allowOnlyWRs && !userId && !map) {
+        if (!allowOnlyWRs && !userId && !mapId) {
             setRowCount(0);
             return { rows: [], rowCount: 0 }
         }
 
         setIsLoading(true);
-        const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, map, onlyWRs);
+        const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, mapId, onlyWRs);
         setIsLoading(false);
 
         if (onLoadTimes && timeData?.times) {
@@ -234,7 +244,7 @@ function TimesGrid(props: ITimesCardProps) {
             rows: timeData.times,
             rowCount: timeData.pagination.totalItems
         }
-    }, [allowOnlyWRs, course, game, map, onLoadTimes, onlyWRs, style, userId]);
+    }, [allowOnlyWRs, course, game, mapId, onLoadTimes, onlyWRs, style, userId]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {

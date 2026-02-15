@@ -69,7 +69,7 @@ export async function getTimeData(
     game?: Game, 
     style?: Style, 
     userId?: string, 
-    map?: Map, 
+    mapId?: string, 
     onlyWR?: boolean
 ): Promise<{ times: Time[], pagination: Pagination } | undefined> {
     
@@ -85,8 +85,8 @@ export async function getTimeData(
             onlyWR: !!onlyWR
         });
     }
-    else if (map) {
-        res = await tryGetRequest("map/times/" + map.id, {
+    else if (mapId) {
+        res = await tryGetRequest("map/times/" + mapId, {
             start: start,
             end: end,
             sort: sortBy,

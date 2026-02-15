@@ -426,7 +426,7 @@ function MapsPage() {
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
             </Box>
             <Box padding={1}>
-                <TimesCard defaultSort={TimeSortBy.TimeAsc} map={selectedMap} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
+                <TimesCard defaultSort={TimeSortBy.TimeAsc} mapId={id} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
         </Box>
     );
