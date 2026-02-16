@@ -236,6 +236,7 @@ function MapSearch(props: MapSearchProps) {
         autoComplete
         autoHighlight
         blurOnSelect
+        disableClearable={selectedMap !== undefined}
         renderInput={(params) =>
             <TextField {...params}
                 placeholder="Search by name or creator"

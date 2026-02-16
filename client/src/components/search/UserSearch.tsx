@@ -142,6 +142,8 @@ function UserSearch(props: IUserSearchProps) {
             blurOnSelect
             freeSolo
             includeInputInList
+            disableClearable
+            selectOnFocus
             size="small"
             renderInput={(params) => 
                 <TextField {...params} 
