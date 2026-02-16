@@ -20,7 +20,6 @@ function ColorChip(props: ColorChipProps) {
                 border={outlined ? `1px solid ${color}` : undefined} 
                 bgcolor={outlined ? undefined : color}
                 borderRadius="16px"
-                // lineHeight={1.85}
                 pr={1.25} 
                 pl={1.25} 
                 pt={0.375}
