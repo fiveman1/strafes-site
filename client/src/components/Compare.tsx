@@ -5,7 +5,7 @@ import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
 import UserSearch from "./search/UserSearch";
 import UserCard from "./cards/UserCard";
-import { Game, Style, Time, User, formatDiff, formatStyle, formatTime } from "shared";
+import { Game, Style, Time, User, UserInfo, formatDiff, formatStyle, formatTime } from "shared";
 import { useOutletContext } from "react-router";
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 import { getAllTimesForUser, getUserData } from "../api/api";
@@ -39,7 +39,7 @@ function getCardHeight(numUsers: number) {
     return CARD_SIZE + ((CARD_SIZE * 0.3) * numUsers) + (numUsers - 1);
 }
 
-function shouldIncludeTimes(times: CompareTime[], userIds: string[], filterMode: CompareSlice) {
+function shouldIncludeTimes(times: CompareTime[], userIds: number[], filterMode: CompareSlice) {
     switch (filterMode) {
         case CompareSlice.FirstWins:
             return times.length > 1 && times[0].userId === userIds[0] && times[0].time !== times[1].time;
@@ -95,9 +95,9 @@ function CompareCard(props: ICompareCardProps) {
 
         const firstUserId = firstUser.userId;
         const secondUserId = secondUser.userId;
-        const mapToTime = new Map<number, Map<string, Time>>();
+        const mapToTime = new Map<number, Map<number, Time>>();
         for (const time of firstTimes) {
-            mapToTime.set(time.mapId, new Map<string, Time>([[firstUserId, time]]));
+            mapToTime.set(time.mapId, new Map([[firstUserId, time]]));
         }
 
         for (const time of secondTimes) {
@@ -106,7 +106,7 @@ function CompareCard(props: ICompareCardProps) {
                 map.set(secondUserId, time);
             }
             else {
-                mapToTime.set(time.mapId, new Map<string, Time>([[secondUserId, time]]));
+                mapToTime.set(time.mapId, new Map([[secondUserId, time]]));
             }
         }
 
@@ -497,10 +497,7 @@ interface CompareTimeInfo {
     times: CompareTime[]
 }
 
-interface CompareTime {
-    username: string
-    userId: string
-    userThumb?: string
+interface CompareTime extends UserInfo {
     userColor: string
     time: number
     date: string

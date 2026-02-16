@@ -5,7 +5,7 @@
     "description": "Server for strafes.fiveman1.net",
     "type": "module",
     "scripts": {
-        "dev": "tsx watch --clear-screen=false --env-file ../.env src/index.ts --dev",
+        "dev": "tsx watch --clear-screen=false --env-file ../.env src/index.ts",
         "start": "node --env-file ../.env dist/index.js",
         "build": "rm -rf dist && npx tsc"
     },
@@ -13,6 +13,7 @@
     "author": "fiveman1",
     "license": "MIT",
     "dependencies": {
+        "@vinejs/vine": "^4.3.0",
         "apicache": "^1.6.3",
         "axios": "^1.10.0",
         "cookie-parser": "^1.4.7",

@@ -20,7 +20,7 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
     }
 }
 
-export async function getUserIdFromName(username: string): Promise<string | undefined> {
+export async function getUserIdFromName(username: string): Promise<number | undefined> {
     const params = {
         username: username
     };

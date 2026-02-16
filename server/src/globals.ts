@@ -67,7 +67,7 @@ export class GlobalsClient {
         return this._pool;
     }
 
-    public async getMapWR(mapId: string, game: Game, style: Style, course: number): Promise<Time | undefined> {
+    public async getMapWR(mapId: number, game: Game, style: Style, course: number): Promise<Time | undefined> {
         const query = `SELECT globals.*, users.username, maps.name as map_name
             FROM globals 
             INNER JOIN users ON globals.user_id = users.user_id 
@@ -84,7 +84,7 @@ export class GlobalsClient {
     }
 
     // TODO: This is only being used to get total WR counts, replace this with something that just does that
-    public async getUserWRs(userId: string, game: Game, style: Style, course?: number): Promise<Time[] | undefined> {
+    public async getUserWRs(userId: number, game: Game, style: Style, course?: number): Promise<Time[] | undefined> {
         let query = `SELECT globals.*, users.username, maps.name as map_name 
         FROM globals 
         INNER JOIN users ON globals.user_id = users.user_id 
@@ -119,7 +119,7 @@ export class GlobalsClient {
         return records.map(GlobalsClient.recordToTime);
     }
 
-    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: string): Promise<{ total: number; wrs: Time[]; }> {
+    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number): Promise<{ total: number; wrs: Time[]; }> {
         let query = `SELECT globals.*, users.username, maps.name as map_name, COUNT(globals.time_id) OVER() as totalCount
         FROM globals 
         INNER JOIN users ON globals.user_id = users.user_id 
@@ -196,7 +196,7 @@ export class GlobalsClient {
             style: record.style,
             id: record.time_id,
             course: record.course,
-            userId: record.user_id,
+            userId: +record.user_id,
             username: record.username,
             placement: 1
         };
@@ -279,7 +279,7 @@ export class GlobalsClient {
             return;
         }
 
-        const userIdSet = new Set<string>();
+        const userIdSet = new Set<number>();
         const userRows = [];
         for (const wr of wrs) {
             if (userIdSet.has(wr.userId)) continue;
@@ -335,7 +335,7 @@ export class GlobalsClient {
         return rows.length === mapIds.length;
     }
 
-    public async getMap(mapId: string | number): Promise<StrafesMap | undefined> {
+    public async getMap(mapId: number): Promise<StrafesMap | undefined> {
         const query = `SELECT * FROM maps WHERE map_id = ?;`;
         const values = [mapId];
         const [[row]] = await this.pool.query<MapSQLRow[]>(query, values);

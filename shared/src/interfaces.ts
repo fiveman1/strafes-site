@@ -1,5 +1,5 @@
 export interface UserInfo {
-    userId: string
+    userId: number
     username: string
     userRole?: UserRole
     userCountry?: string
@@ -124,13 +124,13 @@ export enum ModerationStatus {
 
 export interface UserSearchData {
     username: string
-    userId?: string
+    userId?: number
     previousUsernames?: string[] | null
     userThumb?: string
 }
 
 export interface UserSearchDataComplete extends UserSearchData {
-    userId: string
+    userId: number
     previousUsernames: string[] | null
     userThumb?: string
 }
@@ -155,7 +155,7 @@ export interface LeaderboardCount extends UserInfo {
 }
 
 export interface LoginUser {
-    userId: string
+    userId: number
     username: string
     displayName: string
     createdAt: number

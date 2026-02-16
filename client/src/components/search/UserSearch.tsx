@@ -94,7 +94,7 @@ function UserSearch(props: IUserSearchProps) {
             return;
         }
 
-        let userId: string | undefined;
+        let userId: number | undefined;
         if (typeof search === "string") {
             setSelectedUser({username: search});
             userId = await getUserIdFromName(search);
@@ -112,7 +112,7 @@ function UserSearch(props: IUserSearchProps) {
                 navigate({pathname: `/users/${userId}`, search: location.search});
             }
             else {
-                setUserId(userId);
+                setUserId(userId.toString());
             }
         }
         else {

@@ -2,8 +2,8 @@ import { exit } from "process";
 import { Api } from "./client.js";
 import memoize from "memoize";
 import { Game, RankSortBy, Style, TimeSortBy } from "shared";
+import { IS_DEV_MODE } from "../util.js";
 
-const IS_DEBUG = process.env.DEBUG === "true";
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
     console.error("Missing StrafesNET API key");
@@ -27,7 +27,7 @@ export async function getPlacements(timeIds: string[]) {
         return res.data.data;
     }
     catch (err) {
-        if (IS_DEBUG) {
+        if (IS_DEV_MODE) {
             console.error(err);
         }
         return undefined;
@@ -35,11 +35,11 @@ export async function getPlacements(timeIds: string[]) {
 }
 
 export const getTimes = memoize(getTimesCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-async function getTimesCore(userId: string | number | undefined, mapId: string | number | undefined, pageSize: number, pageNum: number, game: Game | undefined, style: Style | undefined, course: number, sort?: TimeSortBy) {
+async function getTimesCore(userId: number | undefined, mapId: number | undefined, pageSize: number, pageNum: number, game: Game | undefined, style: Style | undefined, course: number, sort?: TimeSortBy) {
     try {
         const res = await STRAFES_CLIENT.time.timeList({
-            user_id: userId !== undefined ? +userId : undefined,
-            map_id: mapId !== undefined ? +mapId : undefined,
+            user_id: userId,
+            map_id: mapId,
             page_size: pageSize,
             page_number: pageNum,
             game_id: game === Game.all ? undefined : game,
@@ -51,7 +51,7 @@ async function getTimesCore(userId: string | number | undefined, mapId: string |
         return res.data;
     }
     catch (err) {
-        if (IS_DEBUG) {
+        if (IS_DEV_MODE) {
             console.error(err);
         }
         return undefined;
@@ -59,9 +59,9 @@ async function getTimesCore(userId: string | number | undefined, mapId: string |
 }
 
 export const getUserRank = memoize(getUserRankCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-async function getUserRankCore(userId: string | number, game: Game, style: Style) {
+async function getUserRankCore(userId: number, game: Game, style: Style) {
     try {
-        const res = await STRAFES_CLIENT.user.rankList(+userId, {
+        const res = await STRAFES_CLIENT.user.rankList(userId, {
             game_id: game,
             style_id: style,
             mode_id: 0
@@ -70,7 +70,7 @@ async function getUserRankCore(userId: string | number, game: Game, style: Style
         return res.data.data;
     }
     catch (err) {
-        if (IS_DEBUG) {
+        if (IS_DEV_MODE) {
             console.error(err);
         }
         return undefined;
@@ -92,7 +92,7 @@ async function getRanksCore(pageSize: number, pageNum: number, game: Game, style
         return res.data;
     }
     catch (err) {
-        if (IS_DEBUG) {
+        if (IS_DEV_MODE) {
             console.error(err);
         }
         return undefined;
@@ -100,13 +100,13 @@ async function getRanksCore(pageSize: number, pageNum: number, game: Game, style
 }
 
 export const getUserInfo = memoize(getUserInfoCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-async function getUserInfoCore(userId: string | number) {
+async function getUserInfoCore(userId: number) {
     try {
-        const res = await STRAFES_CLIENT.user.userDetail(+userId);
+        const res = await STRAFES_CLIENT.user.userDetail(userId);
         return res.data.data;
     }
     catch (err) {
-        if (IS_DEBUG) {
+        if (IS_DEV_MODE) {
             console.error(err);
         }
         return undefined;

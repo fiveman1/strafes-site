@@ -1,14 +1,14 @@
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
-import { CODE_TO_COUNTRY, Game, LoginUser, SettingsValues, Style } from "shared";
+import { COUNTRIES, LoginUser, SettingsValues } from "shared";
 import { createHash, randomBytes } from "crypto";
-
-// Environment params
-const IS_DEBUG = process.env.DEBUG === "true";
+import vine, { errors } from "@vinejs/vine";
+import * as validators from "./validators.js";
+import { IS_DEV_MODE } from "./util.js";
 
 // If running the dev site, go back across the proxy
-const AFTER_AUTH_URL = process.argv.splice(2)[0] === "--dev" ? "http://localhost:3000/" : "/";
+const AFTER_AUTH_URL = IS_DEV_MODE ? "http://localhost:3000/" : "/";
 
 export class AuthClient {
 
@@ -65,7 +65,7 @@ export class AuthClient {
         }
 
         const expiresAt = new Date().getTime() + (60 * 10000); // 1 minute
-        const options = AuthClient.createCookieOptions(new Date(expiresAt));
+        const options = this.createCookieOptions(new Date(expiresAt));
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);
 
@@ -89,7 +89,7 @@ export class AuthClient {
             const session = AuthClient.createSessionObject(sessionToken, AuthClient.hashSessionToken(sessionToken), tokens);
             if (session) {
                 userId = session.userId;
-                response.cookie("session", sessionToken, AuthClient.createCookieOptions(session.refreshExpiresAt));
+                response.cookie("session", sessionToken, this.createCookieOptions(session.refreshExpiresAt));
                 await this.insertSessionToDB(session);
             }
         }
@@ -124,7 +124,7 @@ export class AuthClient {
         }
 
         return {
-            userId: userInfo.sub,
+            userId: +userInfo.sub,
             username: userInfo.preferred_username,
             displayName: userInfo.name,
             createdAt: userInfo.created_at,
@@ -172,37 +172,26 @@ export class AuthClient {
         response.status(200).json(settings);
     }
 
+    protected readonly settingsValidator = vine.create({
+        game: validators.game(),
+        style: validators.style(),
+        theme: vine.enum(["light", "dark"]),
+        maxDaysRelative: vine.number().withoutDecimals().range([0, 9999]),
+        country: vine.enum(COUNTRIES.map((country) => country.code)).optional()
+    });
+
     public async updateSettings(request: Request, response: Response) {
-        const game = request.body.game;
-        const style = request.body.style;
-        const theme = request.body.theme;
-        const maxDaysRelative = request.body.maxDaysRelative;
-        const country = request.body.country;
-
-        if (!game || isNaN(+game) || Game[+game] === undefined || +game === Game.all) {
-            response.status(400).json({error: "Invalid game"});
+        const [error, result] = await this.settingsValidator.tryValidate(request.body);
+        if (error) {
+            response.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input"});
             return;
         }
-
-        if (!style || isNaN(+style) || Style[+style] === undefined || +style == Style.all) {
-            response.status(400).json({error: "Invalid style"});
-            return;
-        }
-
-        if (theme !== "light" && theme !== "dark") {
-            response.status(400).json({error: "Invalid theme"});
-            return;
-        }
-
-        if (maxDaysRelative === undefined || isNaN(+maxDaysRelative) || +maxDaysRelative < 0 || +maxDaysRelative > 9999) {
-            response.status(400).json({error: "Invalid max days relative dates"});
-            return;
-        }
-
-        if (country && (typeof country !== "string" || CODE_TO_COUNTRY.get(country) === undefined)) {
-            response.status(400).json({error: "Invalid country"});
-            return;
-        }
+        
+        const game = result.game;
+        const style = result.style;
+        const theme = result.theme;
+        const maxDaysRelative = result.maxDaysRelative;
+        const country = result.country;
 
         const user = await this.getLoggedInUser(request, response);
         
@@ -212,12 +201,12 @@ export class AuthClient {
         }
 
         await this.updateSettingsToDB({
-            userId: user.userId,
-            game: +game,
-            style: +style,
+            userId: user.userId.toString(),
+            game: game,
+            style: style,
             theme: theme,
-            maxDaysRelative: +maxDaysRelative,
-            countryCode: country
+            maxDaysRelative: maxDaysRelative,
+            countryCode: country ?? null
         });
 
         response.status(200).json({success: true});
@@ -279,7 +268,7 @@ export class AuthClient {
             return undefined;
         }
 
-        response.cookie("session", newSession.sessionToken, AuthClient.createCookieOptions(newSession.refreshExpiresAt));
+        response.cookie("session", newSession.sessionToken, this.createCookieOptions(newSession.refreshExpiresAt));
         await this.insertSessionToDB(newSession);
         return newSession;
     }
@@ -311,7 +300,7 @@ export class AuthClient {
         await this.pool.query(query, [session.sessionHash]);
     }
 
-    public async loadSettingsFromDB(userId: string): Promise<SettingsValues | undefined> {
+    public async loadSettingsFromDB(userId: number): Promise<SettingsValues | undefined> {
         const query = `SELECT * FROM settings WHERE userId=?`;
         const [[row]] = await this.pool.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
         if (!row) {
@@ -321,16 +310,16 @@ export class AuthClient {
         return AuthClient.settingsRowToValues(row);
     }
 
-    public async loadSettingsFromDBMulti(userIds: string[]): Promise<Map<string, SettingsValues> | undefined> {
+    public async loadSettingsFromDBMulti(userIds: number[]): Promise<Map<number, SettingsValues> | undefined> {
         const query = `SELECT * FROM settings WHERE userId IN (?);`;
         const [rows] = await this.pool.query<(SettingsRow & RowDataPacket)[]>(query, [userIds]);
         if (!rows) {
             return undefined;
         }
 
-        const userIdToSettings = new Map<string, SettingsValues>();
+        const userIdToSettings = new Map<number, SettingsValues>();
         for (const row of rows) {
-            userIdToSettings.set(row.userId, AuthClient.settingsRowToValues(row));
+            userIdToSettings.set(+row.userId, AuthClient.settingsRowToValues(row));
         }
 
         return userIdToSettings;
@@ -367,9 +356,9 @@ export class AuthClient {
         return randomBytes(64).toString("hex").slice(0, 64);
     }
 
-    protected static createCookieOptions(expires: Date): CookieOptions {
+    protected createCookieOptions(expires: Date): CookieOptions {
         return {
-            secure: !IS_DEBUG,
+            secure: !this.baseURL.startsWith("http://localhost"),
             httpOnly: true,
             signed: true,
             expires: expires

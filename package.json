@@ -14,8 +14,8 @@
         "dev:frontend": "yarn workspace client run dev",
         "dev:backend": "yarn workspace server run dev",
         "dev:shared": "yarn workspace shared run dev",
-        "dev": "concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
+        "dev": "NODE_ENV=development concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
         "build": "yarn workspace shared run build && yarn workspace client run build && yarn workspace server run build",
-        "start": "yarn workspace server run start"
+        "start": "NODE_END=production yarn workspace server run start"
     }
 }

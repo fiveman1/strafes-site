@@ -4,9 +4,9 @@ import { tryGetRequest } from "./requests.js";
 
 const RBHOP_GROUP_ID = 2607715;
 
-async function getUsersWithRole(role: UserRole): Promise<string[]> {
+async function getUsersWithRole(role: UserRole): Promise<number[]> {
     let cursor = "";
-    const users : string[] = [];
+    const users : number[] = [];
     do {
         const res = await tryGetRequest(`https://groups.roproxy.com/v1/groups/${RBHOP_GROUP_ID}/roles/${role}/users`, {
             limit: 100,
@@ -21,7 +21,7 @@ async function getUsersWithRole(role: UserRole): Promise<string[]> {
         const data = res.data;
         cursor = data.nextPageCursor;
         for (const user of data.data) {
-            users.push((user.userId as number).toString());
+            users.push(user.userId as number);
         }
 
     } while (cursor);
@@ -30,8 +30,8 @@ async function getUsersWithRole(role: UserRole): Promise<string[]> {
 }
 
 export const getAllUsersToRoles = memoize(getAllUsersToRolesCore, {maxAge: 60 * 60 * 1000});
-async function getAllUsersToRolesCore(): Promise<Map<string, UserRole>> {
-    const roles = new Map<string, UserRole>();
+async function getAllUsersToRolesCore(): Promise<Map<number, UserRole>> {
+    const roles = new Map<number, UserRole>();
 
     const promises = [];
     for (const role of Object.values(UserRole)) {

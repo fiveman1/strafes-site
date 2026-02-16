@@ -46,7 +46,7 @@ function ProfileCard(props: IProfileCardProps) {
                 setRankLoading(false);
                 return;
             }
-            if (rankData.userId === userId) {
+            if (rankData.userId === +userId) {
                 setRankLoading(false);
                 setRank(rankData);
             }

@@ -23,7 +23,7 @@ async function setUserRolesForList(users: UserInfo[]) {
 }
 
 async function setProfileInfoForList(client: AuthClient, users: UserInfo[]) {
-    const userIds = Array.from(new Set<string>(users.map((val) => val.userId)));
+    const userIds = Array.from(new Set<number>(users.map((val) => val.userId)));
     
     const userIdToSettings = await client.loadSettingsFromDBMulti(userIds);
     if (!userIdToSettings) {
@@ -48,7 +48,7 @@ export interface ThumbnailData {
 }
 
 export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boolean) {
-    const notCachedIds = new Set<string>();
+    const notCachedIds = new Set<number>();
 
     for (const user of users) {
         const userId = user.userId;
@@ -86,7 +86,7 @@ export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boole
 
     for (const user of users) {
         if (user.userThumb === undefined) {
-            user.userThumb = idToThumb.get(+user.userId);
+            user.userThumb = idToThumb.get(user.userId);
         }
     }
 }
