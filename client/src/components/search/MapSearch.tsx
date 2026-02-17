@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from "react";
-import { Autocomplete, AutocompleteChangeReason, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import React, { useCallback, useEffect, useState } from "react";
+import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, Map as StrafesMap } from "shared";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../../common/common";
@@ -7,8 +7,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import MapThumb from "../displays/MapThumb";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
-
-const LISTBOX_PADDING = 8; // px
 
 type ItemData = Array<[React.ReactElement, StrafesMap]>;
 interface MyRowComponentProps {
@@ -20,11 +18,6 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
     const theme = useTheme();
 
     const dataSet = itemData[index];
-    const inlineStyle = {
-        ...style,
-        top: ((style.top as number) ?? 0) + LISTBOX_PADDING,
-    };
-
     const { ...optionProps } = dataSet[0];
     const mapOption = dataSet[1];
 
@@ -33,7 +26,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
             component="li"
             {...optionProps}
             key={mapOption.id}
-            style={inlineStyle}
+            style={style}
         >
             <MapThumb size={70} map={mapOption} />
             <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
@@ -75,21 +68,19 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
 
 interface ListboxComponentProps {
     setListRef: React.Dispatch<React.SetStateAction<ListImperativeAPI | null>>
+    selectedMapId: number | undefined
 }
 
 // Adapter for react-window v2
 const ListboxComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLElement> & ListboxComponentProps> (
 function ListboxComponent(props, ref) {
-    const { children, setListRef, ...other } = props;
-    const itemData: ItemData = [];
+    const { children, setListRef, selectedMapId, ...other } = props;
+    const [ listRef, setMyListRef ] = useListCallbackRef();
     const smallScreen = useMediaQuery("@media screen and (max-height: 1000px)");
 
-    (children as ItemData).forEach((item) => {
-        itemData.push(item);
-        if ('children' in item && Array.isArray(item.children)) {
-            itemData.push(...item.children);
-        }
-    });
+    const itemData = children as ItemData;
+
+    const selectedIndex = itemData.findIndex((item) => item[1].id === selectedMapId);
 
     const itemCount = itemData.length;
     const itemSize = 80;
@@ -99,18 +90,29 @@ function ListboxComponent(props, ref) {
     const { className, ...otherProps } = other;
     delete otherProps.style;
 
+    useEffect(() => {
+        if (listRef && selectedIndex !== -1) {
+            listRef.scrollToRow({index: selectedIndex, align: "start"});
+        }
+    }, [listRef, selectedIndex]);
+
+    const updateListRef = useCallback((ref: ListImperativeAPI) => {
+        setListRef(ref);
+        setMyListRef(ref);
+    }, [setListRef, setMyListRef]);
+
     return (
-        <div ref={ref} {...otherProps}>
+        <div ref={ref} {...otherProps} >
             <VirtualizedList
-                listRef={setListRef}
+                listRef={updateListRef}
                 className={className}
-                key={itemCount}
+                key="map-search-list"
                 rowCount={itemCount}
                 rowHeight={itemSize}
                 rowComponent={MapRowComponent}
                 rowProps={{ itemData }}
                 style={{
-                    height: (itemSize * Math.min(itemCount, rowCount)) + 2 * LISTBOX_PADDING,
+                    height: (itemSize * Math.min(itemCount, rowCount)),
                     width: "100%",
                 }}
                 overscanCount={5}
@@ -123,10 +125,8 @@ function ListboxComponent(props, ref) {
 const StyledPopper = styled(Popper)({
     [`& .${autocompleteClasses.listbox}`]: {
         boxSizing: "border-box",
-        "& ul": {
-            padding: 0,
-            margin: 0,
-        },
+        padding: 0,
+        margin: 0
     },
 });
 
@@ -134,10 +134,11 @@ interface MapSearchProps extends MapDetailsProps {
     maps: StrafesMap[]
 }
 
+const ADORNMENT_SIZE = 40;
+
 function MapSearch(props: MapSearchProps) {
     const { maps, selectedMap, setSelectedMap } = props;
     
-    const [ open, setOpen ] = useState(false);
     const [ listRef, setListRef ] = useListCallbackRef(null);
     const [ inputValue, setIntputValue ] = useState("");
 
@@ -145,12 +146,6 @@ function MapSearch(props: MapSearchProps) {
         const filteredMaps: StrafesMap[] = [];
         const alreadyFilteredMaps = new Set<number>();
         const search = inputValue.toLowerCase();
-
-        // Selected map first if no input
-        if (search === "" && selectedMap) {
-            filteredMaps.push(selectedMap);
-            alreadyFilteredMaps.add(selectedMap.id);
-        }
 
         // Exact map name matches
         for (const map of options) {
@@ -185,14 +180,9 @@ function MapSearch(props: MapSearchProps) {
         }
 
         return filteredMaps;
-    }, [selectedMap]);
+    }, []);
 
-    const onSelect = useCallback((map: StrafesMap | undefined, reason: AutocompleteChangeReason) => {
-        if (reason === "clear") {
-            // Always close the seach when clearing it out
-            setOpen(false);
-        }
-
+    const onSelect = useCallback((map: StrafesMap | undefined) => {
         setSelectedMap(map);
     }, [setSelectedMap]);
 
@@ -205,12 +195,10 @@ function MapSearch(props: MapSearchProps) {
         const realInputValue = selectedMap?.name === inputValue ? "" : inputValue;
         const currentOptions = filterOptions(maps, realInputValue);
         const index = currentOptions.findIndex((val) => val.id === option.id);
-        if (index >= 0) {
+        if (index !== -1) {
             listRef.scrollToRow({index: index});
         }
     }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
-
-    const adornmentSize = 40;
 
     return (
     <Autocomplete
@@ -225,11 +213,8 @@ function MapSearch(props: MapSearchProps) {
         value={selectedMap ?? null}
         inputValue={inputValue}
         filterOptions={(options, state) => filterOptions(options, state.inputValue)}
-        onChange={(e, v, r) => onSelect(v ?? undefined, r)}
+        onChange={(e, v) => onSelect(v ?? undefined)}
         onInputChange={(e, v) => setIntputValue(v)}
-        open={open}
-        onOpen={() => setOpen(true)}
-        onClose={() => setOpen(false)}
         onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}
         isOptionEqualToValue={(opt, val) => opt.id === val.id}
         options={maps}
@@ -252,9 +237,9 @@ function MapSearch(props: MapSearchProps) {
                     input: { 
                         ...params.InputProps,
                         startAdornment: (
-                            <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${adornmentSize}px`}}>
+                            <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${ADORNMENT_SIZE}px`}}>
                                 {selectedMap ?
-                                <MapThumb size={adornmentSize} map={selectedMap} />
+                                <MapThumb size={ADORNMENT_SIZE} map={selectedMap} />
                                 :  
                                 <SearchIcon />}
                             </InputAdornment> 
@@ -272,7 +257,8 @@ function MapSearch(props: MapSearchProps) {
         slotProps={{
             listbox: {
                 component: ListboxComponent,
-                setListRef: setListRef
+                setListRef: setListRef,
+                selectedMapId: selectedMap?.id
             // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any
