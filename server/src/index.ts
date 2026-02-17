@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo, WRCount } from "shared";
 import { calcRank, IS_DEV_MODE, safeQuoteText } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
@@ -336,7 +336,6 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     for (let i = 0; i < resolved.length; ++i) {
         const wrs = resolved[i];
         const counts = getUserWRCounts(wrs);
-        if (!counts.loaded) continue;
         rankArr[i].mainWrs = counts.mainWrs;
         rankArr[i].bonusWrs = counts.bonusWrs;
     }
@@ -454,13 +453,11 @@ app.get("/api/user/times/wrs/:id", rateLimitSettings, cache("5 minutes"), async 
     res.status(200).json(getUserWRCounts(wrs));
 });
 
-function getUserWRCounts(wrs?: Time[]) {
+function getUserWRCounts(wrs?: Time[]): WRCount {
     let mainWrs = 0;
     let bonusWrs = 0;
-    let loaded = false;
 
     if (wrs !== undefined) {
-        loaded = true;
         for (const wr of wrs) {
             if (wr.course === 0) {
                 mainWrs += 1;
@@ -472,7 +469,6 @@ function getUserWRCounts(wrs?: Time[]) {
     }
 
     return {
-        loaded: loaded,
         mainWrs: mainWrs,
         bonusWrs: bonusWrs
     };

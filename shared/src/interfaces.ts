@@ -52,14 +52,12 @@ export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.h
 export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity] as const;
 export const fly_trials_styles = [Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe] as const;
 
-export interface Rank extends UserInfo {
+export interface Rank extends UserInfo, Partial<WRCount> {
     id: number
     style: Style
     game: Game
     rank: number
     skill: number
-    mainWrs?: number
-    bonusWrs?: number
     placement?: number
 }
 
@@ -152,6 +150,11 @@ export interface LeaderboardCount extends UserInfo {
     bonusCount: number
     earliestTime: Time
     latestTime: Time
+}
+
+export interface WRCount {
+    mainWrs: number
+    bonusWrs: number
 }
 
 export interface LoginUser {

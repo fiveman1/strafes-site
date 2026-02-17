@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues, WRCount } from "shared";
 import { JsonObject } from "../common/utils";
 
 async function tryGetRequest(url: string, params?: JsonObject) {
@@ -139,12 +139,6 @@ export async function getCompletionsForUser(userId: string, game: Game, style: S
     return res.data.completions;
 }
 
-export interface WRCount {
-    loaded: boolean,
-    mainWrs: number,
-    bonusWrs: number
-}
-
 export async function getNumWRsForUser(userId: string, game: Game, style: Style): Promise<WRCount | undefined> {
     const res = await tryGetRequest("user/times/wrs/" + userId, {
         game: game,
@@ -152,9 +146,8 @@ export async function getNumWRsForUser(userId: string, game: Game, style: Style)
     });
     
     if (!res) return undefined;
-    const data = res.data as WRCount;
     
-    if (!data.loaded) return undefined;
+    const data = res.data as WRCount;
 
     return data;
 }
