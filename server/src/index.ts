@@ -5,7 +5,7 @@ import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo, WRCount } from "shared";
-import { calcRank, IS_DEV_MODE, safeQuoteText } from "./util.js";
+import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached, tryPostCached } from "./requests.js";
@@ -16,6 +16,7 @@ import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
+import escapeHTML from "escape-html";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -906,13 +907,15 @@ app.get("*splat", async (req, res): Promise<any> => {
                 }
             }
         }
-        // Don't give anyone an XSS attack (safeQuoteText)
-        html = html.replace("__META_OG_TITLE__", safeQuoteText(title));
-        html = html.replaceAll("__META_DESCRIPTION__", safeQuoteText(description));
+        
+        // Don't give anyone an XSS attack
+        html = html.replace("__META_OG_TITLE__", escapeHTML(title));
+        html = html.replaceAll("__META_DESCRIPTION__", escapeHTML(description));
 
         if (GOOGLE_SITE_VERIFICATION) {
-            html = html.replace("__GOOGLE_SITE_VERIFICATION__", GOOGLE_SITE_VERIFICATION);
+            html = html.replace("__GOOGLE_SITE_VERIFICATION__", escapeHTML(GOOGLE_SITE_VERIFICATION));
         }
+        
         return res.send(html);
     }
     catch {
