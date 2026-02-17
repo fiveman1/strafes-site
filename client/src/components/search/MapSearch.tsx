@@ -115,7 +115,7 @@ function ListboxComponent(props, ref) {
                     height: (itemSize * Math.min(itemCount, rowCount)),
                     width: "100%",
                 }}
-                overscanCount={5}
+                overscanCount={15}
                 tagName="ul"
             />
         </div>
