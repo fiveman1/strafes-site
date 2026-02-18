@@ -20,7 +20,7 @@ STRAFES_KEY=<your key>
 
 Create a MySQL database named `strafes_auth_users`
 
-Create the `sessions` and `settings` table (see `auth.sql`)
+Create the `sessions` and `settings` table (see `server/sql/auth.sql`)
 
 Add the following to your `.env`
 

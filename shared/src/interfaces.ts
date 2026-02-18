@@ -166,10 +166,34 @@ export interface LoginUser {
     thumbnailUrl: string
 }
 
+export interface LoginUserWithInfo extends LoginUser {
+    settings: SettingsValues | undefined
+}
+
 export interface SettingsValues {
     defaultGame: Game
     defaultStyle: Style
     maxDaysRelativeDates: number
     theme: "dark" | "light"
     country: string | undefined
+}
+
+export interface TierVotingEligibilityInfo {
+    moderationStatus: ModerationStatus
+    bhopCompletions: number
+    surfCompletions: number
+}
+
+export function isEligibleForVoting(info: TierVotingEligibilityInfo, game: Game) {
+    return info.moderationStatus === ModerationStatus.Whitelisted ||
+        (game === Game.bhop && info.bhopCompletions >= 20) ||
+        (game === Game.surf && info.surfCompletions >= 20);
+}
+
+export interface MapTierInfo {
+    mapId: number
+    userId: number
+    tier: number
+    updatedAt: string
+    weight: number
 }

@@ -1,7 +1,7 @@
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
-import { COUNTRIES, LoginUser, SettingsValues } from "shared";
+import { COUNTRIES, LoginUser, LoginUserWithInfo, SettingsValues } from "shared";
 import { createHash, randomBytes } from "crypto";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
@@ -29,7 +29,7 @@ export class AuthClient {
 
     protected constructor(config: client.Configuration, dbUser: string, dbPassword: string, baseURL: string) {
         this.config = config;
-        this.pool =  mysql.createPool({
+        this.pool = mysql.createPool({
             host: "localhost",
             user: dbUser,
             password: dbPassword,
@@ -69,7 +69,7 @@ export class AuthClient {
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);
 
-        response.status(200).json({url: client.buildAuthorizationUrl(this.config, params).href});
+        response.status(200).json({ url: client.buildAuthorizationUrl(this.config, params).href });
     }
 
     public async authorizeAndSetTokens(request: Request, response: Response) {
@@ -84,7 +84,7 @@ export class AuthClient {
                     expectedState: cookies.state,
                 },
             );
-            
+
             const sessionToken = AuthClient.generateSessionToken();
             const session = AuthClient.createSessionObject(sessionToken, AuthClient.hashSessionToken(sessionToken), tokens);
             if (session) {
@@ -96,7 +96,7 @@ export class AuthClient {
         catch (err) {
             console.error(err);
         }
-        
+
         response.clearCookie("codeVerifier");
         response.clearCookie("state");
 
@@ -104,7 +104,7 @@ export class AuthClient {
         response.redirect(url);
     }
 
-    public async getLoggedInUser(request: Request, response: Response): Promise<LoginUser | undefined> {
+    public async getAuthenticatedUser(request: Request, response: Response): Promise<LoginUser | undefined> {
         const session = await this.loadSession(request, response);
         if (!session) {
             return undefined;
@@ -120,7 +120,12 @@ export class AuthClient {
             if (!newSession) {
                 return undefined;
             }
-            userInfo = await client.fetchUserInfo(this.config, newSession.accessToken, newSession.userId) as client.UserInfoResponse & RobloxClaims;
+            try {
+                userInfo = await client.fetchUserInfo(this.config, newSession.accessToken, newSession.userId) as client.UserInfoResponse & RobloxClaims;
+            }
+            catch {
+                return undefined;
+            }
         }
 
         return {
@@ -133,15 +138,22 @@ export class AuthClient {
         };
     }
 
-    public async setLoggedInUser(request: Request, response: Response) {
-        const user = await this.getLoggedInUser(request, response);
-        
+    public async requestAuthenticatedUserInfo(request: Request, response: Response) {
+        const user = await this.getAuthenticatedUser(request, response);
+
         if (!user) {
-            response.status(401).json({error: "You are not logged in"});
+            response.status(401).json({ error: "You are not logged in" });
             return;
         }
 
-        response.status(200).json(user);
+        const settings = await this.loadSettingsFromDB(user.userId);
+
+        const data: LoginUserWithInfo = {
+            ...user,
+            settings: settings
+        };
+
+        response.status(200).json(data);
     }
 
     public async logout(request: Request, response: Response) {
@@ -150,26 +162,9 @@ export class AuthClient {
             await this.deleteSessionFromDB(session);
             await client.tokenRevocation(this.config, session.refreshToken);
         }
-        
+
         response.clearCookie("session");
-        response.status(200).json({logout: "success"});
-    }
-
-    public async getSettings(request: Request, response: Response) {
-        const user = await this.getLoggedInUser(request, response);
-        
-        if (!user) {
-            response.status(401).json({error: "You are not logged in"});
-            return;
-        }
-
-        const settings = await this.loadSettingsFromDB(user.userId);
-        if (!settings) {
-            response.status(404).json({error: "No settings found"});
-            return;
-        }
-
-        response.status(200).json(settings);
+        response.status(200).json({ logout: "success" });
     }
 
     protected readonly settingsValidator = vine.create({
@@ -183,20 +178,20 @@ export class AuthClient {
     public async updateSettings(request: Request, response: Response) {
         const [error, result] = await this.settingsValidator.tryValidate(request.body);
         if (error) {
-            response.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input"});
+            response.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
             return;
         }
-        
+
         const game = result.game;
         const style = result.style;
         const theme = result.theme;
         const maxDaysRelative = result.maxDaysRelative;
         const country = result.country;
 
-        const user = await this.getLoggedInUser(request, response);
-        
+        const user = await this.getAuthenticatedUser(request, response);
+
         if (!user) {
-            response.status(401).json({error: "You are not logged in"});
+            response.status(401).json({ error: "You are not logged in" });
             return;
         }
 
@@ -209,7 +204,7 @@ export class AuthClient {
             countryCode: country ?? null
         });
 
-        response.status(200).json({success: true});
+        response.status(200).json({ success: true });
     }
 
     // Helpers
@@ -218,13 +213,13 @@ export class AuthClient {
         if (!cookies.session) {
             return undefined;
         }
-        
+
         return this.loadSessionFromDB(response, cookies.session, noRefresh);
     }
 
     protected async loadSessionFromDB(response: Response, sessionToken: string, noRefresh?: boolean) {
         const hash = AuthClient.hashSessionToken(sessionToken);
-        
+
         const query = "SELECT * FROM sessions WHERE sessionHash = ?;";
         const [[row]] = await this.pool.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
         if (!row) {
@@ -259,9 +254,9 @@ export class AuthClient {
             newSession = AuthClient.createSessionObject(session.sessionToken, session.sessionHash, newTokenSet);
         }
         catch {
-            
+
         }
-        
+
         if (!newSession) {
             response.clearCookie("session");
             await this.deleteSessionFromDB(session);
@@ -374,7 +369,7 @@ export class AuthClient {
         const now = new Date().getTime();
         const accessExpiresIn = (tokenSet.expiresIn() ?? 0) * 1000;
         const refreshExpiresIn = 30 * 60 * 60 * 24 * 1000; // 30 days
-        
+
         return {
             sessionToken: sessionToken,
             sessionHash: sessionHash,

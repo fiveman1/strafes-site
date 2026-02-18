@@ -1,4 +1,5 @@
 import { colors } from "@mui/material";
+import { MAX_TIER } from "shared";
 
 export function convertToHSL(colorStr: string) {
     if (colorStr.startsWith('#')) {
@@ -126,3 +127,12 @@ export function HexToHSL(hex: string): { h: number; s: number; l: number } {
 }
 
 export const UNRELEASED_MAP_COLOR = colors.amber[900];
+
+export function getMapTierColor(tier: number, saturation: number) {
+    const scale = (tier - 1) / (MAX_TIER - 1);
+    
+    // Green (120) at 0%, Red (0) at 100%, Yellow (60) is the midpoint.
+    const hue = (1 - scale) * 120; // 120 - 0 degrees
+
+    return `hsl(${hue}, ${saturation}%, 50%)`;
+}
