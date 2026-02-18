@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, IconButton, IconContainerProps, Link, Paper, Popover, Rating, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, darken, IconButton, IconContainerProps, Link, Paper, Popover, Rating, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../common/common";
 import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
@@ -29,6 +29,7 @@ import HowToRegIcon from '@mui/icons-material/HowToReg';
 import BlockIcon from '@mui/icons-material/Block';
 import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
 import TimeAgo from "react-timeago";
+import TierSelector from "./forms/TierSelector";
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -58,6 +59,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const { sortedMaps, loggedInUser } = useOutletContext() as ContextParams;
 
     const [ filterGame, setFilterGame ] = useState(Game.all);
+    const [ filterTier, setFilterTier ] = useState(-1);
     const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
     const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
     const [ expanded, setExpanded ] = useState(false);
@@ -107,6 +109,10 @@ function MapInfoCard(props: MapDetailsProps) {
     let maps = sortedMaps;
     if (filterGame !== Game.all) {
         maps = maps.filter((map) => map.game === filterGame);
+    }
+
+    if (filterTier !== -1) {
+        maps = maps.filter((map) => map.tier === filterTier || (filterTier === 0 && map.tier === undefined));
     }
 
     let compareFunc: (a: Map, b: Map) => number;
@@ -172,6 +178,10 @@ function MapInfoCard(props: MapDetailsProps) {
                             <FilterAltIcon sx={{ mr: 1 }} />
                             <GameSelector game={filterGame} setGame={setFilterGame} label="Filter game" allowSelectAll disablePadding />
                         </Box>
+                        <Box display="flex" alignItems="center" mt={3}>
+                            <FilterAltIcon sx={{ mr: 1 }} />
+                            <TierSelector tier={filterTier} setTier={setFilterTier} />
+                        </Box>
                         <Box display="flex" alignItems="center" mt={3} mr={-1}>
                             <SortIcon sx={{ mr: 1 }} />
                             <MapSortSelector sort={sort} setSort={setSort} />
@@ -203,12 +213,14 @@ function MapDetailSection(props: MapDetailSectionProps) {
     const isLightMode = theme.palette.mode === "light";
     const imageBgColor = isLightMode ? grey[400] : grey[800];
 
-    const imageSize = smallScreen ? 175 : 215;
+    const imageSize = smallScreen ? 175 : 230;
     const mapDate = new Date(selectedMap.date);
     const isUnreleased = new Date() < mapDate;
     let releasedText = isUnreleased ? "Releases on " : "Released on ";
     releasedText += longDateFormat.format(mapDate);
     const gameColor = getGameColor(selectedMap.game, theme);
+    const tier = selectedMap.tier;
+    const tierColor = getMapTierColor(tier);
 
     return (
         <Box display="flex" flexDirection="column" marginTop={2}>
@@ -240,7 +252,8 @@ function MapDetailSection(props: MapDetailSectionProps) {
                         </Typography>
                     </Box>
                     <Box display="flex" flexDirection="column" alignItems="center">
-                        <MapTierVotingSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />
+                        {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
+                        <MapTierVotingSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />}
                     </Box>
                 </Box>
                 <Box
@@ -253,18 +266,34 @@ function MapDetailSection(props: MapDetailSectionProps) {
                     position="relative"
                 >
                     <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
-                    <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{
-                        padding: 0.4,
-                        lineHeight: 1.1,
-                        overflow: "hidden",
-                        backgroundColor: gameColor,
-                        textAlign: "center",
-                        color: "white",
-                        textShadow: "black 1px 1px 1px",
-                        borderRadius: "6px"
-                    }}>
-                        {formatGame(selectedMap.game)}
-                    </Typography>
+                    <Box display="flex" position="absolute" top="8px" right="8px">
+                        <Typography variant="body2" fontWeight="bold" sx={{
+                            padding: 0.4,
+                            lineHeight: 1.1,
+                            overflow: "hidden",
+                            backgroundColor: gameColor,
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px"
+                        }}>
+                            {formatGame(selectedMap.game)}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold" ml={0.5} sx={{
+                            padding: 0.4,
+                            lineHeight: 1.0,
+                            overflow: "hidden",
+                            backgroundColor: darken(tierColor, 0.4),
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            border: 1,
+                            borderColor: tierColor
+                        }}>
+                            {formatTier(tier)}
+                        </Typography>
+                    </Box>
                     <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
                         padding: 0.7,
                         lineHeight: 1.1,
@@ -280,17 +309,16 @@ function MapDetailSection(props: MapDetailSectionProps) {
                     </Typography>
                 </Box>
             </Box>
-            
         </Box>
     );
 }
 
-function MapTierRatingList(props: IconContainerProps) {
-    const { value, ...other } = props;
+function MapTierRatingList(props: IconContainerProps & {selectedValue: number | null}) {
+    const { selectedValue, value, ...other } = props;
     const classes = (other.className ?? "").split(/\s+/);
     
-    const selected = !classes.includes("MuiRating-iconEmpty");
-    const color = getMapTierColor(value, selected ? 100 : 20);
+    const selected = selectedValue === value || !classes.includes("MuiRating-iconEmpty");
+    const color = getMapTierColor(value, selected ? 100 : 30);
 
     return (
         <Box 
@@ -325,13 +353,13 @@ function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, ga
         return "You are blacklisted";
     }
     if (voteInfo.moderationStatus === ModerationStatus.Pending) {
-        return "You are pending review from the moderation team";
+        return "You are pending moderation review";
     }
     if (game === Game.bhop && voteInfo.bhopCompletions < 20) {
-        return `You have less than the 20 required bhop completions (${voteInfo.bhopCompletions})`;
+        return `You have less than 20 bhop completions (${voteInfo.bhopCompletions})`;
     }
     if (game === Game.surf && voteInfo.surfCompletions < 20) {
-        return `You have less than the 20 required surf completions (${voteInfo.surfCompletions})`;
+        return `You have less than 20 surf completions (${voteInfo.surfCompletions})`;
     }
     return "";
 }
@@ -361,7 +389,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     return (
         <Box display="flex" flexDirection="column" marginTop={2}>
             <Box display="flex" alignItems="center" justifyContent="center" mb={0.25}>
-                <Typography component="legend" variant="subtitle2" mr={0.25}>
+                <Typography component="legend" variant="body2" mr={0.25}>
                     Tier voting
                 </Typography>
                 {isEligible ? 
@@ -374,7 +402,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 <Skeleton height="28px" width="100px"></Skeleton>
                 :
                 <Rating
-                    value={fakeTier ?? null}
+                    value={fakeTier}
                     max={MAX_TIER}
                     precision={1}
                     highlightSelectedOnly
@@ -384,7 +412,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     onChange={(e, v) => onChange(v)}
                     slotProps={{
                         icon: {
-                            component: MapTierRatingList
+                            component: (props) => <MapTierRatingList selectedValue={fakeTier} {...props}  />
                         }
                     }}
                 />}

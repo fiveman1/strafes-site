@@ -49,7 +49,7 @@ interface MapTierInfoSQL {
     user_id: string
     tier: number
     weight: number
-    updated_at: Date
+    updated_at: string
 }
 type MapTierInfoRow = MapTierInfoSQL & RowDataPacket;
 
@@ -68,14 +68,14 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
         mapId: mapId,
         tier: row.tier,
         weight: row.weight,
-        updatedAt: row.updated_at.toISOString()
+        updatedAt: new Date(row.updated_at).toISOString()
     };
 }
 
 async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
     const times = await getTimes(userId, map.id, 1, 1, map.game, Style.all, 0);
     if (times && times.pagination.total_items > 0) {
-        return 3; // Extra weight for people who have beaten the map
+        return 5; // Extra weight for people who have beaten the map
     }
     return 1;
 }
@@ -114,4 +114,51 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
         weight: weight,
         updatedAt: new Date().toISOString()
     };
+}
+
+interface CalcTierSQL {
+    map_id: string
+    weighted_tier: string
+}
+type CalcTierRow = CalcTierSQL & RowDataPacket;
+
+export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, number>> {
+    const mapIdToTier = new Map<number, number>();
+
+    // Calculates the weighted average for every map
+    // Ignores outliers (more than 2 standard deviations)
+    const query = `
+        SELECT
+            tier_votes.map_id,
+            SUM(weight * tier) / SUM(weight) AS weighted_tier
+        FROM
+            tier_votes
+        INNER JOIN
+            (
+                SELECT
+                    map_id,
+                    SUM(weight * tier) / SUM(weight) AS avg,
+                    SQRT(
+                        SUM(weight * POWER(tier, 2)) / SUM(weight) - POWER(SUM(weight * tier) / SUM(weight), 2)
+                    ) AS std
+                FROM
+                    tier_votes
+                GROUP BY
+                    map_id
+            ) stats
+        ON
+            tier_votes.map_id = stats.map_id
+        WHERE
+            ABS(tier - stats.avg) <= (2 * stats.std)
+        GROUP BY
+            tier_votes.map_id
+    ;`;
+
+    const [rows] = await client.pool.query<CalcTierRow[]>(query);
+
+    for (const row of rows) {
+        mapIdToTier.set(+row.map_id, Math.round(+row.weighted_tier));
+    }
+
+    return mapIdToTier;
 }

@@ -17,7 +17,7 @@ import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
-import { getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
+import { calcMapTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -118,7 +118,7 @@ const submitTierVoteValidator = vine.create({
     mapId: vine.number().withoutDecimals().nonNegative()
 });
 
-app.post("/api/auth/tiers", async (req, res) => {
+app.post("/api/auth/tiers", rateLimitSettings, async (req, res) => {
     const [error, result] = await submitTierVoteValidator.tryValidate(req.body);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -879,12 +879,17 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     res.status(200).json(timeData);
 });
 
-app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
+app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) => {
     const maps = await globalsClient.getAllMaps();
 
     if (!maps) {
         res.status(404).json({ error: "Not found" });
         return;
+    }
+
+    const tiers = await calcMapTiers(globalsClient);
+    for (const map of maps) {
+        map.tier = tiers.get(map.id);
     }
 
     res.status(200).json({

@@ -1,7 +1,12 @@
 import { colors } from "@mui/material";
-import { MAX_TIER } from "shared";
 
-export function convertToHSL(colorStr: string) {
+interface HSL {
+    h: number
+    s: number
+    l: number
+}
+
+export function convertToHSL(colorStr: string): HSL {
     if (colorStr.startsWith('#')) {
         return HexToHSL(colorStr);
     } else if (colorStr.startsWith('rgb')) {
@@ -18,11 +23,7 @@ export function RGBToHSL(rgb: {
     r: number;
     g: number;
     b: number;
-}): {
-    h: number;
-    s: number;
-    l: number;
-} {
+}): HSL {
     const { r: r255, g: g255, b: b255 } = rgb;
 
     const r = r255 / 255;
@@ -58,7 +59,7 @@ export function RGBToHSL(rgb: {
     return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
-export function HSLToHex(hsl: { h: number; s: number; l: number }): string {
+export function HSLToHex(hsl: HSL): string {
     const { h, s, l } = hsl;
 
     const hDecimal = l / 100;
@@ -75,7 +76,7 @@ export function HSLToHex(hsl: { h: number; s: number; l: number }): string {
     return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-export function HexToHSL(hex: string): { h: number; s: number; l: number } {
+export function HexToHSL(hex: string): HSL {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 
     if (!result) {
@@ -128,11 +129,38 @@ export function HexToHSL(hex: string): { h: number; s: number; l: number } {
 
 export const UNRELEASED_MAP_COLOR = colors.amber[900];
 
-export function getMapTierColor(tier: number, saturation: number) {
-    const scale = (tier - 1) / (MAX_TIER - 1);
-    
-    // Green (120) at 0%, Red (0) at 100%, Yellow (60) is the midpoint.
-    const hue = (1 - scale) * 120; // 120 - 0 degrees
+export function getMapTierColor(tier: number | undefined, saturation?: number) {
+    let color = "#808080";
+    switch (tier) {
+        case 1:
+            color = "#00ccff";
+            break;
+        case 2:
+            color = "#00ff00";
+            break;
+        case 3:
+            color = "#9dff00";
+            break;
+        case 4:
+            color = "#fbff00";
+            break;
+        case 5:
+            color = "#ffc400";
+            break;
+        case 6:
+            color = "#ff7b00";
+            break;
+        case 7:
+            color = "#ff0000";
+            break;
+        case 8:
+            color = "#e100ff";
+            break;
+    }
 
-    return `hsl(${hue}, ${saturation}%, 50%)`;
+    if (saturation === undefined) return color;
+
+    const hsl = convertToHSL(color);
+
+    return `hsl(${hsl.h}, ${saturation}%, ${hsl.l}%)`;
 }

@@ -91,6 +91,7 @@ export interface Map {
     largeThumb?: string
     modes: number
     loadCount: number
+    tier?: number
 }
 
 export enum TimeSortBy {

@@ -59,7 +59,8 @@ export class GlobalsClient {
             database: "strafes_globals",
             timezone: "Z", // UTC
             supportBigNumbers: true,
-            bigNumberStrings: true
+            bigNumberStrings: true,
+            dateStrings: ["TIMESTAMP"]
         });
     }
 

@@ -242,9 +242,9 @@ export function formatUserRole(role: UserRole) {
 }
 
 export const MAX_TIER = 8;
-export function formatTier(tier: number | undefined) {
+export function formatTier(tier: number | undefined, short?: boolean) {
     if (tier === undefined) {
-        return "none";
+        return short ? "none" : "no tier";
     }
-    return `tier ${tier}`;
+    return short ? `t${tier}` : `tier ${tier}`;
 }
