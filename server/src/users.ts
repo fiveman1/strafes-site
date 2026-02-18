@@ -1,8 +1,9 @@
-import { tryGetRequest } from "./requests.js";
-import { UserInfo } from "shared";
+import { tryGetCached, tryGetRequest, tryPostCached } from "./requests.js";
+import { User, UserInfo } from "shared";
 import memCache from "memory-cache";
 import { getAllUsersToRoles } from "./roles.js";
 import { AuthClient } from "./auth.js";
+import { getUserInfo } from "./strafes_api/api.js";
 
 const cache: memCache.CacheClass<string, string> = new memCache.Cache();
 
@@ -89,4 +90,52 @@ export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boole
             user.userThumb = idToThumb.get(user.userId);
         }
     }
+}
+
+export async function getUserId(username: string): Promise<undefined | number> {
+    const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
+        usernames: [username]
+    });
+    if (!res) return undefined;
+
+    const data = res.data.data as ({ id: number })[];
+    if (data.length === 0) return undefined;
+
+    const user = data[0];
+    return user.id;
+}
+
+export async function getUserData(client: AuthClient, userId: number): Promise<undefined | User> {
+    const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
+    const strafesUserReq = getUserInfo(userId);
+
+    const partialUser: UserInfo = {
+        userId: userId,
+        username: ""
+    };
+    const setUserInfoPromise = setUserInfoForList(client, [partialUser], true);
+
+    const userRes = await userReq;
+    if (!userRes) return undefined;
+    const user = userRes.data as { name: string, displayName: string, created: string };
+
+    const strafesUserData = await strafesUserReq;
+    await setUserInfoPromise;
+
+    const userInfo: User = {
+        userId: userId,
+        username: user.name,
+        displayName: user.displayName,
+        joinedOn: user.created,
+        userThumb: partialUser.userThumb,
+        userRole: partialUser.userRole,
+        userCountry: partialUser.userCountry
+    };
+
+    if (strafesUserData) {
+        userInfo.status = strafesUserData.state_id;
+        userInfo.muted = strafesUserData.muted;
+    }
+
+    return userInfo;
 }

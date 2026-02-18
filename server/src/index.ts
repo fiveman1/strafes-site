@@ -4,14 +4,14 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, User, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, UserInfo, WRCount } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
-import { tryGetCached, tryPostCached } from "./requests.js";
+import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
-import { setUserInfoForList, setUserThumbsForList } from "./users.js";
-import { getPlacements, getRanks, getTimes, getUserInfo, getUserRank } from "./strafes_api/api.js";
+import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
+import { getPlacements, getRanks, getTimes, getUserRank } from "./strafes_api/api.js";
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
@@ -147,7 +147,7 @@ app.get("/api/user/:id", rateLimitSettings, cache("5 minutes"), async (req, res)
 
     const userId = result.id;
 
-    const user = await getUserData(userId);
+    const user = await getUserData(authClient, userId);
     if (!user) {
         res.status(404).json({ error: "Not found" });
         return;
@@ -866,7 +866,7 @@ app.get("*splat", async (req, res): Promise<any> => {
             description = "Search user profiles and times";
             if (url.length > 1) {
                 const userId = url[1];
-                const user = await getUserData(+userId);
+                const user = await getUserData(authClient, +userId);
                 if (user) {
                     title = `@${user.username} - users`;
                     description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
@@ -897,8 +897,8 @@ app.get("*splat", async (req, res): Promise<any> => {
             const user1 = req.query.user1;
             const user2 = req.query.user2;
             if (user1 && typeof user1 === "string" && user2 && typeof user2 === "string") {
-                const user1InfoPromise = getUserData(+user1);
-                const user2InfoPromise = getUserData(+user2);
+                const user1InfoPromise = getUserData(authClient, +user1);
+                const user2InfoPromise = getUserData(authClient, +user2);
                 const user1Info = await user1InfoPromise;
                 const user2Info = await user2InfoPromise;
                 if (user1Info && user2Info) {
@@ -927,51 +927,3 @@ app.get("*splat", async (req, res): Promise<any> => {
 app.listen(PORT, () => {
     console.log(`Strafes site on port ${PORT}`);
 });
-
-async function getUserId(username: string): Promise<undefined | number> {
-    const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
-        usernames: [username]
-    });
-    if (!res) return undefined;
-
-    const data = res.data.data as ({ id: number })[];
-    if (data.length === 0) return undefined;
-
-    const user = data[0];
-    return user.id;
-}
-
-async function getUserData(userId: number): Promise<undefined | User> {
-    const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
-    const strafesUserReq = getUserInfo(userId);
-
-    const partialUser: UserInfo = {
-        userId: userId,
-        username: ""
-    };
-    const setUserInfoPromise = setUserInfoForList(authClient, [partialUser], true);
-
-    const userRes = await userReq;
-    if (!userRes) return undefined;
-    const user = userRes.data as { name: string, displayName: string, created: string };
-
-    const strafesUserData = await strafesUserReq;
-    await setUserInfoPromise;
-
-    const userInfo: User = {
-        userId: userId,
-        username: user.name,
-        displayName: user.displayName,
-        joinedOn: user.created,
-        userThumb: partialUser.userThumb,
-        userRole: partialUser.userRole,
-        userCountry: partialUser.userCountry
-    };
-
-    if (strafesUserData) {
-        userInfo.status = strafesUserData.state_id;
-        userInfo.muted = strafesUserData.muted;
-    }
-
-    return userInfo;
-}
