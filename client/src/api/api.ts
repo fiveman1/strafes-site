@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, LoginUser, SettingsValues, WRCount } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVotingEligibilityInfo, MapTierInfo } from "shared";
 import { JsonObject } from "../common/utils";
 
 async function tryGetRequest(url: string, params?: JsonObject) {
@@ -198,7 +198,7 @@ export async function getLoggedInUser() {
 
     if (!res) return undefined;
 
-    return res.data as LoginUser;
+    return res.data as LoginUserWithInfo;
 }
 
 export async function login() {
@@ -213,16 +213,8 @@ export async function logout() {
     await tryGetRequest("logout");
 }
 
-export async function getSettings() {
-    const res = await tryGetRequest("settings");
-
-    if (!res) return undefined;
-
-    return res.data as SettingsValues;
-}
-
 export async function updateSettings(settings: SettingsValues) {
-    const res = await tryPostRequest("settings", {
+    const res = await tryPostRequest("auth/settings", {
         game: settings.defaultGame,
         style: settings.defaultStyle,
         theme: settings.theme,
@@ -231,4 +223,33 @@ export async function updateSettings(settings: SettingsValues) {
     });
 
     return !!res;
+}
+
+export async function getVotingInfo() {
+    const res = await tryGetRequest("auth/user/tiers");
+
+    if (!res) return undefined;
+
+    return res.data as TierVotingEligibilityInfo;
+}
+
+export async function getCurrentMapTierVote(mapId: number) {
+    const res = await tryGetRequest("auth/tiers", {
+        mapId: mapId
+    });
+
+    if (!res) return undefined;
+
+    return res.data as MapTierInfo | undefined;
+}
+
+export async function voteForMapTier(mapId: number, tier: number | null) {
+    const res = await tryPostRequest("auth/tiers", {
+        mapId: mapId,
+        tier: tier
+    });
+
+    if (!res) return undefined;
+
+    return res.data.result as MapTierInfo | undefined;
 }
