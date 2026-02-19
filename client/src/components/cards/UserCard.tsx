@@ -56,10 +56,13 @@ function UserCardAvatar(props: IUserDisplayProps) {
 
 function UserDisplay(props: IUserDisplayProps) {
     const { user } = props;
+    const { loggedInUser, settings } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
     const dateValue = new Date(user.joinedOn);
     const tooltipText = dateTimeFormat.format(dateValue);
+
+    const country = (loggedInUser && user.userId === loggedInUser.userId) ? settings.country : user.userCountry; // To get around caching
 
     return (
         <Box display="flex" flexDirection="row">
@@ -72,7 +75,7 @@ function UserDisplay(props: IUserDisplayProps) {
                         <Box lineHeight={1} sx={{wordBreak: "break-word", }} display="flex" alignItems="center">
                             <Typography variant="h5" >
                                 {user.displayName}
-                                {user.userCountry ? <ReactCountryFlag style={{verticalAlign: "text-top", marginLeft: 8}} title={formatCountryCode(user.userCountry)} countryCode={user.userCountry} svg /> : undefined}
+                                {country ? <ReactCountryFlag style={{verticalAlign: "text-top", marginLeft: 8}} title={formatCountryCode(country)} countryCode={country} svg /> : undefined}
                             </Typography>
                             
                         </Box>
