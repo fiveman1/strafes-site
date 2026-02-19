@@ -316,6 +316,9 @@ function MapDetailSection(props: MapDetailSectionProps) {
 
 function MapTierRatingList(props: IconContainerProps & {selectedValue: number | null}) {
     const { selectedValue, value, ...other } = props;
+    const theme = useTheme();
+
+    const isLightMode = theme.palette.mode === "light";
     const classes = (other.className ?? "").split(/\s+/);
     
     const selected = selectedValue === value || !classes.includes("MuiRating-iconEmpty");
@@ -337,7 +340,9 @@ function MapTierRatingList(props: IconContainerProps & {selectedValue: number | 
                 borderRadius: "4px",
                 width: 24,
                 height: 24,
-                color: color,
+                color: isLightMode ? "white" : color,
+                bgcolor: isLightMode ? darken(color, 0.1) : undefined,
+                borderColor: isLightMode ? color : undefined,
                 userSelect: "none"
             }}>
                 {value}
@@ -368,7 +373,9 @@ function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, ga
 function MapTierVotingSection(props: MapDetailSectionProps) {
     const { selectedMap, tierVoteInfo, setTierVoteInfo, tierVoteLoading } = props;
     const { votingInfo } = useOutletContext() as ContextParams;
+    const theme = useTheme();
 
+    const isLightMode = theme.palette.mode === "light";
     const isEligible = (votingInfo && isEligibleForVoting(votingInfo, selectedMap.game));
     const reason = getIneligibleReason(votingInfo, selectedMap.game);
     const [ fakeTier, setFakeTier ] = useState(tierVoteInfo?.tier ?? null);
@@ -394,7 +401,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     Tier voting
                 </Typography>
                 {isEligible ? 
-                <HowToRegIcon sx={{fontSize: 20}} htmlColor="#00ff00" /> 
+                <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} /> 
                 : 
                 <Tooltip title={reason} placement="right" arrow><BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" /></Tooltip>}
             </Box>

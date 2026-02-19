@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Button from '@mui/material/Button';
 import Box from "@mui/material/Box";
-import { AppBar, ButtonGroup, CircularProgress, Link, Menu, MenuItem, Toolbar, useMediaQuery } from "@mui/material";
+import { AppBar, ButtonGroup, CircularProgress, Link, Menu, MenuItem, Toolbar, useMediaQuery, useTheme } from "@mui/material";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { useLocation } from "react-router";
@@ -201,6 +201,9 @@ function MainAppBar(props: IMainAppBarProps) {
     const { loggedInUser, isUserLoading, disableSettings } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const useAppMenu = useMediaQuery("@media screen and (max-width: 800px)");
+    const theme = useTheme();
+    
+    const isLightMode = theme.palette.mode === "light";
 
     const onLogin = async () => {
         const url = await login();
@@ -240,9 +243,22 @@ function MainAppBar(props: IMainAppBarProps) {
                             <CircularProgress size={32} />
                         </Box>
                         : 
-                        <Button variant="outlined" size={smallScreen ? "small" : "medium"} sx={{ width: outerWidth, whiteSpace: "nowrap", textTransform: "none"}} 
+                        <Button 
+                            variant="outlined" 
+                            size={smallScreen ? "small" : "medium"} 
                             startIcon={<LoginIcon />} 
-                            onClick={onLogin}>
+                            onClick={onLogin}
+                            sx={{ 
+                                width: outerWidth, 
+                                whiteSpace: "nowrap", 
+                                textTransform: "none",
+                                color: isLightMode ? "white" : undefined,
+                                borderColor: isLightMode ? "#ffffffaf" : undefined,
+                                "&:hover": {
+                                    borderColor: isLightMode ? "white" : undefined,
+                                }
+                            }} 
+                        >
                             Login
                         </Button>)}
                     </ButtonGroup>
