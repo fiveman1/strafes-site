@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
@@ -17,6 +17,7 @@ import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
+import { calcMapTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -76,14 +77,66 @@ app.get("/oauth/callback", async (req, res) => {
 });
 
 app.get("/api/auth/user", async (req, res) => {
-    await authClient.setLoggedInUser(req, res);
+    await authClient.requestAuthenticatedUserInfo(req, res);
 });
 
-app.get("/api/settings", async (req, res) => {
-    await authClient.getSettings(req, res);
+app.get("/api/auth/user/tiers", async (req, res) => {
+    const user = await authClient.getAuthenticatedUser(req, res);
+    if (!user) {
+        res.status(401).json({ error: "You are not logged in" });
+        return;
+    }
+
+    const tierInfo = await loadTierVotingEligibility(user.userId);
+    res.status(200).json(tierInfo);
 });
 
-app.post("/api/settings", async (req, res) => {
+const getTierVoteValidator = vine.create({
+    mapId: vine.number().withoutDecimals().nonNegative()
+});
+
+app.get("/api/auth/tiers", async (req, res) => {
+    const [error, result] = await getTierVoteValidator.tryValidate(req.query);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const user = await authClient.getAuthenticatedUser(req, res);
+    if (!user) {
+        res.status(401).json({ error: "You are not logged in" });
+        return;
+    }
+
+    const mapTierInfo = await getUserTierForMap(globalsClient, user.userId, result.mapId);
+
+    res.status(200).json(mapTierInfo);
+});
+
+const submitTierVoteValidator = vine.create({
+    tier: vine.number().withoutDecimals().range([1, MAX_TIER]).optional(),
+    mapId: vine.number().withoutDecimals().nonNegative()
+});
+
+app.post("/api/auth/tiers", rateLimitSettings, async (req, res) => {
+    const [error, result] = await submitTierVoteValidator.tryValidate(req.body);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const user = await authClient.getAuthenticatedUser(req, res);
+    if (!user) {
+        res.status(401).json({ error: "You are not logged in" });
+        return;
+    }
+
+    const tier = await setUserTierForMap(globalsClient, user.userId, result.mapId, result.tier);
+
+    res.status(200).json({ result: tier });
+});
+
+app.post("/api/auth/settings", async (req, res) => {
     await authClient.updateSettings(req, res);
 });
 
@@ -826,12 +879,17 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
     res.status(200).json(timeData);
 });
 
-app.get("/api/maps", rateLimitSettings, cache("1 hour"), async (req, res) => {
+app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) => {
     const maps = await globalsClient.getAllMaps();
 
     if (!maps) {
         res.status(404).json({ error: "Not found" });
         return;
+    }
+
+    const tiers = await calcMapTiers(globalsClient);
+    for (const map of maps) {
+        map.tier = tiers.get(map.id);
     }
 
     res.status(200).json({
@@ -907,7 +965,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 }
             }
         }
-        
+
         // Don't give anyone an XSS attack
         html = html.replace("__META_OG_TITLE__", escapeHTML(title));
         html = html.replaceAll("__META_DESCRIPTION__", escapeHTML(description));
@@ -915,7 +973,7 @@ app.get("*splat", async (req, res): Promise<any> => {
         if (GOOGLE_SITE_VERIFICATION) {
             html = html.replace("__GOOGLE_SITE_VERIFICATION__", escapeHTML(GOOGLE_SITE_VERIFICATION));
         }
-        
+
         return res.send(html);
     }
     catch {

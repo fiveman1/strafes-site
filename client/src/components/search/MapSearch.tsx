@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { formatGame, Map as StrafesMap } from "shared";
+import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { formatGame, formatTier, Map as StrafesMap } from "shared";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../../common/common";
 import SearchIcon from '@mui/icons-material/Search';
 import MapThumb from "../displays/MapThumb";
+import { getMapTierColor } from "../../common/colors";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -20,6 +21,9 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
     const dataSet = itemData[index];
     const { ...optionProps } = dataSet[0];
     const mapOption = dataSet[1];
+
+    const tier = mapOption.tier;
+    const tierColor = getMapTierColor(tier);
 
     return (
         <Typography
@@ -42,10 +46,10 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         {mapOption.name}
                     </Typography>
                     <Typography 
-                        ml={1}
                         variant="caption"
                         fontWeight="bold" 
                         lineHeight={1.2}
+                        ml={0.75}
                         sx={{
                             backgroundColor: getGameColor(mapOption.game, theme),
                             textAlign: "center", 
@@ -58,9 +62,31 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         {formatGame(mapOption.game)}
                     </Typography>
                 </Box>
-                <Typography variant="body1" overflow="hidden" color="textSecondary" display="inline-block" textOverflow="ellipsis">
-                    {mapOption.creator}
-                </Typography>
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                    <Typography 
+                        variant="body1" 
+                        overflow="hidden" 
+                        color="textSecondary" 
+                        display="inline-block" 
+                        textOverflow="ellipsis"
+                        flexGrow={1}
+                    >
+                        {mapOption.creator}
+                    </Typography>
+                    <Typography variant="caption" fontWeight="bold" ml={0.75} sx={{
+                        padding: 0.4,
+                        lineHeight: 0.95,
+                        backgroundColor: darken(tierColor, 0.4),
+                        textAlign: "center",
+                        color: "white",
+                        textShadow: "black 1px 1px 1px",
+                        borderRadius: "6px",
+                        border: 1,
+                        borderColor: tierColor
+                    }}>
+                        {formatTier(tier, true)}
+                    </Typography>
+                </Box>
             </Box>
         </Typography>
     );

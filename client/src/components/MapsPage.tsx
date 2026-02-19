@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, IconButton, Link, Paper, Popover, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, darken, IconButton, IconContainerProps, Link, Paper, Popover, Rating, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../common/common";
-import { Game, Map, TimeSortBy, formatGame, getAllowedStyles } from "shared";
+import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
 import StyleSelector from "./forms/StyleSelector";
 import TimesCard from "./cards/grids/TimesCard";
 import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { download, generateCsv, mkConfig } from "export-to-csv";
-import { UNRELEASED_MAP_COLOR } from "../common/colors";
+import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
 import { MapTimesSort, useCourse, useGameStyle } from "../common/states";
 import MapSearch from "./search/MapSearch";
 import { grey } from "@mui/material/colors";
@@ -24,6 +24,12 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ColorChip from "./displays/ColorChip";
 import MapThumb from "./displays/MapThumb";
+import { getCurrentMapTierVote, voteForMapTier } from "../api/api";
+import HowToRegIcon from '@mui/icons-material/HowToReg';
+import BlockIcon from '@mui/icons-material/Block';
+import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
+import TimeAgo from "react-timeago";
+import TierSelector from "./forms/TierSelector";
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -50,12 +56,40 @@ function dateCompareFunc(a: Map, b: Map, isAsc: boolean) {
 function MapInfoCard(props: MapDetailsProps) {
     const { selectedMap } = props;
 
-    const { sortedMaps } = useOutletContext() as ContextParams;
+    const { sortedMaps, loggedInUser } = useOutletContext() as ContextParams;
 
-    const [filterGame, setFilterGame] = useState(Game.all);
-    const [sort, setSort] = useState<MapTimesSort>("nameAsc");
-    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-    const [expanded, setExpanded] = useState(false);
+    const [ filterGame, setFilterGame ] = useState(Game.all);
+    const [ filterTier, setFilterTier ] = useState(-1);
+    const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
+    const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
+    const [ expanded, setExpanded ] = useState(false);
+    const [ tierVoteInfo, setTierVoteInfo ] = useState<MapTierInfo>();
+    const [ tierVoteLoading, setTierVoteLoading ] = useState(true);
+
+    useEffect(() => {
+        if (!loggedInUser || !selectedMap) {
+            setTierVoteInfo(undefined);
+            setTierVoteLoading(false);
+            return;
+        }
+
+        let isLoading = true;
+        setTierVoteLoading(true);
+        
+        const promise = async () => {
+            const info = await getCurrentMapTierVote(selectedMap.id);
+            if (!isLoading) {
+                return;
+            }
+            setTierVoteInfo(info);
+            setTierVoteLoading(false);
+        }
+        promise();
+
+        return () => {
+            isLoading = false;
+        }
+    }, [loggedInUser, selectedMap]);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -75,6 +109,10 @@ function MapInfoCard(props: MapDetailsProps) {
     let maps = sortedMaps;
     if (filterGame !== Game.all) {
         maps = maps.filter((map) => map.game === filterGame);
+    }
+
+    if (filterTier !== -1) {
+        maps = maps.filter((map) => map.tier === filterTier || (filterTier === 0 && map.tier === undefined));
     }
 
     let compareFunc: (a: Map, b: Map) => number;
@@ -118,7 +156,7 @@ function MapInfoCard(props: MapDetailsProps) {
                 <IconButton aria-describedby={id} size="small" onClick={handleClick}>
                     <TuneIcon />
                 </IconButton>
-                <IconButton size="small" sx={{ml: 0.5}} onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined}>
+                <IconButton size="small" sx={{ ml: 0.5 }} onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
                 <Popover
@@ -137,109 +175,254 @@ function MapInfoCard(props: MapDetailsProps) {
                 >
                     <Box display="flex" flexDirection="column" flexWrap="wrap" padding={2}>
                         <Box display="flex" alignItems="center">
-                            <FilterAltIcon sx={{mr: 1}} />
+                            <FilterAltIcon sx={{ mr: 1 }} />
                             <GameSelector game={filterGame} setGame={setFilterGame} label="Filter game" allowSelectAll disablePadding />
                         </Box>
+                        <Box display="flex" alignItems="center" mt={3}>
+                            <FilterAltIcon sx={{ mr: 1 }} />
+                            <TierSelector tier={filterTier} setTier={setFilterTier} />
+                        </Box>
                         <Box display="flex" alignItems="center" mt={3} mr={-1}>
-                            <SortIcon sx={{mr: 1}} />
+                            <SortIcon sx={{ mr: 1 }} />
                             <MapSortSelector sort={sort} setSort={setSort} />
                         </Box>
                     </Box>
                 </Popover>
             </Box>
             <MapSearch {...props} maps={maps} />
-            {selectedMap && expanded ? 
-            <MapDetailSection selectedMap={selectedMap} />
-            : undefined}
+            {selectedMap && expanded ?
+                <MapDetailSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />
+                : undefined}
         </Paper>
     )
 }
 
-function MapDetailSection(props: { selectedMap?: Map }) {
-    const { selectedMap } = props;
+interface MapDetailSectionProps {
+    selectedMap: Map
+    tierVoteInfo: MapTierInfo | undefined
+    setTierVoteInfo: (info: MapTierInfo | undefined) => void
+    tierVoteLoading: boolean
+}
 
+function MapDetailSection(props: MapDetailSectionProps) {
+    const { selectedMap, tierVoteInfo, setTierVoteInfo, tierVoteLoading } = props;
+    
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
     const theme = useTheme();
-
-    if (!selectedMap) {
-        return undefined;
-    }
 
     const isLightMode = theme.palette.mode === "light";
     const imageBgColor = isLightMode ? grey[400] : grey[800];
 
-    const imageSize = smallScreen ? 175 : 200;
+    const imageSize = smallScreen ? 175 : 230;
     const mapDate = new Date(selectedMap.date);
     const isUnreleased = new Date() < mapDate;
     let releasedText = isUnreleased ? "Releases on " : "Released on ";
     releasedText += longDateFormat.format(mapDate);
     const gameColor = getGameColor(selectedMap.game, theme);
+    const tier = selectedMap.tier;
+    const tierColor = getMapTierColor(tier);
 
     return (
-        <Box display="flex" flexDirection={smallScreen ? "column" : "row"} marginTop={2} alignItems="center" justifyContent="center">
-            <Box display="flex" flexDirection="column" paddingRight={smallScreen ? 0 : 8} paddingLeft={smallScreen ? 0 : 8} paddingBottom={smallScreen ? 1.5 : 0} >
-                <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" marginBottom={4} flexGrow={1}>
-                    <Typography
-                        variant="h4"
-                        fontWeight="bold"
-                        margin={0.5}
-                        color={isLightMode ? "primary" : "textPrimary"}
-                    >
-                        {selectedMap.name}
-                    </Typography>
-                    <Typography variant="subtitle2" color="textSecondary">
-                        by {selectedMap.creator}
-                    </Typography>
+        <Box display="flex" flexDirection="column" marginTop={2}>
+            <Box display="flex" flexDirection={smallScreen ? "column" : "row"} alignItems="center" justifyContent="center">
+                <Box display="flex" flexDirection="column" paddingRight={smallScreen ? 0 : 8} paddingLeft={smallScreen ? 0 : 8} paddingBottom={smallScreen ? 1.5 : 0} >
+                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" marginBottom={3} flexGrow={1}>
+                        <Typography
+                            variant="h4"
+                            fontWeight="bold"
+                            margin={0.5}
+                            color={isLightMode ? "primary" : "textPrimary"}
+                        >
+                            {selectedMap.name}
+                        </Typography>
+                        <Typography variant="subtitle2" color="textSecondary">
+                            by {selectedMap.creator}
+                        </Typography>
+                    </Box>
+                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                        {isUnreleased ?
+                            <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />
+                            :
+                            <></>}
+                        <Typography variant="body2">
+                            {releasedText}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                            Server load count: {selectedMap.loadCount}
+                        </Typography>
+                    </Box>
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                        {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
+                        <MapTierVotingSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />}
+                    </Box>
                 </Box>
-                <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
-                    {isUnreleased ?
-                        <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />
-                        :
-                        <></>}
-                    <Typography variant="body2">
-                        {releasedText}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                        Server load count: {selectedMap.loadCount}
+                <Box
+                    minWidth={imageSize}
+                    width={imageSize}
+                    height={imageSize}
+                    borderRadius="10px"
+                    bgcolor={imageBgColor}
+                    overflow="hidden"
+                    position="relative"
+                >
+                    <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
+                    <Box display="flex" position="absolute" top="8px" right="8px">
+                        <Typography variant="body2" fontWeight="bold" sx={{
+                            padding: 0.4,
+                            lineHeight: 1.1,
+                            overflow: "hidden",
+                            backgroundColor: gameColor,
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px"
+                        }}>
+                            {formatGame(selectedMap.game)}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold" ml={0.5} sx={{
+                            padding: 0.4,
+                            lineHeight: 1.0,
+                            overflow: "hidden",
+                            backgroundColor: darken(tierColor, 0.4),
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            border: 1,
+                            borderColor: tierColor
+                        }}>
+                            {formatTier(tier)}
+                        </Typography>
+                    </Box>
+                    <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
+                        padding: 0.7,
+                        lineHeight: 1.1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        backdropFilter: "blur(8px)",
+                        textAlign: "center",
+                        color: "white",
+                        textShadow: "black 3px 3px 3px",
+                        borderRadius: "8px"
+                    }}>
+                        {shortDateFormat.format(mapDate)}
                     </Typography>
                 </Box>
             </Box>
-            <Box
-                minWidth={imageSize}
-                width={imageSize}
-                height={imageSize}
-                borderRadius="10px"
-                bgcolor={imageBgColor}
-                overflow="hidden"
-                position="relative"
-            >
-                <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
-                <Typography position="absolute" top="8px" right="8px" variant="body2" fontWeight="bold" sx={{
-                    padding: 0.4,
-                    lineHeight: 1.1,
-                    overflow: "hidden",
-                    backgroundColor: gameColor,
-                    textAlign: "center",
-                    color: "white",
-                    textShadow: "black 1px 1px 1px",
-                    borderRadius: "6px"
-                }}>
-                    {formatGame(selectedMap.game)}
+        </Box>
+    );
+}
+
+function MapTierRatingList(props: IconContainerProps & {selectedValue: number | null}) {
+    const { selectedValue, value, ...other } = props;
+    const classes = (other.className ?? "").split(/\s+/);
+    
+    const selected = selectedValue === value || !classes.includes("MuiRating-iconEmpty");
+    const color = getMapTierColor(value, selected ? 100 : 30);
+
+    return (
+        <Box 
+            component="span" 
+            {...other}
+            p={0.25}
+        >
+            <Typography 
+            className="ratingItem"
+            textAlign="center"
+            variant="button"
+            fontWeight={selected ? "bold" : undefined}
+            sx={{
+                border: 1,
+                borderRadius: "4px",
+                width: 24,
+                height: 24,
+                color: color,
+                userSelect: "none"
+            }}>
+                {value}
+            </Typography>
+        </Box>
+    );
+}
+
+function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
+    if (!voteInfo) {
+        return "You are not logged in";
+    }
+    if (voteInfo.moderationStatus === ModerationStatus.Blacklisted) {
+        return "You are blacklisted";
+    }
+    if (voteInfo.moderationStatus === ModerationStatus.Pending) {
+        return "You are pending moderation review";
+    }
+    if (game === Game.bhop && voteInfo.bhopCompletions < 20) {
+        return `You have less than 20 bhop completions (${voteInfo.bhopCompletions})`;
+    }
+    if (game === Game.surf && voteInfo.surfCompletions < 20) {
+        return `You have less than 20 surf completions (${voteInfo.surfCompletions})`;
+    }
+    return "";
+}
+
+function MapTierVotingSection(props: MapDetailSectionProps) {
+    const { selectedMap, tierVoteInfo, setTierVoteInfo, tierVoteLoading } = props;
+    const { votingInfo } = useOutletContext() as ContextParams;
+
+    const isEligible = (votingInfo && isEligibleForVoting(votingInfo, selectedMap.game));
+    const reason = getIneligibleReason(votingInfo, selectedMap.game);
+    const [ fakeTier, setFakeTier ] = useState(tierVoteInfo?.tier ?? null);
+    const [ pendingUpdate, setPendingUpdate ] = useState(false);
+
+    const onChange = useCallback(async (val: number | null) => {
+        setFakeTier(val);
+        setPendingUpdate(true);
+        const info = await voteForMapTier(selectedMap.id, val);
+        setTierVoteInfo(info);
+        setFakeTier(info ? info.tier : null);
+        setPendingUpdate(false);
+    }, [selectedMap.id, setTierVoteInfo]);
+
+    useEffect(() => {
+        setFakeTier(tierVoteInfo?.tier ?? null);
+    }, [tierVoteInfo?.tier]);
+
+    return (
+        <Box display="flex" flexDirection="column" marginTop={2}>
+            <Box display="flex" alignItems="center" justifyContent="center" mb={0.25}>
+                <Typography component="legend" variant="body2" mr={0.25}>
+                    Tier voting
                 </Typography>
-                <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
-                    padding: 0.7,
-                    lineHeight: 1.1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    backdropFilter: "blur(8px)",
-                    textAlign: "center",
-                    color: "white",
-                    textShadow: "black 3px 3px 3px",
-                    borderRadius: "8px"
-                }}>
-                    {shortDateFormat.format(mapDate)}
-                </Typography>
+                {isEligible ? 
+                <HowToRegIcon sx={{fontSize: 20}} htmlColor="#00ff00" /> 
+                : 
+                <Tooltip title={reason} placement="right" arrow><BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" /></Tooltip>}
             </Box>
+            <Box display="flex" alignItems="center">
+                {tierVoteLoading ?
+                <Skeleton height="28px" width="100px"></Skeleton>
+                :
+                <Rating
+                    value={fakeTier}
+                    max={MAX_TIER}
+                    precision={1}
+                    highlightSelectedOnly
+                    disabled={!isEligible}
+                    readOnly={pendingUpdate}
+                    getLabelText={formatTier}
+                    onChange={(e, v) => onChange(v)}
+                    slotProps={{
+                        icon: {
+                            component: (props) => <MapTierRatingList selectedValue={fakeTier} {...props}  />
+                        }
+                    }}
+                />}
+            </Box>
+            {tierVoteInfo &&
+            <Tooltip title={dateTimeFormat.format(new Date(tierVoteInfo.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
+                <Typography variant="caption" color="textSecondary" mt={0.5} textAlign={"center"}>
+                    Submitted {<TimeAgo date={tierVoteInfo.updatedAt} title="" formatter={relativeTimeFormatter} />}
+                </Typography>
+            </Tooltip>}
         </Box>
     );
 }
@@ -336,12 +519,12 @@ function MapsPage() {
                 Maps
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">
-                <MapThumb size={30} map={selectedMap} sx={{mr: 1.25}} />
+                <MapThumb size={30} map={selectedMap} sx={{ mr: 1.25 }} />
                 <Typography color="textPrimary">
                     {selectedMap.name}
-                    <Typography 
+                    <Typography
                         ml={1}
-                        fontWeight="bold" 
+                        fontWeight="bold"
                         variant="caption"
                         sx={{
                             padding: 0.4,
@@ -370,7 +553,7 @@ function MapsPage() {
     return (
         <Box flexGrow={1}>
             <Box display="flex" alignItems="center">
-                <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1}}>
+                <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1 }}>
                     <Link underline="hover" color="inherit" href="/">
                         Home
                     </Link>

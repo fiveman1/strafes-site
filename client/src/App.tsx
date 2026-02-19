@@ -6,10 +6,10 @@ import { pink, lightBlue } from "@mui/material/colors";
 import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
-import { getLoggedInUser, getMaps, getSettings, Maps } from "./api/api";
+import { getLoggedInUser, getMaps, getVotingInfo, Maps } from "./api/api";
 import { ContextParams, MapCount } from "./common/common";
 import { Breadcrumbs, useMediaQuery } from "@mui/material";
-import { Game, LoginUser, Map, SettingsValues } from "shared";
+import { Game, LoginUser, Map, SettingsValues, TierVotingEligibilityInfo } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./common/sort";
 import { saveSettingsToLocalStorage, useSettings } from "./common/states";
@@ -29,12 +29,13 @@ const LinkBehavior = React.forwardRef<
 });
 
 function App() {
-    const [maps, setMaps] = useState<Maps>({});
-    const [loggedInUser, setLoggedInUser] = useState<LoginUser>();
-    const [loggedInUserLoading, setLoggedInUserLoading] = useState(true);
-    const [settings, setSettingsState] = useSettings();
-    const [mode, setMode] = useState<PaletteMode>(localStorage.getItem("theme") as PaletteMode || "dark");
-    const [areSettingsReady, setSettingsReady] = useState(false);
+    const [ maps, setMaps ] = useState<Maps>({});
+    const [ loggedInUser, setLoggedInUser ] = useState<LoginUser>();
+    const [ loggedInUserLoading, setLoggedInUserLoading ] = useState(true);
+    const [ settings, setSettingsState ] = useSettings();
+    const [ mode, setMode ] = useState<PaletteMode>(localStorage.getItem("theme") as PaletteMode || "dark");
+    const [ votingInfo, setVotingInfo ] = useState<TierVotingEligibilityInfo>();
+    
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
 
@@ -74,35 +75,32 @@ function App() {
         };
     }, [maps]);
 
-    const contextParams: ContextParams = {
-        maps: mapInfo.maps,
-        sortedMaps: mapInfo.sortedMaps,
-        mapCounts: mapInfo.mapCounts,
-        settings: settings,
-        loggedInUser: loggedInUser,
-        isAuthorized: loggedInUser !== undefined,
-        setSettings: setSettings,
-        setMode: setMode
-    };
+    const contextParams: ContextParams = useMemo(() => {
+        return {
+            maps: mapInfo.maps,
+            sortedMaps: mapInfo.sortedMaps,
+            mapCounts: mapInfo.mapCounts,
+            settings: settings,
+            loggedInUser: loggedInUser,
+            setSettings: setSettings,
+            setMode: setMode,
+            votingInfo: votingInfo
+        };
+    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, setSettings, settings, votingInfo]);
 
     useEffect(() => {
         getMaps().then(setMaps);
-        getLoggedInUser().then((user) => {
-            setLoggedInUser(user);
+        
+        getLoggedInUser().then(async (user) => {
             setLoggedInUserLoading(false);
+            if (user) {
+                setLoggedInUser(user);
+                if (user.settings) setSettings(user.settings);
+                const info = await getVotingInfo();
+                setVotingInfo(info);
+            }
         });
-    }, []);
-
-    useEffect(() => {
-        if (contextParams.isAuthorized) {
-            getSettings().then((result) => {
-                setSettingsReady(true);
-                if (result) {
-                    setSettings(result);
-                }
-            });
-        }
-    }, [contextParams.isAuthorized, setSettings]);
+    }, [setSettings]);
 
     const settingsOpen = location.pathname.startsWith("/settings");
     useEffect(() => {
@@ -139,7 +137,7 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={!areSettingsReady || settingsOpen} />
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} />
             <Box component="main" display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
                 <NuqsAdapter>
                     <Outlet context={contextParams}/>
