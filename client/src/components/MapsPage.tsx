@@ -62,7 +62,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const [ filterTier, setFilterTier ] = useState(-1);
     const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
     const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
-    const [ expanded, setExpanded ] = useState(false);
+    const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") === "true");
     const [ tierVoteInfo, setTierVoteInfo ] = useState<MapTierInfo>();
     const [ tierVoteLoading, setTierVoteLoading ] = useState(true);
 
@@ -101,7 +101,8 @@ function MapInfoCard(props: MapDetailsProps) {
 
     const handleExpand = (expanded: boolean) => {
         setExpanded(expanded);
-    }
+        localStorage.setItem("expandMapDetail", expanded ? "true" : "false");
+    };
 
     const open = Boolean(anchorEl);
     const id = open ? "filter-popover" : undefined;
