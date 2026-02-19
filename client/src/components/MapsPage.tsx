@@ -491,8 +491,12 @@ function MapsPage() {
             document.title = `${map.name} - maps - strafes`;
             setInitalLoadComplete(true);
             setSelectedMap(map);
+            const allowedGames = getAllowedGameForMap(map);
+            if (!allowedGames.includes(game)) {
+                setGame(allowedGames[0]);
+            }
         }
-    }, [id, initalLoadComplete, maps, onSelectMap, selectedMap]);
+    }, [game, id, initalLoadComplete, maps, onSelectMap, selectedMap, setGame]);
 
     const onDownloadMapCsv = () => {
         if (sortedMaps.length < 1) {
