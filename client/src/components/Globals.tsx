@@ -15,7 +15,7 @@ import { makeUserColumn } from "./cards/grids/util/columns";
 import { useGameStyle, useIncludeBonuses } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NumberGridPagination from "./cards/grids/NumberGridPagination";
-import MapLink, { MAP_THUMB_SIZE } from "./displays/MapLink";
+import MapLink from "./displays/MapLink";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(true);
@@ -168,8 +168,6 @@ function LeaderboardCard(props: IRanksCardProps) {
         }
     }), [updateRowData]);
 
-    const rowHeight = (game === Game.all || style == Style.all) ? 100 : Math.round(MAP_THUMB_SIZE * 1.6667);
-
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
         <Box marginBottom={1} display="flex">
@@ -185,7 +183,7 @@ function LeaderboardCard(props: IRanksCardProps) {
             dataSource={dataSource}
             pageSizeOptions={[10]}
             rowCount={rowCount}
-            rowHeight={rowHeight}
+            rowHeight={100}
             initialState={{
                 pagination: { 
                     paginationModel: { pageSize: 10 }
