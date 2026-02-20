@@ -199,7 +199,7 @@ export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]
     for (const row of rows) {
         const map = idToMap.get(+row.map_id);
         if (!map) continue;
-        const tier = +row.tier;
+        const tier = row.tier;
         map.votes.unweighted[tier - 1] = +row.unweighted;
         map.votes.weighted[tier - 1] = +row.weighted;
     }
