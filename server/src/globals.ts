@@ -1,5 +1,5 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, LeaderboardSortBy, Style, Time, TimeSortBy, Map as StrafesMap } from "shared";
+import { Game, LeaderboardSortBy, Style, Time, TimeSortBy, Map as StrafesMap, MAX_TIER } from "shared";
 
 interface WithTotalCount {
     totalCount: string
@@ -365,7 +365,11 @@ export class GlobalsClient {
             modes: row.modes,
             loadCount: row.load_count,
             smallThumb: row.small_thumb ?? undefined,
-            largeThumb: row.large_thumb ?? undefined
+            largeThumb: row.large_thumb ?? undefined,
+            votes: {
+                unweighted: Array(MAX_TIER).fill(0),
+                weighted: Array(MAX_TIER).fill(0)
+            }
         };
     }
 }

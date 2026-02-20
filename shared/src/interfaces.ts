@@ -92,6 +92,10 @@ export interface Map {
     modes: number
     loadCount: number
     tier?: number
+    votes: {
+        unweighted: number[]
+        weighted: number[]
+    }
 }
 
 export enum TimeSortBy {

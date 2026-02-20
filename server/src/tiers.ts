@@ -104,7 +104,6 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
     }
 
     const weight = await getVoteWeight(userId, map);
-    console.log(weight);
 
     const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?) AS new 
         ON DUPLICATE KEY UPDATE 
@@ -168,4 +167,40 @@ export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, n
     }
 
     return mapIdToTier;
+}
+
+interface VotesSQL {
+    map_id: string
+    tier: number
+    unweighted: string
+    weighted: string
+}
+type VotesRow = VotesSQL & RowDataPacket;
+
+export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]) {
+    const idToMap = new Map<number, StrafesMap>();
+    for (const map of maps) {
+        idToMap.set(map.id, map);
+    }
+
+    const query = `
+        SELECT
+            map_id,
+            tier,
+            COUNT(*) AS unweighted,
+            SUM(weight) AS weighted
+        FROM
+            tier_votes
+        GROUP BY
+            map_id, tier
+    ;`;
+    const [rows] = await client.pool.query<VotesRow[]>(query);
+
+    for (const row of rows) {
+        const map = idToMap.get(+row.map_id);
+        if (!map) continue;
+        const tier = +row.tier;
+        map.votes.unweighted[tier - 1] = +row.unweighted;
+        map.votes.weighted[tier - 1] = +row.weighted;
+    }
 }

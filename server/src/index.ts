@@ -17,7 +17,7 @@ import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
-import { calcMapTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
+import { calcMapTiers, getUserTierForMap, loadTierVotingEligibility, setMapVoteCounts, setUserTierForMap } from "./tiers.js";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -887,7 +887,11 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
         return;
     }
 
+    const voteCountPromise = setMapVoteCounts(globalsClient, maps);
+    
     const tiers = await calcMapTiers(globalsClient);
+    await voteCountPromise;
+    
     for (const map of maps) {
         map.tier = tiers.get(map.id);
     }

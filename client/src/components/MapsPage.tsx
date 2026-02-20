@@ -31,6 +31,7 @@ import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
 import TimeAgo from "react-timeago";
 import MapTierListSelector from "./forms/MapTierListSelector";
 import WarningIcon from '@mui/icons-material/Warning';
+import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -252,11 +253,10 @@ function MapDetailSection(props: MapDetailSectionProps) {
         <Box display="flex" flexDirection="column" marginTop={2}>
             <Box display="flex" flexDirection={smallScreen ? "column" : "row"} alignItems="center" justifyContent="center">
                 <Box display="flex" flexDirection="column" paddingRight={smallScreen ? 0 : 8} paddingLeft={smallScreen ? 0 : 8} paddingBottom={smallScreen ? 1.5 : 0} >
-                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" marginBottom={3} flexGrow={1}>
+                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" marginBottom={1.5} flexGrow={1}>
                         <Typography
                             variant="h4"
                             fontWeight="bold"
-                            margin={0.5}
                             color={isLightMode ? "primary" : "textPrimary"}
                         >
                             {selectedMap.name}
@@ -383,8 +383,15 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
         setFakeTier(tierVoteInfo?.tier ?? null);
     }, [tierVoteInfo?.tier]);
 
+    const tierAxisNames: number[] = [];
+    const colors: string[] = [];
+    for (let i = 1; i <= MAX_TIER; ++i) {
+        tierAxisNames.push(i);
+        colors.push(getMapTierColor(i, isLightMode ? 80 : 100));
+    }
+
     return (
-        <Box display="flex" flexDirection="column" marginTop={2}>
+        <Box display="flex" flexDirection="column" marginTop={1.5}>
             <Box display="flex" alignItems="center" justifyContent="center" mb={0.25}>
                 <Typography component="legend" variant="body2" mr={0.25}>
                     Tier voting
@@ -394,9 +401,9 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 : 
                 <Tooltip title={reason} placement="right" arrow><BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" /></Tooltip>}
             </Box>
-            <Box display="flex" alignItems="center">
+            <Box display="flex" alignItems="center" justifyContent="center">
                 {tierVoteLoading ?
-                <Skeleton height="28px" width="100px"></Skeleton>
+                <Skeleton height="28px" width="200px"></Skeleton>
                 :
                 <MapTierListSelector 
                     selectedTiers={fakeTier ? [fakeTier] : []} 
@@ -405,9 +412,36 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     readOnly={pendingUpdate} 
                 />}
             </Box>
+            {selectedMap.tier !== undefined &&
+            <Box display="flex" justifyContent="center" pt={0.25} pb={0.25}>
+                <ChartContainer 
+                    width={28 * MAX_TIER} 
+                    height={24}
+                    xAxis={[{
+                        data: tierAxisNames,
+                        scaleType: "band",
+                        colorMap: {
+                            type: "ordinal",
+                            colors: colors
+                        },
+                        position: "none",
+                        valueFormatter: (val) => formatTier(val)
+                    }]}
+                    yAxis={[{position: "none"}]}
+                    margin={0}
+                    series={[{
+                        type: "bar",
+                        data: selectedMap.votes.weighted,
+                        valueFormatter: (val) => val === null ? "none" : val.toString()
+                    }]}
+                >
+                    <BarPlot />
+                    <ChartsTooltip />
+                </ChartContainer>
+            </Box>}
             {tierVoteInfo &&
             <Tooltip title={dateTimeFormat.format(new Date(tierVoteInfo.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
-                <Typography variant="caption" color="textSecondary" mt={0.5} textAlign={"center"}>
+                <Typography variant="caption" color="textSecondary" mt={0.5} textAlign="center">
                     Submitted {<TimeAgo date={tierVoteInfo.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
             </Tooltip>}
