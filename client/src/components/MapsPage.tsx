@@ -413,10 +413,10 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 />}
             </Box>
             {selectedMap.tier !== undefined &&
-            <Box display="flex" justifyContent="center" pt={0.25} pb={0.25}>
+            <Box display="flex" justifyContent="center" pt={0.5} pb={0.25}>
                 <ChartContainer 
                     width={28 * MAX_TIER} 
-                    height={24}
+                    height={22}
                     xAxis={[{
                         data: tierAxisNames,
                         scaleType: "band",
@@ -427,7 +427,10 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                         position: "none",
                         valueFormatter: (val) => formatTier(val)
                     }]}
-                    yAxis={[{position: "none"}]}
+                    yAxis={[{
+                        position: "none", 
+                        domainLimit: "strict"
+                    }]}
                     margin={0}
                     series={[{
                         type: "bar",
