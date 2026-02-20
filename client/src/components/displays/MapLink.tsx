@@ -1,8 +1,8 @@
-import { Box, Link, Typography, useTheme } from "@mui/material";
-import { Game, Style, formatCourse, formatGame, formatGameShort, formatStyle, formatStyleShort } from "shared";
+import { Box, darken, Link, Typography, useTheme } from "@mui/material";
+import { Game, Style, formatCourse, formatGameShort, formatStyleShort, formatTier } from "shared";
 import { ContextParams, getGameColor, getStyleColor } from "../../common/common";
 import { Link as RouterLink, useOutletContext } from "react-router";
-import { UNRELEASED_MAP_COLOR } from "../../common/colors";
+import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../../common/colors";
 import MapThumb from "./MapThumb";
 
 export const MAP_THUMB_SIZE = 50;
@@ -26,7 +26,9 @@ function MapLink(props: IMapLinkProps) {
     const mapInfo = maps[id];
 
     const isUnreleased = !mapInfo ? false : new Date() < new Date(mapInfo.date);
-    const useShortNames = showGame && showStyle;
+
+    const tier = mapInfo?.tier;
+    const tierColor = getMapTierColor(tier);
     
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
@@ -74,15 +76,32 @@ function MapLink(props: IMapLinkProps) {
                         {formatCourse(course)}
                     </Typography>
                     : <></>}
-                    {showGame || showStyle ? 
-                    <Box lineHeight="normal" display="inline-flex">
+                    <Box lineHeight="normal" display="inline-flex" alignItems="center">
+                        <Typography 
+                            lineHeight={1.0}
+                            variant="caption" 
+                            fontWeight="bold" 
+                            sx={{
+                                padding: 0.3,
+                                backgroundColor: darken(tierColor, 0.4),
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px",
+                                border: 1,
+                                borderColor: tierColor
+                            }}
+                        >
+                            {formatTier(tier, true)}
+                        </Typography>
                         {showGame &&
                         <Typography
-                            lineHeight="normal"
+                            lineHeight={1.0}
                             fontWeight="bold" 
                             variant="caption"
+                            ml={0.5}
                             sx={{
-                                padding: 0.4,
+                                padding: 0.3,
                                 overflow: "hidden",
                                 backgroundColor: getGameColor(game, theme),
                                 textAlign: "center",
@@ -91,16 +110,16 @@ function MapLink(props: IMapLinkProps) {
                                 borderRadius: "6px"
                             }}
                         >
-                            {useShortNames ? formatGameShort(game) : formatGame(game)}
+                            {formatGameShort(game)}
                         </Typography>}
                         {showStyle &&
                         <Typography
-                            lineHeight="normal"
+                            lineHeight={1.0}
                             fontWeight="bold" 
                             variant="caption"
-                            ml={showGame ? 1 : 0}
+                            ml={0.5}
                             sx={{
-                                padding: 0.4,
+                                padding: 0.3,
                                 overflow: "hidden",
                                 backgroundColor: getStyleColor(style, theme),
                                 textAlign: "center",
@@ -109,10 +128,9 @@ function MapLink(props: IMapLinkProps) {
                                 borderRadius: "6px"
                             }}
                         >
-                            {useShortNames ? formatStyleShort(style) : formatStyle(style)}
+                            {formatStyleShort(style)}
                         </Typography>}
                     </Box>
-                    : <></>}
                 </Box>
             </Box>
         </Link>

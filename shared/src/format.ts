@@ -98,13 +98,13 @@ export function formatStyleShort(style: Style) {
         case Style.fly:
             return "fly";
         case Style.fly_sustain:
-            return "fly sustain";
+            return "fly sus";
         case Style.rocket:
             return "rocket";
         case Style.rocket_strafe:
-            return "rkt strafe";
+            return "rkt str";
         case Style.strafe_3d:
-            return "3d strafe";
+            return "3d str";
         case Style.all:
             return "all";
         default:
@@ -245,7 +245,7 @@ export const NO_TIER = 0;
 export const MAX_TIER = 8;
 export function formatTier(tier: number | undefined, short?: boolean) {
     if (tier === undefined || tier === NO_TIER) {
-        return short ? "none" : "no tier";
+        return short ? "n/a" : "no tier";
     }
     return short ? `t${tier}` : `tier ${tier}`;
 }
