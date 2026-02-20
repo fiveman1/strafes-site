@@ -29,6 +29,8 @@ function MapLink(props: IMapLinkProps) {
 
     const tier = mapInfo?.tier;
     const tierColor = getMapTierColor(tier);
+    const gameColor = getGameColor(game, theme);
+    const styleColor = getStyleColor(style, theme);
     
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
@@ -92,7 +94,7 @@ function MapLink(props: IMapLinkProps) {
                                 borderColor: tierColor
                             }}
                         >
-                            {formatTier(tier, true)}
+                            {formatTier(tier, showGame || showStyle)}
                         </Typography>
                         {showGame &&
                         <Typography
@@ -103,11 +105,13 @@ function MapLink(props: IMapLinkProps) {
                             sx={{
                                 padding: 0.3,
                                 overflow: "hidden",
-                                backgroundColor: getGameColor(game, theme),
+                                backgroundColor: gameColor,
                                 textAlign: "center",
                                 color: "white",
                                 textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px"
+                                borderRadius: "6px",
+                                border: 1,
+                                borderColor: gameColor
                             }}
                         >
                             {formatGameShort(game)}
@@ -121,11 +125,13 @@ function MapLink(props: IMapLinkProps) {
                             sx={{
                                 padding: 0.3,
                                 overflow: "hidden",
-                                backgroundColor: getStyleColor(style, theme),
+                                backgroundColor: styleColor,
                                 textAlign: "center",
                                 color: "white",
                                 textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px"
+                                borderRadius: "6px",
+                                border: 1,
+                                borderColor: styleColor
                             }}
                         >
                             {formatStyleShort(style)}
