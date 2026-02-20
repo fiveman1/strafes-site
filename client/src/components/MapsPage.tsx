@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, darken, IconButton, IconContainerProps, Link, Paper, Popover, Rating, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, darken, IconButton, Link, Paper, Popover, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../common/common";
-import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
+import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, NO_TIER, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
 import StyleSelector from "./forms/StyleSelector";
 import TimesCard from "./cards/grids/TimesCard";
 import GameSelector from "./forms/GameSelector";
@@ -29,7 +29,8 @@ import HowToRegIcon from '@mui/icons-material/HowToReg';
 import BlockIcon from '@mui/icons-material/Block';
 import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
 import TimeAgo from "react-timeago";
-import TierSelector from "./forms/TierSelector";
+import MapTierListSelector from "./forms/MapTierListSelector";
+import WarningIcon from '@mui/icons-material/Warning';
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -59,7 +60,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const { sortedMaps, loggedInUser } = useOutletContext() as ContextParams;
 
     const [ filterGame, setFilterGame ] = useState(Game.all);
-    const [ filterTier, setFilterTier ] = useState(-1);
+    const [ filterTiers, setFilterTiers ] = useState(new Set(Array.from(Array(MAX_TIER + 1).keys()))); // A set containing the numbers 0, 1, 2, ..., MAX_TIER
     const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
     const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
     const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") === "true");
@@ -104,6 +105,19 @@ function MapInfoCard(props: MapDetailsProps) {
         localStorage.setItem("expandMapDetail", expanded ? "true" : "false");
     };
 
+    const onSelectFilterTier = (tier: number) => {
+        setFilterTiers((tiers) => {
+            const copy = new Set(tiers);
+            if (copy.has(tier)) {
+                copy.delete(tier);
+            }
+            else {
+                copy.add(tier);
+            }
+            return copy;
+        });
+    };
+
     const open = Boolean(anchorEl);
     const id = open ? "filter-popover" : undefined;
 
@@ -112,9 +126,7 @@ function MapInfoCard(props: MapDetailsProps) {
         maps = maps.filter((map) => map.game === filterGame);
     }
 
-    if (filterTier !== -1) {
-        maps = maps.filter((map) => map.tier === filterTier || (filterTier === 0 && map.tier === undefined));
-    }
+    maps = maps.filter((map) => filterTiers.has(map.tier ?? NO_TIER));
 
     let compareFunc: (a: Map, b: Map) => number;
     switch (sort) {
@@ -185,9 +197,16 @@ function MapInfoCard(props: MapDetailsProps) {
                             <FilterAltIcon sx={{ mr: 1 }} />
                             <GameSelector game={filterGame} setGame={setFilterGame} label="Filter game" allowSelectAll disablePadding />
                         </Box>
-                        <Box display="flex" alignItems="center" mt={3}>
+                        <Box display="flex" alignItems="center" mt={2}>
                             <FilterAltIcon sx={{ mr: 1 }} />
-                            <TierSelector tier={filterTier} setTier={setFilterTier} />
+                            <Box width="140px">
+                                <Typography variant="caption" color="textSecondary" p={0.25}>
+                                    Filter tier
+                                </Typography>
+                                <MapTierListSelector selectedTiers={Array.from(filterTiers)} onSelectTier={onSelectFilterTier} disableHoverHighlight showNone />
+                            </Box>
+                            <Box flexGrow={1} />
+                            {filterTiers.size === 0 && <WarningIcon color="warning" />}
                         </Box>
                         <Box display="flex" alignItems="center" mt={3} mr={-1}>
                             <SortIcon sx={{ mr: 1 }} />
@@ -320,43 +339,6 @@ function MapDetailSection(props: MapDetailSectionProps) {
     );
 }
 
-function MapTierRatingList(props: IconContainerProps & {selectedValue: number | null}) {
-    const { selectedValue, value, ...other } = props;
-    const theme = useTheme();
-
-    const isLightMode = theme.palette.mode === "light";
-    const classes = (other.className ?? "").split(/\s+/);
-    
-    const selected = selectedValue === value || !classes.includes("MuiRating-iconEmpty");
-    const color = getMapTierColor(value, selected ? 100 : 30);
-
-    return (
-        <Box 
-            component="span" 
-            {...other}
-            p={0.25}
-        >
-            <Typography 
-            className="ratingItem"
-            textAlign="center"
-            variant="button"
-            fontWeight={selected ? "bold" : undefined}
-            sx={{
-                border: 1,
-                borderRadius: "4px",
-                width: 24,
-                height: 24,
-                color: isLightMode ? "white" : color,
-                bgcolor: isLightMode ? darken(color, 0.1) : undefined,
-                borderColor: isLightMode ? color : undefined,
-                userSelect: "none"
-            }}>
-                {value}
-            </Typography>
-        </Box>
-    );
-}
-
 function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
     if (!voteInfo) {
         return "You are not logged in";
@@ -387,14 +369,15 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     const [ fakeTier, setFakeTier ] = useState(tierVoteInfo?.tier ?? null);
     const [ pendingUpdate, setPendingUpdate ] = useState(false);
 
-    const onChange = useCallback(async (val: number | null) => {
-        setFakeTier(val);
+    const onChange = useCallback(async (val: number) => {
+        const tier = val === fakeTier ? null : val;
+        setFakeTier(tier);
         setPendingUpdate(true);
-        const info = await voteForMapTier(selectedMap.id, val);
+        const info = await voteForMapTier(selectedMap.id, tier);
         setTierVoteInfo(info);
         setFakeTier(info ? info.tier : null);
         setPendingUpdate(false);
-    }, [selectedMap.id, setTierVoteInfo]);
+    }, [fakeTier, selectedMap.id, setTierVoteInfo]);
 
     useEffect(() => {
         setFakeTier(tierVoteInfo?.tier ?? null);
@@ -415,20 +398,11 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 {tierVoteLoading ?
                 <Skeleton height="28px" width="100px"></Skeleton>
                 :
-                <Rating
-                    value={fakeTier}
-                    max={MAX_TIER}
-                    precision={1}
-                    highlightSelectedOnly
+                <MapTierListSelector 
+                    selectedTiers={fakeTier ? [fakeTier] : []} 
+                    onSelectTier={onChange} 
                     disabled={!isEligible}
-                    readOnly={pendingUpdate}
-                    getLabelText={formatTier}
-                    onChange={(e, v) => onChange(v)}
-                    slotProps={{
-                        icon: {
-                            component: (props) => <MapTierRatingList selectedValue={fakeTier} {...props}  />
-                        }
-                    }}
+                    readOnly={pendingUpdate} 
                 />}
             </Box>
             {tierVoteInfo &&
@@ -511,7 +485,7 @@ function MapsPage() {
 
         const csvConfig = mkConfig({
             filename: "maps", columnHeaders: [
-                "id", "name", "creator", "game", "release_date", "load_count", "courses"
+                "id", "name", "creator", "game", "release_date", "load_count", "courses", "tier"
             ]
         });
         const mapData: Record<string, number | string | boolean | null | undefined>[] = [];
@@ -523,7 +497,8 @@ function MapsPage() {
                 game: formatGame(map.game),
                 release_date: map.date,
                 load_count: map.loadCount,
-                courses: map.modes
+                courses: map.modes,
+                tier: map.tier ?? 0
             });
         }
         const csv = generateCsv(csvConfig)(mapData);
