@@ -63,7 +63,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const [ filterTiers, setFilterTiers ] = useState(new Set(Array.from(Array(MAX_TIER + 1).keys()))); // A set containing the numbers 0, 1, 2, ..., MAX_TIER
     const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
     const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
-    const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") === "true");
+    const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") !== "false"); // Expanded by default
     const [ tierVoteInfo, setTierVoteInfo ] = useState<MapTierInfo>();
     const [ tierVoteLoading, setTierVoteLoading ] = useState(true);
 
