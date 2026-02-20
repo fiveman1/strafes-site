@@ -435,7 +435,12 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     series={[{
                         type: "bar",
                         data: selectedMap.votes.weighted,
-                        valueFormatter: (val) => val === null ? "none" : val.toString()
+                        label: "Weight",
+                        valueFormatter: (val, { dataIndex }) => {
+                            const weighted = val ?? 0;
+                            const unweighted = selectedMap.votes.unweighted[dataIndex];
+                            return `${weighted} (${unweighted} vote${unweighted === 1 ? "" : "s"})`;
+                        }
                     }]}
                 >
                     <BarPlot />
