@@ -339,6 +339,22 @@ function MapDetailSection(props: MapDetailSectionProps) {
     );
 }
 
+function getEligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
+    if (!voteInfo) {
+        return "";
+    }
+    if (voteInfo.moderationStatus === ModerationStatus.Whitelisted) {
+        return "You are eligible (whitelisted)";
+    }
+    if (game === Game.bhop && voteInfo.bhopCompletions >= 20) {
+        return `You are eligible (${voteInfo.bhopCompletions} bhop completions)`;
+    }
+    if (game === Game.surf && voteInfo.surfCompletions >= 20) {
+        return `You are eligible (${voteInfo.surfCompletions} surf completions)`;
+    }
+    return "";
+}
+
 function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
     if (!voteInfo) {
         return "You are not logged in";
@@ -365,7 +381,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
 
     const isLightMode = theme.palette.mode === "light";
     const isEligible = (votingInfo && isEligibleForVoting(votingInfo, selectedMap.game));
-    const reason = getIneligibleReason(votingInfo, selectedMap.game);
+    const reason = isEligible ? getEligibleReason(votingInfo, selectedMap.game) : getIneligibleReason(votingInfo, selectedMap.game);
     const [ fakeTier, setFakeTier ] = useState(tierVoteInfo?.tier ?? null);
     const [ pendingUpdate, setPendingUpdate ] = useState(false);
 
@@ -397,9 +413,13 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     Tier voting
                 </Typography>
                 {isEligible ? 
-                <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} /> 
+                <Tooltip title={reason} placement="right" arrow>
+                    <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} /> 
+                </Tooltip>
                 : 
-                <Tooltip title={reason} placement="right" arrow><BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" /></Tooltip>}
+                <Tooltip title={reason} placement="right" arrow>
+                    <BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" />
+                </Tooltip>}
             </Box>
             <Box display="flex" alignItems="center" justifyContent="center">
                 {tierVoteLoading ?

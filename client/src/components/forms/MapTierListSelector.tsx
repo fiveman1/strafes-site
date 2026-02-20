@@ -31,13 +31,13 @@ function MapTierListItem(props: MapTierListItemProps) {
         onSelectTier(tier);
     }, [onSelectTier, readOnly, tier]);
 
-    const onMouseMove = () => {
+    const onMouseMove = useCallback(() => {
         setIsHovered(true);
-    };
+    }, []);
 
-    const onMouseLeave = () => {
+    const onMouseLeave = useCallback(() => {
         setIsHovered(false);
-    };
+    }, []);
 
     return (
         <Box 
