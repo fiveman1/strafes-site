@@ -73,9 +73,15 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
 }
 
 async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
-    const times = await getTimes(userId, map.id, 1, 1, map.game, Style.all, 0);
-    if (times && times.pagination.total_items > 0) {
-        return 5; // Extra weight for people who have beaten the map
+    const times = await getTimes(userId, map.id, 20, 1, map.game, Style.all, 0);
+    if (times) {
+        // Not faste or low gravity
+        const allowedStyles = new Set([Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards]);
+        for (const time of times.data) {
+            if (allowedStyles.has(time.style_id)) {
+                return 5; // Extra weight for people who have beaten the map
+            }
+        }
     }
     return 1;
 }
@@ -98,6 +104,7 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
     }
 
     const weight = await getVoteWeight(userId, map);
+    console.log(weight);
 
     const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?) AS new 
         ON DUPLICATE KEY UPDATE 
