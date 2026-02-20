@@ -19,6 +19,8 @@ function convertToSort(sortVal: MapTimesSortRaw, isAsc: boolean): MapTimesSort {
             return isAsc ? "dateAsc" : "dateDesc";
         case "count":
             return isAsc ? "countAsc" : "countDesc";
+        case "tier":
+            return isAsc ? "tierAsc" : "tierDesc";
     }
 }
 
@@ -32,6 +34,8 @@ function translateSort(val: MapTimesSortRaw): string {
             return "release date";
         case "count":
             return "popularity";
+        case "tier":
+            return "tier";
     }
 }
 
@@ -53,6 +57,9 @@ function MapSortSelector(props: IMapSortSelectorProps) {
             case "countAsc":
             case "countDesc":
                 return "count";
+            case "tierAsc":
+            case "tierDesc":
+                return "tier";
         }
     }, [sort]);
 
@@ -62,6 +69,7 @@ function MapSortSelector(props: IMapSortSelectorProps) {
             case "creatorAsc":
             case "dateAsc":
             case "countAsc":
+            case "tierAsc":
                 return true;
             default:
                 return false
@@ -88,7 +96,7 @@ function MapSortSelector(props: IMapSortSelectorProps) {
                     label="Sort"
                     onChange={handleChangeSort}
                 >
-                    {(["name", "creator", "date", "count"] as MapTimesSortRaw[]).map((sort) => <MenuItem value={sort}>{translateSort(sort)}</MenuItem>)}
+                    {(["name", "creator", "date", "count", "tier"] as MapTimesSortRaw[]).map((sort) => <MenuItem value={sort}>{translateSort(sort)}</MenuItem>)}
                 </Select>
             </FormControl>
             <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}> 

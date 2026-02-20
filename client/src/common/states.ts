@@ -45,8 +45,8 @@ export function saveSettingsToLocalStorage(settings: SettingsValues) {
     localStorage.setItem("country", settings.country ?? "");
 }
 
-export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc";
-export type MapTimesSortRaw = "name" | "creator" | "date" | "count";
+export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc" | "tierAsc" | "tierDesc";
+export type MapTimesSortRaw = "name" | "creator" | "date" | "count" | "tier";
 
 export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
 export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";

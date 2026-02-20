@@ -142,6 +142,12 @@ function MapInfoCard(props: MapDetailsProps) {
         case "countDesc":
             compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : a.loadCount - b.loadCount;
             break;
+        case "tierAsc":
+            compareFunc = (a, b) => a.tier === b.tier ? sortMapsByName(a, b) : (a.tier ?? 99) - (b.tier ?? 99);
+            break;
+        case "tierDesc":
+            compareFunc = (a, b) => a.tier === b.tier ? sortMapsByName(a, b) : (b.tier ?? -99) - (a.tier ?? -99);
+            break;
     }
 
     maps.sort(compareFunc);
