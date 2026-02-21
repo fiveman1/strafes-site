@@ -155,7 +155,7 @@ export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, n
         ON
             tier_votes.map_id = stats.map_id
         WHERE
-            ABS(tier - stats.avg) <= (2 * stats.std)
+            ABS(tier - stats.avg) <= (stats.std)
         GROUP BY
             tier_votes.map_id
     ;`;
