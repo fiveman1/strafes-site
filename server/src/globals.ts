@@ -120,7 +120,7 @@ export class GlobalsClient {
         return records.map(GlobalsClient.recordToTime);
     }
 
-    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number): Promise<{ total: number; wrs: Time[]; }> {
+    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number, mapId?: number): Promise<{ total: number; wrs: Time[]; }> {
         let query = `SELECT globals.*, users.username, maps.name as map_name, COUNT(globals.time_id) OVER() as totalCount
         FROM globals 
         INNER JOIN users ON globals.user_id = users.user_id 
@@ -132,6 +132,11 @@ export class GlobalsClient {
         if (userId !== undefined) {
             whereClause += " AND globals.user_id = ?";
             values.push(userId);
+        }
+
+        if (mapId !== undefined) {
+            whereClause += " AND globals.map_id = ?";
+            values.push(mapId);
         }
 
         if (game !== Game.all) {

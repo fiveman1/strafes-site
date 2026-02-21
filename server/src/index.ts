@@ -55,6 +55,7 @@ const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
 const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 25, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 80, validate: { xForwardedForHeader: !IS_DEV_MODE } });
+const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
@@ -707,13 +708,53 @@ app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res)
     res.status(200).json(timeInfo);
 });
 
+const publicWrsValidator = vine.create({
+    game: validators.game().optional(),
+    style: validators.style().optional(),
+    userId: vine.number().withoutDecimals().nonNegative().optional(),
+    mapId: vine.number().withoutDecimals().nonNegative().optional(),
+    course: vine.number().withoutDecimals().nonNegative().optional(),
+    page: vine.number().withoutDecimals().positive()
+});
+
+app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
+    const [error, result] = await publicWrsValidator.tryValidate(req.query);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const game = result.game;
+    const style = result.style;
+    const userId = result.userId;
+    const mapId = result.mapId;
+    const course = result.course;
+    const page = result.page;
+
+    const start = (page - 1) * 100;
+    const end = start + 99;
+
+    const timeInfo = await getTimesPaged(start, end, TimeSortBy.DateDesc, course ?? -1, true, game ?? Game.all, style ?? Style.all, { userId: userId, mapId: mapId });
+
+    if (!timeInfo) {
+        res.status(404).json({ error: "Not found" });
+        return;
+    }
+
+    timeInfo.pagination.page = page;
+    timeInfo.pagination.pageSize = 100;
+    timeInfo.pagination.totalPages = Math.ceil(timeInfo.pagination.totalItems / 100);
+
+    res.status(200).json(timeInfo);
+});
+
 async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: number, mapId?: number }) {
     let times: Time[];
     let pagination: Pagination;
     const { userId, mapId } = searchInfo;
 
     if (onlyWR) {
-        const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId);
+        const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId, mapId);
 
         if (!wrs) return undefined;
 
