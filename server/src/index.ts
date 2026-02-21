@@ -743,8 +743,11 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
 
     await setUserThumbsForList(timeInfo.data, true);
     const maps = await globalsClient.getAllMaps();
+    const tiers = await calcMapTiers(globalsClient);
+   
     const idToMap = new Map<number, StrafesMap>();
     for (const map of maps) {
+        map.tier = tiers.get(map.id);
         idToMap.set(map.id, map);
     }
 
