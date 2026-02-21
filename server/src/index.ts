@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
@@ -741,11 +741,47 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
         return;
     }
 
+    await setUserThumbsForList(timeInfo.data, true);
+    const maps = await globalsClient.getAllMaps();
+    const idToMap = new Map<number, StrafesMap>();
+    for (const map of maps) {
+        idToMap.set(map.id, map);
+    }
+
+    const data = timeInfo.data.map((time) => {
+        const map = idToMap.get(time.mapId);
+        return {
+            game_id: time.game,
+            style_id: time.style,
+            time: time.time,
+            date: time.date,
+            id: time.id,
+            course: time.course,
+            user: {
+                id: time.userId,
+                username: time.username,
+                thumbnail: time.userThumb ?? null,
+                country: time.userCountry ?? null,
+                role: time.userRole ?? null
+            },
+            map: {
+                id: time.mapId,
+                display_name: time.map,
+                creator: map?.creator ?? null,
+                released_on: map?.date ?? null,
+                thumbnail: map?.largeThumb ?? null,
+                game_id: map?.game ?? null,
+                courses: map?.modes ?? null,
+                tier: map?.tier ?? null
+            }
+        };
+    });
+
     timeInfo.pagination.page = page;
     timeInfo.pagination.pageSize = 100;
     timeInfo.pagination.totalPages = Math.ceil(timeInfo.pagination.totalItems / 100);
 
-    res.status(200).json(timeInfo);
+    res.status(200).json({data: data, pagination: timeInfo.pagination});
 });
 
 async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: number, mapId?: number }) {
