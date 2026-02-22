@@ -87,20 +87,15 @@ async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
     return 1;
 }
 
-export async function setUserTierForMap(client: GlobalsClient, userId: number, mapId: number, tier: number | undefined): Promise<MapTierInfo | undefined> {
-    const map = await client.getMap(mapId);
-    if (!map) {
-        return undefined;
-    }
-
+export async function setUserTierForMap(client: GlobalsClient, userId: number, map: StrafesMap, tier: number | undefined): Promise<MapTierInfo | undefined> {
     if (tier === undefined) {
         const query = `DELETE FROM tier_votes WHERE user_id=? AND map_id=?;`;
-        const values = [userId, mapId];
+        const values = [userId, map.id];
         await client.pool.query(query, values);
         return undefined;
     }
 
-    if (!(await canUserVoteOnMap(client, userId, mapId))) {
+    if (!(await canUserVoteOnMap(client, userId, map.id))) {
         return undefined;
     }
 
@@ -111,12 +106,12 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
         tier=new.tier,
         weight=new.weight
     ;`;
-    const values = [tier, weight, userId, mapId];
+    const values = [tier, weight, userId, map.id];
     await client.pool.query(query, [values]);
 
     return {
         userId: userId,
-        mapId: mapId,
+        mapId: map.id,
         tier: tier,
         weight: weight,
         updatedAt: new Date().toISOString()
@@ -208,7 +203,7 @@ export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]
 
 export const getAllMapsWithTiers = memoize(getAllMapsWithTiersCore, { maxAge: 30 * 60 * 1000 });
 async function getAllMapsWithTiersCore(client: GlobalsClient): Promise<StrafesMap[]> {
-    const maps = structuredClone(await client.getAllMaps());
+    const maps = await client.getAllMaps();
 
     const voteCountPromise = setMapVoteCounts(client, maps);
 

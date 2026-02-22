@@ -135,9 +135,10 @@ app.post("/api/auth/tiers", rateLimitSettings, async (req, res) => {
     const map = await globalsClient.getMap(result.mapId);
     if (!map) {
         res.status(400).json({ error: "Invalid map ID" });
+        return;
     }
 
-    const tier = await setUserTierForMap(globalsClient, user.userId, result.mapId, result.tier);
+    const tier = await setUserTierForMap(globalsClient, user.userId, map, result.tier);
 
     res.status(200).json({ result: tier });
 });
