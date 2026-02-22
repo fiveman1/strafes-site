@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import Box from "@mui/material/Box";
-import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Grid, Typography, useMediaQuery } from "@mui/material";
 import HomeCard from "./cards/HomeCard";
 import PersonIcon from '@mui/icons-material/Person';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -12,7 +12,6 @@ import { ContextParams } from "../common/common";
 
 function Home() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 520px)");
-    const theme = useTheme();
     const { loggedInUser } = useOutletContext() as ContextParams;
     
     useEffect(() => {
@@ -33,11 +32,11 @@ function Home() {
             variant="h4"
             fontWeight="bold"
             sx={{
-                backgroundImage: `radial-gradient(${theme.palette.primary.main}, #fb51aa)`,
                 textAlign: "center", 
                 color: "white",
                 textShadow: "black 2px 2px 2px",
-                borderRadius: "12px"
+                backgroundColor: "#fb51aa",
+                borderRadius: "8px"
             }}
         >
             strafes
