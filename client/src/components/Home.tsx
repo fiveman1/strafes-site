@@ -30,13 +30,14 @@ function Home() {
             padding={1} 
             lineHeight={1}
             variant="h4"
-            fontWeight="bold"
             sx={{
                 textAlign: "center", 
                 color: "white",
-                textShadow: "black 2px 2px 2px",
+                textShadow: "black 1px 1px 1px",
                 backgroundColor: "#fb51aa",
-                borderRadius: "8px"
+                borderRadius: "8px",
+                fontFamily: '"Goldman", sans-serif',
+                fontStyle: "normal"
             }}
         >
             strafes
