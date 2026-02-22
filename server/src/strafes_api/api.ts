@@ -1,6 +1,7 @@
 import { exit } from "process";
-import { Api } from "./client.js";
+import { Api, TimePlacement } from "./client.js";
 import memoize from "memoize";
+import memCache from "memory-cache";
 import { Game, RankSortBy, Style, TimeSortBy } from "shared";
 import { IS_DEV_MODE } from "../util.js";
 
@@ -9,6 +10,8 @@ if (!STRAFES_KEY) {
     console.error("Missing StrafesNET API key");
     exit(1);
 }
+
+const placementCache: memCache.CacheClass<string, number> = new memCache.Cache();
 
 const STRAFES_CLIENT = new Api({
     baseUrl: "https://api.strafes.net/api/v1",
@@ -22,9 +25,26 @@ const STRAFES_CLIENT = new Api({
 });
 
 export async function getPlacements(timeIds: string[]) {
+    const placements: TimePlacement[] = [];
+    const notCachedIds = new Set<string>();
     try {
-        const res = await STRAFES_CLIENT.time.placementList({ids: timeIds.join(",")});
-        return res.data.data;
+        for (const timeId of timeIds) {
+            const placement = placementCache.get(timeId);
+            if (placement !== null) {
+                placements.push({id: timeId, placement: placement});
+            }
+            else {
+                notCachedIds.add(timeId);
+            }
+        }
+        if (notCachedIds.size > 0) {
+            const res = await STRAFES_CLIENT.time.placementList({ids: Array.from(notCachedIds).join(",")});
+            for (const placement of res.data.data) {
+                placementCache.put(placement.id, placement.placement, 5 * 60 * 1000); // 5 minutes
+                placements.push(placement);
+            }
+        }
+        return placements;
     }
     catch (err) {
         if (IS_DEV_MODE) {

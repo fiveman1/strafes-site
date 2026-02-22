@@ -503,8 +503,14 @@ function MapsPage() {
         const allowedStyles = getAllowedStyles(allowedGame);
         const styleForLink = allowedStyles.includes(style) ? style : allowedStyles[0];
 
+        const urlParams = new URLSearchParams(location.search);
+
         let href = map ? `/maps/${map.id}` : "/maps";
         href += `?style=${styleForLink}&game=${allowedGame}&course=0`;
+        const sortParam = urlParams.get("sort");
+        if (sortParam) {
+            href += `&sort=${sortParam}`;
+        }
 
         setInitalLoadComplete(true);
         setSelectedMap(map);

@@ -184,16 +184,16 @@ function TimesGrid(props: ITimesCardProps) {
         return sortBy;
     }, [defaultSort]);
 
-    const onSortChanged = (model: GridSortModel) => {
+    const onSortChanged = useCallback((model: GridSortModel) => {
         const sortBy = getSort(model);
         setCurrentSortBy(sortBy);
-    };
+    }, [getSort, setCurrentSortBy]);
 
-    const onPageChange = (model: GridPaginationModel) => {
+    const onPageChange = useCallback((model: GridPaginationModel) => {
         const start = (model.page * model.pageSize) + 1;
         setStart(start);
         setMaxVisisbleRow((model.page + 1) * model.pageSize);
-    };
+    }, [setStart]);
 
     const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
         if (isCompact && params.field === "time") {
@@ -244,6 +244,7 @@ function TimesGrid(props: ITimesCardProps) {
             setRowCount(0);
             return { rows: [], rowCount: 0 }
         }
+        
         setRowCount(timeData.pagination.totalItems);
         return {
             rows: timeData.times,
@@ -258,31 +259,22 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }), [getSort, updateRowData]);
 
-    let sort: GridSortModel;
-    switch (currentSortBy) {
-        case TimeSortBy.TimeAsc:
-            sort = [{ field: "time", sort: "asc" }];
-            break;
-        case TimeSortBy.TimeDesc:
-            sort = [{ field: "time", sort: "desc" }];
-            break;
-        case TimeSortBy.DateAsc:
-            sort = [{ field: "date", sort: "asc" }];
-            break;
-        case TimeSortBy.DateDesc:
-            sort = [{ field: "date", sort: "desc" }];
-            break;
-    }
+    const sort: GridSortModel = useMemo(() => {
+        switch (currentSortBy) {
+            case TimeSortBy.TimeAsc:
+                return [{ field: "time", sort: "asc" }];
+            case TimeSortBy.TimeDesc:
+                return [{ field: "time", sort: "desc" }];
+            case TimeSortBy.DateAsc:
+                return [{ field: "date", sort: "asc" }];
+            case TimeSortBy.DateDesc:
+                return [{ field: "date", sort: "desc" }];
+        }
+    }, [currentSortBy]);
 
-    const rowHeight = useMemo(() => {
-        if (isCompact) {
-            return 100;
-        }
-        else if (!hideMap) {
-            return Math.round(MAP_THUMB_SIZE * 1.6667);
-        }
-        return undefined;
-    }, [hideMap, isCompact])
+    let rowHeight: number | undefined = undefined;
+    if (isCompact) rowHeight = 100;
+    else if (!hideMap) rowHeight = Math.round(MAP_THUMB_SIZE * 1.6667);
 
     return (
         <DataGrid

@@ -448,8 +448,7 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
     }
 
     if (!onlyWR) {
-        await setTimePlacements(timeInfo.data);
-        await setTimeDiffs(timeInfo.data); // Has to happen after placements
+        await setTimeDiffs(timeInfo.data);
     }
 
     res.status(200).json(timeInfo);
@@ -603,30 +602,6 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
         pagination: pagination
     });
 });
-
-async function setTimePlacements(times: Time[]) {
-    if (times.length < 1) {
-        return;
-    }
-
-    const timeIds: string[] = [];
-    for (const time of times) {
-        timeIds.push(time.id);
-    }
-
-    const placementData = await getPlacements(timeIds);
-
-    const idToPlacement = new Map<string, number>();
-    if (placementData) {
-        for (const placementInfo of placementData) {
-            idToPlacement.set(placementInfo.id, placementInfo.placement);
-        }
-    }
-
-    for (const time of times) {
-        time.placement = idToPlacement.get(time.id);
-    }
-}
 
 async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     if (times.length < 1) {
@@ -795,6 +770,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
     let times: Time[];
     let pagination: Pagination;
     const { userId, mapId } = searchInfo;
+    const idToPlacement = new Map<string, number>();
 
     if (onlyWR) {
         const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId, mapId);
@@ -830,6 +806,36 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             resTimes.push(...page.data);
         }
 
+        if (mapId === undefined || (sort !== TimeSortBy.TimeAsc && sort !== TimeSortBy.TimeDesc)) {
+            // Calc placements, placements endpoint does 25 at a time
+            // Batch them up efficiently into 25 time windows in order to reduce API calls
+            // getPlacements caches each placement for 5 minutes
+            const startWindow = Math.floor(pageStart / 25) * 25;
+            const endWindow = Math.ceil((pageEnd + 1) / 25) * 25;
+            const placementPromises = [];
+            let timeIds: string[] = [];
+            
+            for (let i = startWindow; (i < resTimes.length) && (i < endWindow); ++i) {
+                const time = resTimes[i];
+                timeIds.push(time.id);
+                if (timeIds.length >= 25) {
+                    placementPromises.push(getPlacements(timeIds));
+                    timeIds = [];
+                }
+            }
+            if (timeIds.length > 0) {
+                placementPromises.push(getPlacements(timeIds));
+            }
+            
+            const resolved = await Promise.all(placementPromises);
+            for (const result of resolved) {
+                if (!result) continue;
+                for (const placement of result) {
+                    idToPlacement.set(placement.id, placement.placement);
+                }
+            }
+        }
+
         times = [];
         const timeIds = new Set<string>();
         for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
@@ -853,6 +859,12 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 
     if (userId === undefined) {
         await setUserInfoForList(authClient, times);
+    }
+
+    if (idToPlacement.size > 0) {
+        for (const time of times) {
+            time.placement = idToPlacement.get(time.id);
+        }
     }
 
     return {
@@ -931,18 +943,8 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 
     const times = timeData.data;
 
-    if (sort === TimeSortBy.TimeAsc) {
-        sortTimes(times, true);
-    }
-    else if (sort === TimeSortBy.TimeDesc) {
-        sortTimes(times, false);
-    }
-
-    const promises = [];
-    if (sort === TimeSortBy.DateAsc || sort == TimeSortBy.DateDesc) {
-        promises.push(setTimePlacements(times));
-    }
-    else {
+    if (sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc) {
+        sortTimes(times, sort === TimeSortBy.TimeAsc);
         let i = 1;
         for (const time of times) {
             if (sort === TimeSortBy.TimeAsc) {
@@ -955,10 +957,8 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
         }
     }
 
-    promises.push(authClient, setUserInfoForList(authClient, times));
-
+    const promises = [setUserInfoForList(authClient, times), setTimeDiffs(times)];
     await Promise.all(promises);
-    await setTimeDiffs(times); // Has to happen after placements are calculated
 
     res.status(200).json(timeData);
 });
