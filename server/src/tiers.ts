@@ -2,16 +2,17 @@ import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationSt
 import { getTimes, getUserInfo } from "./strafes_api/api.js";
 import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
+import memoize from "memoize";
 
 export async function loadTierVotingEligibility(userId: number): Promise<TierVotingEligibilityInfo> {
     const userInfoPromise = getUserInfo(userId);
     const bhopTimesPromise = getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0);
     const surfTimesPromise = getTimes(userId, undefined, 1, 1, Game.surf, Style.all, 0);
-    
+
     let status = ModerationStatus.Default;
     let bhopComps = 0;
     let surfComps = 0;
-    
+
     const userInfo = await userInfoPromise;
     if (userInfo) {
         status = userInfo.state_id;
@@ -56,7 +57,7 @@ type MapTierInfoRow = MapTierInfoSQL & RowDataPacket;
 export async function getUserTierForMap(client: GlobalsClient, userId: number, mapId: number): Promise<MapTierInfo | undefined> {
     const query = `SELECT * FROM tier_votes WHERE user_id=? AND map_id=?;`;
     const values = [userId, mapId];
-    
+
     const [[row]] = await client.pool.query<MapTierInfoRow[]>(query, values);
 
     if (!row) {
@@ -112,7 +113,7 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
     ;`;
     const values = [tier, weight, userId, mapId];
     await client.pool.query(query, [values]);
-    
+
     return {
         userId: userId,
         mapId: mapId,
@@ -203,4 +204,20 @@ export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]
         map.votes.unweighted[tier - 1] = +row.unweighted;
         map.votes.weighted[tier - 1] = +row.weighted;
     }
+}
+
+export const getAllMapsWithTiers = memoize(getAllMapsWithTiersCore, { maxAge: 30 * 60 * 1000 });
+async function getAllMapsWithTiersCore(client: GlobalsClient): Promise<StrafesMap[]> {
+    const maps = structuredClone(await client.getAllMaps());
+
+    const voteCountPromise = setMapVoteCounts(client, maps);
+
+    const tiers = await calcMapTiers(client);
+    await voteCountPromise;
+
+    for (const map of maps) {
+        map.tier = tiers.get(map.id);
+    }
+
+    return maps;
 }

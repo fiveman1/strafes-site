@@ -17,7 +17,7 @@ import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
-import { calcMapTiers, getUserTierForMap, loadTierVotingEligibility, setMapVoteCounts, setUserTierForMap } from "./tiers.js";
+import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -130,6 +130,11 @@ app.post("/api/auth/tiers", rateLimitSettings, async (req, res) => {
     if (!user) {
         res.status(401).json({ error: "You are not logged in" });
         return;
+    }
+
+    const map = await globalsClient.getMap(result.mapId);
+    if (!map) {
+        res.status(400).json({ error: "Invalid map ID" });
     }
 
     const tier = await setUserTierForMap(globalsClient, user.userId, result.mapId, result.tier);
@@ -742,12 +747,10 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
     }
 
     await setUserThumbsForList(timeInfo.data, true);
-    const maps = await globalsClient.getAllMaps();
-    const tiers = await calcMapTiers(globalsClient);
+    const maps = await getAllMapsWithTiers(globalsClient);
    
     const idToMap = new Map<number, StrafesMap>();
     for (const map of maps) {
-        map.tier = tiers.get(map.id);
         idToMap.set(map.id, map);
     }
 
@@ -960,20 +963,11 @@ app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async 
 });
 
 app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) => {
-    const maps = await globalsClient.getAllMaps();
+    const maps = await getAllMapsWithTiers(globalsClient);
 
-    if (!maps) {
+    if (maps.length === 0) {
         res.status(404).json({ error: "Not found" });
         return;
-    }
-
-    const voteCountPromise = setMapVoteCounts(globalsClient, maps);
-    
-    const tiers = await calcMapTiers(globalsClient);
-    await voteCountPromise;
-    
-    for (const map of maps) {
-        map.tier = tiers.get(map.id);
     }
 
     res.status(200).json({
