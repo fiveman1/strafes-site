@@ -6,6 +6,7 @@ import { getGameColor, MapDetailsProps } from "../../common/common";
 import SearchIcon from '@mui/icons-material/Search';
 import MapThumb from "../displays/MapThumb";
 import { getMapTierColor } from "../../common/colors";
+import { filterMapsBySearch } from "../../common/sort";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -168,46 +169,6 @@ function MapSearch(props: MapSearchProps) {
     const [ listRef, setListRef ] = useListCallbackRef(null);
     const [ inputValue, setIntputValue ] = useState("");
 
-    const filterOptions = useCallback((options: StrafesMap[], inputValue: string): StrafesMap[] => {
-        const filteredMaps: StrafesMap[] = [];
-        const alreadyFilteredMaps = new Set<number>();
-        const search = inputValue.toLowerCase();
-
-        // Exact map name matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().startsWith(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Near map name matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Exact creator matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().startsWith(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Near creator matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().includes(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        return filteredMaps;
-    }, []);
-
     const onSelect = useCallback((map: StrafesMap | undefined) => {
         setSelectedMap(map);
     }, [setSelectedMap]);
@@ -219,16 +180,16 @@ function MapSearch(props: MapSearchProps) {
         }
 
         const realInputValue = selectedMap?.name === inputValue ? "" : inputValue;
-        const currentOptions = filterOptions(maps, realInputValue);
+        const currentOptions = filterMapsBySearch(maps, realInputValue);
         const index = currentOptions.findIndex((val) => val.id === option.id);
         if (index !== -1) {
             listRef.scrollToRow({index: index});
         }
-    }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
+    }, [inputValue, listRef, maps, selectedMap?.name]);
 
     const onFilterOptionsChange = useCallback((options: StrafesMap[], state: FilterOptionsState<StrafesMap>) => {
-        return filterOptions(options, state.inputValue);
-    }, [filterOptions]);
+        return filterMapsBySearch(options, state.inputValue);
+    }, []);
 
     return (
     <Autocomplete

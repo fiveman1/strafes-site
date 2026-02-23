@@ -1,20 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { Breadcrumbs, darken, IconButton, Link, Paper, Popover, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { useNavigate, useOutletContext, useParams } from "react-router";
-import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps } from "../common/common";
-import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, NO_TIER, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
+import { useNavigate, useOutletContext, useParams, Link as RouterLink } from "react-router";
+import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps, mapsToCsv } from "../common/common";
+import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
 import StyleSelector from "./forms/StyleSelector";
 import TimesCard from "./cards/grids/TimesCard";
 import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
-import { download, generateCsv, mkConfig } from "export-to-csv";
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
 import { MapTimesSort, useCourse, useGameStyle } from "../common/states";
 import MapSearch from "./search/MapSearch";
 import { grey } from "@mui/material/colors";
-import { sortMapsByName } from "../common/sort";
+import { sortAndFilterMaps } from "../common/sort";
 import MapSortSelector from "./forms/MapSortSelector";
 import TuneIcon from '@mui/icons-material/Tune';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
@@ -45,15 +44,6 @@ const longDateFormat = Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit"
 });
-
-function dateCompareFunc(a: Map, b: Map, isAsc: boolean) {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-    if (dateA === dateB) {
-        return sortMapsByName(a, b);
-    }
-    return isAsc ? dateB - dateA : dateA - dateB;
-}
 
 function MapInfoCard(props: MapDetailsProps) {
     const { selectedMap } = props;
@@ -122,48 +112,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const open = Boolean(anchorEl);
     const id = open ? "filter-popover" : undefined;
 
-    let maps = sortedMaps;
-    if (filterGame !== Game.all) {
-        maps = maps.filter((map) => map.game === filterGame);
-    }
-
-    maps = maps.filter((map) => filterTiers.has(map.tier ?? NO_TIER));
-
-    let compareFunc: (a: Map, b: Map) => number;
-    switch (sort) {
-        case "nameAsc":
-            compareFunc = sortMapsByName;
-            break;
-        case "nameDesc":
-            compareFunc = (a, b) => sortMapsByName(a, b) * -1;
-            break;
-        case "creatorAsc":
-            compareFunc = (a, b) => a.creator === b.creator ? sortMapsByName(a, b) : a.creator.toLowerCase() > b.creator.toLowerCase() ? 1 : -1;
-            break;
-        case "creatorDesc":
-            compareFunc = (a, b) => a.creator === b.creator ? sortMapsByName(a, b) : a.creator.toLowerCase() < b.creator.toLowerCase() ? 1 : -1;
-            break;
-        case "dateAsc":
-            compareFunc = (a, b) => dateCompareFunc(a, b, true);
-            break;
-        case "dateDesc":
-            compareFunc = (a, b) => dateCompareFunc(a, b, false);
-            break;
-        case "countAsc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : b.loadCount - a.loadCount;
-            break;
-        case "countDesc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : a.loadCount - b.loadCount;
-            break;
-        case "tierAsc":
-            compareFunc = (a, b) => a.tier === b.tier ? sortMapsByName(a, b) : (a.tier ?? 99) - (b.tier ?? 99);
-            break;
-        case "tierDesc":
-            compareFunc = (a, b) => a.tier === b.tier ? sortMapsByName(a, b) : (b.tier ?? -99) - (a.tier ?? -99);
-            break;
-    }
-
-    maps.sort(compareFunc);
+    const maps = sortAndFilterMaps(sortedMaps, filterGame, filterTiers, sort);
 
     return (
         <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column", overflowWrap: "break-word" }}>
@@ -478,7 +427,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
 }
 
 function MapsPage() {
-    const { id } = useParams();
+    const { id } = useParams() as { id: string };
     const { maps, sortedMaps } = useOutletContext() as ContextParams;
 
     const [initalLoadComplete, setInitalLoadComplete] = useState(false);
@@ -547,38 +496,13 @@ function MapsPage() {
     }, [game, id, initalLoadComplete, maps, onSelectMap, selectedMap, setGame]);
 
     const onDownloadMapCsv = useCallback(() => {
-        if (sortedMaps.length < 1) {
-            return;
-        }
-
-        const csvConfig = mkConfig({
-            filename: "maps", columnHeaders: [
-                "id", "name", "creator", "game", "release_date", "load_count", "courses", "tier"
-            ]
-        });
-        const mapData: Record<string, number | string | boolean | null | undefined>[] = [];
-        for (const map of sortedMaps) {
-            mapData.push({
-                id: map.id,
-                name: map.name,
-                creator: map.creator,
-                game: formatGame(map.game),
-                release_date: map.date,
-                load_count: map.loadCount,
-                courses: map.modes,
-                tier: map.tier ?? 0
-            });
-        }
-        const csv = generateCsv(csvConfig)(mapData);
-        download(csvConfig)(csv);
+        mapsToCsv(sortedMaps);
     }, [sortedMaps]);
-
-    const onResetMap = useCallback(() => onSelectMap(undefined), [onSelectMap]);
 
     const breadcrumbs: React.ReactElement[] = [];
     if (selectedMap) {
         breadcrumbs.push(
-            <Link underline="hover" color="inherit" component="button" onClick={onResetMap}>
+            <Link underline="hover" color="inherit" component={RouterLink} to="/maps">
                 Maps
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">
@@ -630,8 +554,6 @@ function MapsPage() {
                     </Box>
                 </Tooltip>
             </Box>
-            {selectedMap &&
-            <>
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
@@ -643,7 +565,6 @@ function MapsPage() {
             <Box padding={1}>
                 <TimesCard defaultSort={TimeSortBy.TimeAsc} mapId={id} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
-            </>}
         </Box>
     );
 }
