@@ -122,7 +122,6 @@ function LeaderboardCard(props: IRanksCardProps) {
     const { game, style } = props;
 
     const [rowCount, setRowCount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
     const apiRef = useGridApiRef();
 
     const gridCols = makeColumns(game, style);
@@ -132,16 +131,12 @@ function LeaderboardCard(props: IRanksCardProps) {
     }, [apiRef, game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
-        setIsLoading(true);
         const page = await getLeaderboardPage(start, end, game, style, sort);
-        setIsLoading(false);
 
         if (page === undefined) {
-            setRowCount(0);
             return { rows: [], rowCount: 0 };
         }
 
-        setRowCount(page.total);
         return {
             rows: page.data,
             rowCount: page.total
@@ -178,11 +173,11 @@ function LeaderboardCard(props: IRanksCardProps) {
         <DataGrid
             columns={gridCols}
             apiRef={apiRef}
-            loading={isLoading}
             pagination
             dataSource={dataSource}
             pageSizeOptions={[10]}
             rowCount={rowCount}
+            onRowCountChange={setRowCount}
             rowHeight={100}
             initialState={{
                 pagination: { 

@@ -89,23 +89,12 @@ interface IRanksCardProps {
 function RanksCard(props: IRanksCardProps) {
     const { game, style } = props;
 
-    const [rowCount, setRowCount] = useState(-1);
-    const [isLoading, setIsLoading] = useState(false);
     const [maxPage, setMaxPage] = useState(0);
-    const [placementWidth, setPlacementWidth] = useState(50);
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     const apiRef = useGridApiRef();
 
-    const gridCols = makeColumns(placementWidth);
-
-    useEffect(() => {
-        if (numDigits(maxPage) > 3) {
-            setPlacementWidth(62);
-        }
-        else {
-            setPlacementWidth(50);
-        }
-    }, [maxPage]);
+    const placementWidth = numDigits(maxPage) > 3 ? 62 : 50;
+    const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
 
     useEffect(() => {
         apiRef.current?.setPage(0);
@@ -116,17 +105,13 @@ function RanksCard(props: IRanksCardProps) {
     }, []);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: RankSortBy) => {
-        setIsLoading(true);
         const ranks = await getRanks(start, end, sortBy, game, style);
-        setIsLoading(false);
 
         if (ranks === undefined) {
             return { rows: [], pageInfo: {hasNextPage: false} }
         }
+
         const hasMore = ranks.length >= (end - start);
-        if (!hasMore) {
-            setRowCount(start + ranks.length);
-        }
         return {
             rows: ranks,
             pageInfo: {hasNextPage: hasMore}
@@ -152,14 +137,13 @@ function RanksCard(props: IRanksCardProps) {
             className="ranksGrid"
             columns={gridCols}
             apiRef={apiRef}
-            loading={isLoading}
             pagination
             dataSource={dataSource}
             pageSizeOptions={[20]}
-            rowCount={rowCount}
             initialState={{
                 pagination: { 
-                    paginationModel: { pageSize: 20 }
+                    paginationModel: { pageSize: 20 },
+                    rowCount: -1
                 },
                 sorting: {
                     sortModel: [{ field: "rank", sort: "asc" }],
