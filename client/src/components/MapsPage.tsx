@@ -573,10 +573,12 @@ function MapsPage() {
         download(csvConfig)(csv);
     }, [sortedMaps]);
 
+    const onResetMap = useCallback(() => onSelectMap(undefined), [onSelectMap]);
+
     const breadcrumbs: React.ReactElement[] = [];
     if (selectedMap) {
         breadcrumbs.push(
-            <Link underline="hover" color="inherit" component="button" onClick={() => onSelectMap(undefined)}>
+            <Link underline="hover" color="inherit" component="button" onClick={onResetMap}>
                 Maps
             </Link>,
             <Box display="flex" flexDirection="row" alignItems="center">
@@ -628,11 +630,11 @@ function MapsPage() {
                     </Box>
                 </Tooltip>
             </Box>
+            {selectedMap &&
+            <>
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
-            {selectedMap &&
-            <>
             <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
                 <StyleSelector game={game} style={style} setStyle={setStyle} />

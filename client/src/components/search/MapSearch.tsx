@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, FilterOptionsState, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, formatTier, Map as StrafesMap } from "shared";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../../common/common";
@@ -226,6 +226,10 @@ function MapSearch(props: MapSearchProps) {
         }
     }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
 
+    const onFilterOptionsChange = useCallback((options: StrafesMap[], state: FilterOptionsState<StrafesMap>) => {
+        return filterOptions(options, state.inputValue);
+    }, [filterOptions]);
+
     return (
     <Autocomplete
         sx={{
@@ -238,7 +242,7 @@ function MapSearch(props: MapSearchProps) {
         inputMode="search"
         value={selectedMap ?? null}
         inputValue={inputValue}
-        filterOptions={(options, state) => filterOptions(options, state.inputValue)}
+        filterOptions={onFilterOptionsChange}
         onChange={(e, v) => onSelect(v ?? undefined)}
         onInputChange={(e, v) => setIntputValue(v)}
         onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}
