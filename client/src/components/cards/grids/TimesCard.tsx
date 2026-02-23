@@ -115,13 +115,15 @@ function TimesGrid(props: ITimesCardProps) {
         gridApiRef, pageSize: propPageSize } = props;
 
     let apiRef = useGridApiRef();
+    if (gridApiRef) {
+        apiRef = gridApiRef;
+    }
 
-    const [rowCount, setRowCount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
-    
     const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
     const shortScreen = useMediaQuery("@media screen and (max-height: 1000px)");
+
+    const [rowCount, setRowCount] = useState(0);
 
     const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
         parseAsNumberLiteral([TimeSortBy.DateAsc, TimeSortBy.DateDesc, TimeSortBy.TimeAsc, TimeSortBy.TimeDesc])
@@ -139,21 +141,8 @@ function TimesGrid(props: ITimesCardProps) {
 
     let pageSize = propPageSize ?? 10;
     if (shortScreen) pageSize = 10;
-
     const initPage = Math.floor(start / pageSize);
     const [maxVisisbleRow, setMaxVisisbleRow] = useState((initPage + 1) * pageSize);
-
-    let isCompact = false;
-    if (game === Game.all || style === Style.all) {
-        isCompact = under1000px;
-    }
-    else {
-        isCompact = under800px;
-    }
-
-    if (gridApiRef) {
-        apiRef = gridApiRef;
-    }
 
     useEffect(() => {
         apiRef.current?.setPageSize(pageSize);
@@ -195,6 +184,14 @@ function TimesGrid(props: ITimesCardProps) {
         setMaxVisisbleRow((model.page + 1) * model.pageSize);
     }, [setStart]);
 
+    let isCompact = false;
+    if (game === Game.all || style === Style.all) {
+        isCompact = under1000px;
+    }
+    else {
+        isCompact = under800px;
+    }
+
     const onColumnHeaderClicked = useCallback((params: GridColumnHeaderParams, event: MuiEvent<React.MouseEvent>) => {
         if (isCompact && params.field === "time") {
             event.preventDefault();
@@ -228,24 +225,19 @@ function TimesGrid(props: ITimesCardProps) {
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
         if (!allowOnlyWRs && !userId && !mapId) {
-            setRowCount(0);
             return { rows: [], rowCount: 0 }
         }
 
-        setIsLoading(true);
         const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, mapId, onlyWRs);
-        setIsLoading(false);
 
         if (onLoadTimes && timeData?.times) {
             onLoadTimes(timeData.times);
         }
 
         if (!timeData) {
-            setRowCount(0);
             return { rows: [], rowCount: 0 }
         }
         
-        setRowCount(timeData.pagination.totalItems);
         return {
             rows: timeData.times,
             rowCount: timeData.pagination.totalItems
@@ -281,7 +273,6 @@ function TimesGrid(props: ITimesCardProps) {
             className="timesGrid"
             columns={gridCols}
             apiRef={apiRef}
-            loading={isLoading}
             pagination
             dataSource={dataSource}
             pageSizeOptions={propPageSize !== undefined && propPageSize !== 10 ? [10, propPageSize] : [10]}
@@ -294,6 +285,7 @@ function TimesGrid(props: ITimesCardProps) {
                         pageSize: pageSize, 
                         page: initPage
                     },
+                    rowCount: 0
                 },
                 sorting: {
                     sortModel: sort,
@@ -302,6 +294,7 @@ function TimesGrid(props: ITimesCardProps) {
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
+            onRowCountChange={setRowCount}
             onPaginationModelChange={onPageChange}
             onSortModelChange={onSortChanged}
             onColumnHeaderClick={onColumnHeaderClicked}
@@ -311,7 +304,7 @@ function TimesGrid(props: ITimesCardProps) {
             slotProps={{
                 basePagination: {
                     material: {
-                        ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
+                        ActionsComponent: (props) =>  <NumberGridPagination rowCount={rowCount} {...props} />
                     }
                 }
             }}
