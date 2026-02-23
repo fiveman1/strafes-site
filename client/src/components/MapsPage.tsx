@@ -546,7 +546,7 @@ function MapsPage() {
         }
     }, [game, id, initalLoadComplete, maps, onSelectMap, selectedMap, setGame]);
 
-    const onDownloadMapCsv = () => {
+    const onDownloadMapCsv = useCallback(() => {
         if (sortedMaps.length < 1) {
             return;
         }
@@ -571,7 +571,7 @@ function MapsPage() {
         }
         const csv = generateCsv(csvConfig)(mapData);
         download(csvConfig)(csv);
-    };
+    }, [sortedMaps]);
 
     const breadcrumbs: React.ReactElement[] = [];
     if (selectedMap) {
@@ -631,6 +631,8 @@ function MapsPage() {
             <Box padding={1}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
+            {selectedMap &&
+            <>
             <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
                 <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
                 <StyleSelector game={game} style={style} setStyle={setStyle} />
@@ -639,6 +641,7 @@ function MapsPage() {
             <Box padding={1}>
                 <TimesCard defaultSort={TimeSortBy.TimeAsc} mapId={id} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
+            </>}
         </Box>
     );
 }
