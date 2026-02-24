@@ -9,20 +9,28 @@ import IconButton from "@mui/material/IconButton";
 import { ReactElement, useCallback, useEffect, useMemo, useState } from "react";
 import { ContextParams, getGameColor, mapsToCsv } from "../common/common";
 import { darken, useTheme } from "@mui/material/styles";
-import { useOutletContext } from "react-router";
+import { Link as RouterLink, useOutletContext } from "react-router";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from '@mui/icons-material/Search';
 import Grid from "@mui/material/Grid";
 import Pagination from "@mui/material/Pagination";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { formatGame, formatTier, Map as StrafesMap } from "shared";
+import { formatGame, formatGameShort, formatTier, Map as StrafesMap } from "shared";
 import { filterMapsBySearch } from "../common/sort";
 import MapThumb from "./displays/MapThumb";
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PersonIcon from '@mui/icons-material/Person';
 import { grey } from "@mui/material/colors";
+
+function useCardSize() {
+    const small = useMediaQuery("(max-width: 800px)");
+    const medium = useMediaQuery("(max-width: 1225px)");
+    if (small) return 190;
+    if (medium) return 230;
+    return 275;
+}
 
 const shortDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -38,19 +46,13 @@ function MapCard(props: MapCardProps) {
     const theme = useTheme();
     
     const isLightMode = theme.palette.mode === "light";
-    const small = useMediaQuery("(max-width: 480px)");
-    const med = useMediaQuery("(max-width: 800px)");
-    const large = useMediaQuery("(max-width: 1225px)");
     
-    let cardSize = 275;
-    if (small) cardSize = 160;
-    else if (med) cardSize = 190;
-    else if (large) cardSize = 230;
+    const cardSize = useCardSize();
 
     const mapDate = new Date(map.date);
     const isUnreleased = new Date() < mapDate;
 
-    const nameSpace = 48;
+    const nameSpace = cardSize < 230 ? 36 : 48;
     const nameHeight = nameSpace + "px";
 
     const creatorSpace = 36;
@@ -66,22 +68,41 @@ function MapCard(props: MapCardProps) {
                 height={cardSize} 
                 display="flex" 
                 flexDirection="column"
+                component={RouterLink}
+                to={`/maps/${map.id}`}
+                sx={{
+                    userSelect: "none",
+                    transition: "transform .1s ease",
+                    ":hover": { 
+                        //boxShadow: `0 0 16px ${colors[1]}`,
+                        //backgroundColor: colors[0],
+                        transform: "translateY(-2px)",
+                        "& .mapCard": { boxShadow: 6 },
+                        "& .mapImg": { transform: "scale(1.08)" },
+                        "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
+                    }
+                }}
             >
                 <Box 
-                    height={cardSize} 
+                    className="mapCard"
                     position="relative" 
                     borderRadius="6px" 
                     boxShadow={2}
                     bgcolor={isLightMode ? grey[400] : grey[800]}
+                    overflow="hidden"
+                    sx={{
+                        transition: ".4s ease",
+                    }}
                 >
                     <MapThumb 
+                        className="mapImg"
                         size={cardSize} 
                         map={map} 
                         useLargeThumb  
                         sx={{ 
-                            zIndex: -1, 
                             borderRadius: "6px 6px 8px 8px", 
-                            border: 0 
+                            border: 0,
+                            transition: "transform .4s ease"
                         }}
                     />
                     <Box 
@@ -104,7 +125,7 @@ function MapCard(props: MapCardProps) {
                                 borderRadius: "6px"
                             }}
                         >
-                            {formatGame(map.game)}
+                            {cardSize < 230 ? formatGameShort(map.game) : formatGame(map.game)}
                         </Typography>
                         <Typography 
                             variant="body2" 
@@ -168,7 +189,7 @@ function MapCard(props: MapCardProps) {
                             alignItems="center"
                         >
                             <Typography 
-                                variant="h5" 
+                                variant={cardSize < 230 ? "h6" : "h5" }
                                 title={map.name}
                                 fontWeight="bold"
                                 color="white"
@@ -184,6 +205,7 @@ function MapCard(props: MapCardProps) {
                         </Box>
                     </Box>
                     <Box
+                        className="mapCreator"
                         sx={{
                             position: "absolute",
                             bottom: "0px",
@@ -191,7 +213,8 @@ function MapCard(props: MapCardProps) {
                             width: "100%",
                             borderRadius: "0 0 6px 6px", 
                             boxShadow: 0,
-                            bgcolor: darken(tierColor, 0.25)
+                            bgcolor: darken(tierColor, 0.25),
+                            transition: ".4s ease"
                         }}
                     >
                         <Box 
@@ -231,10 +254,12 @@ interface MapBrowserProps {
     setPage: (page: number) => void
 }
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 12;
 
 function MapBrowser(props: MapBrowserProps) {
     const { maps, page, setPage } = props;
+
+    const cardSize = useCardSize();
 
     const count = Math.ceil(maps.length / PAGE_SIZE);
 
@@ -250,16 +275,18 @@ function MapBrowser(props: MapBrowserProps) {
     }, [pagedMaps]);
 
     return (
-        <Box display="flex" flexDirection="column">
-            <Grid container spacing={2} justifyContent="center">
-                {items}
-            </Grid>
-            <Box display="flex" justifyContent="center" mt={2}>
-                <Pagination 
-                    count={count} 
-                    page={page} 
-                    onChange={(e, p) => setPage(p)} 
-                />
+        <Box display="flex" justifyContent="center">
+            <Box display="flex" flexDirection="column" maxWidth={cardSize * 4 + (2 * 32)}>
+                <Grid container spacing={2} justifyContent="center">
+                    {items}
+                </Grid>
+                <Box display="flex" justifyContent="center" mt={2}>
+                    <Pagination 
+                        count={count} 
+                        page={page} 
+                        onChange={(e, p) => setPage(p)} 
+                    />
+                </Box>
             </Box>
         </Box>
     );
@@ -281,6 +308,9 @@ function MapSearchBar(props: MapSearchBarProps) {
             variant="outlined"
             type="search"
             autoFocus
+            autoCapitalize="off"
+            autoComplete="off"
+            spellCheck="false"
             slotProps={{
                 htmlInput: {
                     maxLength: 50
