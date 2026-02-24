@@ -1050,8 +1050,9 @@ app.get("*splat", async (req, res): Promise<any> => {
                 }
             }
         }
-        catch {
+        catch (err) {
             // Someone probably gave bad input
+            console.log(err);
         }
 
         // Don't give anyone an XSS attack
