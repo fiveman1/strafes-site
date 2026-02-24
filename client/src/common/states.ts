@@ -1,9 +1,10 @@
 import { PaletteMode } from "@mui/material";
 import { useState } from "react";
-import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, SettingsValues, Style, UserSearchData } from "shared";
+import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
-import { parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsStringEnum, useQueryState } from "nuqs";
+import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsStringEnum, useQueryState } from "nuqs";
+import { useMediaQuery, useTheme } from '@mui/material';
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -47,44 +48,53 @@ export function saveSettingsToLocalStorage(settings: SettingsValues) {
 
 export type MapTimesSort = "nameAsc" | "nameDesc" | "creatorAsc" | "creatorDesc" | "dateAsc" | "dateDesc" | "countAsc" | "countDesc" | "tierAsc" | "tierDesc";
 export type MapTimesSortRaw = "name" | "creator" | "date" | "count" | "tier";
+const MAP_SORTS: MapTimesSort[] = ["nameAsc", "nameDesc", "creatorAsc", "creatorDesc", "dateAsc", "dateDesc", "countAsc", "countDesc", "tierAsc", "tierDesc"] as const;
+
+export function useMapSort() {
+    return useQueryState("sort",
+        parseAsStringEnum<MapTimesSort>(MAP_SORTS)
+            .withDefault("nameAsc")
+            .withOptions({ history: "replace" })
+    );
+}
 
 export type CompareTimesSort = "mapAsc" | "mapDesc" | "dateAsc" | "dateDesc" | "timeAsc" | "timeDesc" | "diffAsc" | "diffDesc";
 export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
 const COMPARE_SORTS: CompareTimesSort[] = ["mapAsc", "mapDesc", "dateAsc", "dateDesc", "timeAsc", "timeDesc", "diffAsc", "diffDesc"] as const;
 
 export function useCompareSort() {
-    return useQueryState("sort", 
+    return useQueryState("sort",
         parseAsStringEnum<CompareTimesSort>(COMPARE_SORTS)
-        .withDefault("diffAsc")
-        .withOptions({ history: "replace" })
+            .withDefault("diffAsc")
+            .withOptions({ history: "replace" })
     );
 }
 
 export function useCourse() {
-    return useQueryState("course", 
+    return useQueryState("course",
         parseAsInteger
-        .withDefault(0)
-        .withOptions({ history: "replace" })
+            .withDefault(0)
+            .withOptions({ history: "replace" })
     );
 }
 
 export function useGame(allowAll?: boolean) {
     const context = useOutletContext() as ContextParams;
 
-    return useQueryState("game", 
+    return useQueryState("game",
         parseAsNumberLiteral(allowAll ? allGamesWithAll : allGames)
-        .withDefault(context.settings.defaultGame)
-        .withOptions({ history: "replace", clearOnDefault: false })
+            .withDefault(context.settings.defaultGame)
+            .withOptions({ history: "replace", clearOnDefault: false })
     );
 }
 
 function useStyle(allowAll?: boolean) {
     const context = useOutletContext() as ContextParams;
 
-    return useQueryState("style", 
+    return useQueryState("style",
         parseAsNumberLiteral(allowAll ? allStylesWithAll : allStyles)
-        .withDefault(context.settings.defaultStyle)
-        .withOptions({ history: "replace", clearOnDefault: false })
+            .withDefault(context.settings.defaultStyle)
+            .withOptions({ history: "replace", clearOnDefault: false })
     );
 }
 
@@ -103,7 +113,7 @@ export function useGameStyle(allowAll?: boolean) {
         return newStyle;
     };
 
-    return {game, setGame, style, setStyle};
+    return { game, setGame, style, setStyle };
 }
 
 export function useGameStyleNoParams() {
@@ -122,14 +132,14 @@ export function useGameStyleNoParams() {
         return newStyle;
     };
 
-    return {game, setGame, style, setStyle};
+    return { game, setGame, style, setStyle };
 }
 
 export function useIncludeBonuses() {
-    return useQueryState("bonuses", 
+    return useQueryState("bonuses",
         parseAsBoolean
-        .withDefault(true)
-        .withOptions({ history: "replace" })
+            .withDefault(true)
+            .withOptions({ history: "replace" })
     );
 }
 
@@ -171,8 +181,6 @@ export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => vo
     return [search, setUserSearch];
 }
 
-import { useMediaQuery, useTheme } from '@mui/material';
-
 // https://github.com/mui/material-ui/issues/10739#issuecomment-1484828925
 export function useAppBarHeight(): number {
     const {
@@ -190,4 +198,20 @@ export function useAppBarHeight(): number {
         toolbar[isDesktop ? queryDesktop : isLandscape ? queryLandscape : ""];
 
     return ((cssToolbar ?? toolbar) as { minHeight: number })?.minHeight ?? 0;
+}
+
+export function useFilterGame() {
+    return useQueryState("filterGame",
+        parseAsNumberLiteral(allGamesWithAll)
+            .withDefault(Game.all)
+            .withOptions({ history: "replace" })
+    );
+}
+
+export function useFilterTiers() {
+    return useQueryState("filterTiers",
+        parseAsArrayOf(parseAsInteger)
+            .withDefault(Array.from(Array(MAX_TIER + 1).keys()))
+            .withOptions({ history: "replace" })
+    );
 }

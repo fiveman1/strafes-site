@@ -35,7 +35,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
         >
             <MapThumb size={70} map={mapOption} />
             <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="32px">
                     <Typography 
                         variant="h6" 
                         overflow="hidden" 
@@ -63,9 +63,9 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         {formatGame(mapOption.game)}
                     </Typography>
                 </Box>
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="24px">
                     <Typography 
-                        variant="body1" 
+                        variant="body2" 
                         overflow="hidden" 
                         color="textSecondary" 
                         display="inline-block" 

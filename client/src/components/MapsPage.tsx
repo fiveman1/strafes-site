@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, darken, IconButton, Link, Paper, Popover, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, darken, IconButton, Link, Paper, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, Link as RouterLink } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps, mapsToCsv } from "../common/common";
 import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
@@ -10,14 +10,10 @@ import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
-import { MapTimesSort, useCourse, useGameStyle } from "../common/states";
+import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort } from "../common/states";
 import MapSearch from "./search/MapSearch";
 import { grey } from "@mui/material/colors";
 import { sortAndFilterMaps } from "../common/sort";
-import MapSortSelector from "./forms/MapSortSelector";
-import TuneIcon from '@mui/icons-material/Tune';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import SortIcon from '@mui/icons-material/Sort';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -26,16 +22,11 @@ import MapThumb from "./displays/MapThumb";
 import { getCurrentMapTierVote, voteForMapTier } from "../api/api";
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import BlockIcon from '@mui/icons-material/Block';
-import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
+import { dateTimeFormat, relativeTimeFormatter, shortDateFormat } from "../common/datetime";
 import TimeAgo from "react-timeago";
 import MapTierListSelector from "./forms/MapTierListSelector";
-import WarningIcon from '@mui/icons-material/Warning';
 import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
-
-const shortDateFormat = Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short"
-});
+import MapFilterSortOptions from "./forms/MapFilterSortOptions";
 
 const longDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -50,10 +41,9 @@ function MapInfoCard(props: MapDetailsProps) {
 
     const { sortedMaps, loggedInUser } = useOutletContext() as ContextParams;
 
-    const [ filterGame, setFilterGame ] = useState(Game.all);
-    const [ filterTiers, setFilterTiers ] = useState(new Set(Array.from(Array(MAX_TIER + 1).keys()))); // A set containing the numbers 0, 1, 2, ..., MAX_TIER
-    const [ sort, setSort ] = useState<MapTimesSort>("nameAsc");
-    const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
+    const [ filterGame, setFilterGame ] = useFilterGame();
+    const [ filterTiers, setFilterTiers ] = useFilterTiers();
+    const [ sort, setSort ] = useMapSort();
     const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") !== "false"); // Expanded by default
     const [ tierVoteInfo, setTierVoteInfo ] = useState<MapTierInfo>();
     const [ tierVoteLoading, setTierVoteLoading ] = useState(true);
@@ -83,36 +73,31 @@ function MapInfoCard(props: MapDetailsProps) {
         }
     }, [loggedInUser, selectedMap]);
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const handleExpand = (expanded: boolean) => {
+    const handleExpand = useCallback((expanded: boolean) => {
         setExpanded(expanded);
         localStorage.setItem("expandMapDetail", expanded ? "true" : "false");
-    };
+    }, []);
 
-    const onSelectFilterTier = (tier: number) => {
+    const onSelectFilterTier = useCallback((tier: number) => {
         setFilterTiers((tiers) => {
-            const copy = new Set(tiers);
-            if (copy.has(tier)) {
-                copy.delete(tier);
+            const set = new Set(tiers);
+            if (set.has(tier)) {
+                set.delete(tier);
             }
             else {
-                copy.add(tier);
+                set.add(tier);
             }
-            return copy;
+            return Array.from(set).sort();
         });
-    };
+    }, [setFilterTiers]);
 
-    const open = Boolean(anchorEl);
-    const id = open ? "filter-popover" : undefined;
+    const selectedTiers = useMemo(() => {
+        return Array.from(filterTiers);
+    }, [filterTiers]);
 
-    const maps = sortAndFilterMaps(sortedMaps, filterGame, filterTiers, sort);
+    const maps = useMemo(() => {
+        return sortAndFilterMaps(sortedMaps, filterGame, new Set(filterTiers), sort);
+    }, [filterGame, filterTiers, sort, sortedMaps]);
 
     return (
         <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column", overflowWrap: "break-word" }}>
@@ -122,48 +107,17 @@ function MapInfoCard(props: MapDetailsProps) {
                         Map
                     </Typography>
                 </Box>
-                <IconButton aria-describedby={id} size="small" onClick={handleClick}>
-                    <TuneIcon />
-                </IconButton>
+                <MapFilterSortOptions 
+                    filterGame={filterGame} 
+                    setFilterGame={setFilterGame} 
+                    selectedTiers={selectedTiers} 
+                    onSelectFilterTier={onSelectFilterTier}
+                    sort={sort}
+                    setSort={setSort}
+                />
                 <IconButton size="small" sx={{ ml: 0.5 }} onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
-                <Popover
-                    id={id}
-                    open={open}
-                    anchorEl={anchorEl}
-                    onClose={handleClose}
-                    anchorOrigin={{
-                        vertical: "center",
-                        horizontal: "left",
-                    }}
-                    transformOrigin={{
-                        vertical: "center",
-                        horizontal: "right"
-                    }}
-                >
-                    <Box display="flex" flexDirection="column" flexWrap="wrap" padding={2}>
-                        <Box display="flex" alignItems="center">
-                            <FilterAltIcon sx={{ mr: 1 }} />
-                            <GameSelector game={filterGame} setGame={setFilterGame} label="Filter game" allowSelectAll disablePadding />
-                        </Box>
-                        <Box display="flex" alignItems="center" mt={2}>
-                            <FilterAltIcon sx={{ mr: 1 }} />
-                            <Box width="140px">
-                                <Typography variant="caption" color="textSecondary" p={0.25}>
-                                    Filter tier
-                                </Typography>
-                                <MapTierListSelector selectedTiers={Array.from(filterTiers)} onSelectTier={onSelectFilterTier} disableHoverHighlight showNone />
-                            </Box>
-                            <Box flexGrow={1} />
-                            {filterTiers.size === 0 && <WarningIcon color="warning" />}
-                        </Box>
-                        <Box display="flex" alignItems="center" mt={3} mr={-1}>
-                            <SortIcon sx={{ mr: 1 }} />
-                            <MapSortSelector sort={sort} setSort={setSort} />
-                        </Box>
-                    </Box>
-                </Popover>
             </Box>
             <MapSearch {...props} maps={maps} />
             {selectedMap && expanded ?
