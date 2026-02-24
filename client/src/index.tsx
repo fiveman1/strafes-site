@@ -11,6 +11,7 @@ import Compare from './components/Compare';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import Settings from './components/Settings';
+import MapsHome from './components/MapsHome';
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -32,7 +33,7 @@ const router = createBrowserRouter([
             { 
                 path: "maps", 
                 children: [
-                    { index: true, Component: MapsPage },
+                    { index: true, Component: MapsHome },
                     { path: ":id", Component: MapsPage }
                 ]
             },

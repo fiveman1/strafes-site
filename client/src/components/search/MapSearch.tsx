@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, FilterOptionsState, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, formatTier, Map as StrafesMap } from "shared";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../../common/common";
 import SearchIcon from '@mui/icons-material/Search';
 import MapThumb from "../displays/MapThumb";
 import { getMapTierColor } from "../../common/colors";
+import { filterMapsBySearch } from "../../common/sort";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
 
@@ -34,7 +35,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
         >
             <MapThumb size={70} map={mapOption} />
             <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="32px">
                     <Typography 
                         variant="h6" 
                         overflow="hidden" 
@@ -62,9 +63,9 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         {formatGame(mapOption.game)}
                     </Typography>
                 </Box>
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%">
+                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="24px">
                     <Typography 
-                        variant="body1" 
+                        variant="body2" 
                         overflow="hidden" 
                         color="textSecondary" 
                         display="inline-block" 
@@ -168,46 +169,6 @@ function MapSearch(props: MapSearchProps) {
     const [ listRef, setListRef ] = useListCallbackRef(null);
     const [ inputValue, setIntputValue ] = useState("");
 
-    const filterOptions = useCallback((options: StrafesMap[], inputValue: string): StrafesMap[] => {
-        const filteredMaps: StrafesMap[] = [];
-        const alreadyFilteredMaps = new Set<number>();
-        const search = inputValue.toLowerCase();
-
-        // Exact map name matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().startsWith(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Near map name matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Exact creator matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().startsWith(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        // Near creator matches
-        for (const map of options) {
-            if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().includes(search)) {
-                filteredMaps.push(map);
-                alreadyFilteredMaps.add(map.id);
-            }
-        }
-
-        return filteredMaps;
-    }, []);
-
     const onSelect = useCallback((map: StrafesMap | undefined) => {
         setSelectedMap(map);
     }, [setSelectedMap]);
@@ -219,12 +180,16 @@ function MapSearch(props: MapSearchProps) {
         }
 
         const realInputValue = selectedMap?.name === inputValue ? "" : inputValue;
-        const currentOptions = filterOptions(maps, realInputValue);
+        const currentOptions = filterMapsBySearch(maps, realInputValue);
         const index = currentOptions.findIndex((val) => val.id === option.id);
         if (index !== -1) {
             listRef.scrollToRow({index: index});
         }
-    }, [filterOptions, inputValue, listRef, maps, selectedMap?.name]);
+    }, [inputValue, listRef, maps, selectedMap?.name]);
+
+    const onFilterOptionsChange = useCallback((options: StrafesMap[], state: FilterOptionsState<StrafesMap>) => {
+        return filterMapsBySearch(options, state.inputValue);
+    }, []);
 
     return (
     <Autocomplete
@@ -238,7 +203,7 @@ function MapSearch(props: MapSearchProps) {
         inputMode="search"
         value={selectedMap ?? null}
         inputValue={inputValue}
-        filterOptions={(options, state) => filterOptions(options, state.inputValue)}
+        filterOptions={onFilterOptionsChange}
         onChange={(e, v) => onSelect(v ?? undefined)}
         onInputChange={(e, v) => setIntputValue(v)}
         onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}

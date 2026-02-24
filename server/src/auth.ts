@@ -64,7 +64,7 @@ export class AuthClient {
             params.state = client.randomState();
         }
 
-        const expiresAt = new Date().getTime() + (60 * 10000); // 1 minute
+        const expiresAt = new Date().getTime() + (60 * 1000); // 1 minute
         const options = this.createCookieOptions(new Date(expiresAt));
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);

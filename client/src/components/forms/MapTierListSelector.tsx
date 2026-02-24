@@ -21,7 +21,7 @@ function MapTierListItem(props: MapTierListItemProps) {
 
     const isLightMode = theme.palette.mode === "light";
     const emphasized = selected || (!disableHoverHighlight && isHovered)
-    const color = tier === NO_TIER ? getMapTierColor(tier) : getMapTierColor(tier, emphasized ? 100 : 30);
+    const color = tier === NO_TIER ? getMapTierColor(tier) : getMapTierColor(tier, emphasized ? 100 : (isLightMode ? 50 : 30));
 
     const onClick = useCallback(() => {
         if (readOnly) {
@@ -85,8 +85,8 @@ function MapTierListItem(props: MapTierListItemProps) {
                     borderRadius: "4px",
                     width: 24,
                     height: 24,
-                    color: isLightMode ? "white" : color,
-                    bgcolor: isLightMode ? darken(color, 0.1) : undefined,
+                    color: isLightMode ? (emphasized ? "white" : darken(color, 0.1) ) : color,
+                    bgcolor: isLightMode ? (emphasized ? darken(color, 0.1) : undefined) : undefined,
                     borderColor: isLightMode ? color : undefined,
                     userSelect: "none"
                 }}

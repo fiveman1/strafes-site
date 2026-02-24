@@ -7,12 +7,14 @@ import { SxProps, Theme, useTheme } from '@mui/material';
 interface MapThumbProps {
     size: number
     map: Map | undefined
+    disableUnreleasedColor?: boolean
+    className?: string
     useLargeThumb?: boolean
     sx?: SxProps<Theme>
 }
 
 function MapThumb(props: MapThumbProps) {
-    const { size, map, useLargeThumb, sx } = props;
+    const { size, map, disableUnreleasedColor, className, useLargeThumb, sx } = props;
     const theme = useTheme();
 
     let thumb = "";
@@ -21,16 +23,17 @@ function MapThumb(props: MapThumbProps) {
     if (map) {
         thumb = (useLargeThumb ? map.largeThumb : map.smallThumb) ?? "";
         name = map.name;
-        isUnreleased = new Date() < new Date(map.date);
+        isUnreleased = !disableUnreleasedColor && new Date() < new Date(map.date);
     }
 
     if (!thumb) {
-        return <QuestionMarkIcon htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : theme.palette.text.primary} sx={{ ...sx, fontSize: size }} />;
+        return <QuestionMarkIcon className={className} htmlColor={isUnreleased ? UNRELEASED_MAP_COLOR : theme.palette.text.primary} sx={{ ...sx, fontSize: size }} />;
     }
 
     return (
         <Box
             component="img"
+            className={className}
             height={size}
             width={size}
             src={thumb}

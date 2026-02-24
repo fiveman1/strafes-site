@@ -1,6 +1,7 @@
 import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { Game, LoginUser, Map, SettingsValues, Style, TierVotingEligibilityInfo, UserRole } from "shared";
+import { formatGame, Game, LoginUser, Map, SettingsValues, Style, TierVotingEligibilityInfo, UserRole } from "shared";
+import { download, generateCsv, mkConfig } from "export-to-csv";
 
 export interface MapCount {
     bhop: number
@@ -142,4 +143,31 @@ function getStyleColorCore(style: Style) {
         case Style.all:
             return "#df2a33";
     }
+}
+
+export function mapsToCsv(sortedMaps: Map[]) {
+    if (sortedMaps.length < 1) {
+        return;
+    }
+
+    const csvConfig = mkConfig({
+        filename: "maps", columnHeaders: [
+            "id", "name", "creator", "game", "release_date", "load_count", "courses", "tier"
+        ]
+    });
+    const mapData: Record<string, number | string | boolean | null | undefined>[] = [];
+    for (const map of sortedMaps) {
+        mapData.push({
+            id: map.id,
+            name: map.name,
+            creator: map.creator,
+            game: formatGame(map.game),
+            release_date: map.date,
+            load_count: map.loadCount,
+            courses: map.modes,
+            tier: map.tier ?? 0
+        });
+    }
+    const csv = generateCsv(csvConfig)(mapData);
+    download(csvConfig)(csv);
 }
