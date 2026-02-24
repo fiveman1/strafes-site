@@ -984,65 +984,74 @@ app.get("*splat", async (req, res): Promise<any> => {
         let html = readFileSync(path.resolve(buildDir, "index.html"), "utf8");
         let title = "strafes";
         let description = "Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)";
-        const url = req.params.splat.slice(1);
-        const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
-        const style = req.query.style ? formatStyle(+req.query.style) : formatStyle(Style.autohop);
-        if (url[0] === "") {
-            title = "home";
-        }
-        else if (url[0] === "globals") {
-            title = "globals";
-            description = `View the latest world records (game: ${game}, style: ${style})`;
-        }
-        else if (url[0] === "ranks") {
-            title = "ranks";
-            description = `Explore the leaderboards (game: ${game}, style: ${style})`;
-        }
-        else if (url[0] === "users") {
-            title = "users";
-            description = "Search user profiles and times";
-            if (url.length > 1) {
-                const userId = url[1];
-                const user = await getUserData(authClient, +userId);
-                if (user) {
-                    title = `@${user.username} - users`;
-                    description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
-                }
+        try {
+            const url = req.params.splat.slice(1);
+            const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
+            const style = req.query.style ? formatStyle(+req.query.style) : formatStyle(Style.autohop);
+            if (url[0] === "") {
+                title = "home";
             }
-        }
-        else if (url[0] === "maps") {
-            title = "maps";
-            description = "Browse maps and view the top times";
-            if (url.length > 1) {
-                const mapId = url[1];
-                const mapInfo = await globalsClient.getMap(+mapId);
-                if (mapInfo) {
-                    const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
-                    const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
-                    title = `${mapInfo.name} - maps`;
-                    if (course !== "main") {
-                        title += ` (${courseAbrev})`;
+            else if (url[0] === "globals") {
+                title = "globals";
+                description = `View the latest world records (game: ${game}, style: ${style})`;
+            }
+            else if (url[0] === "ranks") {
+                title = "ranks";
+                description = `Explore the leaderboards (game: ${game}, style: ${style})`;
+            }
+            else if (url[0] === "users") {
+                title = "users";
+                description = "Search user profiles and times";
+                if (url.length > 1) {
+                    const userId = url[1];
+                    if (!isNaN(+userId)) {
+                        const user = await getUserData(authClient, +userId);
+                        if (user) {
+                            title = `@${user.username} - users`;
+                            description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
+                        }
                     }
-                    const mapGame = req.query.game ? game : formatGame(mapInfo.game);
-                    description = `View the top times on ${mapInfo.name} (game: ${mapGame}, style: ${style}, course: ${course})`;
+                }
+            }
+            else if (url[0] === "maps") {
+                title = "maps";
+                description = "Browse maps and view the top times";
+                if (url.length > 1) {
+                    const mapId = url[1];
+                    if (!isNaN(+mapId)) {
+                        const mapInfo = await globalsClient.getMap(+mapId);
+                        if (mapInfo) {
+                            const course = req.query.course ? formatCourse(+req.query.course) : formatCourse(MAIN_COURSE);
+                            const courseAbrev = req.query.course ? formatCourse(+req.query.course, true) : formatCourse(MAIN_COURSE, true);
+                            title = `${mapInfo.name} - maps`;
+                            if (course !== "main") {
+                                title += ` (${courseAbrev})`;
+                            }
+                            const mapGame = req.query.game ? game : formatGame(mapInfo.game);
+                            description = `View the top times on ${mapInfo.name} (game: ${mapGame}, style: ${style}, course: ${course})`;
+                        }
+                    }
+                }
+            }
+            else if (url[0] === "compare") {
+                title = "compare";
+                description = "Compare users head-to-head";
+                const user1 = req.query.user1;
+                const user2 = req.query.user2;
+                if (user1 && typeof user1 === "string" && user2 && typeof user2 === "string" && !isNaN(+user1) && !isNaN(+user2)) {
+                    const user1InfoPromise = getUserData(authClient, +user1);
+                    const user2InfoPromise = getUserData(authClient, +user2);
+                    const user1Info = await user1InfoPromise;
+                    const user2Info = await user2InfoPromise;
+                    if (user1Info && user2Info) {
+                        title = `@${user1Info.username} vs @${user2Info.username} - compare`;
+                        description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
+                    }
                 }
             }
         }
-        else if (url[0] === "compare") {
-            title = "compare";
-            description = "Compare users head-to-head";
-            const user1 = req.query.user1;
-            const user2 = req.query.user2;
-            if (user1 && typeof user1 === "string" && user2 && typeof user2 === "string") {
-                const user1InfoPromise = getUserData(authClient, +user1);
-                const user2InfoPromise = getUserData(authClient, +user2);
-                const user1Info = await user1InfoPromise;
-                const user2Info = await user2InfoPromise;
-                if (user1Info && user2Info) {
-                    title = `@${user1Info.username} vs @${user2Info.username} - compare`;
-                    description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
-                }
-            }
+        catch {
+            // Someone probably gave bad input
         }
 
         // Don't give anyone an XSS attack
