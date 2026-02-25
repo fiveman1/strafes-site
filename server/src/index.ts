@@ -884,7 +884,8 @@ function apiTimeToTime(time: ApiTime): Time {
         game: time.game_id,
         style: time.style_id,
         id: time.id,
-        course: time.mode_id
+        course: time.mode_id,
+        hasBot: time.has_bot
     };
 }
 

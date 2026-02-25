@@ -70,6 +70,7 @@ export interface Time extends UserInfo {
     style: Style
     id: string
     course: number
+    hasBot: boolean
     placement?: number
     wrDiff?: number
 }

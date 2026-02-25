@@ -16,6 +16,7 @@ export interface Record {
     course: number
     date: Date
     time: number
+    has_bot: number
 }
 
 type RecordRow = Record & RowDataPacket;
@@ -204,7 +205,8 @@ export class GlobalsClient {
             course: record.course,
             userId: +record.user_id,
             username: record.username,
-            placement: 1
+            placement: 1,
+            hasBot: Boolean(record.has_bot)
         };
     }
 
@@ -304,10 +306,11 @@ export class GlobalsClient {
             record.style,
             record.course,
             new Date(record.date),
-            record.time
+            record.time,
+            record.hasBot
         ]);
 
-        query = `INSERT INTO globals (time_id, user_id, map_id, game, style, course, date, time) 
+        query = `INSERT INTO globals (time_id, user_id, map_id, game, style, course, date, time, has_bot) 
             VALUES ? AS new 
             ON DUPLICATE KEY UPDATE
                 time_id=new.time_id,
@@ -317,7 +320,8 @@ export class GlobalsClient {
                 style=new.style,
                 course=new.course,
                 date=new.date,
-                time=new.time
+                time=new.time,
+                has_bot=new.has_bot
         ;`;
 
         await this.pool.query(query, [wrRows]);
