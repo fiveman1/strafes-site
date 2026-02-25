@@ -13,6 +13,7 @@ export interface ContextParams {
     maps: Maps,
     sortedMaps: Map[]
     mapCounts: MapCount
+    highPercentileLoadCount: number
     loggedInUser: LoginUser | undefined
     settings: SettingsValues
     setSettings: (val: SettingsValues) => void

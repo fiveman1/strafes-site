@@ -28,6 +28,15 @@ import Paper from "@mui/material/Paper";
 import { MapTimesSort, useFilterGame, useFilterTiers, useMapSort } from "../common/states";
 import MapFilterSortOptions from "./forms/MapFilterSortOptions";
 
+function getColorForPopularity(map: StrafesMap, ninetyPercentile: number) {
+    const plays = Math.min(map.loadCount, ninetyPercentile);
+    const lerp = plays / ninetyPercentile;
+    const low = 200;
+    const hi = 360;
+    const hue = Math.round(low + lerp * (hi - low));
+    return `hsl(${hue}, 100%, 50%)`;
+}
+
 function MapListCard(props: MapCardProps) {
     const { map } = props;
 
@@ -157,6 +166,7 @@ function useCardSize() {
 
 function MapSquareCard(props: MapCardProps) {
     const { map } = props;
+    const { highPercentileLoadCount: ninetiethPercentileLoadCount } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
     const isLightMode = theme.palette.mode === "light";
@@ -174,6 +184,7 @@ function MapSquareCard(props: MapCardProps) {
 
     const gameColor = getGameColor(map.game, theme);
     const tierColor = getMapTierColor(map.tier);
+    const popColor = getColorForPopularity(map, ninetiethPercentileLoadCount);
 
     return (
         <Box
@@ -219,6 +230,8 @@ function MapSquareCard(props: MapCardProps) {
                 />
                 <Box
                     display="flex"
+                    flexDirection="column"
+                    alignItems="flex-end"
                     position="absolute"
                     top="8px"
                     right="8px"
@@ -227,6 +240,7 @@ function MapSquareCard(props: MapCardProps) {
                         variant="body2"
                         fontWeight="bold"
                         sx={{
+                            width: "fit-content",
                             padding: 0.4,
                             lineHeight: 1.1,
                             overflow: "hidden",
@@ -242,8 +256,9 @@ function MapSquareCard(props: MapCardProps) {
                     <Typography
                         variant="body2"
                         fontWeight="bold"
-                        ml={0.5}
+                        mt={0.4}
                         sx={{
+                            width: "fit-content",
                             padding: 0.4,
                             lineHeight: 1.0,
                             overflow: "hidden",
@@ -259,27 +274,55 @@ function MapSquareCard(props: MapCardProps) {
                         {formatTier(map.tier)}
                     </Typography>
                 </Box>
-                <Typography
+                <Box
+                    display="flex"
+                    flexDirection="column"
                     position="absolute"
                     top="8px"
                     left="8px"
-                    variant="body2"
-                    fontWeight="bold"
-                    sx={{
-                        padding: 0.4,
-                        lineHeight: 1.0,
-                        overflow: "hidden",
-                        textAlign: "center",
-                        color: "white",
-                        textShadow: "black 1px 1px 1px",
-                        borderRadius: "6px",
-                        bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
-                        border: 1,
-                        borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
-                    }}
                 >
-                    {shortDateFormat.format(mapDate)}
-                </Typography>
+                    <Typography
+                        display="inline-block"
+                        variant="body2"
+                        fontWeight="bold"
+                        sx={{
+                            width: "fit-content",
+                            padding: 0.4,
+                            lineHeight: 1.0,
+                            overflow: "hidden",
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
+                            border: 1,
+                            borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
+                        }}
+                    >
+                        {shortDateFormat.format(mapDate)}
+                    </Typography>
+                    <Typography
+                        mt={0.4}
+                        display="inline-block"
+                        variant="body2"
+                        fontWeight="bold"
+                        sx={{
+                            width: "fit-content",
+                            padding: 0.4,
+                            lineHeight: 1.0,
+                            overflow: "hidden",
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            bgcolor: darken(popColor, 0.15),
+                            border: 1,
+                            borderColor: popColor
+                        }}
+                    >
+                        {map.loadCount} plays
+                    </Typography>
+                </Box>
                 <Box
                     sx={{
                         position: "absolute",

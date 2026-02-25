@@ -52,8 +52,9 @@ function App() {
             flyTrials: 0
         }
         const now = new Date();
+        const mapList = Object.values(maps) as Map[];
 
-        for (const map of (Object.values(maps) as Map[])) {
+        for (const map of mapList) {
             const date = new Date(map.date);
             if (date > now) {
                 continue;
@@ -68,10 +69,17 @@ function App() {
             }
         }
 
+        const sortedByPopularity = [...mapList].sort((a, b) => a.loadCount - b.loadCount);
+        let highPercentileLoadCount = 0;
+        if (sortedByPopularity.length > 0) {
+            highPercentileLoadCount = sortedByPopularity[Math.round((sortedByPopularity.length - 1) * 0.98)].loadCount;
+        }
+
         return {
             maps: maps,
-            sortedMaps: Object.values(maps).sort(sortMapsByName),
-            mapCounts: counts
+            sortedMaps: [...mapList].sort(sortMapsByName),
+            mapCounts: counts,
+            highPercentileLoadCount: highPercentileLoadCount
         };
     }, [maps]);
 
@@ -80,13 +88,14 @@ function App() {
             maps: mapInfo.maps,
             sortedMaps: mapInfo.sortedMaps,
             mapCounts: mapInfo.mapCounts,
+            highPercentileLoadCount: mapInfo.highPercentileLoadCount,
             settings: settings,
             loggedInUser: loggedInUser,
             setSettings: setSettings,
             setMode: setMode,
             votingInfo: votingInfo
         };
-    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.sortedMaps, setSettings, settings, votingInfo]);
+    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.highPercentileLoadCount, mapInfo.sortedMaps, setSettings, settings, votingInfo]);
 
     useEffect(() => {
         getMaps().then(setMaps);
