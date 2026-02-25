@@ -34,7 +34,7 @@ function getColorForPopularity(map: StrafesMap, ninetyPercentile: number) {
     const low = 200;
     const hi = 360;
     const hue = Math.round(low + lerp * (hi - low));
-    return `hsl(${hue}, 100%, 50%)`;
+    return `hsl(${hue}, 50%, 50%)`;
 }
 
 function MapListCard(props: MapCardProps) {
