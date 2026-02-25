@@ -153,6 +153,9 @@ function RanksCard(props: IRanksCardProps) {
             density="compact"
             disableRowSelectionOnClick
             onPaginationModelChange={onPageChange}
+            sx={{
+                "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
+            }}
         />
     </Paper>
     );
