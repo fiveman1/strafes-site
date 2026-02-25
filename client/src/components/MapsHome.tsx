@@ -570,8 +570,8 @@ function MapsHome() {
     }, [sortedMaps]);
 
     const maps = useMemo(() => {
-        const filtered = filterMapsBySearch(sortedMaps, searchText);
-        return sortAndFilterMaps(filtered, filterGame, new Set(filterTiers), sort);
+        const filtered = sortAndFilterMaps(sortedMaps, filterGame, new Set(filterTiers), sort);
+        return filterMapsBySearch(filtered, searchText);
     }, [filterGame, filterTiers, searchText, sort, sortedMaps]);
 
     return (
