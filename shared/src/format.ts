@@ -120,7 +120,7 @@ function formatTimeHelper(time: number, digits: number) {
     return timeStr;
 }
 
-export function formatTime(time: number) {
+export function formatTime(time: number, short?: boolean) {
     if (time > 86400000) {
         const days = Math.floor(time / 86400000);
         if (days > 999) {
@@ -136,8 +136,10 @@ export function formatTime(time: number) {
     const minutes = formatTimeHelper(Math.floor(time / (1000 * 60)) % 60, 2);
     const hours = formatTimeHelper(Math.floor(time / (1000 * 60 * 60)) % 24, 2);
     if (hours === "00") {
+        if (short) return minutes + ":" + seconds;
         return minutes + ":" + seconds + "." + millis;
     }
+    if (short) return hours + ":" + minutes;
     return hours + ":" + minutes + ":" + seconds;
 }
 
