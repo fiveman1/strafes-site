@@ -121,6 +121,8 @@ function formatTimeHelper(time: number, digits: number) {
 }
 
 export function formatTime(time: number, short?: boolean) {
+    const isNegative = time < 0;
+    time = Math.abs(time);
     if (time > 86400000) {
         const days = Math.floor(time / 86400000);
         if (days > 999) {
@@ -136,11 +138,15 @@ export function formatTime(time: number, short?: boolean) {
     const minutes = formatTimeHelper(Math.floor(time / (1000 * 60)) % 60, 2);
     const hours = formatTimeHelper(Math.floor(time / (1000 * 60 * 60)) % 24, 2);
     if (hours === "00") {
-        if (short) return minutes + ":" + seconds;
-        return minutes + ":" + seconds + "." + millis;
+        let str = isNegative ? "-" : "";
+        str += minutes + ":" + seconds;
+        if (!short) str += "." + millis;
+        return str;
     }
-    if (short) return hours + ":" + minutes;
-    return hours + ":" + minutes + ":" + seconds;
+    let str = isNegative ? "-" : "";
+    str += hours + ":" + minutes;
+    if (short) str += ":" + seconds;
+    return str;
 }
 
 const ranks = ["New","Newb","Bad","Okay","Not Bad","Decent","Getting There","Advanced","Good","Great","Superb","Amazing","Sick","Master","Insane","Majestic","Baby Jesus","Jesus","Half God","God"] as const;

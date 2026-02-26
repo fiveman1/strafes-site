@@ -6,8 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
-import Slider from "@mui/material/Slider";
-import { formatTime } from "shared";
+import PlaybackOverlay from "./playback/PlaybackOverlay";
 
 const ASPECT_RATIO = 16 / 9;
 const MODE_MAIN = 0;
@@ -46,8 +45,13 @@ function Bots() {
     const playbackTime = useRef(0);
     //const [playbackTime, setPlaybackTime] = useState(0);
     const [animTimer, setAnimTimer] = useState(0);
+    const [paused, setPaused] = useState(false);
     const [speed] = useState(1);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        document.title = "bots - strafes"
+    }, []);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -59,7 +63,7 @@ function Bots() {
 
             if (playback && botData && graphics) {
                 const botDuration = botData.run_duration(MODE_MAIN) ?? 0;
-                const curRunTime = playback.get_run_time(botData, time, MODE_MAIN) ?? 0;
+                const curRunTime = playback.get_head_time(time) - 1;
                 setDuration(botDuration);
                 playbackTime.current = Math.min(curRunTime, botDuration);
                 //setPlaybackTime(Math.min(curRunTime, botDuration));
@@ -88,22 +92,27 @@ function Bots() {
     const onCommitPlaybackTime = useCallback((time: number) => {
         playbackTime.current = time;
         if (playback) {
-            playback.seek_to(animTimer, time === 0 ? 0 : time + 1);
-            playback.set_paused(animTimer, false);
+            playback.set_head_time(animTimer, time + 1);
+            if (!paused) {
+                playback.set_paused(animTimer, false);
+            }
         }
-    }, [animTimer, playback]);
+    }, [animTimer, paused, playback]);
 
     const onChangePlaybackTime = useCallback((time: number) => {
         playbackTime.current = time;
         if (playback) {
-            playback.seek_to(animTimer, time === 0 ? 0 : time + 1);
+            playback.set_head_time(animTimer, time + 1);
             playback.set_paused(animTimer, true);
         }
     }, [animTimer, playback]);
 
-    useEffect(() => {
-        document.title = "bots - strafes"
-    }, []);
+    const onSetPause = useCallback((paused: boolean) => {
+        setPaused(paused);
+        if (playback) {
+            playback.set_paused(animTimer, paused);
+        }
+    }, [animTimer, playback]);
 
     useEffect(() => {
         const promise = async () => {
@@ -127,6 +136,7 @@ function Bots() {
             const bot = new CompleteBot(new Uint8Array(await botRes.arrayBuffer()));
 
             playback.advance_time(bot, 0);
+            playback.set_head_time(0, -1);
             graphics.change_map(map);
 
             setPlayback(playback);
@@ -155,13 +165,17 @@ function Bots() {
                             <Box
                                 display="flex"
                                 justifyContent="center"
-                                width={width}
-                                height={height}
+                                style={{
+                                    width: width,
+                                    height: height
+                                }}
                             >
                                 <Box
-                                    width={getPlayerWidth(width, height)}
-                                    height={getPlayerHeight(width, height)}
                                     position="relative"
+                                    style={{
+                                        width: getPlayerWidth(width, height),
+                                        height: getPlayerHeight(width, height)
+                                    }}
                                 >
                                     <canvas
                                         ref={canvasRef}
@@ -175,49 +189,26 @@ function Bots() {
                                     />
                                     <Box
                                         position="absolute"
-                                        width={getPlayerWidth(width, height)}
-                                        bottom={0}
-                                        height="48px"
+                                        top={0}
+                                        style={{
+                                            width: getPlayerWidth(width, height),
+                                            height: getPlayerHeight(width, height)
+                                        }}
                                     >
-                                        <PlayerControls playbackTime={playbackTime.current} duration={duration} onCommitPlaybackTime={onCommitPlaybackTime} onChangePlaybackTime={onChangePlaybackTime} />
+                                        <PlaybackOverlay 
+                                            time={playbackTime.current} 
+                                            duration={duration} 
+                                            paused={paused}
+                                            onDragPlayback={onChangePlaybackTime} 
+                                            onSetPlayback={onCommitPlaybackTime} 
+                                            onSetPause={onSetPause}
+                                        />
                                     </Box>
                                 </Box>
                             </Box>}
                     </AutoSizer>
                 </Box>
             </Box>
-        </Box>
-    );
-}
-
-interface PlayerControls {
-    playbackTime: number
-    duration: number
-    onCommitPlaybackTime: (time: number) => void
-    onChangePlaybackTime: (time: number) => void
-}
-
-function roundToNearestNth(num, n) {
-  const factor = Math.pow(10, n);
-  return Math.round(num * factor) / factor;
-}
-
-function PlayerControls(props: PlayerControls) {
-    const { playbackTime, duration, onCommitPlaybackTime, onChangePlaybackTime } = props;
-
-    return (
-        <Box display="flex" pl={3} pr={3}>
-            <Typography>
-                {`${formatTime(Math.round(playbackTime * 1000))} / ${formatTime(Math.round(duration * 1000))}`}
-            </Typography>
-            <Slider
-                value={roundToNearestNth(playbackTime, 0)}
-                min={0}
-                max={duration}
-                step={0.01}
-                onChange={(e, v) => onChangePlaybackTime(v)}
-                onChangeCommitted={(e, v) => onCommitPlaybackTime(v)}
-            />
         </Box>
     );
 }

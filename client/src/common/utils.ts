@@ -19,3 +19,7 @@ export type JsonObject = {
 export type JsonArray = Array<JsonValue>;
 
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+
+export function clamp(x: number, lo: number, hi: number) {
+    return Math.min(hi, Math.max(x, lo));
+}

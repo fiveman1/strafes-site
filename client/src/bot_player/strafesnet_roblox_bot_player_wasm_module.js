@@ -1,6 +1,4 @@
 /* @ts-self-types="./strafesnet_roblox_bot_player_wasm_module.d.ts" */
-/* tslint:disable */
-/* eslint-disable */
 
 export class CompleteBot {
     __destroy_into_raw() {
@@ -134,11 +132,11 @@ export class Graphics {
     /**
      * @param {number} width
      * @param {number} height
-     * @param {number} fov_x
-     * @param {number} fov_y
+     * @param {number} fov_slope_x
+     * @param {number} fov_slope_y
      */
-    resize(width, height, fov_x, fov_y) {
-        wasm.graphics_resize(this.__wbg_ptr, width, height, fov_x, fov_y);
+    resize(width, height, fov_slope_x, fov_slope_y) {
+        wasm.graphics_resize(this.__wbg_ptr, width, height, fov_slope_x, fov_slope_y);
     }
 }
 if (Symbol.dispose) Graphics.prototype[Symbol.dispose] = Graphics.prototype.free;
@@ -167,6 +165,14 @@ export class PlaybackHead {
      */
     get_fov_slope_y() {
         const ret = wasm.playbackhead_get_fov_slope_y(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} time
+     * @returns {number}
+     */
+    get_head_time(time) {
+        const ret = wasm.playbackhead_get_head_time(this.__wbg_ptr, time);
         return ret;
     }
     /**
@@ -224,23 +230,12 @@ export class PlaybackHead {
         }
     }
     /**
-     * @param {number} time_offset
-     */
-    seek_backward(time_offset) {
-        wasm.playbackhead_seek_backward(this.__wbg_ptr, time_offset);
-    }
-    /**
-     * @param {number} time_offset
-     */
-    seek_forward(time_offset) {
-        wasm.playbackhead_seek_forward(this.__wbg_ptr, time_offset);
-    }
-    /**
+     * Set the playback head position to new_time.
      * @param {number} time
      * @param {number} new_time
      */
-    seek_to(time, new_time) {
-        wasm.playbackhead_seek_to(this.__wbg_ptr, time, new_time);
+    set_head_time(time, new_time) {
+        wasm.playbackhead_set_head_time(this.__wbg_ptr, time, new_time);
     }
     /**
      * @param {number} time
@@ -631,7 +626,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_1613(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_1611(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1245,7 +1240,7 @@ function __wbg_get_imports() {
         }, arguments); },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 127, function: Function { arguments: [Externref], shim_idx: 128, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1189, __wasm_bindgen_func_elem_1190);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1187, __wasm_bindgen_func_elem_1188);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0) {
@@ -1277,12 +1272,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1190(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1190(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1188(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1188(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1613(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_1613(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_1611(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_1611(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

@@ -21,7 +21,7 @@ export class Graphics {
     [Symbol.dispose](): void;
     change_map(map: CompleteMap): void;
     render(bot: CompleteBot, head: PlaybackHead, time: number): void;
-    resize(width: number, height: number, fov_x: number, fov_y: number): void;
+    resize(width: number, height: number, fov_slope_x: number, fov_slope_y: number): void;
 }
 
 export class PlaybackHead {
@@ -29,13 +29,15 @@ export class PlaybackHead {
     [Symbol.dispose](): void;
     advance_time(bot: CompleteBot, time: number): void;
     get_fov_slope_y(): number;
+    get_head_time(time: number): number;
     get_run_time(bot: CompleteBot, time: number, mode_id: number): number | undefined;
     is_run_finished(mode_id: number): boolean | undefined;
     is_run_in_progress(mode_id: number): boolean | undefined;
     constructor(time: number);
-    seek_backward(time_offset: number): void;
-    seek_forward(time_offset: number): void;
-    seek_to(time: number, new_time: number): void;
+    /**
+     * Set the playback head position to new_time.
+     */
+    set_head_time(time: number, new_time: number): void;
     set_paused(time: number, paused: boolean): void;
     set_scale(time: number, scale: number): void;
 }
@@ -59,19 +61,18 @@ export interface InitOutput {
     readonly graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_advance_time: (a: number, b: number, c: number) => void;
     readonly playbackhead_get_fov_slope_y: (a: number) => number;
+    readonly playbackhead_get_head_time: (a: number, b: number) => number;
     readonly playbackhead_get_run_time: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_is_run_finished: (a: number, b: number) => number;
     readonly playbackhead_is_run_in_progress: (a: number, b: number) => number;
     readonly playbackhead_new: (a: number, b: number) => void;
-    readonly playbackhead_seek_backward: (a: number, b: number) => void;
-    readonly playbackhead_seek_forward: (a: number, b: number) => void;
-    readonly playbackhead_seek_to: (a: number, b: number, c: number) => void;
+    readonly playbackhead_set_head_time: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_paused: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1189: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1613: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1190: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1187: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1611: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1188: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
