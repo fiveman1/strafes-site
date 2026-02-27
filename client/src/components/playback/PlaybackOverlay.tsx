@@ -7,19 +7,23 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 
 interface PlaybackOverlayProps {
     duration: number
     time: number
     paused: boolean
     offset: number
+    fullscreen: boolean
     onDragPlayback: (time: number) => void
     onSetPlayback: (time: number) => void
     onSetPause: (pause: boolean) => void
+    onFullscreen: (fullscreen: boolean) => void
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
-    const { time, duration, paused, offset, onDragPlayback, onSetPlayback, onSetPause } = props;
+    const { time, duration, paused, offset, fullscreen, onDragPlayback, onSetPlayback, onSetPause, onFullscreen } = props;
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
@@ -58,7 +62,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             }}
         >
             <Box flexGrow={1} onClick={onClickOverlay} />
-            <Box width="100%" height="40px" display="flex" alignItems="center" p={1} pr={2}>
+            <Box width="100%" height="40px" display="flex" alignItems="center" p={1} pr={1}>
                 <IconButton 
                     size="small" 
                     onClick={onClickOverlay} 
@@ -97,6 +101,20 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     isDragging={isDragging}
                     setIsDragging={setIsDragging}
                 />
+                <IconButton 
+                    size="small" 
+                    onClick={() => onFullscreen(!fullscreen)} 
+                    sx={{
+                        color: "white",
+                        bgcolor: "#00000080",
+                        "&:hover": {
+                            bgcolor: "#42424280"
+                        },
+                        ml: 1.5
+                    }}
+                >
+                    {fullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                </IconButton>
             </Box>
         </Box>
     );

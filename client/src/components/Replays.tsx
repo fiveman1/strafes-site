@@ -14,6 +14,7 @@ import UserAvatar from "./displays/UserAvatar";
 import { useTheme } from "@mui/material/styles";
 import { dateFormat, dateTimeFormat } from "../common/datetime";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import DiffDisplay from "./displays/DiffDisplay";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -56,9 +57,11 @@ function Replays() {
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackTime, setPlaybackTime ] = useState(-1);
     const [ paused, setPaused ] = useState(false);
+    const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const theme = useTheme();
-    const smallScreen = useMediaQuery("(max-width: 520px)");
+    const smallScreen = useMediaQuery("(max-width: 600px)");
+    const verySmallScreen = useMediaQuery("(max-width: 400px)");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animTimer = useRef(0);
@@ -111,7 +114,7 @@ function Replays() {
         }
     }, [graphics, playback]);
 
-    const onDragPlayback = useCallback((time: number) => {
+    const onSetPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         if (playback && bot) {
             playback.set_head_time(bot, sessionTimer.current, time + botOffset);
@@ -121,10 +124,10 @@ function Replays() {
         }
     }, [bot, botOffset, paused, playback]);
 
-    const onSetPlayback = useCallback((time: number) => {
+    const onDragPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, time + botOffset);
+            playback.set_head_time(bot, sessionTimer.current, Math.min(time + botOffset, bot.duration() - 0.0001));
             playback.set_paused(sessionTimer.current, true);
         }
     }, [bot, botOffset, playback]);
@@ -136,6 +139,13 @@ function Replays() {
         }
     }, [playback]);
 
+    const onFullscreen = useCallback((fullscreen: boolean) => {
+        setFullscreen(fullscreen);
+        if (fullscreen && canvasRef.current) {
+            canvasRef.current.requestFullscreen();
+        }
+    }, []);
+
     useEffect(() => {
         const promise = async () => {
             await init();
@@ -144,26 +154,26 @@ function Replays() {
             if (!time || !time.hasBot) return;
             setTime(time);
 
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const playback = new PlaybackHead(0);
-            const graphics = await setup_graphics(canvas);
-
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-            handleCanvasSize(width, height, playback, graphics);
-
             const mapPromise = getMapFile(time.mapId);
             const botPromise = getBotFileForTime(time);
             const mapFile = await mapPromise;
             const botFile = await botPromise;
 
             if (!mapFile || !botFile) return;
+
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
             document.title = `${time.map} in ${formatTime(time.time)} by ${time.username} - replays - strafes`
 
             const map = new CompleteMap(mapFile);
             const bot = new CompleteBot(botFile);
+            const playback = new PlaybackHead(bot, 0);
+            const graphics = await setup_graphics(canvas);
+
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            handleCanvasSize(width, height, playback, graphics);
 
             playback.advance_time(bot, 0);
             playback.set_head_time(bot, 0, 0);
@@ -240,9 +250,11 @@ function Replays() {
                                                 duration={duration} 
                                                 paused={paused}
                                                 offset={botOffset}
-                                                onDragPlayback={onSetPlayback} 
-                                                onSetPlayback={onDragPlayback} 
+                                                fullscreen={fullscreen}
+                                                onDragPlayback={onDragPlayback} 
+                                                onSetPlayback={onSetPlayback} 
                                                 onSetPause={onSetPause}
+                                                onFullscreen={onFullscreen}
                                             />
                                         </Box>
                                         {loading && 
@@ -357,9 +369,9 @@ function Replays() {
                                             </Box>
                                             <Box 
                                                 display="inline-flex" 
-                                                flexDirection="row"
-                                                alignItems="center"
-                                                justifyContent="space-between"
+                                                flexDirection={verySmallScreen ? "column" : "row"}
+                                                alignItems={verySmallScreen ? undefined : "center"}
+                                                justifyContent={verySmallScreen ? undefined : "space-between"}
                                                 mt={0.5}
                                             >
                                                 <Box display="flex" alignItems="center">
@@ -381,9 +393,11 @@ function Replays() {
                                                     <Typography 
                                                         variant="body1"
                                                         display="inline-block"
+                                                        mr={0.5}
                                                     >
                                                         {formatTime(time.time)}
                                                     </Typography>
+                                                    <DiffDisplay ms={time.time} diff={time.wrDiff} />
                                                 </Box>
                                                 <Typography 
                                                     variant="body2" 

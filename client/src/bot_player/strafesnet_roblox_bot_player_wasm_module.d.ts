@@ -34,7 +34,7 @@ export class PlaybackHead {
     get_scale(): number;
     is_run_finished(mode_id: number): boolean | undefined;
     is_run_in_progress(mode_id: number): boolean | undefined;
-    constructor(time: number);
+    constructor(bot: CompleteBot, time: number);
     /**
      * Set the playback head position to new_time.
      */
@@ -67,14 +67,14 @@ export interface InitOutput {
     readonly playbackhead_get_scale: (a: number) => number;
     readonly playbackhead_is_run_finished: (a: number, b: number) => number;
     readonly playbackhead_is_run_in_progress: (a: number, b: number) => number;
-    readonly playbackhead_new: (a: number, b: number) => void;
+    readonly playbackhead_new: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_head_time: (a: number, b: number, c: number, d: number) => void;
     readonly playbackhead_set_paused: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1190: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1614: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1191: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1191: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1615: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1192: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
