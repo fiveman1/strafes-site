@@ -255,7 +255,7 @@ export async function voteForMapTier(mapId: number, tier: number | null) {
 }
 
 export async function getTimeById(id: string) {
-    const res = await tryGetRequest("time/" + id);
+    const res = await tryGetRequest("times/" + id);
 
     if (!res) return undefined;
 
@@ -263,21 +263,17 @@ export async function getTimeById(id: string) {
 }
 
 export async function getBotFileForTime(time: Time) {
-    try {
-        const res = await fetch("/api/bots/" + time.id);
+    const res = await fetch("/api/replays/bots/" + time.id);
+    if (res.ok) {
         return new Uint8Array(await res.arrayBuffer());
     }
-    catch {
-        return undefined;
-    }
+    return undefined;
 }
 
 export async function getMapFile(mapId: number) {
-    try {
-        const res = await fetch(`/maps/${mapId}.snfm`);
+    const res = await fetch("/api/replays/maps/" + mapId);
+    if (res.ok) {
         return new Uint8Array(await res.arrayBuffer());
     }
-    catch {
-        return undefined;
-    }
+    return undefined;
 }

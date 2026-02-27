@@ -59,6 +59,7 @@ const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, v
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
+const mapDir = path.join(dirName, "../maps/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
@@ -977,7 +978,7 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
     });
 });
 
-app.get("/api/bots/:id", rateLimitSettings, async (req, res) => {
+app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -986,19 +987,33 @@ app.get("/api/bots/:id", rateLimitSettings, async (req, res) => {
 
     const id = result.id;
 
-    let buffer: Buffer | undefined = undefined;
     try {
-        const file = readFileSync(path.resolve(buildDir, "bhop_marble_7cf33a64-7120-4514-b9fa-4fe29d9523d.qbot"));
-        buffer = Buffer.from(file);
+        const file = readFileSync(path.resolve(mapDir, "bhop_marble_7cf33a64-7120-4514-b9fa-4fe29d9523d.qbot"));
+        const buffer = Buffer.from(file);
+        res.status(200).send(buffer);
     }
     catch {
         res.status(404).send({ error: "No bot found" });
-        return;
     }
-    res.status(200).send(buffer);
 });
 
-app.get("/api/time/:id", rateLimitSettings, async (req, res) => {
+app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
+    const [error, result] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = result.id;
+    
+    res.sendFile(path.resolve(mapDir, `${id}.snfm`), (err) => {
+        if (err) {
+            res.status(404).json({ error: "Map file not found" });
+        }
+    });
+});
+
+app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -1019,7 +1034,7 @@ app.get("/api/time/:id", rateLimitSettings, async (req, res) => {
         time.placement = placements[0].placement;
     }
 
-    const promises = [setUserInfoForList(authClient, [time], true), setTimeDiffs([time])];
+    const promises = [setUserInfoForList(authClient, [time]), setTimeDiffs([time])];
     await Promise.all(promises);
     res.status(200).send(time);
 });
