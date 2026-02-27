@@ -11,7 +11,7 @@ import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
 import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
-import { getPlacements, getRanks, getTimes, getUserRank } from "./strafes_api/api.js";
+import { getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
@@ -978,9 +978,50 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
 });
 
 app.get("/api/bots/:id", rateLimitSettings, async (req, res) => {
-    const url = "https://strafesnet-data-dev.s3.us-west-001.backblazeb2.com/577814c2-78a7-4a62-96b2-102b57e43209?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=001f1efd6c5ee720000000016%2F20260227%2Fus-west-001%2Fs3%2Faws4_request&amp;X-Amz-Date=20260227T023653Z&amp;X-Amz-Expires=300&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Signature=886f4cc7fab84bb0c0bf855f407a6efdd57287c9a65b7968ba52083289df490c";
-    const data = await fetch(url);
-    res.status(200).send(Buffer.from(await data.arrayBuffer()));
+    const [error, result] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = result.id;
+
+    let buffer: Buffer | undefined = undefined;
+    try {
+        const file = readFileSync(path.resolve(buildDir, "bhop_marble_7cf33a64-7120-4514-b9fa-4fe29d9523d.qbot"));
+        buffer = Buffer.from(file);
+    }
+    catch {
+        res.status(404).send({ error: "No bot found" });
+        return;
+    }
+    res.status(200).send(buffer);
+});
+
+app.get("/api/time/:id", rateLimitSettings, async (req, res) => {
+    const [error] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = req.params.id as string; // Don't want to convert to number
+    const apiTime = await getTimeById(id);
+    if (!apiTime) {
+        res.status(404).send({ error: "Invalid time" });
+        return;
+    }
+    
+    const time = apiTimeToTime(apiTime);
+
+    const placements = await getPlacements([id]);
+    if (placements) {
+        time.placement = placements[0].placement;
+    }
+
+    const promises = [setUserInfoForList(authClient, [time], true), setTimeDiffs([time])];
+    await Promise.all(promises);
+    res.status(200).send(time);
 });
 
 app.use(express.static(buildDir, { index: false }));

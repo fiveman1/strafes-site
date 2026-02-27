@@ -53,9 +53,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             sx={{
                 transition: "opacity .4s ease",
                 userSelect: "none",
-                cursor: "pointer"
-            }}
-            style={{
+                cursor: "pointer",
                 opacity: isHovering || isDragging ? 1 : 0
             }}
         >

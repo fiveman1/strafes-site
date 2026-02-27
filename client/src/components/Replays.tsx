@@ -3,7 +3,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { MAIN_COURSE } from "shared";
+import { MAIN_COURSE, Time } from "shared";
+import { useParams } from "react-router";
+import { getBotFileForTime, getMapFile, getTimeById } from "../api/api";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -34,6 +38,8 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackHead,
 }
 
 function Replays() {
+    const { id } = useParams() as { id: string };
+    const [ time, setTime ] = useState<Time>();
     const [ bot, setBot ] = useState<CompleteBot>();
     const [ graphics, setGraphics ] = useState<Graphics>();
     const [ playback, setPlayback ] = useState<PlaybackHead>();
@@ -41,6 +47,7 @@ function Replays() {
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackTime, setPlaybackTime ] = useState(-1);
     const [ paused, setPaused ] = useState(false);
+    const [ loading, setLoading ] = useState(true);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animTimer = useRef(0);
@@ -121,6 +128,11 @@ function Replays() {
     useEffect(() => {
         const promise = async () => {
             await init();
+
+            const time = await getTimeById(id);
+            if (!time || !time.hasBot) return;
+            setTime(time);
+
             const canvas = canvasRef.current;
             if (!canvas) return;
 
@@ -131,13 +143,15 @@ function Replays() {
             const height = canvas.clientHeight;
             handleCanvasSize(width, height, playback, graphics);
 
-            const mapPromise = fetch("/maps/5692093612.snfm");
-            const botPromise = fetch("/bhop_marble_7cf33a64-7120-4514-b9fa-4fe29d9523d.qbot");
-            const mapRes = await mapPromise;
-            const botRes = await botPromise;
+            const mapPromise = getMapFile(time.mapId);
+            const botPromise = getBotFileForTime(time);
+            const mapFile = await mapPromise;
+            const botFile = await botPromise;
 
-            const map = new CompleteMap(new Uint8Array(await mapRes.arrayBuffer()));
-            const bot = new CompleteBot(new Uint8Array(await botRes.arrayBuffer()));
+            if (!mapFile || !botFile) return;
+
+            const map = new CompleteMap(mapFile);
+            const bot = new CompleteBot(botFile);
 
             playback.advance_time(bot, 0);
             playback.set_head_time(0, 0);
@@ -153,8 +167,8 @@ function Replays() {
             setBotOffset(botDuration - runDuration);
             setPlaybackTime(botDuration - runDuration);
         };
-        promise();
-    }, []);
+        promise().then(() => setLoading(false));
+    }, [id]);
 
     return (
         <Box display="flex" flexDirection="column" flexGrow={1}>
@@ -207,10 +221,34 @@ function Replays() {
                                             onSetPause={onSetPause}
                                         />
                                     </Box>
+                                    {loading && 
+                                    <Box
+                                        position="absolute"
+                                        top="50%"
+                                        left="50%"
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        sx={{ transform: "translate(-50%, -50%)" }}
+                                    >
+                                        <CircularProgress size={Math.max(40, Math.round(getPlayerHeight(width, height) / 10))} />
+                                    </Box>}
                                 </Box>
                             </Box>}
                     </AutoSizer>
                 </Box>
+                {time &&
+                <Box display="flex" flexDirection="column" justifyContent="center">
+                    <Typography>
+                        ID: {time.id}
+                    </Typography>
+                    <Typography>
+                        Map: {time.map}
+                    </Typography>
+                    <Typography>
+                        User: {time.username}
+                    </Typography>
+                </Box>}
             </Box>
         </Box>
     );

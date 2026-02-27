@@ -44,7 +44,7 @@ const router = createBrowserRouter([
             { path: "terms", Component: Terms },
             { path: "privacy", Component: Privacy },
             { path: "settings", Component: Settings },
-            { path: "replays", Component: Replays }
+            { path: "replays/:id", Component: Replays }
         ]
     }
 ]);

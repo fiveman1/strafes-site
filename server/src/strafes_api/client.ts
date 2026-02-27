@@ -628,7 +628,7 @@ export class Api<
      * @request GET:/time/{id}
      * @secure
      */
-    timeDetail: (id: number, params: RequestParams = {}) =>
+    timeDetail: (id: string, params: RequestParams = {}) =>
       this.request<ResponseTime, Error>({
         path: `/time/${id}`,
         method: "GET",

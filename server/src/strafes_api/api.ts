@@ -132,3 +132,17 @@ async function getUserInfoCore(userId: number) {
         return undefined;
     }
 }
+
+export const getTimeById = memoize(getTimeByIdCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+async function getTimeByIdCore(timeId: string) {
+    try {
+        const res = await STRAFES_CLIENT.time.timeDetail(timeId);
+        return res.data.data;
+    }
+    catch (err) {
+        if (IS_DEV_MODE) {
+            console.error(err);
+        }
+        return undefined;
+    }
+}

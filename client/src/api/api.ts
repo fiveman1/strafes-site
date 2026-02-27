@@ -253,3 +253,31 @@ export async function voteForMapTier(mapId: number, tier: number | null) {
 
     return res.data.result as MapTierInfo | undefined;
 }
+
+export async function getTimeById(id: string) {
+    const res = await tryGetRequest("time/" + id);
+
+    if (!res) return undefined;
+
+    return res.data as Time;
+}
+
+export async function getBotFileForTime(time: Time) {
+    try {
+        const res = await fetch("/api/bots/" + time.id);
+        return new Uint8Array(await res.arrayBuffer());
+    }
+    catch {
+        return undefined;
+    }
+}
+
+export async function getMapFile(mapId: number) {
+    try {
+        const res = await fetch(`/maps/${mapId}.snfm`);
+        return new Uint8Array(await res.arrayBuffer());
+    }
+    catch {
+        return undefined;
+    }
+}
