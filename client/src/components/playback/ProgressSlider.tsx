@@ -21,7 +21,7 @@ function ProgressSlider(props: ProgressSliderProps) {
 
     const diff = max - min;
     const lerp = (value - min) / diff;
-    const offset= `${lerp * 100}%`;
+    const offset = `${lerp * 100}%`;
 
     useEffect(() => {
         const handler = (event: MouseEvent) => {
