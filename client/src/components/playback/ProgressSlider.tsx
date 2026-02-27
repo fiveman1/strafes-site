@@ -96,8 +96,10 @@ function ProgressSlider(props: ProgressSliderProps) {
                 top="50%" 
                 left="0%"
                 borderRadius="2px"
-                style={{width: offset}}
                 bgcolor={theme.palette.primary.main}
+                style={{
+                    width: offset
+                }}
                 sx={{
                     transform: "translateY(-50%)",
                     transition: "opacity .15s ease",
@@ -110,13 +112,14 @@ function ProgressSlider(props: ProgressSliderProps) {
                 width="12px"
                 height="12px"
                 top="50%"
-                left={offset}
                 borderRadius="50%"
                 bgcolor={theme.palette.primary.main}
+                style={{
+                    left: offset
+                }}
                 sx={{
-                    transform: "translate(-50%, -50%)",
-                    transition: "opacity .3s ease",
-                    opacity: isHovering ? 1 : 0
+                    transform: isDragging || isHovering ? "translate(-50%, -50%) scale(1.25)" : "translate(-50%, -50%)",
+                    transition: "transform .15s ease"
                 }}
             />
         </Box>

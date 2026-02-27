@@ -1,3 +1,5 @@
+/* tslint:disable */
+/* eslint-disable */
 /* @ts-self-types="./strafesnet_roblox_bot_player_wasm_module.d.ts" */
 
 export class CompleteBot {

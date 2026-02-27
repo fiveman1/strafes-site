@@ -12,13 +12,14 @@ interface PlaybackOverlayProps {
     duration: number
     time: number
     paused: boolean
+    offset: number
     onDragPlayback: (time: number) => void
     onSetPlayback: (time: number) => void
     onSetPause: (pause: boolean) => void
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
-    const { time, duration, paused, onDragPlayback, onSetPlayback, onSetPause } = props;
+    const { time, duration, paused, offset, onDragPlayback, onSetPlayback, onSetPause } = props;
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
@@ -90,7 +91,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     {timeText}
                 </Typography>
                 <ProgressSlider 
-                    min={-1}
+                    min={-offset}
                     max={duration}
                     value={time}
                     onDragPlayback={onDragPlayback}

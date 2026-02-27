@@ -977,6 +977,12 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
     });
 });
 
+app.get("/api/bots/:id", rateLimitSettings, async (req, res) => {
+    const url = "https://strafesnet-data-dev.s3.us-west-001.backblazeb2.com/577814c2-78a7-4a62-96b2-102b57e43209?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=001f1efd6c5ee720000000016%2F20260227%2Fus-west-001%2Fs3%2Faws4_request&amp;X-Amz-Date=20260227T023653Z&amp;X-Amz-Expires=300&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Signature=886f4cc7fab84bb0c0bf855f407a6efdd57287c9a65b7968ba52083289df490c";
+    const data = await fetch(url);
+    res.status(200).send(Buffer.from(await data.arrayBuffer()));
+});
+
 app.use(express.static(buildDir, { index: false }));
 app.get("*splat", async (req, res): Promise<any> => {
     try {
