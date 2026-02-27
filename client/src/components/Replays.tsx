@@ -151,6 +151,7 @@ function Replays() {
             const runDuration = bot.run_duration(MAIN_COURSE) ?? (botDuration - 1);
             setDuration(runDuration);
             setBotOffset(botDuration - runDuration);
+            setPlaybackTime(botDuration - runDuration);
         };
         promise();
     }, []);
