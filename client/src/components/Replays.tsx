@@ -117,7 +117,7 @@ function Replays() {
     const onSetPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, time + botOffset);
+            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
             if (!paused) {
                 playback.set_paused(sessionTimer.current, false);
             }
@@ -127,7 +127,7 @@ function Replays() {
     const onDragPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, Math.min(time + botOffset, bot.duration() - 0.0001));
+            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
             playback.set_paused(sessionTimer.current, true);
         }
     }, [bot, botOffset, playback]);
