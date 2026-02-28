@@ -46,6 +46,10 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackHead,
     graphics.resize(screenWidth, screenHeight, fov_x, fov_y);
 }
 
+function getSafeTime(time: number, bot: CompleteBot) {
+    return Math.max(0.0001, Math.min(time, bot.duration() - 0.0001));
+}
+
 const FOOTER_HEIGHT = 130;
 
 function Replays() {
@@ -125,7 +129,7 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
+            playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
                 playback.set_paused(sessionTimer.current, false);
             }
@@ -137,7 +141,7 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
+            playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             playback.set_paused(sessionTimer.current, true);
         }
     }, [botOffset]);
@@ -148,7 +152,7 @@ function Replays() {
         if (playback && bot) {
             const curTime = playback.get_head_time(sessionTimer.current);
             const newTime = curTime + offset;
-            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(newTime, bot.duration() - 0.0001)));
+            playback.set_head_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
         }
     }, []);
 

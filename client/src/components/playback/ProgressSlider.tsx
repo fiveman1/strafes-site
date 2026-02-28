@@ -70,6 +70,7 @@ function ProgressSlider(props: ProgressSliderProps) {
             position="relative" 
             width="100%" 
             height="40px" 
+            sx={{ cursor: "pointer" }}
             ref={ref} 
             onMouseDown={onMouseDown} 
             onMouseOver={onMouseOver} 

@@ -27,22 +27,28 @@ interface PlaybackOverlayProps {
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, onDragPlayback, onSetPlayback, onSetPause, onFullscreen, onSeek, onReset } = props;
     const [ isHovering, setIsHovering ] = useState(false);
+    const [ isBottomHovering, setIsBottomHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
     const [ wasRecentAction, setWasRecentAction ] = useState(false);
+    const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const lastAction = useRef(0);
+    const lastMouseOver = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
     const smallScreen = useMediaQuery("(max-width: 800px)");
 
     useEffect(() => {
         const interval = setInterval(() => {
             const now = new Date().getTime();
-            setWasRecentAction((now - lastAction.current) < 1000);
+            setWasRecentAction((now - lastAction.current) < 3000);
+            setWasRecentMouseOver((now - lastMouseOver.current) < 3000);
         }, 100);
 
         return () => clearInterval(interval);
     }, []);
 
     const onMouseOver = useCallback(() => {
+        setWasRecentMouseOver(true);
+        lastMouseOver.current = new Date().getTime();
         setIsHovering(true);
     }, []);
 
@@ -50,7 +56,15 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         setIsHovering(false);
     }, []);
 
-    const onClickOverlay = useCallback(() => {
+    const onBottomMouseOver = useCallback(() => {
+        setIsBottomHovering(true);
+    }, []);
+
+    const onBottomMouseLeave = useCallback(() => {
+        setIsBottomHovering(false);
+    }, []);
+
+    const onPausePlay = useCallback(() => {
         onSetPause(!paused);
     }, [onSetPause, paused]);
 
@@ -63,7 +77,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         
         if (event.code === "Space") {
             didAction = true;
-            onClickOverlay();
+            onPausePlay();
         }
         else if (event.key === "ArrowLeft") {
             didAction = true;
@@ -87,7 +101,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             setWasRecentAction(true);
             lastAction.current = new Date().getTime();
         }
-    }, [onClickOverlay, onReset, onSeek, onSwapFullscreen]);
+    }, [onPausePlay, onReset, onSeek, onSwapFullscreen]);
 
     useEffect(() => {
         document.addEventListener("keyup", onKeyUp)
@@ -100,7 +114,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
     const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
     const timeTextWidth = (timeText.length * 8) + 16;
-    const shouldShow = wasRecentAction || isHovering || isDragging;
+    const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering;
     
     return (
         <Box 
@@ -108,22 +122,30 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             height="100%" 
             display="flex" 
             flexDirection="column" 
-            onMouseOver={onMouseOver} 
+            onMouseMove={onMouseOver}
             onMouseLeave={onMouseLeave}
             onDoubleClick={onSwapFullscreen}
             sx={{
                 transition: "opacity .4s ease",
                 userSelect: "none",
-                cursor: "pointer",
                 opacity: shouldShow ? 1 : 0,
                 WebkitTapHighlightColor: "transparent"
             }}
+            style={{ cursor: shouldShow ? "default" : "none" }}
         >
-            <Box flexGrow={1} onClick={onClickOverlay} />
-            <Box width="100%" height="40px" display="flex" alignItems="center" p={1}>
+            <Box flexGrow={1} onClick={onPausePlay} />
+            <Box 
+                width="100%" 
+                height="40px" 
+                display="flex" 
+                alignItems="center" 
+                p={1}
+                onMouseOver={onBottomMouseOver}
+                onMouseLeave={onBottomMouseLeave}
+            >
                 <IconButton 
                     size="small" 
-                    onClick={onClickOverlay} 
+                    onClick={onPausePlay} 
                     sx={{
                         color: "white",
                         bgcolor: "#00000080",
