@@ -39,11 +39,11 @@ function getPlayerWidth(width: number, height: number) {
 }
 
 function handleCanvasSize(width: number, height: number, playback: PlaybackHead, graphics: Graphics) {
-    const realWidth = getPlayerWidth(width, height);
-    const realHeight = getPlayerHeight(width, height);
+    const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
+    const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
-    const fov_x = (fov_y * realWidth) / realHeight;
-    graphics.resize(realWidth, realHeight, fov_x, fov_y);
+    const fov_x = (fov_y * screenWidth) / screenHeight;
+    graphics.resize(screenWidth, screenHeight, fov_x, fov_y);
 }
 
 const FOOTER_HEIGHT = 130;
