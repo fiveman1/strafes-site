@@ -167,7 +167,7 @@ function Replays() {
         
         const promise = async () => {
             if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
-                setError("Your browser doesn't support WebGPU. Make sure you have hardware acceleration enabled.");
+                setError("Playback is not supported on this device. Make sure you have hardware acceleration enabled.");
                 return;
             }
             
