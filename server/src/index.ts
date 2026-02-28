@@ -11,7 +11,7 @@ import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
 import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
-import { getPlacements, getRanks, getTimes, getUserRank } from "./strafes_api/api.js";
+import { getBotFileFromId, getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
@@ -59,6 +59,7 @@ const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, v
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
+const mapDir = path.join(dirName, "../maps/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
@@ -975,6 +976,67 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
     res.status(200).json({
         data: maps
     });
+});
+
+app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
+    const [error] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = req.params.id as string; // Don't want to convert to number
+    
+    const file = await getBotFileFromId(id);
+    if (!file) {
+        res.status(404).send({ error: "No bot found" });
+        return;
+    }
+    
+    const buffer = Buffer.from(file);
+    res.status(200).send(buffer);
+});
+
+app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
+    const [error, result] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = result.id;
+    
+    res.sendFile(path.resolve(mapDir, `${id}.snfm`), (err) => {
+        if (err) {
+            res.status(404).json({ error: "Map file not found" });
+        }
+    });
+});
+
+app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
+    const [error] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = req.params.id as string; // Don't want to convert to number
+    const apiTime = await getTimeById(id);
+    if (!apiTime) {
+        res.status(404).send({ error: "Invalid time" });
+        return;
+    }
+    
+    const time = apiTimeToTime(apiTime);
+
+    const placements = await getPlacements([id]);
+    if (placements) {
+        time.placement = placements[0].placement;
+    }
+
+    const promises = [setUserInfoForList(authClient, [time]), setTimeDiffs([time])];
+    await Promise.all(promises);
+    res.status(200).send(time);
 });
 
 app.use(express.static(buildDir, { index: false }));

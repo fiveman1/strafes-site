@@ -1,5 +1,5 @@
 import { PaletteMode } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
@@ -214,4 +214,21 @@ export function useFilterTiers() {
             .withDefault(Array.from(Array(MAX_TIER + 1).keys()))
             .withOptions({ history: "replace" })
     );
+}
+
+export function useDebounce<T>(value: T, delay: number) {
+    const state = useState(value);
+    const [, setDebouncedValue] = state;
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay, setDebouncedValue]);
+
+    return state;
 }

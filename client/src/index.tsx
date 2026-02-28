@@ -12,6 +12,7 @@ import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import MapsHome from './components/MapsHome';
+import Replays from './components/Replays';
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
             { path: "terms", Component: Terms },
             { path: "privacy", Component: Privacy },
             { path: "settings", Component: Settings },
+            { path: "replays/:id", Component: Replays }
         ]
     }
 ]);

@@ -9,7 +9,7 @@ function TimeDateColumn(props: {time: Time}) {
 
     return (
         <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center" alignItems="center">
-            <TimeDisplay ms={time.time} hideDiff />
+            <TimeDisplay time={time} hideDiff />
             <DiffDisplay ms={time.time} diff={time.wrDiff} />
             <DateDisplay date={time.date} color="text.secondary" />
         </Box>

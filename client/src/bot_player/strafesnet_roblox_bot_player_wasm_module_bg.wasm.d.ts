@@ -1,0 +1,33 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_completebot_free: (a: number, b: number) => void;
+export const __wbg_completemap_free: (a: number, b: number) => void;
+export const __wbg_graphics_free: (a: number, b: number) => void;
+export const __wbg_playbackhead_free: (a: number, b: number) => void;
+export const completebot_duration: (a: number) => number;
+export const completebot_new: (a: number, b: number, c: number) => void;
+export const completebot_run_duration: (a: number, b: number, c: number) => void;
+export const completemap_new: (a: number, b: number, c: number) => void;
+export const graphics_change_map: (a: number, b: number) => void;
+export const graphics_render: (a: number, b: number, c: number, d: number) => void;
+export const graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
+export const playbackhead_advance_time: (a: number, b: number, c: number) => void;
+export const playbackhead_get_fov_slope_y: (a: number) => number;
+export const playbackhead_get_head_time: (a: number, b: number) => number;
+export const playbackhead_get_run_time: (a: number, b: number, c: number, d: number, e: number) => void;
+export const playbackhead_get_scale: (a: number) => number;
+export const playbackhead_is_run_finished: (a: number, b: number) => number;
+export const playbackhead_is_run_in_progress: (a: number, b: number) => number;
+export const playbackhead_new: (a: number, b: number, c: number) => void;
+export const playbackhead_set_head_time: (a: number, b: number, c: number, d: number) => void;
+export const playbackhead_set_paused: (a: number, b: number, c: number) => void;
+export const playbackhead_set_scale: (a: number, b: number, c: number) => void;
+export const setup_graphics: (a: number) => number;
+export const __wasm_bindgen_func_elem_1191: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_1615: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1192: (a: number, b: number, c: number) => void;
+export const __wbindgen_export: (a: number, b: number) => number;
+export const __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_export3: (a: number) => void;
+export const __wbindgen_add_to_stack_pointer: (a: number) => number;

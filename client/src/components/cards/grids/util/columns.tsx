@@ -118,12 +118,12 @@ export function makeTimeColumn(): GridColDef {
         type: "string",
         field: "time",
         headerName: "Time",
-        flex: 200,
-        minWidth: 165,
+        flex: 225,
+        minWidth: 195,
         sortingOrder: ["asc", "desc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
-            return <TimeDisplay ms={time.time} diff={time.wrDiff} />
+            return <TimeDisplay time={time} />
         }
     };
 }
