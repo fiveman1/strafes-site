@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import ProgressSlider from "./ProgressSlider";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -20,14 +20,27 @@ interface PlaybackOverlayProps {
     onSetPlayback: (time: number) => void
     onSetPause: (pause: boolean) => void
     onFullscreen: (fullscreen: boolean) => void
+    onSeek: (offset: number) => void
+    onReset: () => void
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
-    const { time, duration, paused, offset, fullscreen, onDragPlayback, onSetPlayback, onSetPause, onFullscreen } = props;
+    const { time, duration, paused, offset, fullscreen, onDragPlayback, onSetPlayback, onSetPause, onFullscreen, onSeek, onReset } = props;
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
+    const [ wasRecentAction, setWasRecentAction ] = useState(false);
+    const lastAction = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
     const smallScreen = useMediaQuery("(max-width: 800px)");
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            setWasRecentAction((now - lastAction.current) < 1000);
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const onMouseOver = useCallback(() => {
         setIsHovering(true);
@@ -45,10 +58,49 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onFullscreen(!fullscreen);
     }, [fullscreen, onFullscreen]);
 
+    const onKeyUp = useCallback((event: KeyboardEvent) => {
+        let didAction = false;
+        
+        if (event.code === "Space") {
+            didAction = true;
+            onClickOverlay();
+        }
+        else if (event.key === "ArrowLeft") {
+            didAction = true;
+            onSeek(-3);
+        }
+        else if (event.key === "ArrowRight") {
+            didAction = true;
+            onSeek(3);
+        }
+        else if (event.code === "KeyF") {
+            didAction = true;
+            onSwapFullscreen();
+        }
+        else if (event.code === "KeyR") {
+            didAction = true;
+            onReset();
+        }
+
+        if (didAction) {
+            event.preventDefault();
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
+        }
+    }, [onClickOverlay, onReset, onSeek, onSwapFullscreen]);
+
+    useEffect(() => {
+        document.addEventListener("keyup", onKeyUp)
+        return () => {
+            document.removeEventListener("keyup", onKeyUp);
+        };
+    }, [onKeyUp]);
+
     const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
     const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
     const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
     const timeTextWidth = (timeText.length * 8) + 16;
+    const shouldShow = wasRecentAction || isHovering || isDragging;
     
     return (
         <Box 
@@ -63,7 +115,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 transition: "opacity .4s ease",
                 userSelect: "none",
                 cursor: "pointer",
-                opacity: isHovering || isDragging ? 1 : 0
+                opacity: shouldShow ? 1 : 0
             }}
         >
             <Box flexGrow={1} onClick={onClickOverlay} />

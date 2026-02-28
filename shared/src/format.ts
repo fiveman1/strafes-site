@@ -145,7 +145,7 @@ export function formatTime(time: number, short?: boolean) {
     }
     let str = isNegative ? "-" : "";
     str += hours + ":" + minutes;
-    if (short) str += ":" + seconds;
+    if (!short) str += ":" + seconds;
     return str;
 }
 

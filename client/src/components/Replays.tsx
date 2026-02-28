@@ -132,6 +132,20 @@ function Replays() {
         }
     }, [bot, botOffset, playback]);
 
+    const onSeek = useCallback((offset: number) => {
+        if (playback && bot) {
+            const curTime = playback.get_head_time(sessionTimer.current);
+            const newTime = curTime + offset;
+            playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(newTime, bot.duration() - 0.0001)));
+        }
+    }, [bot, playback]);
+
+    const onReset = useCallback(() => {
+        if (playback && bot) {
+            playback.set_head_time(bot, sessionTimer.current, 0.0001);
+        }
+    }, [bot, playback]);
+
     const onSetPause = useCallback((paused: boolean) => {
         setPaused(paused);
         if (playback) {
@@ -313,6 +327,8 @@ function Replays() {
                                     onSetPlayback={onSetPlayback} 
                                     onSetPause={onSetPause}
                                     onFullscreen={onFullscreen}
+                                    onSeek={onSeek}
+                                    onReset={onReset}
                                 />
                             </Box>
                             {loading && 
