@@ -740,6 +740,7 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
             date: time.date,
             id: time.id,
             course: time.course,
+            has_bot: time.hasBot,
             user: {
                 id: time.userId,
                 username: time.username,
