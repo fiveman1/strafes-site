@@ -120,7 +120,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             }}
         >
             <Box flexGrow={1} onClick={onClickOverlay} />
-            <Box width="100%" height="40px" display="flex" alignItems="center" p={1} pr={1}>
+            <Box width="100%" height="40px" display="flex" alignItems="center" p={1}>
                 <IconButton 
                     size="small" 
                     onClick={onClickOverlay} 
