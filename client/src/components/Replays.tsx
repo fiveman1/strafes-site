@@ -52,9 +52,6 @@ function Replays() {
     const { id } = useParams() as { id: string };
     const { maps } = useOutletContext() as ContextParams;
     const [ time, setTime ] = useState<Time>();
-    const [ bot, setBot ] = useState<CompleteBot>();
-    const [ graphics, setGraphics ] = useState<Graphics>();
-    const [ playback, setPlayback ] = useState<PlaybackHead>();
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackTime, setPlaybackTime ] = useState(-1);
@@ -68,6 +65,9 @@ function Replays() {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
+    const graphicsRef = useRef<Graphics>(null);
+    const botRef = useRef<CompleteBot>(null);
+    const playbackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
@@ -75,6 +75,7 @@ function Replays() {
     // Separated from animation loop for *important* performance reasons
     useEffect(() => {
         const interval = setInterval(() => {
+            const playback = playbackRef.current;
             if (playback) {
                 const curPlayerTime = Math.min(playback.get_head_time(sessionTimer.current) - botOffset, duration);
                 if (curPlayerTime !== playbackTime) {
@@ -84,7 +85,7 @@ function Replays() {
         }, 17);
 
         return () => clearInterval(interval);
-    }, [botOffset, duration, playback, playbackTime]);
+    }, [botOffset, duration, playbackTime]);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -93,6 +94,9 @@ function Replays() {
             const time = timeMs / 1000;
             animationId = requestAnimationFrame(animate);
 
+            const playback = playbackRef.current;
+            const bot = botRef.current;
+            const graphics = graphicsRef.current;
             if (playback && bot && graphics) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
@@ -106,52 +110,63 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [bot, graphics, playback, duration]);
+    }, []);
 
     const onResize = useCallback((width: number, height: number) => {
+        const playback = playbackRef.current;
+        const graphics = graphicsRef.current;
         if (playback && graphics) {
             handleCanvasSize(width, height, playback, graphics);
         }
-    }, [graphics, playback]);
+    }, []);
 
     const onSetPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
+        const playback = playbackRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
             if (!paused) {
                 playback.set_paused(sessionTimer.current, false);
             }
         }
-    }, [bot, botOffset, paused, playback]);
+    }, [botOffset, paused]);
 
     const onDragPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
+        const playback = playbackRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(time + botOffset, bot.duration() - 0.0001)));
             playback.set_paused(sessionTimer.current, true);
         }
-    }, [bot, botOffset, playback]);
+    }, [botOffset]);
 
     const onSeek = useCallback((offset: number) => {
+        const playback = playbackRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             const curTime = playback.get_head_time(sessionTimer.current);
             const newTime = curTime + offset;
             playback.set_head_time(bot, sessionTimer.current, Math.max(0.0001, Math.min(newTime, bot.duration() - 0.0001)));
         }
-    }, [bot, playback]);
+    }, []);
 
     const onReset = useCallback(() => {
+        const playback = playbackRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_head_time(bot, sessionTimer.current, 0.0001);
         }
-    }, [bot, playback]);
+    }, []);
 
     const onSetPause = useCallback((paused: boolean) => {
         setPaused(paused);
+        const playback = playbackRef.current;
         if (playback) {
             playback.set_paused(sessionTimer.current, paused);
         }
-    }, [playback]);
+    }, []);
 
     const onFullscreen = useCallback((fullscreen: boolean) => {
         setFullscreen(fullscreen);
@@ -228,6 +243,10 @@ function Replays() {
             const playback = new PlaybackHead(bot, 0);
             const graphics = await setup_graphics(canvas);
 
+            playbackRef.current = playback;
+            graphicsRef.current = graphics;
+            botRef.current = bot;
+
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
             handleCanvasSize(width, height, playback, graphics);
@@ -236,15 +255,12 @@ function Replays() {
             playback.set_head_time(bot, 0, 0);
             graphics.change_map(map);
 
-            setPlayback(playback);
-            setGraphics(graphics);
-            setBot(bot);
-
             const botDuration = bot.duration();
-            const runDuration = bot.run_duration(time.course) ?? (botDuration - 1);
+            const runDuration = bot.run_duration(time.course) ?? (time.time / 1000);
             setDuration(runDuration);
-            setBotOffset(botDuration - runDuration);
-            setPlaybackTime(botDuration - runDuration);
+            const offset = botDuration - runDuration;
+            setBotOffset(offset);
+            setPlaybackTime(-offset);
         };
         promise().then(() => setLoading(false));
     }, [id]);
