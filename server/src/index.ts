@@ -11,7 +11,7 @@ import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
 import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
-import { getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
+import { getBotFileFromId, getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
 import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
@@ -979,22 +979,22 @@ app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) =>
 });
 
 app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
-    const [error, result] = await validators.idValidator.tryValidate(req.params);
+    const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
         return;
     }
 
-    const id = result.id;
-
-    try {
-        const file = readFileSync(path.resolve(mapDir, "bhop_marble_7cf33a64-7120-4514-b9fa-4fe29d9523d.qbot"));
-        const buffer = Buffer.from(file);
-        res.status(200).send(buffer);
-    }
-    catch {
+    const id = req.params.id as string; // Don't want to convert to number
+    
+    const file = await getBotFileFromId(id);
+    if (!file) {
         res.status(404).send({ error: "No bot found" });
+        return;
     }
+    
+    const buffer = Buffer.from(file);
+    res.status(200).send(buffer);
 });
 
 app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {

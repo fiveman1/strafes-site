@@ -146,3 +146,16 @@ async function getTimeByIdCore(timeId: string) {
         return undefined;
     }
 }
+
+export async function getBotFileFromId(timeId: string) {
+    try {
+        const res = await STRAFES_CLIENT.time.getTime(timeId);
+        return await res.arrayBuffer();
+    }
+    catch (err) {
+        if (IS_DEV_MODE) {
+            console.error(err);
+        }
+        return undefined;
+    }
+}

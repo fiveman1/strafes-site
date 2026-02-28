@@ -449,6 +449,52 @@
                 }
             }
         },
+        "/time/{id}/bot": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a HTTP 302 Redirect to the download url for the bot replay of a time by its ID if it exists",
+                "tags": [
+                    "times"
+                ],
+                "summary": "Get redirect to bot download url by time ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Time ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Found",
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Redirect URL"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Time does not have a Bot",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "get": {
                 "security": [

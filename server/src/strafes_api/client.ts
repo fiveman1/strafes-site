@@ -636,6 +636,23 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * @description Get a HTTP 302 Redirect to the download url for the bot replay of a time by its ID if it exists
+     *
+     * @tags times
+     * @name GetTime
+     * @summary Get redirect to bot download url by time ID
+     * @request GET:/time/{id}/bot
+     * @secure
+     */
+    getTime: (id: string, params: RequestParams = {}) =>
+      this.request<any, void | Error>({
+        path: `/time/${id}/bot`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
   };
   user = {
     /**
