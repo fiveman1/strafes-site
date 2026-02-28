@@ -52,6 +52,37 @@ function ProgressSlider(props: ProgressSliderProps) {
         }
     }, [isDragging, max, min, onSetPlayback, setIsDragging]);
 
+    useEffect(() => {
+        const handler = (event: TouchEvent) => {
+            if (!ref.current || !isDragging || event.touches.length !== 1 || event.targetTouches.length !== 1) return;
+            event.preventDefault();
+            const rect = ref.current.getBoundingClientRect();
+            const x = clamp(event.targetTouches[0].clientX, rect.left, rect.right);
+            const newPlayback = normalize(x, rect.left, rect.right, min, max);
+            onDragPlayback(newPlayback);
+        };
+        document.addEventListener("touchmove", handler, { passive: false });
+        return () => {
+            document.removeEventListener("touchmove", handler);
+        }
+    }, [isDragging, max, min, onDragPlayback]);
+
+    useEffect(() => {
+        const handler = (event: TouchEvent) => {
+            if (!ref.current || !isDragging || event.changedTouches.length !== 1) return;
+            event.preventDefault();
+            setIsDragging(false);
+            const rect = ref.current.getBoundingClientRect();
+            const x = clamp(event.changedTouches[0].clientX, rect.left, rect.right);
+            const newPlayback = normalize(x, rect.left, rect.right, min, max);
+            onSetPlayback(newPlayback);
+        };
+        document.addEventListener("touchend", handler, { passive: false });
+        return () => {
+            document.removeEventListener("touchend", handler);
+        }
+    }, [isDragging, max, min, onSetPlayback, setIsDragging]);
+
     const onMouseDown = useCallback(() => {
         setIsDragging(true);
     }, [setIsDragging]);
@@ -65,15 +96,16 @@ function ProgressSlider(props: ProgressSliderProps) {
     }, []);
 
     return (
-        <Box 
-            component="span" 
-            position="relative" 
-            width="100%" 
-            height="40px" 
+        <Box
+            component="span"
+            position="relative"
+            width="100%"
+            height="40px"
             sx={{ cursor: "pointer" }}
-            ref={ref} 
-            onMouseDown={onMouseDown} 
-            onMouseOver={onMouseOver} 
+            ref={ref}
+            onMouseDown={onMouseDown}
+            onTouchStart={onMouseDown}
+            onMouseOver={onMouseOver}
             onMouseLeave={onMouseLeave}
         >
             <Box 

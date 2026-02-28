@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import ProgressSlider from "./ProgressSlider";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -35,6 +35,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const lastMouseOver = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
     const smallScreen = useMediaQuery("(max-width: 800px)");
+    const bottomDivId = useId();
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -46,9 +47,15 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         return () => clearInterval(interval);
     }, []);
 
-    const onMouseOver = useCallback(() => {
+    const onMouseMove = useCallback(() => {
         setWasRecentMouseOver(true);
         lastMouseOver.current = new Date().getTime();
+        setIsHovering(true);
+    }, []);
+
+    const onTouchMove = useCallback(() => {
+        setWasRecentAction(true);
+        lastAction.current = new Date().getTime();
         setIsHovering(true);
     }, []);
 
@@ -68,7 +75,19 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onSetPause(!paused);
     }, [onSetPause, paused]);
 
+    const onTouchPausePlay = useCallback(() => {
+        setWasRecentAction(true);
+        lastAction.current = new Date().getTime();
+        onSetPause(!paused);
+    }, [onSetPause, paused]);
+
     const onSwapFullscreen = useCallback(() => {
+        onFullscreen(!fullscreen);
+    }, [fullscreen, onFullscreen]);
+
+    const onTouchFullscreen = useCallback(() => {
+        setWasRecentAction(true);
+        lastAction.current = new Date().getTime();
         onFullscreen(!fullscreen);
     }, [fullscreen, onFullscreen]);
 
@@ -110,6 +129,32 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         };
     }, [onKeyUp]);
 
+    useEffect(() => {
+        const div = document.getElementById(bottomDivId);
+        if (!div) return;
+        
+        const touchStart = (event: TouchEvent) => {
+            setIsBottomHovering(true);
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
+            event.preventDefault();
+        }
+
+        const touchEnd = (event: TouchEvent) => {
+            setIsBottomHovering(false);
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
+            event.preventDefault();
+        }
+
+        div.addEventListener("touchstart", touchStart, { passive: false });
+        div.addEventListener("touchend", touchEnd, { passive: false });
+        return () => {
+            div.removeEventListener("touchstart", touchStart);
+            div.addEventListener("touchend", touchEnd);
+        }
+    }, [bottomDivId])
+
     const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
     const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
     const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
@@ -122,8 +167,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             height="100%" 
             display="flex" 
             flexDirection="column" 
-            onMouseMove={onMouseOver}
+            onMouseMove={onMouseMove}
+            onTouchMove={onTouchMove}
             onMouseLeave={onMouseLeave}
+            onTouchEnd={onMouseLeave}
             onDoubleClick={onSwapFullscreen}
             sx={{
                 transition: "opacity .4s ease",
@@ -140,12 +187,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 display="flex" 
                 alignItems="center" 
                 p={1}
+                id={bottomDivId}
                 onMouseOver={onBottomMouseOver}
                 onMouseLeave={onBottomMouseLeave}
             >
                 <IconButton 
                     size="small" 
                     onClick={onPausePlay} 
+                    onTouchEnd={onTouchPausePlay}
                     sx={{
                         color: "white",
                         bgcolor: "#00000080",
@@ -184,6 +233,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 <IconButton 
                     size="small" 
                     onClick={onSwapFullscreen} 
+                    onTouchEnd={onTouchFullscreen}
                     sx={{
                         color: "white",
                         bgcolor: "#00000080",
