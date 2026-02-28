@@ -115,7 +115,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 transition: "opacity .4s ease",
                 userSelect: "none",
                 cursor: "pointer",
-                opacity: shouldShow ? 1 : 0
+                opacity: shouldShow ? 1 : 0,
+                WebkitTapHighlightColor: "transparent"
             }}
         >
             <Box flexGrow={1} onClick={onClickOverlay} />

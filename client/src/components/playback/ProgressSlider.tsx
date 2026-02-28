@@ -31,7 +31,7 @@ function ProgressSlider(props: ProgressSliderProps) {
             const newPlayback = normalize(x, rect.left, rect.right, min, max);
             onDragPlayback(newPlayback);
         };
-        document.addEventListener("mousemove", handler)
+        document.addEventListener("mousemove", handler);
         return () => {
             document.removeEventListener("mousemove", handler);
         }
@@ -46,7 +46,7 @@ function ProgressSlider(props: ProgressSliderProps) {
             onSetPlayback(newPlayback);
             setIsDragging(false);
         };
-        document.addEventListener("mouseup", handler)
+        document.addEventListener("mouseup", handler);
         return () => {
             document.removeEventListener("mouseup", handler);
         }
