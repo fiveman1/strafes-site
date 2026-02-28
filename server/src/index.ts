@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
@@ -1109,6 +1109,24 @@ app.get("*splat", async (req, res): Promise<any> => {
                     if (user1Info && user2Info) {
                         title = `@${user1Info.username} vs @${user2Info.username} - compare`;
                         description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
+                    }
+                }
+            }
+            else if (url[0] === "replays") {
+                title = "replays";
+                description = "Watch replays";
+                if (url.length > 1) {
+                    const timeId = url[1];
+                    if (!isNaN(+timeId)) {
+                        const time = await getTimeById(timeId);
+                        if (time && time.has_bot) {
+                            let mapFormatted = time.map.display_name;
+                            if (time.mode_id !== MAIN_COURSE) {
+                                mapFormatted += ` (${formatCourse(time.mode_id, true)})`;
+                            }
+                            title = `${mapFormatted} in ${formatTime(time.time)} by ${time.user.username} - replays`;
+                            description = `Watch @${time.user.username} beat ${mapFormatted} in ${formatTime(time.time)} (game: ${formatGame(time.game_id)}, style: ${formatStyle(time.style_id)}, course: ${formatCourse(time.mode_id)})`;
+                        }
                     }
                 }
             }
