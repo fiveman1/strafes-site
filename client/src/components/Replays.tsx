@@ -3,8 +3,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatGame, formatPlacement, formatStyle, formatTime, MAIN_COURSE, Time } from "shared";
-import { useOutletContext, useParams } from "react-router";
+import { formatGame, formatPlacement, formatStyle, formatTime, Time } from "shared";
+import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileForTime, getMapFile, getTimeById } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -15,6 +15,8 @@ import { useTheme } from "@mui/material/styles";
 import { dateFormat, dateTimeFormat } from "../common/datetime";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
+import Link from "@mui/material/Link";
+import Alert from "@mui/material/Alert";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -59,17 +61,15 @@ function Replays() {
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
+    const [ error, setError ] = useState("");
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
     const verySmallScreen = useMediaQuery("(max-width: 400px)");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const playerRef = useRef<HTMLDivElement>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
-
-    useEffect(() => {
-        document.title = "replays - strafes"
-    }, []);
 
     // Update current run timer on a 17ms interval
     // Separated from animation loop for *important* performance reasons
@@ -141,30 +141,68 @@ function Replays() {
 
     const onFullscreen = useCallback((fullscreen: boolean) => {
         setFullscreen(fullscreen);
-        if (fullscreen && canvasRef.current) {
-            canvasRef.current.requestFullscreen();
+        if (fullscreen) {
+            playerRef.current?.requestFullscreen();
+        }
+        else if (document.fullscreenElement !== null) {
+            document.exitFullscreen();
         }
     }, []);
 
     useEffect(() => {
+        const handler = () => {
+            if (!document.fullscreenElement) {
+                onFullscreen(false);
+            }
+        }
+        document.addEventListener("fullscreenchange", handler)
+
+        return () => {
+            document.removeEventListener("fullscreenchange", handler);
+        };
+    }, [onFullscreen]);
+
+    useEffect(() => {
+        document.title = `replays - strafes`;
+        
         const promise = async () => {
             await init();
 
             const time = await getTimeById(id);
-            if (!time || !time.hasBot) return;
+            if (!time) {
+                setError(`Invalid time (ID: ${id}).`);
+                return;
+            }
+
             setTime(time);
+
+            if (!time.hasBot) {
+                setError("Time does not have a bot.");
+                return;
+            }
 
             const mapPromise = getMapFile(time.mapId);
             const botPromise = getBotFileForTime(time);
             const mapFile = await mapPromise;
             const botFile = await botPromise;
 
-            if (!mapFile || !botFile) return;
+            if (!mapFile) {
+                setError("Couldn't load map file.");
+                return;
+            }
+
+            if (!botFile) {
+                setError("Couldn't load bot file.");
+                return;
+            }
 
             const canvas = canvasRef.current;
-            if (!canvas) return;
+            if (!canvas) {
+                setError("Couldn't setup bot playback.");
+                return;
+            }
 
-            document.title = `${time.map} in ${formatTime(time.time)} by ${time.username} - replays - strafes`
+            document.title = `${time.map} in ${formatTime(time.time)} by ${time.username} - replays - strafes`;
 
             const map = new CompleteMap(mapFile);
             const bot = new CompleteBot(botFile);
@@ -184,7 +222,7 @@ function Replays() {
             setBot(bot);
 
             const botDuration = bot.duration();
-            const runDuration = bot.run_duration(MAIN_COURSE) ?? (botDuration - 1);
+            const runDuration = bot.run_duration(time.course) ?? (botDuration - 1);
             setDuration(runDuration);
             setBotOffset(botDuration - runDuration);
             setPlaybackTime(botDuration - runDuration);
@@ -199,222 +237,294 @@ function Replays() {
         styleColor = getStyleColor(time.style, theme);
     }
 
+    const footerHeight = fullscreen ? 0 : FOOTER_HEIGHT;
+
     return (
-        <Box display="flex" flexDirection="column" flexGrow={1}>
-            <Box padding={1} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-                <Box sx={{ width: "100%", height: "100%", minHeight: "600px" }}>
-                    <AutoSizer
-                        onResize={({ width, height }) => onResize(width, height - FOOTER_HEIGHT)}
+        <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            {error !== "" &&
+            <Alert severity="error" sx={{ mb: 1 }}>
+                {error}
+            </Alert>}
+            <Box 
+                ref={playerRef}
+                sx={{ 
+                    width: fullscreen ? "100vw" : "100%", 
+                    height: fullscreen ? "100vh" : "100%", 
+                    position: fullscreen ? "fixed" : undefined, 
+                    zIndex: fullscreen ? 9999 : undefined, 
+                    minHeight: fullscreen ? undefined : "600px" 
+                }}
+            >
+                <AutoSizer
+                    onResize={({ width, height }) => onResize(width, height - footerHeight)}
+                >
+                {({ width, height }) => {
+                    const playerWidth = getPlayerWidth(width, height - footerHeight);
+                    const playerHeight = getPlayerHeight(width, height - footerHeight);
+                    return (
+                    <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                        justifyContent="center"
+                        style={{
+                            width: width,
+                            height: height
+                        }}
                     >
-                        {({ width, height }) => {
-                            const playerWidth = getPlayerWidth(width, height - FOOTER_HEIGHT);
-                            const playerHeight = getPlayerHeight(width, height - FOOTER_HEIGHT);
-                            return (
-                                <Box
-                                    display="flex"
-                                    flexDirection="column"
-                                    alignItems="center"
-                                    style={{
-                                        width: width,
-                                        height: height
-                                    }}
+                        <Box
+                            position="relative"
+                            bgcolor="black"
+                            style={{
+                                width: playerWidth,
+                                height: playerHeight
+                            }}
+                        >
+                            <canvas
+                                ref={canvasRef}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: playerWidth,
+                                    height: playerHeight
+                                }}
+                            />
+                            <Box
+                                position="absolute"
+                                top={0}
+                                style={{
+                                    width: playerWidth,
+                                    height: playerHeight
+                                }}
+                            >
+                                <PlaybackOverlay 
+                                    time={playbackTime} 
+                                    duration={duration} 
+                                    paused={paused}
+                                    offset={botOffset}
+                                    fullscreen={fullscreen}
+                                    onDragPlayback={onDragPlayback} 
+                                    onSetPlayback={onSetPlayback} 
+                                    onSetPause={onSetPause}
+                                    onFullscreen={onFullscreen}
+                                />
+                            </Box>
+                            {loading && 
+                            <Box
+                                position="absolute"
+                                top="50%"
+                                left="50%"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                sx={{ transform: "translate(-50%, -50%)" }}
+                            >
+                                <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
+                            </Box>}
+                        </Box>
+                        <Box 
+                            display={fullscreen ? "none" : "flex"}
+                            flexDirection="row"
+                            p={1} 
+                            style={{ width: playerWidth }}
+                        >
+                            {time && 
+                            <>
+                            {!smallScreen &&
+                            <Box 
+                                display="flex" 
+                                mr={1.5}
+                            >
+                                <Link
+                                    underline="none"
+                                    component={RouterLink}
+                                    to={`/maps/${time.mapId}?game=${time.game}&style=${time.style}&course=${time.course}`}
                                 >
-                                    <Box
-                                        position="relative"
-                                        bgcolor="black"
-                                        style={{
-                                            width: playerWidth,
-                                            height: playerHeight
+                                    <Box 
+                                        width={108} 
+                                        height={108}
+                                        overflow="hidden"
+                                        sx={{
+                                            borderRadius: "4px",
+                                            ":hover": {
+                                                "img": {
+                                                    transform: "scale(1.08)"
+                                                }
+                                            }
                                         }}
                                     >
-                                        <canvas
-                                            ref={canvasRef}
-                                            style={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                width: playerWidth,
-                                                height: playerHeight
-                                            }}
-                                        />
-                                        <Box
-                                            position="absolute"
-                                            top={0}
-                                            style={{
-                                                width: playerWidth,
-                                                height: playerHeight
-                                            }}
-                                        >
-                                            <PlaybackOverlay 
-                                                time={playbackTime} 
-                                                duration={duration} 
-                                                paused={paused}
-                                                offset={botOffset}
-                                                fullscreen={fullscreen}
-                                                onDragPlayback={onDragPlayback} 
-                                                onSetPlayback={onSetPlayback} 
-                                                onSetPause={onSetPause}
-                                                onFullscreen={onFullscreen}
-                                            />
-                                        </Box>
-                                        {loading && 
-                                        <Box
-                                            position="absolute"
-                                            top="50%"
-                                            left="50%"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            sx={{ transform: "translate(-50%, -50%)" }}
-                                        >
-                                            <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
-                                        </Box>}
+                                        <MapThumb size={108} map={maps[time.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                     </Box>
-                                    <Box 
-                                        display="flex" 
-                                        flexDirection="row"
-                                        p={1} 
-                                        style={{ width: playerWidth }}
+                                </Link>
+                            </Box>}
+                            <Box 
+                                display="flex" 
+                                flexDirection="column" 
+                                flexGrow={1}
+                                overflow="hidden"
+                                sx={{
+                                    "p": {
+                                        overflowWrap: "break-word", 
+                                        wordBreak: "break-word", 
+                                        whiteSpace: "normal", 
+                                        textWrap: "balance"
+                                    }
+                                }}
+                            >
+                                <Box 
+                                    display="inline-flex" 
+                                    alignItems="center" 
+                                >
+                                    {smallScreen &&
+                                    <Link
+                                        underline="none"
+                                        component={RouterLink}
+                                        to={`/maps/${time.mapId}?game=${time.game}&style=${time.style}&course=${time.course}`}
+                                        mr={1.5}
                                     >
-                                        {time && 
-                                        <>
-                                        {!smallScreen &&
-                                        <Box display="flex" mr={1.5}>
-                                            <MapThumb size={108} map={maps[time.mapId]} useLargeThumb />
-                                        </Box>}
                                         <Box 
-                                            display="flex" 
-                                            flexDirection="column" 
-                                            flexGrow={1}
+                                            width={48} 
+                                            height={48}
                                             overflow="hidden"
                                             sx={{
-                                                "p": {
-                                                    overflowWrap: "break-word", 
-                                                    wordBreak: "break-word", 
-                                                    whiteSpace: "normal", 
-                                                    textWrap: "balance"
+                                                borderRadius: "4px",
+                                                ":hover": {
+                                                    "img": {
+                                                        transform: "scale(1.08)"
+                                                    }
                                                 }
                                             }}
                                         >
-                                            <Box 
-                                                display="inline-flex" 
-                                                alignItems="center" 
-                                            >
-                                                {smallScreen &&
-                                                <Box display="flex" mr={1.5}>
-                                                    <MapThumb size={48} map={maps[time.mapId]} />
-                                                </Box>}
-                                                <Typography 
-                                                    variant="h5"
-                                                    display="inline-block" 
-                                                    lineHeight={1.4}
-                                                >
-                                                    {time.map}
-                                                </Typography>
-                                            </Box>
-                                            <Box
-                                                display="inline-flex" 
-                                                alignItems="center" 
-                                                mt={smallScreen ? 1 : 0.25}
-                                            >
-                                                <Typography
-                                                    lineHeight={1.0}
-                                                    fontWeight="bold" 
-                                                    variant="caption"
-                                                    sx={{
-                                                        padding: 0.3,
-                                                        backgroundColor: gameColor,
-                                                        textAlign: "center",
-                                                        color: "white",
-                                                        textShadow: "black 1px 1px 1px",
-                                                        borderRadius: "6px",
-                                                        border: 1,
-                                                        borderColor: gameColor
-                                                    }}
-                                                >
-                                                    {formatGame(time.game)}
-                                                </Typography>
-                                                <Typography
-                                                    lineHeight={1.0}
-                                                    fontWeight="bold" 
-                                                    variant="caption"
-                                                    ml={0.5}
-                                                    sx={{
-                                                        padding: 0.3,
-                                                        backgroundColor: styleColor,
-                                                        textAlign: "center",
-                                                        color: "white",
-                                                        textShadow: "black 1px 1px 1px",
-                                                        borderRadius: "6px",
-                                                        border: 1,
-                                                        borderColor: styleColor
-                                                    }}
-                                                >
-                                                    {formatStyle(time.style)}
-                                                </Typography>
-                                            </Box>
-                                            <Box 
-                                                display="inline-flex" 
-                                                alignItems="center" 
-                                                mt={0.75}
-                                            >
-                                                <UserAvatar username={time.username} userThumb={time.userThumb} sx={{width: "24px", height: "24px"}} />
-                                                <Typography 
-                                                    variant="body1" 
-                                                    ml={0.75} 
-                                                    display="inline-block"
-                                                >
-                                                    @{time.username}
-                                                </Typography>
-                                            </Box>
-                                            <Box 
-                                                display="inline-flex" 
-                                                flexDirection={verySmallScreen ? "column" : "row"}
-                                                alignItems={verySmallScreen ? undefined : "center"}
-                                                justifyContent={verySmallScreen ? undefined : "space-between"}
-                                                mt={0.5}
-                                            >
-                                                <Box display="flex" alignItems="center">
-                                                    <Typography 
-                                                        variant="body1"
-                                                        display="inline-block" 
-                                                        fontFamily="monospace"
-                                                    >
-                                                        {formatPlacement(time.placement)}
-                                                    </Typography>
-                                                    <Typography 
-                                                        variant="body1"
-                                                        display="inline-block"
-                                                        ml={0.75}
-                                                        mr={0.75}
-                                                    >
-                                                        -
-                                                    </Typography>
-                                                    <Typography 
-                                                        variant="body1"
-                                                        display="inline-block"
-                                                        mr={0.5}
-                                                    >
-                                                        {formatTime(time.time)}
-                                                    </Typography>
-                                                    <DiffDisplay ms={time.time} diff={time.wrDiff} />
-                                                </Box>
-                                                <Typography 
-                                                    variant="body2" 
-                                                    color="textSecondary"
-                                                    display="inline-block" 
-                                                >
-                                                    {smallScreen ? dateFormat.format(new Date(time.date)) : dateTimeFormat.format(new Date(time.date))}
-                                                </Typography>
-                                            </Box>
+                                            <MapThumb size={48} map={maps[time.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                         </Box>
-                                        </>}
-                                    </Box>
+                                    </Link>}
+                                    <Typography 
+                                        variant="h5"
+                                        display="inline-block" 
+                                        lineHeight={1.4}
+                                    >
+                                        {time.map}
+                                    </Typography>
                                 </Box>
-                            );
-                        }}
-                    </AutoSizer>
-                </Box>
+                                <Box
+                                    display="inline-flex" 
+                                    alignItems="center" 
+                                    mt={smallScreen ? 1 : 0.25}
+                                >
+                                    <Typography
+                                        lineHeight={1.0}
+                                        fontWeight="bold" 
+                                        variant="caption"
+                                        sx={{
+                                            padding: 0.3,
+                                            backgroundColor: gameColor,
+                                            textAlign: "center",
+                                            color: "white",
+                                            textShadow: "black 1px 1px 1px",
+                                            borderRadius: "6px",
+                                            border: 1,
+                                            borderColor: gameColor
+                                        }}
+                                    >
+                                        {formatGame(time.game)}
+                                    </Typography>
+                                    <Typography
+                                        lineHeight={1.0}
+                                        fontWeight="bold" 
+                                        variant="caption"
+                                        ml={0.5}
+                                        sx={{
+                                            padding: 0.3,
+                                            backgroundColor: styleColor,
+                                            textAlign: "center",
+                                            color: "white",
+                                            textShadow: "black 1px 1px 1px",
+                                            borderRadius: "6px",
+                                            border: 1,
+                                            borderColor: styleColor
+                                        }}
+                                    >
+                                        {formatStyle(time.style)}
+                                    </Typography>
+                                </Box>
+                                <Box 
+                                    mt={0.75}
+                                    display="inline-flex" 
+                                >
+                                    <Link 
+                                        display="inline-flex" 
+                                        alignItems="center"
+                                        underline="none"
+                                        component={RouterLink}
+                                        color="textPrimary"
+                                        to={`/users/${time.userId}?game=${time.game}&style=${time.style}`}
+                                        sx={{
+                                            textDecoration: "none",
+                                            ":hover": {
+                                                "p": {
+                                                    textDecoration: "underline"
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <UserAvatar username={time.username} userThumb={time.userThumb} sx={{width: "24px", height: "24px"}} />
+                                        <Typography 
+                                            variant="body1" 
+                                            ml={0.75} 
+                                            display="inline-block"
+                                        >
+                                            @{time.username}
+                                        </Typography>
+                                    </Link>
+                                </Box>
+                                <Box 
+                                    display="inline-flex" 
+                                    flexDirection={verySmallScreen ? "column" : "row"}
+                                    alignItems={verySmallScreen ? undefined : "center"}
+                                    justifyContent={verySmallScreen ? undefined : "space-between"}
+                                    mt={0.5}
+                                >
+                                    <Box display="flex" alignItems="center">
+                                        <Typography 
+                                            variant="body1"
+                                            display="inline-block" 
+                                            fontFamily="monospace"
+                                        >
+                                            {formatPlacement(time.placement)}
+                                        </Typography>
+                                        <Typography 
+                                            variant="body1"
+                                            display="inline-block"
+                                            ml={0.75}
+                                            mr={0.75}
+                                        >
+                                            -
+                                        </Typography>
+                                        <Typography 
+                                            variant="body1"
+                                            display="inline-block"
+                                            mr={1}
+                                        >
+                                            {formatTime(time.time)}
+                                        </Typography>
+                                        <DiffDisplay ms={time.time} diff={time.wrDiff} />
+                                    </Box>
+                                    <Typography 
+                                        variant="body2" 
+                                        color="textSecondary"
+                                        display="inline-block" 
+                                    >
+                                        {smallScreen ? dateFormat.format(new Date(time.date)) : dateTimeFormat.format(new Date(time.date))}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            </>}
+                        </Box>
+                    </Box>
+                    );
+                }}
+                </AutoSizer>
             </Box>
         </Box>
     );

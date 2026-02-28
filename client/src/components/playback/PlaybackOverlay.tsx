@@ -41,6 +41,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onSetPause(!paused);
     }, [onSetPause, paused]);
 
+    const onSwapFullscreen = useCallback(() => {
+        onFullscreen(!fullscreen);
+    }, [fullscreen, onFullscreen]);
+
     const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
     const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
     const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
@@ -54,6 +58,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             flexDirection="column" 
             onMouseOver={onMouseOver} 
             onMouseLeave={onMouseLeave}
+            onDoubleClick={onSwapFullscreen}
             sx={{
                 transition: "opacity .4s ease",
                 userSelect: "none",
@@ -103,7 +108,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 />
                 <IconButton 
                     size="small" 
-                    onClick={() => onFullscreen(!fullscreen)} 
+                    onClick={onSwapFullscreen} 
                     sx={{
                         color: "white",
                         bgcolor: "#00000080",
