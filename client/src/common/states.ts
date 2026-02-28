@@ -51,7 +51,7 @@ export type MapTimesSortRaw = "name" | "creator" | "date" | "count" | "tier";
 const MAP_SORTS: MapTimesSort[] = ["nameAsc", "nameDesc", "creatorAsc", "creatorDesc", "dateAsc", "dateDesc", "countAsc", "countDesc", "tierAsc", "tierDesc"] as const;
 
 export function useMapSort() {
-    return useQueryState("sort",
+    return useQueryState("mapSort",
         parseAsStringEnum<MapTimesSort>(MAP_SORTS)
             .withDefault("nameAsc")
             .withOptions({ history: "replace" })
@@ -63,7 +63,7 @@ export type CompareTimesSortRaw = "map" | "date" | "time" | "diff";
 const COMPARE_SORTS: CompareTimesSort[] = ["mapAsc", "mapDesc", "dateAsc", "dateDesc", "timeAsc", "timeDesc", "diffAsc", "diffDesc"] as const;
 
 export function useCompareSort() {
-    return useQueryState("sort",
+    return useQueryState("compareSort",
         parseAsStringEnum<CompareTimesSort>(COMPARE_SORTS)
             .withDefault("diffAsc")
             .withOptions({ history: "replace" })
