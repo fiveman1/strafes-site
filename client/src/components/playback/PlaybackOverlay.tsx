@@ -151,8 +151,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         div.addEventListener("touchend", touchEnd, { passive: false });
         return () => {
             div.removeEventListener("touchstart", touchStart);
-            div.addEventListener("touchend", touchEnd);
-        }
+            div.removeEventListener("touchend", touchEnd);
+        };
     }, [bottomDivId])
 
     const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
