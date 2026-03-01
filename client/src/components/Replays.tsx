@@ -242,29 +242,34 @@ function Replays() {
 
             document.title = `${time.map} in ${formatTime(time.time)} by ${time.username} - replays - strafes`;
 
-            const map = new CompleteMap(mapFile);
-            const bot = new CompleteBot(botFile);
-            const playback = new PlaybackHead(bot, 0);
-            const graphics = await setup_graphics(canvas);
+            try {
+                const map = new CompleteMap(mapFile);
+                const bot = new CompleteBot(botFile);
+                const playback = new PlaybackHead(bot, 0);
+                const graphics = await setup_graphics(canvas);
 
-            playbackRef.current = playback;
-            graphicsRef.current = graphics;
-            botRef.current = bot;
+                playbackRef.current = playback;
+                graphicsRef.current = graphics;
+                botRef.current = bot;
 
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-            handleCanvasSize(width, height, playback, graphics);
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                handleCanvasSize(width, height, playback, graphics);
 
-            playback.advance_time(bot, 0);
-            playback.set_head_time(bot, 0, 0);
-            graphics.change_map(map);
+                playback.advance_time(bot, 0);
+                playback.set_head_time(bot, 0, 0);
+                graphics.change_map(map);
 
-            const botDuration = bot.duration();
-            const runDuration = bot.run_duration(time.course) ?? (time.time / 1000);
-            setDuration(runDuration);
-            const offset = botDuration - runDuration;
-            setBotOffset(offset);
-            setPlaybackTime(-offset);
+                const botDuration = bot.duration();
+                const runDuration = bot.run_duration(time.course) ?? (time.time / 1000);
+                setDuration(runDuration);
+                const offset = botDuration - runDuration;
+                setBotOffset(offset);
+                setPlaybackTime(-offset);
+            }
+            catch {
+                setError("Something went wrong trying to initialize the playback engine.");
+            }
         };
         promise().then(() => setLoading(false));
     }, [id]);

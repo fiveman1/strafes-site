@@ -725,7 +725,7 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
 
     await setUserThumbsForList(timeInfo.data, true);
     const maps = await getAllMapsWithTiers(globalsClient);
-   
+
     const idToMap = new Map<number, StrafesMap>();
     for (const map of maps) {
         idToMap.set(map.id, map);
@@ -765,7 +765,7 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
     timeInfo.pagination.pageSize = 100;
     timeInfo.pagination.totalPages = Math.ceil(timeInfo.pagination.totalItems / 100);
 
-    res.status(200).json({data: data, pagination: timeInfo.pagination});
+    res.status(200).json({ data: data, pagination: timeInfo.pagination });
 });
 
 async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: number, mapId?: number }) {
@@ -816,7 +816,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             const endWindow = Math.ceil((pageEnd + 1) / 25) * 25;
             const placementPromises = [];
             let timeIds: string[] = [];
-            
+
             for (let i = startWindow; (i < resTimes.length) && (i < endWindow); ++i) {
                 const time = resTimes[i];
                 timeIds.push(time.id);
@@ -828,7 +828,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             if (timeIds.length > 0) {
                 placementPromises.push(getPlacements(timeIds));
             }
-            
+
             const resolved = await Promise.all(placementPromises);
             for (const result of resolved) {
                 if (!result) continue;
@@ -987,13 +987,13 @@ app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
     }
 
     const id = req.params.id as string; // Don't want to convert to number
-    
+
     const file = await getBotFileFromId(id);
     if (!file) {
         res.status(404).send({ error: "No bot found" });
         return;
     }
-    
+
     const buffer = Buffer.from(file);
     res.status(200).send(buffer);
 });
@@ -1006,12 +1006,16 @@ app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
     }
 
     const id = result.id;
-    
-    res.sendFile(path.resolve(mapDir, `${id}.snfm`), (err) => {
-        if (err && !res.headersSent) {
-            res.status(404).json({ error: "Map file not found" });
-        }
-    });
+
+    res.sendFile(path.resolve(mapDir, `${id}.snfm`),
+        {
+            maxAge: 4 * 60 * 60 * 1000 // 4 hours
+        },
+        (err) => {
+            if (err && !res.headersSent) {
+                res.status(404).json({ error: "Map file not found" });
+            }
+        });
 });
 
 app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
@@ -1027,7 +1031,7 @@ app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
         res.status(404).send({ error: "Invalid time" });
         return;
     }
-    
+
     const time = apiTimeToTime(apiTime);
 
     const placements = await getPlacements([id]);
