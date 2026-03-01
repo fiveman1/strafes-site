@@ -638,7 +638,8 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
             time.wrDiff = time.time - wr.time;
         }
 
-        if (!skipUpdate && time.placement === 1 && time.wrDiff !== 0) {
+        if (!skipUpdate && time.placement === 1 && (time.wrDiff === undefined || time.wrDiff < 0)) {
+            console.log(time);
             newWrs.push(time);
         }
     }
