@@ -639,7 +639,6 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
         }
 
         if (!skipUpdate && time.placement === 1 && (time.wrDiff === undefined || time.wrDiff < 0)) {
-            console.log(time);
             newWrs.push(time);
         }
     }
@@ -1009,7 +1008,7 @@ app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
     const id = result.id;
     
     res.sendFile(path.resolve(mapDir, `${id}.snfm`), (err) => {
-        if (err) {
+        if (err && !res.headersSent) {
             res.status(404).json({ error: "Map file not found" });
         }
     });
