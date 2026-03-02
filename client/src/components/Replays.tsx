@@ -276,8 +276,8 @@ function Replays() {
                 setBotOffset(offset);
                 setPlaybackTime(-offset);
             }
-            catch {
-                setError("Something went wrong trying to initialize the playback engine.");
+            catch (err) {
+                setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
             }
         };
         promise().then(() => setLoading(false));
