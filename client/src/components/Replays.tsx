@@ -63,7 +63,7 @@ function Replays() {
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
-    const [ error, setError ] = useState("");
+    const [ error, setErrorState ] = useState("");
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
     const verySmallScreen = useMediaQuery("(max-width: 400px)");
@@ -75,6 +75,13 @@ function Replays() {
     const playbackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
+
+    const setError = useCallback((error: string) => {
+        setErrorState(error);
+        playbackRef.current = null;
+        graphicsRef.current = null;
+        botRef.current = null;
+    }, []);
 
     // Update current run timer on a 17ms interval
     // Separated from animation loop for *important* performance reasons
@@ -105,8 +112,14 @@ function Replays() {
             if (playback && bot && graphics) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
-                playback.advance_time(bot, newSessionTime);
-                graphics.render(bot, playback, newSessionTime);
+                try {
+                    playback.advance_time(bot, newSessionTime);
+                    graphics.render(bot, playback, newSessionTime);
+                }
+                catch (err) {
+                    console.error(err);
+                    setError("Something went wrong while trying to render the replay.");
+                }
                 sessionTimer.current = newSessionTime;
             }
 
@@ -115,7 +128,7 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, []);
+    }, [setError]);
 
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
@@ -281,7 +294,7 @@ function Replays() {
             }
         };
         promise().then(() => setLoading(false));
-    }, [id]);
+    }, [id, setError]);
 
     let gameColor = "";
     let styleColor = "";
