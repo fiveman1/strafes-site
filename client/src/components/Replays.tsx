@@ -58,6 +58,7 @@ function Replays() {
     const [ time, setTime ] = useState<Time>();
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
+    const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
     const [ playbackTime, setPlaybackTime ] = useState(-1);
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
@@ -182,6 +183,14 @@ function Replays() {
         }
     }, []);
 
+    const onChangePlaybackSpeed = useCallback((speed: number) => {
+        setPlaybackSpeed(speed);
+        const playback = playbackRef.current;
+        if (playback) {
+            playback.set_scale(sessionTimer.current, speed);
+        }
+    }, []);
+
     useEffect(() => {
         const handler = () => {
             if (!document.fullscreenElement) {
@@ -291,12 +300,10 @@ function Replays() {
             </Alert>}
             <Box 
                 ref={playerRef}
-                sx={{ 
-                    width: fullscreen ? "100vw" : "100%", 
-                    height: fullscreen ? "100vh" : "100%", 
-                    position: fullscreen ? "fixed" : undefined, 
-                    zIndex: fullscreen ? 9999 : undefined, 
-                    minHeight: fullscreen ? undefined : "600px" 
+                sx={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight: "600px"
                 }}
             >
                 <AutoSizer
@@ -348,12 +355,14 @@ function Replays() {
                                     paused={paused}
                                     offset={botOffset}
                                     fullscreen={fullscreen}
+                                    speed={playbackSpeed}
                                     onDragPlayback={onDragPlayback} 
                                     onSetPlayback={onSetPlayback} 
                                     onSetPause={onSetPause}
                                     onFullscreen={onFullscreen}
                                     onSeek={onSeek}
                                     onReset={onReset}
+                                    onSetSpeed={onChangePlaybackSpeed}
                                 />
                             </Box>
                             {loading && 
