@@ -303,7 +303,10 @@ function Replays() {
         styleColor = getStyleColor(time.style, theme);
     }
 
-    const footerHeight = fullscreen ? 0 : FOOTER_HEIGHT;
+    let footerHeight = FOOTER_HEIGHT;
+    if (fullscreen || (error && !time)) {
+        footerHeight = 0;
+    }
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
