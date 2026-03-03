@@ -32,10 +32,18 @@ async function getViewsForTimeIdCore(client: GlobalsClient, timeId: string) {
 }
 
 export async function logViewForReplay(client: GlobalsClient, replay: Replay, ipAddress: string, userId: number | undefined) {
+    // Check if this IP has viewed the replay in the last 5 minutes
+    let query = `SELECT id FROM replay_views WHERE time_id = ? AND viewed_at >= NOW() - INTERVAL 5 MINUTE AND ip_address = INET6_ATON(?)`;
+    const [veryRecentRows] = await client.pool.execute<RowDataPacket[]>(query, [replay.id, ipAddress]);
+    if (veryRecentRows.length > 0) {
+        // You've seen enough!
+        return;
+    }
+
     // Check if this IP has viewed the replay 5 times or more in the last hour
-    let query = `SELECT id FROM replay_views WHERE time_id = ? AND viewed_at >= NOW() - INTERVAL 1 HOUR AND ip_address = INET6_ATON(?)`;
-    const [rows] = await client.pool.execute<RowDataPacket[]>(query, [replay.id, ipAddress]);
-    if (rows.length > 4) {
+    query = `SELECT id FROM replay_views WHERE time_id = ? AND viewed_at >= NOW() - INTERVAL 1 HOUR AND ip_address = INET6_ATON(?)`;
+    const [recentHourRows] = await client.pool.execute<RowDataPacket[]>(query, [replay.id, ipAddress]);
+    if (recentHourRows.length > 4) {
         // You've seen enough!
         return;
     }
