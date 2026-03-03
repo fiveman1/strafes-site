@@ -40,10 +40,10 @@ export async function logViewForReplay(client: GlobalsClient, replay: Replay, ip
         return;
     }
 
-    // Check if this IP has viewed the replay 5 times or more in the last hour
-    query = `SELECT id FROM replay_views WHERE time_id = ? AND viewed_at >= NOW() - INTERVAL 1 HOUR AND ip_address = INET6_ATON(?)`;
-    const [recentHourRows] = await client.pool.execute<RowDataPacket[]>(query, [replay.id, ipAddress]);
-    if (recentHourRows.length > 4) {
+    // Check if this IP has viewed the replay 5 times or more in the last 4 hours
+    query = `SELECT id FROM replay_views WHERE time_id = ? AND viewed_at >= NOW() - INTERVAL 4 HOUR AND ip_address = INET6_ATON(?)`;
+    const [recentHoursRows] = await client.pool.execute<RowDataPacket[]>(query, [replay.id, ipAddress]);
+    if (recentHoursRows.length > 4) {
         // You've seen enough!
         return;
     }
