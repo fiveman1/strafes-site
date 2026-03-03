@@ -58,7 +58,7 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
     const query = `SELECT * FROM tier_votes WHERE user_id=? AND map_id=?;`;
     const values = [userId, mapId];
 
-    const [[row]] = await client.pool.query<MapTierInfoRow[]>(query, values);
+    const [[row]] = await client.pool.execute<MapTierInfoRow[]>(query, values);
 
     if (!row) {
         return undefined;
@@ -91,7 +91,7 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
     if (tier === undefined) {
         const query = `DELETE FROM tier_votes WHERE user_id=? AND map_id=?;`;
         const values = [userId, map.id];
-        await client.pool.query(query, values);
+        await client.pool.execute(query, values);
         return undefined;
     }
 
@@ -101,13 +101,12 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
 
     const weight = await getVoteWeight(userId, map);
 
-    const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?) AS new 
+    const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?, ?, ?, ?) AS new 
         ON DUPLICATE KEY UPDATE 
         tier=new.tier,
         weight=new.weight
     ;`;
-    const values = [tier, weight, userId, map.id];
-    await client.pool.query(query, [values]);
+    await client.pool.execute(query, [tier, weight, userId, map.id]);
 
     return {
         userId: userId,
@@ -156,7 +155,7 @@ export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, n
             tier_votes.map_id
     ;`;
 
-    const [rows] = await client.pool.query<CalcTierRow[]>(query);
+    const [rows] = await client.pool.execute<CalcTierRow[]>(query);
 
     for (const row of rows) {
         mapIdToTier.set(+row.map_id, Math.round(+row.weighted_tier));
@@ -190,7 +189,7 @@ export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]
         GROUP BY
             map_id, tier
     ;`;
-    const [rows] = await client.pool.query<VotesRow[]>(query);
+    const [rows] = await client.pool.execute<VotesRow[]>(query);
 
     for (const row of rows) {
         const map = idToMap.get(+row.map_id);

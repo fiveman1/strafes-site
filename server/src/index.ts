@@ -18,6 +18,7 @@ import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
+import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -1018,7 +1019,7 @@ app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
         });
 });
 
-app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
+app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -1035,13 +1036,20 @@ app.get("/api/times/:id", rateLimitSettings, async (req, res) => {
     const time = apiTimeToTime(apiTime);
 
     const placements = await getPlacements([id]);
-    if (placements) {
+    if (placements && placements.length > 0) {
         time.placement = placements[0].placement;
     }
 
     const promises = [setUserInfoForList(authClient, [time]), setTimeDiffs([time])];
     await Promise.all(promises);
-    res.status(200).send(time);
+
+    const replay = await convertTimeToReplay(globalsClient, time);
+    if (req.ip) {
+        const user = await authClient.getAuthenticatedUser(req, res);
+        await logViewForReplay(globalsClient, replay, req.ip, user?.userId);
+    }
+
+    res.status(200).send(replay);
 });
 
 app.use(express.static(buildDir, { index: false }));

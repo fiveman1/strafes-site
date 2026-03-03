@@ -76,7 +76,7 @@ export class GlobalsClient {
             INNER JOIN maps ON globals.map_id = maps.map_id
             WHERE globals.map_id = ? AND globals.game = ? AND globals.style = ? AND globals.course = ?
         ;`;
-        const [[record]] = await this.pool.query<RecordRow[]>(query, [mapId, game, style, course]);
+        const [[record]] = await this.pool.execute<RecordRow[]>(query, [mapId, game, style, course]);
         
         if (!record) {
             return undefined;
@@ -112,7 +112,7 @@ export class GlobalsClient {
 
         query += ";";
 
-        const [records] = await this.pool.query<RecordRow[]>(query, values);
+        const [records] = await this.pool.execute<RecordRow[]>(query, values);
 
         if (!records) {
             return undefined;
@@ -173,11 +173,9 @@ export class GlobalsClient {
             query += "time DESC";
         }
 
-        query += ` LIMIT ? OFFSET ?;`;
-        values.push(end - start + 1);
-        values.push(start);
+        query += ` LIMIT ${end - start + 1} OFFSET ${start};`;
 
-        const [records] = await this.pool.query<(RecordRow & WithTotalCount)[]>(query, values);
+        const [records] = await this.pool.execute<(RecordRow & WithTotalCount)[]>(query, values);
 
         if (!records) {
             return {
@@ -257,11 +255,9 @@ export class GlobalsClient {
             }
         }
 
-        query += `, username ${userDir} LIMIT ? OFFSET ?;`;
-        values.push(end - start + 1);
-        values.push(start);
+        query += `, username ${userDir} LIMIT ${end - start + 1} OFFSET ${start};`;
 
-        const [globalCounts] = await this.pool.query<GlobalCountRow[]>(query, values);
+        const [globalCounts] = await this.pool.execute<GlobalCountRow[]>(query, values);
 
         if (!globalCounts) {
             return {
@@ -348,7 +344,7 @@ export class GlobalsClient {
     public async getMap(mapId: number): Promise<StrafesMap | undefined> {
         const query = `SELECT * FROM maps WHERE map_id = ?;`;
         const values = [mapId];
-        const [[row]] = await this.pool.query<MapSQLRow[]>(query, values);
+        const [[row]] = await this.pool.execute<MapSQLRow[]>(query, values);
 
         if (!row) {
             return undefined;
@@ -359,7 +355,7 @@ export class GlobalsClient {
 
     public async getAllMaps() {
         const query = `SELECT * FROM maps;`;
-        const [rows] = await this.pool.query<MapSQLRow[]>(query);
+        const [rows] = await this.pool.execute<MapSQLRow[]>(query);
 
         return rows.map(GlobalsClient.rowToMap);
     }

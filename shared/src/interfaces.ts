@@ -75,6 +75,10 @@ export interface Time extends UserInfo {
     wrDiff?: number
 }
 
+export interface Replay extends Time {
+    views: number
+}
+
 export interface Pagination {
     page: number
     pageSize: number

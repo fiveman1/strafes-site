@@ -3,9 +3,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatGame, formatPlacement, formatStyle, formatTime, Time } from "shared";
+import { formatGame, formatPlacement, formatStyle, formatTime, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
-import { getBotFileForTime, getMapFile, getTimeById } from "../api/api";
+import { getBotFileForTime, getMapFile, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
@@ -50,12 +50,12 @@ function getSafeTime(time: number, bot: CompleteBot) {
     return Math.max(0.0001, Math.min(time, bot.duration() - 0.0001));
 }
 
-const FOOTER_HEIGHT = 130;
+const FOOTER_HEIGHT = 154;
 
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps } = useOutletContext() as ContextParams;
-    const [ time, setTime ] = useState<Time>();
+    const [ replay, setReplay ] = useState<Replay>();
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
@@ -66,7 +66,6 @@ function Replays() {
     const [ error, setErrorState ] = useState("");
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
-    const verySmallScreen = useMediaQuery("(max-width: 400px)");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
@@ -228,21 +227,23 @@ function Replays() {
             
             await init();
 
-            const time = await getTimeById(id);
-            if (!time) {
-                setError(`Invalid time (ID: ${id}).`);
+            const replay = await getReplayById(id);
+            if (!replay) {
+                setError(`Invalid replay (ID: ${id}).`);
                 return;
             }
 
-            setTime(time);
+            setReplay(replay);
 
-            if (!time.hasBot) {
-                setError("Time does not have a bot.");
+            if (!replay.hasBot) {
+                setError("No replay exists for this time.");
                 return;
             }
 
-            const mapPromise = getMapFile(time.mapId);
-            const botPromise = getBotFileForTime(time);
+            document.title = `${replay.map} in ${formatTime(replay.time)} by ${replay.username} - replays - strafes`;
+
+            const mapPromise = getMapFile(replay.mapId);
+            const botPromise = getBotFileForTime(replay);
             const mapFile = await mapPromise;
             const botFile = await botPromise;
 
@@ -261,8 +262,6 @@ function Replays() {
                 setError("Couldn't setup bot playback.");
                 return;
             }
-
-            document.title = `${time.map} in ${formatTime(time.time)} by ${time.username} - replays - strafes`;
 
             try {
                 const map = new CompleteMap(mapFile);
@@ -283,7 +282,7 @@ function Replays() {
                 graphics.change_map(map);
 
                 const botDuration = bot.duration();
-                const runDuration = bot.run_duration(time.course) ?? (time.time / 1000);
+                const runDuration = bot.run_duration(replay.course) ?? (replay.time / 1000);
                 setDuration(runDuration);
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
@@ -298,15 +297,18 @@ function Replays() {
 
     let gameColor = "";
     let styleColor = "";
-    if (time) {
-        gameColor = getGameColor(time.game, theme);
-        styleColor = getStyleColor(time.style, theme);
+    if (replay) {
+        gameColor = getGameColor(replay.game, theme);
+        styleColor = getStyleColor(replay.style, theme);
     }
 
     let footerHeight = FOOTER_HEIGHT;
-    if (fullscreen || (error && !time)) {
+    if (fullscreen || (error && !replay)) {
         footerHeight = 0;
     }
+
+    const thumbSize = FOOTER_HEIGHT - 20;
+    const mapLink = replay ? `/maps/${replay.mapId}?game=${replay.game}&style=${replay.style}&course=${replay.course}` : "";
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
@@ -400,7 +402,7 @@ function Replays() {
                             p={1} 
                             style={{ width: playerWidth }}
                         >
-                            {time && 
+                            {replay && 
                             <>
                             {!smallScreen &&
                             <Box 
@@ -408,13 +410,15 @@ function Replays() {
                                 mr={1.5}
                             >
                                 <Link
+                                    display="flex"
+                                    alignItems="center"
                                     underline="none"
                                     component={RouterLink}
-                                    to={`/maps/${time.mapId}?game=${time.game}&style=${time.style}&course=${time.course}`}
+                                    to={mapLink}
                                 >
                                     <Box 
-                                        width={108} 
-                                        height={108}
+                                        width={thumbSize} 
+                                        height={thumbSize}
                                         overflow="hidden"
                                         sx={{
                                             borderRadius: "4px",
@@ -425,7 +429,7 @@ function Replays() {
                                             }
                                         }}
                                     >
-                                        <MapThumb size={108} map={maps[time.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                        <MapThumb size={thumbSize} map={maps[replay.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                     </Box>
                                 </Link>
                             </Box>}
@@ -451,7 +455,7 @@ function Replays() {
                                     <Link
                                         underline="none"
                                         component={RouterLink}
-                                        to={`/maps/${time.mapId}?game=${time.game}&style=${time.style}&course=${time.course}`}
+                                        to={mapLink}
                                         mr={1.5}
                                     >
                                         <Box 
@@ -467,16 +471,33 @@ function Replays() {
                                                 }
                                             }}
                                         >
-                                            <MapThumb size={48} map={maps[time.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                            <MapThumb size={48} map={maps[replay.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                         </Box>
                                     </Link>}
-                                    <Typography 
-                                        variant="h5"
-                                        display="inline-block" 
-                                        lineHeight={1.4}
+                                    <Link 
+                                        display="inline-flex" 
+                                        alignItems="center"
+                                        underline="none"
+                                        component={RouterLink}
+                                        color="textPrimary"
+                                        to={mapLink}
+                                        sx={{
+                                            textDecoration: "none",
+                                            ":hover": {
+                                                "p": {
+                                                    textDecoration: "underline"
+                                                }
+                                            }
+                                        }}
                                     >
-                                        {time.map}
-                                    </Typography>
+                                        <Typography 
+                                            variant="h5"
+                                            display="inline-block" 
+                                            lineHeight={1.4}
+                                        >
+                                            {replay.map}
+                                        </Typography>
+                                    </Link>
                                 </Box>
                                 <Box
                                     display="inline-flex" 
@@ -498,7 +519,7 @@ function Replays() {
                                             borderColor: gameColor
                                         }}
                                     >
-                                        {formatGame(time.game)}
+                                        {formatGame(replay.game)}
                                     </Typography>
                                     <Typography
                                         lineHeight={1.0}
@@ -516,7 +537,7 @@ function Replays() {
                                             borderColor: styleColor
                                         }}
                                     >
-                                        {formatStyle(time.style)}
+                                        {formatStyle(replay.style)}
                                     </Typography>
                                 </Box>
                                 <Box 
@@ -529,7 +550,7 @@ function Replays() {
                                         underline="none"
                                         component={RouterLink}
                                         color="textPrimary"
-                                        to={`/users/${time.userId}?game=${time.game}&style=${time.style}`}
+                                        to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
                                         sx={{
                                             textDecoration: "none",
                                             ":hover": {
@@ -539,54 +560,61 @@ function Replays() {
                                             }
                                         }}
                                     >
-                                        <UserAvatar username={time.username} userThumb={time.userThumb} sx={{width: "24px", height: "24px"}} />
+                                        <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
                                         <Typography 
                                             variant="body1" 
                                             ml={0.75} 
                                             display="inline-block"
                                         >
-                                            @{time.username}
+                                            @{replay.username}
                                         </Typography>
                                     </Link>
                                 </Box>
+                                <Box display="flex" alignItems="center" mt={0.5}>
+                                    <Typography 
+                                        variant="body1"
+                                        display="inline-block" 
+                                        fontFamily="monospace"
+                                    >
+                                        {formatPlacement(replay.placement)}
+                                    </Typography>
+                                    <Typography 
+                                        variant="body1"
+                                        display="inline-block"
+                                        ml={0.75}
+                                        mr={0.75}
+                                    >
+                                        -
+                                    </Typography>
+                                    <Typography 
+                                        variant="body1"
+                                        display="inline-block"
+                                        mr={1}
+                                    >
+                                        {formatTime(replay.time)}
+                                    </Typography>
+                                    <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
+                                </Box>
                                 <Box 
                                     display="inline-flex" 
-                                    flexDirection={verySmallScreen ? "column" : "row"}
-                                    alignItems={verySmallScreen ? undefined : "center"}
-                                    justifyContent={verySmallScreen ? undefined : "space-between"}
+                                    flexDirection="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
                                     mt={0.5}
                                 >
-                                    <Box display="flex" alignItems="center">
-                                        <Typography 
-                                            variant="body1"
-                                            display="inline-block" 
-                                            fontFamily="monospace"
-                                        >
-                                            {formatPlacement(time.placement)}
-                                        </Typography>
-                                        <Typography 
-                                            variant="body1"
-                                            display="inline-block"
-                                            ml={0.75}
-                                            mr={0.75}
-                                        >
-                                            -
-                                        </Typography>
-                                        <Typography 
-                                            variant="body1"
-                                            display="inline-block"
-                                            mr={1}
-                                        >
-                                            {formatTime(time.time)}
-                                        </Typography>
-                                        <DiffDisplay ms={time.time} diff={time.wrDiff} />
-                                    </Box>
+                                    <Typography
+                                        variant="body2"
+                                        fontWeight="bold"
+                                        display="inline-block" 
+                                    >
+                                        {replay.views === 1 ? "1 view" : `${replay.views} views`}
+                                    </Typography>
                                     <Typography 
                                         variant="body2" 
                                         color="textSecondary"
                                         display="inline-block" 
                                     >
-                                        {smallScreen ? dateFormat.format(new Date(time.date)) : dateTimeFormat.format(new Date(time.date))}
+                                        {smallScreen ? dateFormat.format(new Date(replay.date)) : dateTimeFormat.format(new Date(replay.date))}
                                     </Typography>
                                 </Box>
                             </Box>

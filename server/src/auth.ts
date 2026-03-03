@@ -221,7 +221,7 @@ export class AuthClient {
         const hash = AuthClient.hashSessionToken(sessionToken);
 
         const query = "SELECT * FROM sessions WHERE sessionHash = ?;";
-        const [[row]] = await this.pool.query<(SessionRow & RowDataPacket)[]>(query, [hash]);
+        const [[row]] = await this.pool.execute<(SessionRow & RowDataPacket)[]>(query, [hash]);
         if (!row) {
             response.clearCookie("session");
             return undefined;
@@ -270,7 +270,7 @@ export class AuthClient {
 
     protected async insertSessionToDB(session: SessionRow) {
         const query = `INSERT INTO sessions (sessionHash, refreshToken, accessToken, refreshExpiresAt, accessExpiresAt, userId) 
-            VALUES ? AS new 
+            VALUES (?, ?, ?, ?, ?, ?) AS new 
             ON DUPLICATE KEY UPDATE
                 refreshToken=new.refreshToken,
                 accessToken=new.accessToken,
@@ -287,17 +287,17 @@ export class AuthClient {
             session.accessExpiresAt,
             session.userId
         ];
-        await this.pool.query(query, [[values]]);
+        await this.pool.execute(query, values);
     }
 
     protected async deleteSessionFromDB(session: SessionRow) {
         const query = `DELETE FROM sessions WHERE sessionHash=?;`;
-        await this.pool.query(query, [session.sessionHash]);
+        await this.pool.execute(query, [session.sessionHash]);
     }
 
     public async loadSettingsFromDB(userId: number): Promise<SettingsValues | undefined> {
         const query = `SELECT * FROM settings WHERE userId=?`;
-        const [[row]] = await this.pool.query<(SettingsRow & RowDataPacket)[]>(query, [userId]);
+        const [[row]] = await this.pool.execute<(SettingsRow & RowDataPacket)[]>(query, [userId]);
         if (!row) {
             return undefined;
         }
@@ -322,7 +322,7 @@ export class AuthClient {
 
     protected async updateSettingsToDB(settings: SettingsRow) {
         const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative, countryCode) 
-            VALUES ? AS new 
+            VALUES (?, ?, ?, ?, ?, ?) AS new 
             ON DUPLICATE KEY UPDATE
                 theme=new.theme,
                 game=new.game,
@@ -339,7 +339,7 @@ export class AuthClient {
             settings.maxDaysRelative,
             settings.countryCode
         ];
-        await this.pool.query(query, [[values]]);
+        await this.pool.execute(query, values);
     }
 
     // Utils
