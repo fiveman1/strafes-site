@@ -1,3 +1,4 @@
+import AsyncLock from "async-lock";
 import { Request, Response, CookieOptions } from "express";
 import mysql, { RowDataPacket } from "mysql2/promise";
 import * as client from "openid-client";
@@ -17,6 +18,7 @@ export class AuthClient {
     protected readonly config: client.Configuration;
     protected readonly baseURL: string;
     protected readonly pool: mysql.Pool;
+    protected readonly lock = new AsyncLock();
 
     public static async Create(clientId: string, clientSecret: string, dbUser: string, dbPassword: string, baseURL: string) {
         const config = await client.discovery(
@@ -105,37 +107,45 @@ export class AuthClient {
     }
 
     public async getAuthenticatedUser(request: Request, response: Response): Promise<LoginUser | undefined> {
-        const session = await this.loadSession(request, response);
-        if (!session) {
+        const sessionToken = AuthClient.getSessionToken(request);
+        if (!sessionToken) {
             return undefined;
         }
 
-        let userInfo: RobloxClaims;
-        try {
-            userInfo = await client.fetchUserInfo(this.config, session.accessToken, session.userId) as client.UserInfoResponse & RobloxClaims;
-        }
-        catch {
-            // Refresh and try again
-            const newSession = await this.refreshSession(response, session);
-            if (!newSession) {
+        // Don't want concurrent processes potentially refreshing a token and making an old one expired at the same time
+        return this.lock.acquire(sessionToken, async () => {
+            const session = await this.loadSession(request, response);
+            if (!session) {
                 return undefined;
             }
+
+            let userInfo: RobloxClaims;
             try {
-                userInfo = await client.fetchUserInfo(this.config, newSession.accessToken, newSession.userId) as client.UserInfoResponse & RobloxClaims;
+                userInfo = await client.fetchUserInfo(this.config, session.accessToken, session.userId) as client.UserInfoResponse & RobloxClaims;
             }
             catch {
-                return undefined;
+                // Refresh and try again
+                const newSession = await this.refreshSession(response, session);
+                if (!newSession) {
+                    return undefined;
+                }
+                try {
+                    userInfo = await client.fetchUserInfo(this.config, newSession.accessToken, newSession.userId) as client.UserInfoResponse & RobloxClaims;
+                }
+                catch {
+                    return undefined;
+                }
             }
-        }
 
-        return {
-            userId: +userInfo.sub,
-            username: userInfo.preferred_username,
-            displayName: userInfo.name,
-            createdAt: userInfo.created_at,
-            profileUrl: userInfo.profile,
-            thumbnailUrl: userInfo.picture
-        };
+            return {
+                userId: +userInfo.sub,
+                username: userInfo.preferred_username,
+                displayName: userInfo.name,
+                createdAt: userInfo.created_at,
+                profileUrl: userInfo.profile,
+                thumbnailUrl: userInfo.picture
+            };
+        });
     }
 
     public async requestAuthenticatedUserInfo(request: Request, response: Response) {
@@ -209,12 +219,12 @@ export class AuthClient {
 
     // Helpers
     protected async loadSession(request: Request, response: Response, noRefresh?: boolean): Promise<Session | undefined> {
-        const cookies = request.signedCookies as AuthCookies;
-        if (!cookies.session) {
+        const sessionToken = AuthClient.getSessionToken(request);
+        if (!sessionToken) {
             return undefined;
         }
 
-        return this.loadSessionFromDB(response, cookies.session, noRefresh);
+        return this.loadSessionFromDB(response, sessionToken, noRefresh);
     }
 
     protected async loadSessionFromDB(response: Response, sessionToken: string, noRefresh?: boolean) {
@@ -343,6 +353,11 @@ export class AuthClient {
     }
 
     // Utils
+    protected static getSessionToken(request: Request) {
+        const cookies = request.signedCookies as AuthCookies;
+        return cookies.session;
+    }
+
     protected static hashSessionToken(token: string) {
         return createHash("sha256").update(token).digest("hex");
     }
