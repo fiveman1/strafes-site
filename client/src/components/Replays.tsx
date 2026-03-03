@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatGame, formatPlacement, formatStyle, formatTime, Replay } from "shared";
+import { formatCourse, formatGame, formatPlacement, formatStyle, formatTime, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileForTime, getMapFile, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
@@ -48,6 +48,13 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackHead,
 
 function getSafeTime(time: number, bot: CompleteBot) {
     return Math.max(0.0001, Math.min(time, bot.duration() - 0.0001));
+}
+
+function getMapTitle(replay: Replay) {
+    if (replay.course === MAIN_COURSE) {
+        return replay.map;
+    }
+    return `${replay.map} (${formatCourse(replay.course, true)})`;
 }
 
 const FOOTER_HEIGHT = 154;
@@ -240,7 +247,7 @@ function Replays() {
                 return;
             }
 
-            document.title = `${replay.map} in ${formatTime(replay.time)} by ${replay.username} - replays - strafes`;
+            document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} - replays - strafes`;
 
             const mapPromise = getMapFile(replay.mapId);
             const botPromise = getBotFileForTime(replay);
@@ -423,13 +430,13 @@ function Replays() {
                                         sx={{
                                             borderRadius: "4px",
                                             ":hover": {
-                                                "img": {
+                                                ".mapThumb": {
                                                     transform: "scale(1.08)"
                                                 }
                                             }
                                         }}
                                     >
-                                        <MapThumb size={thumbSize} map={maps[replay.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                        <MapThumb size={thumbSize} map={maps[replay.mapId]} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                     </Box>
                                 </Link>
                             </Box>}
@@ -495,7 +502,7 @@ function Replays() {
                                             display="inline-block" 
                                             lineHeight={1.4}
                                         >
-                                            {replay.map}
+                                            {getMapTitle(replay)}
                                         </Typography>
                                     </Link>
                                 </Box>
