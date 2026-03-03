@@ -24,7 +24,7 @@ interface CountSQL {
 }
 type CountRow = CountSQL & RowDataPacket;
 
-const getViewsForTimeId = memoize(getViewsForTimeIdCore, { cacheKey: (args) => args[1], maxAge: 60 * 60 * 1000 });
+const getViewsForTimeId = memoize(getViewsForTimeIdCore, { cacheKey: (args) => args[1], maxAge: 5 * 60 * 1000 });
 async function getViewsForTimeIdCore(client: GlobalsClient, timeId: string) {
     const query = `SELECT COUNT(*) as count FROM replay_views WHERE time_id = ?`;
     const [[row]] = await client.pool.execute<CountRow[]>(query, [timeId]);
