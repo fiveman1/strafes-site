@@ -12,11 +12,11 @@ import MapThumb from "./displays/MapThumb";
 import { ContextParams, getGameColor, getStyleColor } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
 import { useTheme } from "@mui/material/styles";
-import { dateFormat, dateTimeFormat } from "../common/datetime";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
+import DateDisplay from "./displays/DateDisplay";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -616,13 +616,9 @@ function Replays() {
                                     >
                                         {replay.views === 1 ? "1 view" : `${replay.views} views`}
                                     </Typography>
-                                    <Typography 
-                                        variant="body2" 
-                                        color="textSecondary"
-                                        display="inline-block" 
-                                    >
-                                        {smallScreen ? dateFormat.format(new Date(replay.date)) : dateTimeFormat.format(new Date(replay.date))}
-                                    </Typography>
+                                    <Box display="inline-block">
+                                        <DateDisplay date={replay.date} useDateTime={!smallScreen} color={theme.palette.text.secondary} variant="body2" />
+                                    </Box>
                                 </Box>
                             </Box>
                             </>}

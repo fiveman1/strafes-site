@@ -1044,7 +1044,7 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
     await Promise.all(promises);
 
     const replay = await convertTimeToReplay(globalsClient, time);
-    if (req.ip) {
+    if (replay.hasBot && req.ip) {
         const user = await authClient.getAuthenticatedUser(req, res);
         await logViewForReplay(globalsClient, replay, req.ip, user?.userId);
     }
