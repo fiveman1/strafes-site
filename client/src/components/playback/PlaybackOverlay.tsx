@@ -116,16 +116,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
     const onClickPlayer = useCallback((event: React.PointerEvent) => {
         if (event.pointerType === "touch") {
-            event.preventDefault();
-            const now = new Date().getTime();
-            if ((now - lastAction.current) < 3000) {
-                setWasRecentAction(false);
-                lastAction.current = 0;
-            }
-            else {
-                setWasRecentAction(true);
-                lastAction.current = new Date().getTime();
-            }
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
         }
         else {
             onPausePlay();
