@@ -314,11 +314,9 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     {paused ? <PlayArrowIcon /> : <PauseIcon />}
                 </IconButton>
                 <Typography 
-                    variant="subtitle2" 
-                    minWidth={`${timeTextWidth}px`}
-                    width={`${timeTextWidth}px`}
-                    bgcolor="#00000080" 
-                    color="white" 
+                    variant="subtitle2"
+                    bgcolor="#00000080"
+                    color="white"
                     fontFamily="monospace"
                     display="flex"
                     alignItems="center"
@@ -326,6 +324,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     borderRadius="4px"
                     ml={1}
                     mr={1.5}
+                    style={{
+                        width: `${timeTextWidth}px`,
+                        minWidth: `${timeTextWidth}px`
+                    }}
                 >
                     {timeText}
                 </Typography>
