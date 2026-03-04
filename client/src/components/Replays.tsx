@@ -296,6 +296,7 @@ function Replays() {
                 setPlaybackTime(-offset);
             }
             catch (err) {
+                console.error(err);
                 setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
             }
         };

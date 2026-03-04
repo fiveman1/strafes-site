@@ -1,5 +1,6 @@
 import { exit } from "process";
-import { Api, TimePlacement } from "./client.js";
+import { Api as StrafesApi, TimePlacement } from "./generated/strafes.js";
+import { Api as MapsApi } from "./generated/maps.js";
 import memoize from "memoize";
 import memCache from "memory-cache";
 import { Game, RankSortBy, Style, TimeSortBy } from "shared";
@@ -13,8 +14,19 @@ if (!STRAFES_KEY) {
 
 const placementCache: memCache.CacheClass<string, number> = new memCache.Cache();
 
-const STRAFES_CLIENT = new Api({
+const STRAFES_CLIENT = new StrafesApi({
     baseUrl: "https://api.strafes.net/api/v1",
+    securityWorker: () => {
+        return {
+            headers: {
+                "X-API-Key": STRAFES_KEY
+            }
+        };
+    }
+});
+
+const MAPS_CLIENT = new MapsApi({
+    baseUrl: "https://maps.strafes.net/public-api/v1",
     securityWorker: () => {
         return {
             headers: {
@@ -147,10 +159,25 @@ async function getTimeByIdCore(timeId: string) {
     }
 }
 
-export async function getBotFileFromId(timeId: string) {
+export async function getBotDownloadURL(timeId: string) {
     try {
-        const res = await STRAFES_CLIENT.time.getTime(timeId);
-        return await res.arrayBuffer();
+        const res = await STRAFES_CLIENT.time.getTime(timeId, { redirect: "manual" });
+        const url = res.headers.get("location");
+        return url ?? undefined;
+    }
+    catch (err) {
+        if (IS_DEV_MODE) {
+            console.error(err);
+        }
+        return undefined;
+    }
+}
+
+export async function getMapDownloadURL(mapId: number) {
+    try {
+        const res = await MAPS_CLIENT.map.snfmList(mapId, { redirect: "manual" });
+        const url = res.headers.get("location");
+        return url ?? undefined;
     }
     catch (err) {
         if (IS_DEV_MODE) {

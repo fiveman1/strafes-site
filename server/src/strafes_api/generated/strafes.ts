@@ -383,7 +383,7 @@ export class HttpClient<SecurityDataType = unknown> {
         this.abortControllers.delete(cancelToken);
       }
 
-      if (!response.ok) throw data;
+      if (!response.ok && (response.status < 300 || response.status >= 400)) throw data;
       return data;
     });
   };

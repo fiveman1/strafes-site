@@ -263,17 +263,29 @@ export async function getReplayById(id: string) {
 }
 
 export async function getBotFileForTime(time: Time) {
-    const res = await fetch("/api/replays/bots/" + time.id);
-    if (res.ok) {
-        return new Uint8Array(await res.arrayBuffer());
-    }
-    return undefined;
+    const res = await tryGetRequest("replays/bots/" + time.id);
+    
+    if (!res) return undefined;
+
+    const url = res.data.url as string;
+
+    const fileRes = await fetch(url);
+
+    if (!fileRes.ok) return undefined;
+    
+    return new Uint8Array(await fileRes.arrayBuffer());
 }
 
 export async function getMapFile(mapId: number) {
-    const res = await fetch("/api/replays/maps/" + mapId);
-    if (res.ok) {
-        return new Uint8Array(await res.arrayBuffer());
-    }
-    return undefined;
+    const res = await tryGetRequest("replays/maps/" + mapId);
+    
+    if (!res) return undefined;
+
+    const url = res.data.url as string;
+
+    const fileRes = await fetch(url);
+    
+    if (!fileRes.ok) return undefined;
+    
+    return new Uint8Array(await fileRes.arrayBuffer());
 }

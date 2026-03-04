@@ -1,0 +1,259 @@
+{
+    "schemes": [],
+    "swagger": "2.0",
+    "info": {
+        "description": "Obtain an api key at https://dev.strafes.net\nRequires Maps:Read permission",
+        "title": "StrafesNET Maps API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "",
+    "basePath": "/public-api/v1",
+    "paths": {
+        "/map": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of maps",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "maps"
+                ],
+                "summary": "List maps",
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "game_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PagedResponse-Map"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/map/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific map by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "maps"
+                ],
+                "summary": "Get map by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Map ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Response-Map"
+                        }
+                    },
+                    "404": {
+                        "description": "Map not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/map/{id}/snfm": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Redirects to a signed download URL for a map's SNFM file",
+                "tags": [
+                    "maps"
+                ],
+                "summary": "Download SNFM file",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Map ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Redirect to signed S3 URL"
+                    },
+                    "404": {
+                        "description": "Map not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "General error response",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "Map": {
+            "type": "object",
+            "properties": {
+                "asset_version": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "game_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "load_count": {
+                    "type": "integer"
+                },
+                "modes": {
+                    "type": "integer"
+                },
+                "submitter": {
+                    "type": "integer"
+                },
+                "thumbnail": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "PagedResponse-Map": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Map"
+                    }
+                },
+                "pagination": {
+                    "description": "Pagination contains information about paging",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    ]
+                }
+            }
+        },
+        "Pagination": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "Number of items per page",
+                    "type": "integer"
+                }
+            }
+        },
+        "Response-Map": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data contains the actual response payload",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Map"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        }
+    }
+}

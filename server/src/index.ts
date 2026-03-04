@@ -11,8 +11,8 @@ import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
 import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
-import { getBotFileFromId, getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
-import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/client.js";
+import { getBotDownloadURL, getMapDownloadURL, getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
+import { PagedTotalResponseTime, Time as ApiTime } from "./strafes_api/generated/strafes.js";
 import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
@@ -60,7 +60,6 @@ const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, v
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
-const mapDir = path.join(dirName, "../maps/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
@@ -989,14 +988,13 @@ app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
 
     const id = req.params.id as string; // Don't want to convert to number
 
-    const file = await getBotFileFromId(id);
-    if (!file) {
-        res.status(404).send({ error: "No bot found" });
+    const url = await getBotDownloadURL(id);
+    if (!url) {
+        res.status(404).send({ error: "Bot not found" });
         return;
     }
 
-    const buffer = Buffer.from(file);
-    res.status(200).send(buffer);
+    return res.status(200).json({ url: url });
 });
 
 app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
@@ -1007,16 +1005,13 @@ app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
     }
 
     const id = result.id;
+    const url = await getMapDownloadURL(id);
+    if (!url) {
+        res.status(400).json({ error: "Map not found" });
+        return;
+    }
 
-    res.sendFile(path.resolve(mapDir, `${id}.snfm`),
-        {
-            maxAge: 4 * 60 * 60 * 1000 // 4 hours
-        },
-        (err) => {
-            if (err && !res.headersSent) {
-                res.status(404).json({ error: "Map file not found" });
-            }
-        });
+    return res.status(200).json({ url: url });
 });
 
 app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
