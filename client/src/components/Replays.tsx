@@ -227,11 +227,6 @@ function Replays() {
         document.title = `replays - strafes`;
         
         const promise = async () => {
-            if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
-            
             await init();
 
             const replay = await getReplayById(id);
@@ -244,6 +239,22 @@ function Replays() {
 
             if (!replay.hasBot) {
                 setError("No replay exists for this time.");
+                return;
+            }
+
+            const canvas = canvasRef.current;
+            if (!canvas) {
+                setError("Couldn't setup bot playback.");
+                return;
+            }
+            
+            let graphics: Graphics;
+            try {
+                graphics = await setup_graphics(canvas);
+            }
+            catch (err) {
+                console.error(err);
+                setError("Playback is not supported on this device.");
                 return;
             }
 
@@ -264,17 +275,10 @@ function Replays() {
                 return;
             }
 
-            const canvas = canvasRef.current;
-            if (!canvas) {
-                setError("Couldn't setup bot playback.");
-                return;
-            }
-
             try {
                 const map = new CompleteMap(mapFile);
                 const bot = new CompleteBot(botFile);
                 const playback = new PlaybackHead(bot, 0);
-                const graphics = await setup_graphics(canvas);
 
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
