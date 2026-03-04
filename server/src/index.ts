@@ -997,7 +997,7 @@ app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
     return res.status(200).json({ url: url });
 });
 
-app.get("/api/replays/maps/:id", rateLimitSettings, cache("4 hours"), async (req, res) => {
+app.get("/api/replays/maps/:id", rateLimitSettings, async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
