@@ -83,15 +83,15 @@ function ProgressSlider(props: ProgressSliderProps) {
         }
     }, [isDragging, max, min, onSetPlayback, setIsDragging]);
 
-    const onMouseDown = useCallback(() => {
+    const onPointerDown = useCallback(() => {
         setIsDragging(true);
     }, [setIsDragging]);
 
-    const onMouseOver = useCallback(() => {
+    const onPointerOver = useCallback(() => {
         setIsHovering(true);
     }, []);
 
-    const onMouseLeave = useCallback(() => {
+    const onPointerLeave = useCallback(() => {
         setIsHovering(false);
     }, []);
 
@@ -103,10 +103,9 @@ function ProgressSlider(props: ProgressSliderProps) {
             height="40px"
             sx={{ cursor: "pointer" }}
             ref={ref}
-            onMouseDown={onMouseDown}
-            onTouchStart={onMouseDown}
-            onMouseOver={onMouseOver}
-            onMouseLeave={onMouseLeave}
+            onPointerDown={onPointerDown}
+            onPointerOver={onPointerOver}
+            onPointerLeave={onPointerLeave}
         >
             <Box 
                 component="span" 

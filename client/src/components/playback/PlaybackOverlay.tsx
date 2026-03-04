@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import ProgressSlider from "./ProgressSlider";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -70,19 +70,19 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onSetPlayback(time);
     }, [onSetPlayback]);
 
-    const onMouseMove = useCallback(() => {
-        setWasRecentMouseOver(true);
-        lastMouseOver.current = new Date().getTime();
+    const onPointerMove = useCallback((event: React.PointerEvent) => {
+        if (event.pointerType === "touch") {
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
+        }
+        else {
+            setWasRecentMouseOver(true);
+            lastMouseOver.current = new Date().getTime();
+        }
         setIsHovering(true);
     }, []);
 
-    const onTouchMove = useCallback(() => {
-        setWasRecentAction(true);
-        lastAction.current = new Date().getTime();
-        setIsHovering(true);
-    }, []);
-
-    const onMouseLeave = useCallback(() => {
+    const onPointerLeave = useCallback(() => {
         setIsHovering(false);
     }, []);
 
@@ -113,6 +113,17 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         lastAction.current = new Date().getTime();
         onFullscreen(!fullscreen);
     }, [fullscreen, onFullscreen]);
+
+    const onClickPlayer = useCallback((event: React.PointerEvent) => {
+        if (event.pointerType === "touch") {
+            event.preventDefault();
+            setWasRecentAction(true);
+            lastAction.current = new Date().getTime();
+        }
+        else {
+            onPausePlay();
+        }
+    }, [onPausePlay]);
 
     const onClickSettings = useCallback(() => {
         if (settingsOpen) {
@@ -173,6 +184,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         }
     }, [onPausePlay, onReset, onSeek, onSwapFullscreen]);
 
+    useEffect(() => {
+        document.addEventListener("keydown", onKeyDown)
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+        };
+    }, [onKeyDown]);
+
     const closeSettingsIfClickedOutside = useCallback((target: EventTarget | null, treatAsAction?: boolean) => {
         if (!settingsEl) return;
 
@@ -204,13 +222,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [settingsEl]);
 
     const getPlayerRef = useCallback(() => playerRef.current, []);
-
-    useEffect(() => {
-        document.addEventListener("keydown", onKeyDown)
-        return () => {
-            document.removeEventListener("keydown", onKeyDown);
-        };
-    }, [onKeyDown]);
 
     useEffect(() => {
         const div = document.getElementById(bottomDivId);
@@ -268,10 +279,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             height="100%" 
             display="flex" 
             flexDirection="column"
-            onMouseMove={onMouseMove}
-            onTouchMove={onTouchMove}
-            onMouseLeave={onMouseLeave}
-            onTouchEnd={onMouseLeave}
+            onPointerMove={onPointerMove}
+            onPointerLeave={onPointerLeave}
             sx={{
                 transition: "opacity .4s ease",
                 userSelect: "none",
@@ -287,7 +296,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             }}
             style={{ cursor: shouldShow ? "default" : "none" }}
         >
-            <Box flexGrow={1} onClick={onPausePlay} onDoubleClick={onSwapFullscreen} />
+            <Box flexGrow={1} onDoubleClick={onSwapFullscreen} onPointerUp={onClickPlayer} />
             <Box 
                 id={bottomDivId}
                 width="100%" 
@@ -334,8 +343,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     ref={settingsButtonRef}
                     aria-describedby={curSettingsMenuId}
                     size="small"
-                    onClick={onClickSettings}
-                    onTouchEnd={onClickSettings}
+                    onPointerUp={onClickSettings}
                     sx={{
                         ml: 1.5
                     }}
