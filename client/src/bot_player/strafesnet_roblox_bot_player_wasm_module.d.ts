@@ -72,11 +72,11 @@ export interface InitOutput {
     readonly playbackhead_set_paused: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1201: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_612: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1202: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1620: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_613: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1202: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_618: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1203: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1623: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_619: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
