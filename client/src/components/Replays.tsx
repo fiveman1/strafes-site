@@ -5,7 +5,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatGame, formatPlacement, formatStyle, formatTime, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
-import { getBotFileForTime, getMapFile, getReplayById } from "../api/api";
+import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
@@ -57,6 +57,16 @@ function getMapTitle(replay: Replay) {
     return `${replay.map} (${formatCourse(replay.course, true)})`;
 }
 
+function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
+    const chunksAll = new Uint8Array(length);
+    let position = 0;
+    for (const chunk of chunks) {
+        chunksAll.set(chunk, position);
+        position += chunk.length;
+    }
+    return chunksAll;
+}
+
 const FOOTER_HEIGHT = 154;
 
 function Replays() {
@@ -71,6 +81,7 @@ function Replays() {
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
+    const [ downloadProgress, setDownloadProgress ] = useState(-1);
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
 
@@ -81,9 +92,14 @@ function Replays() {
     const playbackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
+    const mapDownloadLength = useRef(0);
+    const mapDownloadReceived = useRef(0);
+    const botDownloadLength = useRef(0);
+    const botDownloadReceived = useRef(0);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
+        setLoading(false);
         playbackRef.current = null;
         graphicsRef.current = null;
         botRef.current = null;
@@ -104,6 +120,28 @@ function Replays() {
 
         return () => clearInterval(interval);
     }, [botOffset, duration, playbackTime]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            let mapProgress = -1;
+            let botProgress = -1;
+            
+            if (mapDownloadLength.current !== 0) {
+                mapProgress = mapDownloadReceived.current / mapDownloadLength.current;
+            }
+            
+            if (botDownloadLength.current !== 0) {
+                botProgress = botDownloadReceived.current / botDownloadLength.current;
+            }
+
+            const progress = Math.min(mapProgress, botProgress);
+            if (progress !== -1) {
+                setDownloadProgress(progress);
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, []);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -225,12 +263,18 @@ function Replays() {
 
     useEffect(() => {
         document.title = `replays - strafes`;
+
+        let isCanceled = false;
+        mapDownloadReceived.current = 0;
+        botDownloadReceived.current = 0;
         
         const promise = async () => {
             if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
                 setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
                 return;
             }
+
+            setLoading(true);
             
             await init();
 
@@ -249,20 +293,64 @@ function Replays() {
 
             document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} - replays - strafes`;
 
-            const mapPromise = getMapFile(replay.mapId);
-            const botPromise = getBotFileForTime(replay);
-            const mapFile = await mapPromise;
-            const botFile = await botPromise;
+            if (isCanceled) return;
 
-            if (!mapFile) {
+            const mapPromise = getMapFileResponse(replay.mapId);
+            const botPromise = getBotFileResponse(replay);
+            const mapRes = await mapPromise;
+            const botRes = await botPromise;
+
+            if (!mapRes || !mapRes.body) {
                 setError("Couldn't load map file.");
                 return;
             }
 
-            if (!botFile) {
+            if (!botRes || !botRes.body) {
                 setError("Couldn't load bot file.");
                 return;
             }
+
+            if (isCanceled) return;
+
+            const mapReader = mapRes.body.getReader();
+            const botReader = botRes.body.getReader();
+            
+            mapDownloadLength.current = +(mapRes.headers.get("Content-Length") ?? 0);
+            botDownloadLength.current = +(botRes.headers.get("Content-Length") ?? 0);
+
+            const mapChunks: Uint8Array<ArrayBuffer>[] = [];
+            const botChunks: Uint8Array<ArrayBuffer>[] = [];
+
+            const mapReadPromise = mapReader.read().then(function process({ done, value }) {
+                if (done || isCanceled) {
+                    return;
+                }
+
+                mapChunks.push(value);
+                mapDownloadReceived.current += value.byteLength;
+                return mapReader.read().then(process);
+            });
+
+            const botReadPromise = botReader.read().then(function process({ done, value }) {
+                if (done || isCanceled) {
+                    return;
+                }
+
+                botChunks.push(value);
+                botDownloadReceived.current += value.byteLength;
+                return botReader.read().then(process);
+            });
+
+            await mapReadPromise;
+            await botReadPromise;
+            
+            mapReader.releaseLock();
+            botReader.releaseLock();
+
+            if (isCanceled) return;
+
+            const mapFile = chunksToArray(mapChunks, mapDownloadReceived.current);
+            const botFile = chunksToArray(botChunks, botDownloadReceived.current);
 
             const canvas = canvasRef.current;
             if (!canvas) {
@@ -294,13 +382,16 @@ function Replays() {
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
                 setPlaybackTime(-offset);
+                setLoading(false);
             }
             catch (err) {
                 console.error(err);
                 setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
             }
         };
-        promise().then(() => setLoading(false));
+        promise();
+
+        return () => { isCanceled = true; };
     }, [id, setError]);
 
     let gameColor = "";
@@ -397,11 +488,24 @@ function Replays() {
                                 top="50%"
                                 left="50%"
                                 display="flex"
+                                flexDirection="column"
                                 alignItems="center"
                                 justifyContent="center"
                                 sx={{ transform: "translate(-50%, -50%)" }}
                             >
                                 <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
+                                <Box 
+                                    mt={1}
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    height="32px"
+                                >
+                                    {downloadProgress !== -1 &&
+                                    <Typography variant="body1">
+                                        {Math.round(downloadProgress * 100)}%
+                                    </Typography>}
+                                </Box>
                             </Box>}
                         </Box>
                         <Box 
