@@ -122,6 +122,10 @@ function Replays() {
     }, [botOffset, duration, playbackTime]);
 
     useEffect(() => {
+        if (!loading) {
+            return;
+        }
+        
         const interval = setInterval(() => {
             let mapProgress = -1;
             let botProgress = -1;
@@ -141,7 +145,7 @@ function Replays() {
         }, 100);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [loading]);
 
     useLayoutEffect(() => {
         let animationId: number;
