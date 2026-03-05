@@ -43,10 +43,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
     const playerRef = useRef<HTMLDivElement>(null);
+    const playerMainRef = useRef<HTMLDivElement>(null);
     const settingsMenuId = useId();
     const settingsButtonRef = useRef<HTMLButtonElement>(null);
     const settingsMenuRef = useRef<HTMLDivElement>(null);
     const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
+    const lastPointerDownRef = useRef<Element>(null);
     const lastAction = useRef(0);
     const lastMouseOver = useRef(0);
     const isDraggingSpeed = useRef(false);
@@ -115,6 +117,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [fullscreen, onFullscreen]);
 
     const onClickPlayer = useCallback((event: React.PointerEvent) => {
+        // Click must have originated within the player main content
+        if (!lastPointerDownRef.current || !playerMainRef.current || !playerMainRef.current.contains(lastPointerDownRef.current)) {
+            return;
+        }
         if (event.pointerType === "touch") {
             setWasRecentAction(true);
             lastAction.current = new Date().getTime();
@@ -125,6 +131,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [onPausePlay]);
 
     const onClickSettings = useCallback(() => {
+        // Click must have originated within settings button
+        if (!lastPointerDownRef.current || !settingsButtonRef.current || !settingsButtonRef.current.contains(lastPointerDownRef.current)) {
+            return;
+        }
         if (settingsOpen) {
             setSettingsEl(null);
         }
@@ -184,11 +194,21 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [onPausePlay, onReset, onSeek, onSwapFullscreen]);
 
     useEffect(() => {
-        document.addEventListener("keydown", onKeyDown)
+        document.addEventListener("keydown", onKeyDown);
         return () => {
             document.removeEventListener("keydown", onKeyDown);
         };
     }, [onKeyDown]);
+
+    useEffect(() => {
+        const handler = (event: PointerEvent) => {
+            lastPointerDownRef.current = event.target instanceof Element ? event.target : null;
+        }
+        document.addEventListener("pointerdown", handler);
+        return () => {
+            document.removeEventListener("pointerdown", handler);
+        };
+    }, []);
 
     const closeSettingsIfClickedOutside = useCallback((target: EventTarget | null, treatAsAction?: boolean) => {
         if (!settingsEl) return;
@@ -295,8 +315,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             }}
             style={{ cursor: shouldShow ? "default" : "none" }}
         >
-            <Box flexGrow={1} onDoubleClick={onSwapFullscreen} onPointerUp={onClickPlayer} />
-            <Box 
+            <Box
+                ref={playerMainRef}
+                flexGrow={1}
+                onDoubleClick={onSwapFullscreen}
+                onPointerUp={onClickPlayer}
+            />
+            <Box
                 id={bottomDivId}
                 width="100%" 
                 height="40px" 
