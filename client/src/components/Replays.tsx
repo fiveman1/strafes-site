@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatCourse, formatGame, formatPlacement, formatStyle, formatTime, MAIN_COURSE, Replay } from "shared";
+import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
@@ -11,12 +11,15 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
 import { ContextParams, getGameColor, getStyleColor } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
-import { useTheme } from "@mui/material/styles";
+import { darken, useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
+import { getMapTierColor } from "../common/colors";
+import ReactCountryFlag from "react-country-flag";
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -71,7 +74,7 @@ const FOOTER_HEIGHT = 154;
 
 function Replays() {
     const { id } = useParams() as { id: string };
-    const { maps } = useOutletContext() as ContextParams;
+    const { maps, loggedInUser } = useOutletContext() as ContextParams;
     const [ replay, setReplay ] = useState<Replay>();
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
@@ -412,6 +415,9 @@ function Replays() {
 
     const thumbSize = FOOTER_HEIGHT - 20;
     const mapLink = replay ? `/maps/${replay.mapId}?game=${replay.game}&style=${replay.style}&course=${replay.course}` : "";
+    const mapInfo = replay ? maps[replay.mapId] : undefined;
+    const tierColor = getMapTierColor(mapInfo?.tier);
+    const isCurrentUser = loggedInUser && replay?.userId === loggedInUser.userId;
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
@@ -545,7 +551,7 @@ function Replays() {
                                             }
                                         }}
                                     >
-                                        <MapThumb size={thumbSize} map={maps[replay.mapId]} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                        <MapThumb size={thumbSize} map={mapInfo} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                     </Box>
                                 </Link>
                             </Box>}
@@ -559,7 +565,7 @@ function Replays() {
                                         overflowWrap: "break-word", 
                                         wordBreak: "break-word", 
                                         whiteSpace: "normal", 
-                                        textWrap: "balance"
+                                        textWrap: "wrap"
                                     }
                                 }}
                             >
@@ -587,7 +593,7 @@ function Replays() {
                                                 }
                                             }}
                                         >
-                                            <MapThumb size={48} map={maps[replay.mapId]} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                            <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                         </Box>
                                     </Link>}
                                     <Link 
@@ -600,7 +606,7 @@ function Replays() {
                                         sx={{
                                             textDecoration: "none",
                                             ":hover": {
-                                                "p": {
+                                                "& .map-name": {
                                                     textDecoration: "underline"
                                                 }
                                             }
@@ -608,12 +614,36 @@ function Replays() {
                                     >
                                         <Typography 
                                             variant="h5"
-                                            display="inline-block" 
+                                            display="inline-block"
+                                            className="map-name"
                                             lineHeight={1.4}
                                         >
                                             {getMapTitle(replay)}
                                         </Typography>
                                     </Link>
+                                    <Typography 
+                                        lineHeight={1.0}
+                                        variant="caption"
+                                        fontWeight="bold"
+                                        className="tier"
+                                        ml={1}
+                                        sx={{
+                                            padding: 0.3,
+                                            backgroundColor: darken(tierColor, 0.4),
+                                            textAlign: "center",
+                                            color: "white",
+                                            textShadow: "black 1px 1px 1px",
+                                            borderRadius: "6px",
+                                            border: 1,
+                                            borderColor: tierColor,
+                                            overflowWrap: "normal", 
+                                            wordBreak: "normal", 
+                                            whiteSpace: "normal", 
+                                            textWrap: "auto"
+                                        }}
+                                    >
+                                        {formatTier(mapInfo?.tier, true)}
+                                    </Typography>
                                 </Box>
                                 <Box
                                     display="inline-flex" 
@@ -659,6 +689,7 @@ function Replays() {
                                 <Box 
                                     mt={0.75}
                                     display="inline-flex" 
+                                    alignItems="center"
                                 >
                                     <Link 
                                         display="inline-flex" 
@@ -684,7 +715,14 @@ function Replays() {
                                         >
                                             @{replay.username}
                                         </Typography>
+                                        
                                     </Link>
+                                    {replay.userCountry &&
+                                    <ReactCountryFlag style={{marginLeft: 6}} title={formatCountryCode(replay.userCountry)} countryCode={replay.userCountry} svg />}
+                                    {isCurrentUser &&
+                                    <Box display="flex" title="You">
+                                        <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                                    </Box>}
                                 </Box>
                                 <Box display="flex" alignItems="center" mt={0.5}>
                                     <Typography 
