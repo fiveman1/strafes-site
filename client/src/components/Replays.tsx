@@ -70,7 +70,7 @@ function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
     return chunksAll;
 }
 
-const FOOTER_HEIGHT = 154;
+const FOOTER_HEIGHT = 156;
 
 function Replays() {
     const { id } = useParams() as { id: string };
@@ -521,8 +521,10 @@ function Replays() {
                         <Box 
                             display={fullscreen ? "none" : "flex"}
                             flexDirection="row"
-                            p={1} 
+                            pt={1}
+                            pb={1}
                             style={{ width: playerWidth }}
+                            minHeight={FOOTER_HEIGHT}
                         >
                             {replay && 
                             <>
@@ -626,7 +628,7 @@ function Replays() {
                                         variant="caption"
                                         fontWeight="bold"
                                         className="tier"
-                                        ml={1}
+                                        ml={0.75}
                                         sx={{
                                             padding: 0.3,
                                             backgroundColor: darken(tierColor, 0.4),
@@ -687,7 +689,7 @@ function Replays() {
                                     </Typography>
                                 </Box>
                                 <Box 
-                                    mt={0.75}
+                                    mt={1}
                                     display="inline-flex" 
                                     alignItems="center"
                                 >
@@ -754,7 +756,7 @@ function Replays() {
                                     flexDirection="row"
                                     alignItems="center"
                                     justifyContent="space-between"
-                                    mt={0.5}
+                                    mt={0.25}
                                 >
                                     <Typography
                                         variant="body2"
