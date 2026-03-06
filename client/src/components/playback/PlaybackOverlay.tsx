@@ -172,7 +172,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
         let didAction = false;
         
-        if (event.code === "Space") {
+        if (event.key === " ") {
             didAction = true;
             onPausePlay();
         }
@@ -184,13 +184,23 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             didAction = true;
             onSeek(3);
         }
-        else if (event.code === "KeyF") {
+        else if (event.key === "f") {
             didAction = true;
             onSwapFullscreen();
         }
-        else if (event.code === "KeyR") {
+        else if (event.key === "r") {
             didAction = true;
             onReset();
+        }
+        else if (event.key === ",") {
+            didAction = true;
+            onSeek(-0.01);
+            onSetPause(true);
+        }
+        else if (event.key === ".") {
+            didAction = true;
+            onSeek(0.01);
+            onSetPause(true);
         }
 
         if (didAction) {
@@ -198,7 +208,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             setWasRecentAction(true);
             lastAction.current = new Date().getTime();
         }
-    }, [onPausePlay, onReset, onSeek, onSwapFullscreen]);
+    }, [onPausePlay, onReset, onSeek, onSetPause, onSwapFullscreen]);
 
     useEffect(() => {
         document.addEventListener("keydown", onKeyDown);

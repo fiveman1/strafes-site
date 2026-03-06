@@ -20,7 +20,6 @@ import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import parserInit, { BotParser } from "../bot_parser/bot_parser_wasm";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -94,7 +93,6 @@ function Replays() {
     const speedTextRef = useRef<HTMLSpanElement>(null);
     const graphicsRef = useRef<Graphics>(null);
     const botRef = useRef<CompleteBot>(null);
-    const parserRef = useRef<BotParser>(null);
     const playbackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
@@ -162,16 +160,14 @@ function Replays() {
             const playback = playbackRef.current;
             const bot = botRef.current;
             const graphics = graphicsRef.current;
-            const parser = parserRef.current;
             const speedText = speedTextRef.current;
-            if (playback && bot && graphics && parser && speedText) {
+            if (playback && bot && graphics && speedText) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
                     playback.advance_time(bot, newSessionTime);
                     graphics.render(bot, playback, newSessionTime);
-                    const headTime = playback.get_head_time(newSessionTime);
-                    const speed = parser.get_speed(headTime);
+                    const speed = playback.get_speed(bot, newSessionTime);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
@@ -295,7 +291,6 @@ function Replays() {
             setLoading(true);
             
             await init();
-            await parserInit();
 
             const replay = await getReplayById(id);
             if (!replay) {
@@ -386,7 +381,6 @@ function Replays() {
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
                 botRef.current = bot;
-                parserRef.current = new BotParser(botFile);
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -424,10 +418,6 @@ function Replays() {
             if (botRef.current) {
                 botRef.current.free();
                 botRef.current = null;
-            }
-            if (parserRef.current) {
-                parserRef.current.free();
-                parserRef.current = null;
             }
         };
     }, [id, setError]);
