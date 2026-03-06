@@ -324,13 +324,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             >
                 <Box
                     position="absolute"
-                    bottom="0%"
+                    bottom="10%"
                     left="50%"
                     width="100%"
+                    pl={3}
                     pr={3}
                     display="flex"
                     alignItems="center"
-                    justifyContent={smallScreen ? "flex-end" : "center"}
+                    justifyContent={verySmallScreen ? "flex-end" : "center"}
                     sx={{ transform: "translateX(-50%)" }}
                 >
                     <Typography
