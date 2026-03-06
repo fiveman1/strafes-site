@@ -14,6 +14,11 @@ import Slider from "@mui/material/Slider";
 import Popper from "@mui/material/Popper";
 import Fade from "@mui/material/Fade";
 import SpeedIcon from '@mui/icons-material/Speed';
+import { clamp } from "@mui/x-data-grid/internals";
+
+function getSpeedTextSize(playerHeight: number) {
+    return clamp(playerHeight / 32, 10, 28);
+}
 
 interface PlaybackOverlayProps {
     duration: number
@@ -30,12 +35,12 @@ interface PlaybackOverlayProps {
     onReset: () => void
     onSetSpeed: (speed: number) => void
     speedTextRef: React.Ref<HTMLSpanElement>
-    speedTextHeight: number
+    playerHeight: number
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
-        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, speedTextHeight } = props;
+        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, playerHeight } = props;
     
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
@@ -324,14 +329,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             >
                 <Box
                     position="absolute"
-                    bottom="10%"
+                    bottom="15%"
                     left="50%"
                     width="100%"
                     pl={3}
                     pr={3}
-                    display="flex"
+                    display={smallScreen ? "none" : "flex"}
                     alignItems="center"
-                    justifyContent={verySmallScreen ? "flex-end" : "center"}
+                    justifyContent="center"
                     sx={{ transform: "translateX(-50%)" }}
                 >
                     <Typography
@@ -344,7 +349,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             userSelect: "none"
                         }}
                         style={{
-                            fontSize: speedTextHeight
+                            fontSize: getSpeedTextSize(playerHeight)
                         }}
                     />
                 </Box>

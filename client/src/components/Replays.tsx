@@ -21,7 +21,6 @@ import { getMapTierColor } from "../common/colors";
 import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import parserInit, { BotParser } from "../bot_parser/bot_parser_wasm";
-import { clamp } from "../common/utils";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -70,10 +69,6 @@ function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
         position += chunk.length;
     }
     return chunksAll;
-}
-
-function getSpeedTextHeightPx(playerHeight: number) {
-    return Math.round(clamp(playerHeight / 16, 18, 28));
 }
 
 const FOOTER_HEIGHT = 156;
@@ -177,7 +172,7 @@ function Replays() {
                     graphics.render(bot, playback, newSessionTime);
                     const headTime = playback.get_head_time(newSessionTime);
                     const speed = parser.get_speed(headTime);
-                    const newText = `${speed.toFixed(2)} u/s`;
+                    const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
@@ -416,7 +411,25 @@ function Replays() {
         };
         promise();
 
-        return () => { isCanceled = true; };
+        return () => { 
+            isCanceled = true;
+            if (playbackRef.current) {
+                playbackRef.current.free();
+                playbackRef.current = null;
+            }
+            if (graphicsRef.current) {
+                graphicsRef.current.free();
+                graphicsRef.current = null;
+            }
+            if (botRef.current) {
+                botRef.current.free();
+                botRef.current = null;
+            }
+            if (parserRef.current) {
+                parserRef.current.free();
+                parserRef.current = null;
+            }
+        };
     }, [id, setError]);
 
     let gameColor = "";
@@ -509,7 +522,7 @@ function Replays() {
                                     onReset={onReset}
                                     onSetSpeed={onChangePlaybackSpeed}
                                     speedTextRef={speedTextRef}
-                                    speedTextHeight={getSpeedTextHeightPx(playerHeight)}
+                                    playerHeight={playerHeight}
                                 />
                             </Box>
                             {loading && 
