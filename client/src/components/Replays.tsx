@@ -20,6 +20,8 @@ import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import parserInit, { BotParser } from "../bot_parser/bot_parser_wasm";
+import { clamp } from "../common/utils";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -70,6 +72,10 @@ function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
     return chunksAll;
 }
 
+function getSpeedTextHeightPx(playerHeight: number) {
+    return Math.round(clamp(playerHeight / 16, 18, 28));
+}
+
 const FOOTER_HEIGHT = 156;
 
 function Replays() {
@@ -90,8 +96,10 @@ function Replays() {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
+    const speedTextRef = useRef<HTMLSpanElement>(null);
     const graphicsRef = useRef<Graphics>(null);
     const botRef = useRef<CompleteBot>(null);
+    const parserRef = useRef<BotParser>(null);
     const playbackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
@@ -114,15 +122,14 @@ function Replays() {
         const interval = setInterval(() => {
             const playback = playbackRef.current;
             if (playback) {
-                const curPlayerTime = Math.min(playback.get_head_time(sessionTimer.current) - botOffset, duration);
-                if (curPlayerTime !== playbackTime) {
-                    setPlaybackTime(curPlayerTime);
-                }
+                const headTime = playback.get_head_time(sessionTimer.current);
+                const curPlayerTime = Math.min(headTime - botOffset, duration);
+                setPlaybackTime(curPlayerTime);
             }
         }, 17);
 
         return () => clearInterval(interval);
-    }, [botOffset, duration, playbackTime]);
+    }, [botOffset, duration]);
 
     useEffect(() => {
         if (!loading) {
@@ -160,17 +167,26 @@ function Replays() {
             const playback = playbackRef.current;
             const bot = botRef.current;
             const graphics = graphicsRef.current;
-            if (playback && bot && graphics) {
+            const parser = parserRef.current;
+            const speedText = speedTextRef.current;
+            if (playback && bot && graphics && parser && speedText) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
                     playback.advance_time(bot, newSessionTime);
                     graphics.render(bot, playback, newSessionTime);
+                    const headTime = playback.get_head_time(newSessionTime);
+                    const speed = parser.get_speed(headTime);
+                    const newText = `${speed.toFixed(2)} u/s`;
+                    if (speedText.innerText !== newText) {
+                        speedText.innerText = newText;
+                    }
                 }
                 catch (err) {
                     console.error(err);
                     setError("Something went wrong while trying to render the replay.");
                 }
+                
                 sessionTimer.current = newSessionTime;
             }
 
@@ -284,6 +300,7 @@ function Replays() {
             setLoading(true);
             
             await init();
+            await parserInit();
 
             const replay = await getReplayById(id);
             if (!replay) {
@@ -374,6 +391,7 @@ function Replays() {
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
                 botRef.current = bot;
+                parserRef.current = new BotParser(botFile);
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -490,6 +508,8 @@ function Replays() {
                                     onSeek={onSeek}
                                     onReset={onReset}
                                     onSetSpeed={onChangePlaybackSpeed}
+                                    speedTextRef={speedTextRef}
+                                    speedTextHeight={getSpeedTextHeightPx(playerHeight)}
                                 />
                             </Box>
                             {loading && 

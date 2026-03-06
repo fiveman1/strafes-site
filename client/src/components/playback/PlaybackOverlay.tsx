@@ -29,11 +29,13 @@ interface PlaybackOverlayProps {
     onSeek: (offset: number) => void
     onReset: () => void
     onSetSpeed: (speed: number) => void
+    speedTextRef: React.Ref<HTMLSpanElement>
+    speedTextHeight: number
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
-        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed } = props;
+        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, speedTextHeight } = props;
     
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
@@ -301,9 +303,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             onPointerMove={onPointerMove}
             onPointerLeave={onPointerLeave}
             sx={{
-                transition: "opacity .4s ease",
                 userSelect: "none",
-                opacity: shouldShow ? 1 : 0,
                 WebkitTapHighlightColor: "transparent",
                 "button": {
                     color: "white",
@@ -320,7 +320,34 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 flexGrow={1}
                 onDoubleClick={onSwapFullscreen}
                 onPointerUp={onClickPlayer}
-            />
+                position="relative"
+            >
+                <Box
+                    position="absolute"
+                    bottom="0%"
+                    left="50%"
+                    width="100%"
+                    pr={3}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent={smallScreen ? "flex-end" : "center"}
+                    sx={{ transform: "translateX(-50%)" }}
+                >
+                    <Typography
+                        ref={speedTextRef}
+                        component="span"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                        sx={{ 
+                            textShadow: "0 0 6px rgba(0, 0, 0, 0.9)" ,
+                            userSelect: "none"
+                        }}
+                        style={{
+                            fontSize: speedTextHeight
+                        }}
+                    />
+                </Box>
+            </Box>
             <Box
                 id={bottomDivId}
                 width="100%" 
@@ -330,6 +357,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 p={1}
                 onMouseOver={onBottomMouseOver}
                 onMouseLeave={onBottomMouseLeave}
+                sx={{
+                    transition: "opacity .4s ease",
+                    opacity: shouldShow ? 1 : 0,
+                }}
             >
                 <IconButton 
                     size="small" 
