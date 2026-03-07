@@ -366,21 +366,22 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 <Box
                     display={smallScreen || loading ? "none" : "flex"}
                     alignItems="center"
-                    pb="8%"
+                    mb="8%"
+                    height="120px"
                     flexDirection="column"
                     sx={{ transformOrigin: "50% 100%" }}
                     style={{ transform: `scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
                 >
                     <Typography
                         ref={speedTextRef}
-                        display={showSpeed ? undefined : "none"}
                         component="span"
                         fontFamily="monospace"
                         fontWeight="bold"
                         sx={{ 
                             textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
                             userSelect: "none",
-                            color: "white"
+                            color: "white",
+                            opacity: showSpeed ? 1 : 0
                         }}
                         style={{
                             fontSize: "28px"
@@ -388,9 +389,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     />
                     <Box 
                         ref={inputContainerRef}
-                        display={showInput ? "flex" : "none"}
+                        display="flex"
                         flexDirection="column"
                         sx={{
+                            opacity: showInput ? 1 : 0,
                             ".inputDisplayButton": {
                                 display: "flex",
                                 alignItems: "center",
