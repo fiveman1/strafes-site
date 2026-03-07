@@ -78,8 +78,8 @@ const controlToState = new Map([
     [GameControls.Jump, InputState.Jump]
 ]);
 
-function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
-    const controls = playback.get_game_controls();
+function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead, bot: CompleteBot) {
+    const controls = playback.get_game_controls(bot);
     controlToState.forEach((state, control) => {
         const isActive = (controls & control) > 0;
         const element = input.querySelector(`#${state}`);
@@ -93,7 +93,7 @@ function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
         }
     });
 
-    const mouseDir = playback.get_mouse_dir() as MouseDirection;
+    const mouseDir = playback.get_mouse_dir(bot) as MouseDirection;
     const mouseLeftElem = input.querySelector(`#${InputState.LookLeft}`);
     const mouseRightElem = input.querySelector(`#${InputState.LookRight}`);
     if (mouseLeftElem) {
@@ -218,7 +218,7 @@ function Replays() {
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
-                    updateInputDisplay(input, playback);
+                    updateInputDisplay(input, playback, bot);
                 }
                 catch (err) {
                     console.error(err);
