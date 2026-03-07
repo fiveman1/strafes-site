@@ -28,9 +28,14 @@ export class PlaybackHead {
     free(): void;
     [Symbol.dispose](): void;
     advance_time(bot: CompleteBot, time: number): void;
+    /**
+     * Returns an array of [pitch, yaw, roll] in radians.  Yaw is not restricted to any particular range.
+     */
+    get_angles(bot: CompleteBot, time: number): Float32Array;
     get_fov_slope_y(): number;
     get_game_controls(): number;
     get_head_time(time: number): number;
+    get_mouse_dir(): number;
     get_run_time(bot: CompleteBot, time: number, mode_id: number): number | undefined;
     get_scale(): number;
     get_speed(bot: CompleteBot, time: number): number;
@@ -63,9 +68,11 @@ export interface InitOutput {
     readonly graphics_render: (a: number, b: number, c: number, d: number) => void;
     readonly graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_advance_time: (a: number, b: number, c: number) => void;
+    readonly playbackhead_get_angles: (a: number, b: number, c: number, d: number) => void;
     readonly playbackhead_get_fov_slope_y: (a: number) => number;
     readonly playbackhead_get_game_controls: (a: number) => number;
     readonly playbackhead_get_head_time: (a: number, b: number) => number;
+    readonly playbackhead_get_mouse_dir: (a: number) => number;
     readonly playbackhead_get_run_time: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_get_scale: (a: number) => number;
     readonly playbackhead_get_speed: (a: number, b: number, c: number) => number;
@@ -76,15 +83,16 @@ export interface InitOutput {
     readonly playbackhead_set_paused: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1208: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_624: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1209: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1629: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_625: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1212: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_628: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1213: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1633: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_629: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
     readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+    readonly __wbindgen_export4: (a: number, b: number, c: number) => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

@@ -484,7 +484,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     variant="button"
                                     sx={{
                                         "&.inputActive": {
-                                            bgcolor: "#00ff6a80"
+                                            bgcolor: "#00ff9d80"
                                         }
                                     }}
                                 >

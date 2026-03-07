@@ -227,3 +227,9 @@ export enum GameControls {
     Action1 = 1 << 15,
     Action2 = 1 << 16
 }
+
+export enum MouseDirection {
+    Right = 0,
+    None = 1,
+    Left = 2
+}

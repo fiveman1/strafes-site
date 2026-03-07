@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
+import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, MouseDirection, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
@@ -78,7 +78,8 @@ const controlToState = new Map([
     [GameControls.Jump, InputState.Jump]
 ]);
 
-function updateInputDisplay(input: HTMLDivElement, controls: number) {
+function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
+    const controls = playback.get_game_controls();
     controlToState.forEach((state, control) => {
         const isActive = (controls & control) > 0;
         const element = input.querySelector(`#${state}`);
@@ -91,6 +92,26 @@ function updateInputDisplay(input: HTMLDivElement, controls: number) {
             }
         }
     });
+
+    const mouseDir = playback.get_mouse_dir() as MouseDirection;
+    const mouseLeftElem = input.querySelector(`#${InputState.LookLeft}`);
+    const mouseRightElem = input.querySelector(`#${InputState.LookRight}`);
+    if (mouseLeftElem) {
+        if (mouseDir === MouseDirection.Left) {
+            mouseLeftElem.classList.add("inputActive");
+        }
+        else {
+            mouseLeftElem.classList.remove("inputActive");
+        }
+    }
+    if (mouseRightElem) {
+        if (mouseDir === MouseDirection.Right) {
+            mouseRightElem.classList.add("inputActive");
+        }
+        else {
+            mouseRightElem.classList.remove("inputActive");
+        }
+    }
 }
 
 const FOOTER_HEIGHT = 156;
@@ -197,7 +218,7 @@ function Replays() {
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
-                    updateInputDisplay(input, playback.get_game_controls());
+                    updateInputDisplay(input, playback);
                 }
                 catch (err) {
                     console.error(err);
