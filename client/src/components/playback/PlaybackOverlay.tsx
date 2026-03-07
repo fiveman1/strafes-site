@@ -15,13 +15,15 @@ import Popper from "@mui/material/Popper";
 import Fade from "@mui/material/Fade";
 import SpeedIcon from '@mui/icons-material/Speed';
 import MonitorIcon from '@mui/icons-material/Monitor';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
 function getInfoDisplayScale(playerHeight: number) {
-    return clamp(playerHeight / 800, 0.3, 1);
+    return clamp(playerHeight / 700, 0, 1);
 }
 
 interface PlaybackOverlayProps {
@@ -76,7 +78,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const lastChangedSpeed = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
     const smallScreen = useMediaQuery("(max-width: 800px)");
-    const hideHUD = useMediaQuery("(max-width: 1000px)");
     const bottomDivId = useId();
     const settingsOpen = Boolean(settingsEl);
 
@@ -355,157 +356,148 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         >
             <Box
                 ref={playerMainRef}
+                display="flex"
+                flexDirection="column"
+                justifyContent="flex-end"
                 flexGrow={1}
                 onDoubleClick={onSwapFullscreen}
                 onPointerUp={onClickPlayer}
-                position="relative"
             >
                 <Box
-                    position="absolute"
-                    bottom="15%"
-                    left="50%"
-                    width="100%"
-                    pl={3}
-                    pr={3}
-                    display={hideHUD || loading ? "none" : "flex"}
+                    display={smallScreen || loading ? "none" : "flex"}
                     alignItems="center"
-                    justifyContent="center"
-                    sx={{ transform: "translateX(-50%)" }}
+                    pb="8%"
+                    flexDirection="column"
+                    sx={{ transformOrigin: "50% 100%" }}
+                    style={{ transform: `scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
                 >
+                    <Typography
+                        ref={speedTextRef}
+                        display={showSpeed ? undefined : "none"}
+                        component="span"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                        sx={{ 
+                            textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
+                            userSelect: "none",
+                            color: "white"
+                        }}
+                        style={{
+                            fontSize: "28px"
+                        }}
+                    />
                     <Box 
-                        display="flex" 
-                        flexDirection="column" 
-                        alignItems="center"
-                        style={{ transform: `scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
+                        ref={inputContainerRef}
+                        display={showInput ? "flex" : "none"}
+                        flexDirection="column"
+                        sx={{
+                            ".inputDisplayButton": {
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                textAlign: "center",
+                                height: "28px",
+                                width: "28px",
+                                m: "4px",
+                                fontSize: "20px",
+                                borderRadius: "6px",
+                                textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
+                                color: "#d8d8d8"
+                            },
+                            ".inputActive": {
+                                color: "white"
+                            }
+                        }}
                     >
-                        <Typography
-                            ref={speedTextRef}
-                            display={showSpeed ? undefined : "none"}
-                            component="span"
-                            fontFamily="monospace"
-                            fontWeight="bold"
-                            sx={{ 
-                                textShadow: "0 0 6px rgba(0, 0, 0, 0.9)" ,
-                                userSelect: "none"
-                            }}
-                            style={{
-                                fontSize: "28px"
-                            }}
-                        />
-                        <Box 
-                            ref={inputContainerRef}
-                            display={showInput ? "flex" : "none"}
-                            flexDirection="column"
-                            sx={{
-                                ".inputDisplayButton": {
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    textAlign: "center",
-                                    height: "28px",
-                                    width: "28px",
-                                    m: "4px",
-                                    fontSize: "20px",
-                                    borderRadius: "6px",
-                                    textShadow: "0 0 6px rgba(0, 0, 0, 0.9)"
-                                }
-                            }}
-                        >
-                            <Box
-                                display="flex"
+                        <Box display="flex">
+                            <Typography
+                                id={InputState.LookLeft}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#ff000080"
+                                    }
+                                }}
                             >
-                                <Typography
-                                    id={InputState.LookLeft}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#ff000080"
-                                        }
-                                    }}
-                                >
-                                    L
-                                </Typography>
-                                <Typography
-                                    id={InputState.MoveForward}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#9900ff80"
-                                        }
-                                    }}
-                                >
-                                    W
-                                </Typography>
-                                <Typography
-                                    id={InputState.LookRight}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#00ff0080"
-                                        }
-                                    }}
-                                >
-                                    R
-                                </Typography>
-                            </Box>
-                            <Box
-                                display="flex"
+                                L
+                            </Typography>
+                            <Typography
+                                id={InputState.MoveForward}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#9900ff80"
+                                    }
+                                }}
                             >
-                                <Typography
-                                    id={InputState.MoveLeft}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#ff007780"
-                                        }
-                                    }}
-                                >
-                                    A
-                                </Typography>
-                                <Typography
-                                    id={InputState.MoveBack}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#ffee0080"
-                                        }
-                                    }}
-                                >
-                                    S
-                                </Typography>
-                                <Typography
-                                    id={InputState.MoveRight}
-                                    className="inputDisplayButton"
-                                    variant="button"
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#00ff9d80"
-                                        }
-                                    }}
-                                >
-                                    D
-                                </Typography>
-                            </Box>
-                            
-                            <Box display="flex" height="4px" mt={0.25}>
-                                <Box width="4px" />
-                                <Box 
-                                    id={InputState.Jump}
-                                    display="flex" 
-                                    width="100%" 
-                                    sx={{
-                                        "&.inputActive": {
-                                            bgcolor: "#bbff00bb" 
-                                        }
-                                    }}
-                                />
-                                <Box width="4px" />
-                            </Box>
+                                W
+                            </Typography>
+                            <Typography
+                                id={InputState.LookRight}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#00ff0080"
+                                    }
+                                }}
+                            >
+                                R
+                            </Typography>
+                        </Box>
+                        <Box display="flex">
+                            <Typography
+                                id={InputState.MoveLeft}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#ff007780"
+                                    }
+                                }}
+                            >
+                                A
+                            </Typography>
+                            <Typography
+                                id={InputState.MoveBack}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#ffee0080"
+                                    }
+                                }}
+                            >
+                                S
+                            </Typography>
+                            <Typography
+                                id={InputState.MoveRight}
+                                className="inputDisplayButton"
+                                variant="button"
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#00ff9d80"
+                                    }
+                                }}
+                            >
+                                D
+                            </Typography>
+                        </Box>
+                        <Box display="flex" height="4px" mt={0.25}>
+                            <Box width="4px" />
+                            <Box 
+                                id={InputState.Jump}
+                                display="flex" 
+                                width="100%" 
+                                sx={{
+                                    "&.inputActive": {
+                                        bgcolor: "#bbff00bb" 
+                                    }
+                                }}
+                            />
+                            <Box width="4px" />
                         </Box>
                     </Box>
                 </Box>
@@ -593,7 +585,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             <Box display="flex" flexDirection="column" padding={verySmallScreen ?  0.25 : 0.5} width={verySmallScreen ? "150px" : "200px"}>
                                 <Box display="flex">
                                     <Typography variant="subtitle2">
-                                        Speed
+                                        Playback speed
                                     </Typography>
                                     <SpeedIcon fontSize="small" sx={{ ml: 0.75 }} />
                                 </Box>
@@ -617,7 +609,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     justifyContent="space-evenly"
                                     sx={{
                                         ".speedButton": {
-                                            p: verySmallScreen ? 0.375 : 0.5,
+                                            p: 0.5,
+                                            py: 0.25,
                                             borderRadius: "8px",
                                             cursor: "pointer",
                                             userSelect: "none",
@@ -659,7 +652,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         2.0x
                                     </Typography>
                                 </Box>
-                                <Box display={hideHUD ? "none" : "flex"} flexDirection="column" mt={1.5}>
+                                <Box display={smallScreen ? "none" : "flex"} flexDirection="column" mt={1.5}>
                                     <Box display="flex">
                                         <Typography variant="subtitle2">
                                             HUD
@@ -691,21 +684,25 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     >
                                         <Typography
                                             variant="subtitle2"
+                                            display="flex"
                                             fontWeight="bold"
                                             className={showSpeed ? "speedButton active" : "speedButton"}
                                             component="button"
                                             onClick={onClickSpeedButton}
                                         >
+                                            {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                             Speed
                                         </Typography>
                                         <Typography
                                             variant="subtitle2"
+                                            display="flex"
                                             fontWeight="bold"
                                             className={showInput ? "speedButton active" : "speedButton"}
                                             component="button"
                                             ml={1}
                                             onClick={onClickInputButton}
                                         >
+                                            {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                             Input
                                         </Typography>
                                     </Box>

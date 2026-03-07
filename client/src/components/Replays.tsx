@@ -573,7 +573,10 @@ function Replays() {
                                 flexDirection="column"
                                 alignItems="center"
                                 justifyContent="center"
-                                sx={{ transform: "translate(-50%, -50%)" }}
+                                sx={{ 
+                                    transform: "translate(-50%, -50%)",
+                                    userSelect: "none"
+                                }}
                             >
                                 <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
                                 <Box 

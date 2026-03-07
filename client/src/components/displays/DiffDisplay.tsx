@@ -21,7 +21,7 @@ function DiffDisplay(props: IDiffDisplayProps) {
 
     let diffColor : string;
     if (diff > 0) {
-        diffColor = theme.palette.mode === "dark" ? red["A400"] : darken(red["A400"], 0.2);
+        diffColor = theme.palette.mode === "dark" ? red["A400"] : darken(red["A400"], 0.1);
         const wrTime = ms - diff;
         let ratio = diff / wrTime;
         const maxRatio = 0.05;
@@ -35,7 +35,7 @@ function DiffDisplay(props: IDiffDisplayProps) {
         }
     }
     else {
-        diffColor = theme.palette.mode === "dark" ? green["A400"] : darken(green["A400"], 0.3);
+        diffColor = theme.palette.mode === "dark" ? green["A400"] : darken(green["A400"], 0.2);
     }
 
     let diffText = "WR";
