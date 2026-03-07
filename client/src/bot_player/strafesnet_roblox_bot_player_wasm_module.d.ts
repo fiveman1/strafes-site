@@ -32,10 +32,13 @@ export class PlaybackHead {
      * Returns an array of [pitch, yaw, roll] in radians.  Yaw is not restricted to any particular range.
      */
     get_angles(bot: CompleteBot, time: number): Float32Array;
+    /**
+     * Returns the camera angles yaw delta between the last game tick and the most recent game tick.
+     */
+    get_angles_yaw_delta(): number;
     get_fov_slope_y(): number;
-    get_game_controls(bot: CompleteBot): number;
+    get_game_controls(): number;
     get_head_time(time: number): number;
-    get_mouse_dir(bot: CompleteBot): number;
     get_run_time(bot: CompleteBot, time: number, mode_id: number): number | undefined;
     get_scale(): number;
     get_speed(bot: CompleteBot, time: number): number;
@@ -69,10 +72,10 @@ export interface InitOutput {
     readonly graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_advance_time: (a: number, b: number, c: number) => void;
     readonly playbackhead_get_angles: (a: number, b: number, c: number, d: number) => void;
+    readonly playbackhead_get_angles_yaw_delta: (a: number) => number;
     readonly playbackhead_get_fov_slope_y: (a: number) => number;
-    readonly playbackhead_get_game_controls: (a: number, b: number) => number;
+    readonly playbackhead_get_game_controls: (a: number) => number;
     readonly playbackhead_get_head_time: (a: number, b: number) => number;
-    readonly playbackhead_get_mouse_dir: (a: number, b: number) => number;
     readonly playbackhead_get_run_time: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_get_scale: (a: number) => number;
     readonly playbackhead_get_speed: (a: number, b: number, c: number) => number;
@@ -83,11 +86,11 @@ export interface InitOutput {
     readonly playbackhead_set_paused: (a: number, b: number, c: number) => void;
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1214: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_630: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1215: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1635: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_631: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1213: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_629: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1214: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1634: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_630: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
