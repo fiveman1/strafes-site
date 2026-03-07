@@ -3,13 +3,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, MAIN_COURSE, Replay } from "shared";
+import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
-import { ContextParams, getGameColor, getStyleColor } from "../common/common";
+import { ContextParams, getGameColor, getStyleColor, InputState } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
 import { darken, useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -70,6 +70,29 @@ function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
     return chunksAll;
 }
 
+const controlToState = new Map([
+    [GameControls.MoveLeft, InputState.MoveLeft],
+    [GameControls.MoveRight, InputState.MoveRight],
+    [GameControls.MoveForward, InputState.MoveForward],
+    [GameControls.MoveBack, InputState.MoveBack],
+    [GameControls.Jump, InputState.Jump]
+]);
+
+function updateInputDisplay(input: HTMLDivElement, controls: number) {
+    controlToState.forEach((state, control) => {
+        const isActive = (controls & control) > 0;
+        const element = input.querySelector(`#${state}`);
+        if (element) {
+            if (isActive) {
+                element.classList.add("inputActive");
+            }
+            else {
+                element.classList.remove("inputActive");
+            }
+        }
+    });
+}
+
 const FOOTER_HEIGHT = 156;
 
 function Replays() {
@@ -91,6 +114,7 @@ function Replays() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
     const speedTextRef = useRef<HTMLSpanElement>(null);
+    const inputContainerRef = useRef<HTMLDivElement>(null);
     const graphicsRef = useRef<Graphics>(null);
     const botRef = useRef<CompleteBot>(null);
     const playbackRef = useRef<PlaybackHead>(null);
@@ -161,7 +185,8 @@ function Replays() {
             const bot = botRef.current;
             const graphics = graphicsRef.current;
             const speedText = speedTextRef.current;
-            if (playback && bot && graphics && speedText) {
+            const input = inputContainerRef.current;
+            if (playback && bot && graphics && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
@@ -172,6 +197,7 @@ function Replays() {
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
+                    updateInputDisplay(input, playback.get_game_controls());
                 }
                 catch (err) {
                     console.error(err);
@@ -513,6 +539,8 @@ function Replays() {
                                     onSetSpeed={onChangePlaybackSpeed}
                                     speedTextRef={speedTextRef}
                                     playerHeight={playerHeight}
+                                    inputContainerRef={inputContainerRef}
+                                    loading={loading}
                                 />
                             </Box>
                             {loading && 

@@ -172,3 +172,13 @@ export function mapsToCsv(sortedMaps: Map[]) {
     const csv = generateCsv(csvConfig)(mapData);
     download(csvConfig)(csv);
 }
+
+export enum InputState {
+    MoveForward = "moveforward",
+    MoveLeft = "moveleft",
+    MoveRight = "moveright",
+    MoveBack = "moveback",
+    LookLeft = "lookleft",
+    LookRight = "lookright",
+    Jump = "jump"
+}

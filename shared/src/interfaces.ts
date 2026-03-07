@@ -43,10 +43,10 @@ export enum Style {
 export const allGames = [Game.bhop, Game.surf, Game.fly_trials, Game.kz, Game.testing] as const;
 export const allGamesWithAll = [Game.bhop, Game.surf, Game.fly_trials, Game.kz, Game.testing, Game.all] as const;
 
-export const allStyles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, 
-    Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe] as const;
-export const allStylesWithAll = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, 
-    Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe, Style.all] as const;
+export const allStyles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste,
+Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe] as const;
+export const allStylesWithAll = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste,
+Style.low_gravity, Style.fly, Style.fly_sustain, Style.rocket, Style.strafe_3d, Style.rocket_strafe, Style.all] as const;
 
 export const bhop_styles = [Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity] as const;
 export const surf_styles = [Style.autohop, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards, Style.faste, Style.low_gravity] as const;
@@ -206,4 +206,24 @@ export interface MapTierInfo {
     tier: number
     updatedAt: string
     weight: number
+}
+
+export enum GameControls {
+    MoveForward = 1 << 0,
+    MoveLeft = 1 << 1,
+    MoveBack = 1 << 2,
+    MoveRight = 1 << 3,
+    MoveUp = 1 << 4,
+    MoveDown = 1 << 5,
+    LookUp = 1 << 6,
+    LookLeft = 1 << 7,
+    LookDown = 1 << 8,
+    LookRight = 1 << 9,
+    Jump = 1 << 10,
+    Crouch = 1 << 11,
+    Sprint = 1 << 12,
+    Zoom = 1 << 13,
+    Use = 1 << 14,
+    Action1 = 1 << 15,
+    Action2 = 1 << 16
 }
