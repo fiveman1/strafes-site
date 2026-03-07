@@ -96,6 +96,44 @@ export class CompleteMap {
 }
 if (Symbol.dispose) CompleteMap.prototype[Symbol.dispose] = CompleteMap.prototype.free;
 
+/**
+ * A timeline event that has not been processed yet.
+ */
+export class Event {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Event.prototype);
+        obj.__wbg_ptr = ptr;
+        EventFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        EventFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_event_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    time() {
+        const ret = wasm.event_time(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    type_id() {
+        const ret = wasm.event_type_id(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+}
+if (Symbol.dispose) Event.prototype[Symbol.dispose] = Event.prototype.free;
+
 export class Graphics {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -155,12 +193,33 @@ export class PlaybackHead {
         wasm.__wbg_playbackhead_free(ptr, 0);
     }
     /**
+     * Simple api: call advance_time and then graphics.render()
      * @param {CompleteBot} bot
      * @param {number} time
      */
     advance_time(bot, time) {
         _assertClass(bot, CompleteBot);
         wasm.playbackhead_advance_time(this.__wbg_ptr, bot.__wbg_ptr, time);
+    }
+    /**
+     * Returns an array of [pitch, yaw, roll] in radians.  Yaw is not restricted to any particular range.
+     * @param {CompleteBot} bot
+     * @param {number} time
+     * @returns {Float32Array}
+     */
+    get_angles(bot, time) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            _assertClass(bot, CompleteBot);
+            wasm.playbackhead_get_angles(retptr, this.__wbg_ptr, bot.__wbg_ptr, time);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayF32FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
      * @returns {number}
@@ -245,6 +304,27 @@ export class PlaybackHead {
         this.__wbg_ptr = ret >>> 0;
         PlaybackHeadFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * Advanced api: In a loop, call next_event and pass the result to process_event to advance the playback head.
+     * @param {CompleteBot} bot
+     * @returns {Event | undefined}
+     */
+    next_event(bot) {
+        _assertClass(bot, CompleteBot);
+        const ret = wasm.playbackhead_next_event(this.__wbg_ptr, bot.__wbg_ptr);
+        return ret === 0 ? undefined : Event.__wrap(ret);
+    }
+    /**
+     * Advanced api: In a loop, call next_event and pass the result to process_event to advance the playback head.
+     * @param {CompleteBot} bot
+     * @param {Event} event
+     */
+    process_event(bot, event) {
+        _assertClass(bot, CompleteBot);
+        _assertClass(event, Event);
+        var ptr0 = event.__destroy_into_raw();
+        wasm.playbackhead_process_event(this.__wbg_ptr, bot.__wbg_ptr, ptr0);
     }
     /**
      * Set the playback head position to new_time.
@@ -645,7 +725,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_1629(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_1642(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1263,12 +1343,12 @@ function __wbg_get_imports() {
         }, arguments); },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 131, function: Function { arguments: [Externref], shim_idx: 132, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1208, __wasm_bindgen_func_elem_1209);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1221, __wasm_bindgen_func_elem_1222);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 85, function: Function { arguments: [Externref], shim_idx: 86, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_624, __wasm_bindgen_func_elem_625);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_637, __wasm_bindgen_func_elem_638);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0) {
@@ -1300,14 +1380,14 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_625(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_625(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_638(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_638(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1209(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1222(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1209(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1222(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1318,8 +1398,8 @@ function __wasm_bindgen_func_elem_1209(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1629(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_1629(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_1642(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_1642(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 
@@ -1402,6 +1482,9 @@ const CompleteBotFinalization = (typeof FinalizationRegistry === 'undefined')
 const CompleteMapFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_completemap_free(ptr >>> 0, 1));
+const EventFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_event_free(ptr >>> 0, 1));
 const GraphicsFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_graphics_free(ptr >>> 0, 1));
@@ -1499,6 +1582,11 @@ function dropObject(idx) {
     heap_next = idx;
 }
 
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 function getArrayU32FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
@@ -1515,6 +1603,14 @@ function getDataViewMemory0() {
         cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
     }
     return cachedDataViewMemory0;
+}
+
+let cachedFloat32ArrayMemory0 = null;
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
 }
 
 function getStringFromWasm0(ptr, len) {
@@ -1669,6 +1765,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;
+    cachedFloat32ArrayMemory0 = null;
     cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     return wasm;

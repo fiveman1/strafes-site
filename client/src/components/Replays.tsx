@@ -124,6 +124,8 @@ function Replays() {
     const mapDownloadReceived = useRef(0);
     const botDownloadLength = useRef(0);
     const botDownloadReceived = useRef(0);
+    const curTimer = useRef(0);
+    const pausedRef = useRef(false);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
@@ -137,12 +139,8 @@ function Replays() {
     // Separated from animation loop for *important* performance reasons
     useEffect(() => {
         const interval = setInterval(() => {
-            const playback = playbackRef.current;
-            if (playback) {
-                const headTime = playback.get_head_time(sessionTimer.current);
-                const curPlayerTime = Math.min(headTime - botOffset, duration);
-                setPlaybackTime(curPlayerTime);
-            }
+            const curPlayerTime = Math.min(curTimer.current - botOffset, duration);
+            setPlaybackTime(curPlayerTime);
         }, 17);
 
         return () => clearInterval(interval);
@@ -189,8 +187,19 @@ function Replays() {
             if (playback && bot && graphics && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
+                let newPlayTime = pausedRef.current ? curTimer.current : curTimer.current + (elapsed * playback.get_scale());
+                if (newPlayTime > getSafeTime(newPlayTime, bot)) {
+                    playback.set_head_time(bot, newSessionTime, 0.0001);
+                    newPlayTime = 0.0001;
+                }
+                
                 try {
-                    playback.advance_time(bot, newSessionTime);
+                    //playback.advance_time(bot, newSessionTime);
+                    let event = playback.next_event(bot);
+                    while (event && event.time() < newPlayTime) {
+                        playback.process_event(bot, event);
+                        event = playback.next_event(bot);
+                    }
                     graphics.render(bot, playback, newSessionTime);
                     const speed = playback.get_speed(bot, newSessionTime);
                     const newText = speed.toFixed(2).toString();
@@ -204,6 +213,7 @@ function Replays() {
                     setError("Something went wrong while trying to render the replay.");
                 }
                 
+                curTimer.current = newPlayTime;
                 sessionTimer.current = newSessionTime;
             }
 
@@ -227,8 +237,10 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
+            curTimer.current = getSafeTime(time + botOffset, bot);
             playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
+                pausedRef.current = false;
                 playback.set_paused(sessionTimer.current, false);
             }
         }
@@ -239,7 +251,9 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
+            curTimer.current = getSafeTime(time + botOffset, bot);
             playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
+            pausedRef.current = true;
             playback.set_paused(sessionTimer.current, true);
         }
     }, [botOffset]);
@@ -250,6 +264,7 @@ function Replays() {
         if (playback && bot) {
             const curTime = playback.get_head_time(sessionTimer.current);
             const newTime = curTime + offset;
+            curTimer.current = getSafeTime(newTime, bot);
             playback.set_head_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
         }
     }, []);
@@ -258,6 +273,7 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
+            curTimer.current = 0.0001;
             playback.set_head_time(bot, sessionTimer.current, 0.0001);
         }
     }, []);
@@ -266,6 +282,7 @@ function Replays() {
         setPaused(paused);
         const playback = playbackRef.current;
         if (playback) {
+            pausedRef.current = paused;
             playback.set_paused(sessionTimer.current, paused);
         }
     }, []);
@@ -412,7 +429,7 @@ function Replays() {
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, playback, graphics);
 
-                playback.advance_time(bot, 0);
+                //playback.advance_time(bot, 0);
                 playback.set_head_time(bot, 0, 0);
                 graphics.change_map(map);
 
