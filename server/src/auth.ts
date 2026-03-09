@@ -20,7 +20,7 @@ export class AuthClient {
     protected readonly pool: mysql.Pool;
     protected readonly lock = new AsyncLock();
 
-    public static async Create(clientId: string, clientSecret: string, dbUser: string, dbPassword: string, baseURL: string) {
+    public static async create(clientId: string, clientSecret: string, dbUser: string, dbPassword: string, baseURL: string) {
         const config = await client.discovery(
             new URL("https://apis.roblox.com/oauth/.well-known/openid-configuration"),
             clientId,

@@ -28,20 +28,28 @@ if (!STRAFES_DB_USER || !STRAFES_DB_PASSWORD) {
     exit(1);
 }
 
-const globalsClient = new GlobalsClient(STRAFES_DB_USER, STRAFES_DB_PASSWORD);
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:8080";
+
+const globalsClient = new GlobalsClient(STRAFES_DB_USER, STRAFES_DB_PASSWORD, BASE_URL, {
+    bhopAuto: process.env.BHOP_AUTO_WEBHOOK,
+    bhopStyles: process.env.BHOP_STYLES_WEBHOOK,
+    surfAuto: process.env.SURF_AUTO_WEBHOOK,
+    surfStyles: process.env.SURF_STYLES_WEBHOOK,
+    all: process.env.ALL_WEBHOOK,
+    avatarUrl: process.env.AVATAR_URL
+});
 
 const CLIENT_ID = process.env.ROBLOX_CLIENT_ID;
 const CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET;
 const AUTH_DB_USER = process.env.AUTH_DB_USER;
 const AUTH_DB_PASSWORD = process.env.AUTH_DB_PASSWORD;
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:8080";
 
 if (!CLIENT_ID || !CLIENT_SECRET || !AUTH_DB_USER || !AUTH_DB_PASSWORD) {
     console.error("Missing client ID/secret or auth DB user/password");
     exit(1);
 }
 
-const authClient = await AuthClient.Create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL);
+const authClient = await AuthClient.create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL);
 
 const app = express();
 

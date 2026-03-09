@@ -1,11 +1,14 @@
 import mysql, { RowDataPacket } from "mysql2/promise";
-import { Game, LeaderboardSortBy, Style, Time, TimeSortBy, Map as StrafesMap, MAX_TIER } from "shared";
+import { Game, LeaderboardSortBy, Style, Time, TimeSortBy, Map as StrafesMap, MAX_TIER, MAIN_COURSE, formatGame, formatStyle, formatDiff, formatTime } from "shared";
+import { tryPostRequest } from "./requests.js";
+import { setUserThumbsForList } from "./users.js";
+import { DiscordEmbed, DiscordWebhookField, DiscordWebhookParams } from "./discord_webhooks.js";
 
 interface WithTotalCount {
     totalCount: string
 }
 
-export interface Record {
+export interface GlobalsRecord {
     time_id: string
     user_id: string
     username: string
@@ -19,7 +22,7 @@ export interface Record {
     has_bot: number
 }
 
-type RecordRow = Record & RowDataPacket;
+type RecordRow = GlobalsRecord & RowDataPacket;
 
 export interface GlobalCountSQL extends WithTotalCount {
     userId: string,
@@ -48,11 +51,22 @@ interface MapSQL {
 
 type MapSQLRow = MapSQL & RowDataPacket;
 
+export interface DiscordWebhooks {
+    bhopAuto: string | undefined,
+    bhopStyles: string | undefined,
+    surfAuto: string | undefined,
+    surfStyles: string | undefined,
+    all: string | undefined,
+    avatarUrl: string | undefined
+}
+
 export class GlobalsClient {
 
     protected readonly _pool: mysql.Pool;
+    protected readonly webhooks: DiscordWebhooks;
+    protected readonly baseUrl: string;
 
-    public constructor(user: string, password: string) {
+    public constructor(user: string, password: string, baseUrl: string, webhooks: DiscordWebhooks) {
         this._pool = mysql.createPool({
             host: "localhost",
             user: user,
@@ -63,6 +77,8 @@ export class GlobalsClient {
             bigNumberStrings: true,
             dateStrings: ["TIMESTAMP"]
         });
+        this.baseUrl = baseUrl;
+        this.webhooks = webhooks;
     }
 
     public get pool() {
@@ -294,6 +310,13 @@ export class GlobalsClient {
         let query = `INSERT INTO users (user_id, username) VALUES ? AS new ON DUPLICATE KEY UPDATE username=new.username;`;
         await this.pool.query(query, [userRows]);
 
+        await setUserThumbsForList(wrs, true);
+        const promises = [];
+        for (const wr of wrs) {
+            promises.push(this.postGlobalToDiscord(wr));
+        }
+        await Promise.all(promises);
+
         const wrRows = wrs.map((record) => [
             record.id,
             record.userId,
@@ -321,6 +344,109 @@ export class GlobalsClient {
         ;`;
 
         await this.pool.query(query, [wrRows]);
+    }
+
+    protected async postGlobalToDiscord(wr: Time) {
+        if (wr.course !== MAIN_COURSE) {
+            return;
+        }
+
+        if (wr.game !== Game.bhop && wr.game !== Game.surf) {
+            return;
+        }
+
+        const twoHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
+        const wrDate = new Date(wr.date);
+        if (wrDate.getTime() < twoHoursAgo) {
+            return;
+        }
+
+        let webhook: string | undefined;
+        if (wr.game === Game.bhop) {
+            if (wr.style === Style.autohop) {
+                webhook = this.webhooks.bhopAuto;
+            }
+            else {
+                webhook = this.webhooks.bhopStyles;
+            }
+        }
+        else if (wr.game === Game.surf) {
+            if (wr.style === Style.autohop) {
+                webhook = this.webhooks.surfAuto;
+            }
+            else {
+                webhook = this.webhooks.surfStyles;
+            }
+        }
+
+        if (!webhook && !this.webhooks.all) {
+            return;
+        }
+
+        const mapInfo = await this.getMap(wr.mapId);
+        const prevWR = await this.getMapWR(wr.mapId, wr.game, wr.style, wr.course);
+
+        let info = `**Game:** ${formatGame(wr.game)}\n`;
+        info += `**Style:** ${formatStyle(wr.style)}\n`;
+        info += `**Date:** <t:${Math.round(wrDate.getTime() / 1000)}:f>\n`;
+
+        let time = `${formatTime(wr.time)} `;
+        
+        if (prevWR) {
+            info += `**Previous WR:** ${formatTime(prevWR.time)} (${prevWR.username})`;
+            time += `(${formatDiff(wr.wrDiff ?? 0)})`;
+        }
+        else {
+            info += "**Previous WR:** n/a";
+            time += "(-n/a s)";
+        }
+
+        const fields: DiscordWebhookField[] = [
+            { name: "Player", value: `[${wr.username}](${this.baseUrl}/users/${wr.userId}?game=${wr.game}&style=${wr.style})`, inline: true },
+            { name: "Time", value: time, inline: true }
+        ];
+
+        if (wr.hasBot) {
+            fields.push({ name: "Replay", value: `[Watch replay](${this.baseUrl}/replays/${wr.id})`, inline: false });
+        }
+
+        fields.push({ name: "Info", value: info, inline: false });
+
+        const embed: DiscordEmbed = {
+            title: `👑  ${wr.map}`,
+            url: `${this.baseUrl}/maps/${wr.mapId}?game=${wr.game}&style=${wr.style}`,
+            color: 0x80ff80,
+            timestamp: wrDate.toISOString(),
+            author: {
+                name: "New WR",
+                icon_url: "https://i.imgur.com/PtLyW2j.png"
+            },
+            fields: fields,
+            footer: { text: "World Record" },
+        };
+
+        if (wr.userThumb) {
+            embed.thumbnail = { url: wr.userThumb };
+        }
+
+        if (mapInfo?.largeThumb) {
+            embed.image = { url: mapInfo.largeThumb };
+        }
+
+        const params: DiscordWebhookParams = {
+            username: "strafes globals",
+            avatar_url: this.webhooks.avatarUrl,
+            embeds: [embed]
+        };
+
+        // Not awaiting the post requests because we don't actually care when they finish
+        if (webhook) {
+            tryPostRequest(webhook, params);
+        }
+        
+        if (this.webhooks.all) {
+            tryPostRequest(this.webhooks.all, params);
+        }
     }
 
     protected async wrsHaveMapsLoaded(wrs: Time[]) {

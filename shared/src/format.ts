@@ -206,7 +206,7 @@ export function formatDiff(diffMs: number) {
         }
         return `${minutes}m ${seconds}s`;
     }
-    return `${diff.toFixed(3)}s`;
+    return `${diff.toFixed(3)} s`;
 }
 
 export const MAIN_COURSE = 0;
