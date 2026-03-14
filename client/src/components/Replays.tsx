@@ -423,8 +423,8 @@ function Replays() {
             const mapPromise = getMapFileResponse(replay.mapId);
             const botPromise = getBotFileResponse(replay.id);
             let wrBotPromise: Promise<Response | undefined> | undefined = undefined;
-            if (replay.id !== replay.wrId) {
-                wrBotPromise = getBotFileResponse(replay.wrId);
+            if (replay.compareTimeId) {
+                wrBotPromise = getBotFileResponse(replay.compareTimeId);
             }
             const mapRes = await mapPromise;
             const botRes = await botPromise;
@@ -564,7 +564,7 @@ function Replays() {
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
     const isCurrentUser = loggedInUser && replay?.userId === loggedInUser.userId;
-    const allowDiff = Boolean(replay && (replay.id !== replay.wrId));
+    const allowDiff = Boolean(replay?.compareTimeId);
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
