@@ -272,7 +272,7 @@ function Replays() {
                         const pos = playback.get_position(bot, newSessionTime);
                         const wrPlaybackTime = bvh.closest_time_to_point(wrBot, pos);
                         if (wrPlaybackTime !== undefined) {
-                            wrPlayback.set_head_time(wrBot, newSessionTime, wrPlaybackTime);
+                            wrPlayback.set_head_time(wrBot, newSessionTime, getSafeTime(wrPlaybackTime, wrBot));
                             const botTime = playback.get_run_time(bot, newSessionTime, replay.course) ?? 0;
                             const wrTime = wrPlayback.get_run_time(wrBot, newSessionTime, replay.course) ?? 0;
                             const wrDiff = botTime - wrTime;
