@@ -262,8 +262,8 @@ export async function getReplayById(id: string) {
     return res.data as Replay;
 }
 
-export async function getBotFileResponse(time: Time) {
-    const res = await tryGetRequest("replays/bots/" + time.id);
+export async function getBotFileResponse(timeId: string) {
+    const res = await tryGetRequest("replays/bots/" + timeId);
     
     if (!res) return undefined;
 

@@ -5,9 +5,12 @@ import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
 
 export async function convertTimeToReplay(client: GlobalsClient, time: Time): Promise<Replay> {
+    const wr = await client.getMapWR(time.mapId, time.game, time.style, time.course);
+
     const replay: Replay = {
         ...time,
-        views: 0
+        views: 0,
+        wrId: wr?.id ?? ""
     };
 
     await setViewsForReplay(client, replay);

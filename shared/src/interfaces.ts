@@ -77,6 +77,7 @@ export interface Time extends UserInfo {
 
 export interface Replay extends Time {
     views: number
+    wrId: string
 }
 
 export interface Pagination {

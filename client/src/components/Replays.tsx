@@ -1,9 +1,9 @@
 import Box from "@mui/material/Box";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatCountryCode, formatCourse, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
+import { formatCountryCode, formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
 import Typography from "@mui/material/Typography";
@@ -60,7 +60,7 @@ function getMapTitle(replay: Replay) {
     return `${replay.map} (${formatCourse(replay.course, true)})`;
 }
 
-function chunksToArray(chunks: Uint8Array<ArrayBuffer>[], length: number) {
+function chunksToArray(chunks: Uint8Array[], length: number) {
     const chunksAll = new Uint8Array(length);
     let position = 0;
     for (const chunk of chunks) {
@@ -116,6 +116,63 @@ function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
 
 const FOOTER_HEIGHT = 156;
 
+function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLElement, diffTime: number, diffSpeed: number) {
+    const diffMs = Math.round(diffTime * 1000);
+    const timePos = diffMs >= 0;
+    let timeText = timePos ? "+" : "-";
+    timeText += formatDiff(Math.abs(diffMs));
+    diffTimeElement.innerText = timeText;
+    if (timePos) {
+        diffTimeElement.classList.add("better");
+        diffTimeElement.classList.remove("worse");
+        
+    }
+    else {
+        diffTimeElement.classList.remove("better");
+        diffTimeElement.classList.add("worse");
+    }
+    
+    const speedPos = diffSpeed >= 0;
+    let speedText = speedPos ? "+" : "";
+    speedText += diffSpeed.toFixed(2) + " u/s";
+    diffSpeedElement.innerText = speedText;
+    if (speedPos) {
+        diffSpeedElement.classList.remove("better");
+        diffSpeedElement.classList.add("worse");
+    }
+    else {
+        diffSpeedElement.classList.add("better");
+        diffSpeedElement.classList.remove("worse");
+    }
+}
+
+async function readWithProgress(res: Response, setLength: (len: number) => void, setReceived: (rec: number) => void) {
+    setLength(+(res.headers.get("Content-Length") ?? 0));
+
+    if (!res.body) {
+        return new Uint8Array(await res.arrayBuffer());
+    }
+
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+
+    await reader.read().then(function process({ done, value }) {
+        if (done) {
+            return;
+        }
+
+        chunks.push(value);
+        received += value.byteLength;
+        setReceived(received);
+        return reader.read().then(process);
+    });
+
+    reader.releaseLock();
+
+    return chunksToArray(chunks, received);
+}
+
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps, loggedInUser } = useOutletContext() as ContextParams;
@@ -128,7 +185,12 @@ function Replays() {
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
-    const [ downloadProgress, setDownloadProgress ] = useState(-1);
+    const [ mapFileLength, setMapFileLength ] = useState(0);
+    const [ mapFileReceived, setMapFileReceived ] = useState(0);
+    const [ botFileLength, setBotFileLength ] = useState(0);
+    const [ botFileReceived, setBotFileReceived ] = useState(0);
+    const [ wrBotFileLength, setWrBotFileLength ] = useState(0);
+    const [ wrBotFileReceived, setWrBotFileReceived ] = useState(0);
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
 
@@ -136,15 +198,16 @@ function Replays() {
     const playerRef = useRef<HTMLDivElement>(null);
     const speedTextRef = useRef<HTMLSpanElement>(null);
     const inputContainerRef = useRef<HTMLDivElement>(null);
+    const diffTimeTextRef = useRef<HTMLElement>(null);
+    const diffSpeedTextRef = useRef<HTMLElement>(null);
     const graphicsRef = useRef<Graphics>(null);
     const botRef = useRef<CompleteBot>(null);
+    const wrBotRef = useRef<CompleteBot>(null);
+    const wrBvhRef = useRef<Bvh>(null);
     const playbackRef = useRef<PlaybackHead>(null);
+    const wrPlaybackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
-    const mapDownloadLength = useRef(0);
-    const mapDownloadReceived = useRef(0);
-    const botDownloadLength = useRef(0);
-    const botDownloadReceived = useRef(0);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
@@ -169,34 +232,12 @@ function Replays() {
         return () => clearInterval(interval);
     }, [botOffset, duration]);
 
-    useEffect(() => {
-        if (!loading) {
-            return;
-        }
-        
-        const interval = setInterval(() => {
-            let mapProgress = -1;
-            let botProgress = -1;
-            
-            if (mapDownloadLength.current !== 0) {
-                mapProgress = mapDownloadReceived.current / mapDownloadLength.current;
-            }
-            
-            if (botDownloadLength.current !== 0) {
-                botProgress = botDownloadReceived.current / botDownloadLength.current;
-            }
-
-            const progress = Math.min(mapProgress, botProgress);
-            if (progress !== -1) {
-                setDownloadProgress(progress);
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [loading]);
-
     useLayoutEffect(() => {
         let animationId: number;
+
+        if (replay?.course === undefined) {
+            return;
+        }
 
         const animate = (timeMs: number) => {
             const time = timeMs / 1000;
@@ -207,6 +248,7 @@ function Replays() {
             const graphics = graphicsRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
+            
             if (playback && bot && graphics && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
@@ -219,12 +261,33 @@ function Replays() {
                         speedText.innerText = newText;
                     }
                     updateInputDisplay(input, playback);
+
+                    const wrBot = wrBotRef.current;
+                    const bvh = wrBvhRef.current;
+                    const wrPlayback = wrPlaybackRef.current;
+                    const diffTimeElement = diffTimeTextRef.current;
+                    const diffSpeedElement = diffSpeedTextRef.current;
+
+                    if (wrBot && bvh && wrPlayback && diffTimeElement && diffSpeedElement) {
+                        const pos = playback.get_position(bot, newSessionTime);
+                        const wrPlaybackTime = bvh.closest_time_to_point(wrBot, pos);
+                        if (wrPlaybackTime !== undefined) {
+                            wrPlayback.set_head_time(wrBot, newSessionTime, wrPlaybackTime);
+                            const botTime = playback.get_run_time(bot, newSessionTime, replay.course) ?? 0;
+                            const wrTime = wrPlayback.get_run_time(wrBot, newSessionTime, replay.course) ?? 0;
+                            const wrDiff = botTime - wrTime;
+                            const wrSpeed = wrPlayback.get_speed(wrBot, newSessionTime);
+                            const wrSpeedDiff = speed - wrSpeed;
+
+                            updateDiffDisplay(diffTimeElement, diffSpeedElement, wrDiff, wrSpeedDiff);
+                        }
+                    }
                 }
                 catch (err) {
                     console.error(err);
                     setError("Something went wrong while trying to render the replay.");
                 }
-                
+
                 sessionTimer.current = newSessionTime;
             }
 
@@ -233,7 +296,7 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [setError]);
+    }, [setError, replay?.course]);
 
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
@@ -326,8 +389,9 @@ function Replays() {
         document.title = `replays - strafes`;
 
         let isCanceled = false;
-        mapDownloadReceived.current = 0;
-        botDownloadReceived.current = 0;
+        setMapFileReceived(0);
+        setBotFileReceived(0);
+        setWrBotFileReceived(0);
         
         const promise = async () => {
             if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
@@ -357,61 +421,40 @@ function Replays() {
             if (isCanceled) return;
 
             const mapPromise = getMapFileResponse(replay.mapId);
-            const botPromise = getBotFileResponse(replay);
+            const botPromise = getBotFileResponse(replay.id);
+            let wrBotPromise: Promise<Response | undefined> | undefined = undefined;
+            if (replay.id !== replay.wrId) {
+                wrBotPromise = getBotFileResponse(replay.wrId);
+            }
             const mapRes = await mapPromise;
             const botRes = await botPromise;
+            const wrBotRes = wrBotPromise ? await wrBotPromise : undefined;
 
-            if (!mapRes || !mapRes.body) {
+            if (!mapRes) {
                 setError("Couldn't load map file.");
                 return;
             }
 
-            if (!botRes || !botRes.body) {
+            if (!botRes) {
                 setError("Couldn't load bot file.");
                 return;
             }
 
             if (isCanceled) return;
 
-            const mapReader = mapRes.body.getReader();
-            const botReader = botRes.body.getReader();
             
-            mapDownloadLength.current = +(mapRes.headers.get("Content-Length") ?? 0);
-            botDownloadLength.current = +(botRes.headers.get("Content-Length") ?? 0);
+            const mapFilePromise = readWithProgress(mapRes, setMapFileLength, setMapFileReceived);
+            const botFilePromise = readWithProgress(botRes, setBotFileLength, setBotFileReceived);
+            let wrBotFilePromise: Promise<Uint8Array> | undefined = undefined;
+            if (wrBotRes) {
+                wrBotFilePromise = readWithProgress(wrBotRes, setWrBotFileLength, setWrBotFileReceived);
+            }
 
-            const mapChunks: Uint8Array<ArrayBuffer>[] = [];
-            const botChunks: Uint8Array<ArrayBuffer>[] = [];
-
-            const mapReadPromise = mapReader.read().then(function process({ done, value }) {
-                if (done || isCanceled) {
-                    return;
-                }
-
-                mapChunks.push(value);
-                mapDownloadReceived.current += value.byteLength;
-                return mapReader.read().then(process);
-            });
-
-            const botReadPromise = botReader.read().then(function process({ done, value }) {
-                if (done || isCanceled) {
-                    return;
-                }
-
-                botChunks.push(value);
-                botDownloadReceived.current += value.byteLength;
-                return botReader.read().then(process);
-            });
-
-            await mapReadPromise;
-            await botReadPromise;
-            
-            mapReader.releaseLock();
-            botReader.releaseLock();
+            const mapFile = await mapFilePromise;
+            const botFile = await botFilePromise;
+            const wrBotFile = wrBotFilePromise ? await wrBotFilePromise : undefined;
 
             if (isCanceled) return;
-
-            const mapFile = chunksToArray(mapChunks, mapDownloadReceived.current);
-            const botFile = chunksToArray(botChunks, botDownloadReceived.current);
 
             const canvas = canvasRef.current;
             if (!canvas) {
@@ -428,6 +471,13 @@ function Replays() {
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
                 botRef.current = bot;
+
+                if (wrBotFile) {
+                    const wrBot = new CompleteBot(wrBotFile);
+                    wrBotRef.current = wrBot;
+                    wrBvhRef.current = new Bvh(wrBot);
+                    wrPlaybackRef.current = new PlaybackHead(wrBot, 0);
+                }
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -469,6 +519,34 @@ function Replays() {
         };
     }, [id, setError]);
 
+    let downloadProgress = -1;
+    if (loading) {
+        let mapProgress = -1;
+        let botProgress = -1;
+        let wrBotProgress = -1;
+        
+        if (mapFileLength !== 0) {
+            mapProgress = mapFileReceived / mapFileLength;
+        }
+        
+        if (botFileLength !== 0) {
+            botProgress = botFileReceived / botFileLength;
+        }
+
+        if (wrBotFileLength !== 0) {
+            wrBotProgress = wrBotFileReceived / wrBotFileLength;
+        }
+
+        let progress = Math.min(mapProgress, botProgress);
+        if (wrBotProgress !== -1) {
+            progress = Math.min(progress, wrBotProgress);
+        }
+
+        if (progress !== -1) {
+            downloadProgress = progress;
+        }
+    }
+
     let gameColor = "";
     let styleColor = "";
     if (replay) {
@@ -486,6 +564,7 @@ function Replays() {
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
     const isCurrentUser = loggedInUser && replay?.userId === loggedInUser.userId;
+    const allowDiff = Boolean(replay && (replay.id !== replay.wrId));
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
@@ -562,6 +641,9 @@ function Replays() {
                                     playerHeight={playerHeight}
                                     inputContainerRef={inputContainerRef}
                                     loading={loading}
+                                    diffSpeedTextRef={diffSpeedTextRef}
+                                    diffTimeTextRef={diffTimeTextRef}
+                                    allowDiff={allowDiff}
                                 />
                             </Box>
                             {loading && 

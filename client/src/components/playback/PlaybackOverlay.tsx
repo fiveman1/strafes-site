@@ -23,7 +23,7 @@ import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
 function getInfoDisplayScale(playerHeight: number) {
-    return clamp(playerHeight / 700, 0, 1);
+    return clamp(playerHeight / 850, 0, 1);
 }
 
 interface PlaybackOverlayProps {
@@ -44,15 +44,19 @@ interface PlaybackOverlayProps {
     playerHeight: number
     inputContainerRef: React.Ref<HTMLDivElement>
     loading: boolean
+    diffTimeTextRef: React.Ref<HTMLElement>
+    diffSpeedTextRef: React.Ref<HTMLElement>
+    allowDiff: boolean
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
 const SHOW_INPUT_SETTING = "player_showInput";
+const SHOW_DIFF_SETTING = "player_showDiff";
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
-        playerHeight, inputContainerRef, loading } = props;
+        playerHeight, inputContainerRef, loading, diffTimeTextRef, diffSpeedTextRef, allowDiff } = props;
 
     const theme = useTheme();
     
@@ -63,6 +67,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const [ showSpeed, setShowSpeed ] = useState(localStorage.getItem(SHOW_SPEED_SETTING) !== "false");
     const [ showInput, setShowInput ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
+    const [ showDiffSetting, setShowDiff ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
     const playerRef = useRef<HTMLDivElement>(null);
@@ -174,14 +179,21 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const onClickNormalSpeedButton = useCallback(() => onSetSpeed(1.0), [onSetSpeed]);
     const onClickDoubleSpeedButton = useCallback(() => onSetSpeed(2.0), [onSetSpeed]);
     const onClickHalfSpeedButton = useCallback(() => onSetSpeed(0.5), [onSetSpeed]);
+    
     const onClickSpeedButton = useCallback(() => {
         setShowSpeed(!showSpeed);
         localStorage.setItem(SHOW_SPEED_SETTING, !showSpeed ? "true" : "false");
     }, [showSpeed]);
+    
     const onClickInputButton = useCallback(() => {
         setShowInput(!showInput);
         localStorage.setItem(SHOW_INPUT_SETTING, !showInput ? "true" : "false");
     }, [showInput]);
+
+    const onClickDiffButton = useCallback(() => {
+        setShowDiff(!showDiffSetting);
+        localStorage.setItem(SHOW_DIFF_SETTING, !showDiffSetting ? "true" : "false");
+    }, [showDiffSetting]);
 
     const onFinishChangingSpeed = useCallback(() => {
         lastChangedSpeed.current = new Date().getTime();
@@ -356,43 +368,78 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         >
             <Box
                 ref={playerMainRef}
-                display="flex"
-                flexDirection="column"
-                justifyContent="flex-end"
+                position="relative"
                 flexGrow={1}
                 onDoubleClick={onSwapFullscreen}
                 onPointerUp={onClickPlayer}
             >
                 <Box
                     display={smallScreen || loading ? "none" : "flex"}
+                    position="absolute"
                     alignItems="center"
-                    mb="8%"
-                    height="120px"
+                    height="150px"
+                    bottom="10%"
+                    left="50%"
                     flexDirection="column"
                     sx={{ transformOrigin: "50% 100%" }}
-                    style={{ transform: `scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
+                    style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
                 >
                     <Typography
                         ref={speedTextRef}
+                        display={showSpeed ? "flex" : "none"}
                         component="span"
                         fontFamily="monospace"
                         fontWeight="bold"
+                        fontSize="28px"
+                        lineHeight={1.2}
                         sx={{ 
                             textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
                             userSelect: "none",
-                            color: "white",
-                            opacity: showSpeed ? 1 : 0
-                        }}
-                        style={{
-                            fontSize: "28px"
+                            color: "white"
                         }}
                     />
                     <Box 
-                        ref={inputContainerRef}
-                        display="flex"
+                        display={showDiffSetting && allowDiff ? "flex" : "none"} 
                         flexDirection="column"
+                        alignItems="center"
                         sx={{
-                            opacity: showInput ? 1 : 0,
+                            ".diffText": {
+                                fontSize: "18px",
+                                fontFamily: "monospace",
+                                fontWeight: "bold",
+                                borderRadius: "6px",
+                                textShadow: "0 0 4px black",
+                                userSelect: "none",
+                                color: "white",
+                                py: 0.25,
+                                px: 0.75
+                            },
+                            ".better": {
+                                bgcolor: "#df0000a0"
+                            },
+                            ".worse": {
+                                bgcolor: "#00c500a0"
+                            }
+                        }}
+                    >
+                        <Typography
+                            ref={diffSpeedTextRef}
+                            component="span"
+                            className="diffText"
+                        />
+                        <Typography
+                            ref={diffTimeTextRef}
+                            mt={0.25}
+                            component="span"
+                            className="diffText"
+                        />
+                    </Box>
+                    <Box 
+                        ref={inputContainerRef}
+                        display={showInput ? "flex" : "none"}
+                        flexDirection="column"
+                        mt={0.5}
+                        sx={{
                             ".inputDisplayButton": {
                                 display: "flex",
                                 alignItems: "center",
@@ -664,6 +711,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     <Box 
                                         mt={1}
                                         display="flex"
+                                        flexDirection="column"
                                         sx={{
                                             "button": {
                                                 py: 0.5,
@@ -684,29 +732,45 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             }
                                         }}
                                     >
-                                        <Typography
-                                            variant="subtitle2"
-                                            display="flex"
-                                            fontWeight="bold"
-                                            className={showSpeed ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            onClick={onClickSpeedButton}
-                                        >
-                                            {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Speed
-                                        </Typography>
-                                        <Typography
-                                            variant="subtitle2"
-                                            display="flex"
-                                            fontWeight="bold"
-                                            className={showInput ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            ml={1}
-                                            onClick={onClickInputButton}
-                                        >
-                                            {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Input
-                                        </Typography>
+                                        <Box display="flex">
+                                            <Typography
+                                                variant="subtitle2"
+                                                display="flex"
+                                                fontWeight="bold"
+                                                className={showSpeed ? "speedButton active" : "speedButton"}
+                                                component="button"
+                                                onClick={onClickSpeedButton}
+                                            >
+                                                {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                                Speed
+                                            </Typography>
+                                            <Typography
+                                                variant="subtitle2"
+                                                display="flex"
+                                                fontWeight="bold"
+                                                className={showInput ? "speedButton active" : "speedButton"}
+                                                component="button"
+                                                ml={1}
+                                                onClick={onClickInputButton}
+                                            >
+                                                {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                                Input
+                                            </Typography>
+                                        </Box>
+                                        {allowDiff &&
+                                        <Box display="flex" mt={1}>
+                                            <Typography
+                                                variant="subtitle2"
+                                                display="flex"
+                                                fontWeight="bold"
+                                                className={showDiffSetting ? "speedButton active" : "speedButton"}
+                                                component="button"
+                                                onClick={onClickDiffButton}
+                                            >
+                                                {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                                Diff
+                                            </Typography>
+                                        </Box>}
                                     </Box>
                                 </Box>
                             </Box>

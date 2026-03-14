@@ -1,10 +1,14 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export const __wbg_bvh_free: (a: number, b: number) => void;
 export const __wbg_completebot_free: (a: number, b: number) => void;
 export const __wbg_completemap_free: (a: number, b: number) => void;
 export const __wbg_graphics_free: (a: number, b: number) => void;
 export const __wbg_playbackhead_free: (a: number, b: number) => void;
+export const __wbg_vector3_free: (a: number, b: number) => void;
+export const bvh_closest_time_to_point: (a: number, b: number, c: number, d: number) => void;
+export const bvh_new: (a: number) => number;
 export const completebot_duration: (a: number) => number;
 export const completebot_new: (a: number, b: number, c: number) => void;
 export const completebot_run_duration: (a: number, b: number, c: number) => void;
@@ -13,11 +17,11 @@ export const graphics_change_map: (a: number, b: number) => void;
 export const graphics_render: (a: number, b: number, c: number, d: number) => void;
 export const graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
 export const playbackhead_advance_time: (a: number, b: number, c: number) => void;
-export const playbackhead_get_angles: (a: number, b: number, c: number, d: number) => void;
 export const playbackhead_get_angles_yaw_delta: (a: number) => number;
 export const playbackhead_get_fov_slope_y: (a: number) => number;
 export const playbackhead_get_game_controls: (a: number) => number;
 export const playbackhead_get_head_time: (a: number, b: number) => number;
+export const playbackhead_get_position: (a: number, b: number, c: number) => number;
 export const playbackhead_get_run_time: (a: number, b: number, c: number, d: number, e: number) => void;
 export const playbackhead_get_scale: (a: number) => number;
 export const playbackhead_get_speed: (a: number, b: number, c: number) => number;
@@ -28,11 +32,12 @@ export const playbackhead_set_head_time: (a: number, b: number, c: number, d: nu
 export const playbackhead_set_paused: (a: number, b: number, c: number) => void;
 export const playbackhead_set_scale: (a: number, b: number, c: number) => void;
 export const setup_graphics: (a: number) => number;
-export const __wasm_bindgen_func_elem_1213: (a: number, b: number) => void;
-export const __wasm_bindgen_func_elem_629: (a: number, b: number) => void;
-export const __wasm_bindgen_func_elem_1214: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_1634: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_630: (a: number, b: number, c: number) => void;
+export const vector3_to_array: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_1284: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_701: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_1285: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1699: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_702: (a: number, b: number, c: number) => void;
 export const __wbindgen_export: (a: number, b: number) => number;
 export const __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_export3: (a: number) => void;

@@ -2,6 +2,48 @@
 /* eslint-disable */
 /* @ts-self-types="./strafesnet_roblox_bot_player_wasm_module.d.ts" */
 
+export class Bvh {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BvhFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_bvh_free(ptr, 0);
+    }
+    /**
+     * @param {CompleteBot} bot
+     * @param {Vector3} point
+     * @returns {number | undefined}
+     */
+    closest_time_to_point(bot, point) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            _assertClass(bot, CompleteBot);
+            _assertClass(point, Vector3);
+            wasm.bvh_closest_time_to_point(retptr, this.__wbg_ptr, bot.__wbg_ptr, point.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r2 = getDataViewMemory0().getFloat64(retptr + 8 * 1, true);
+            return r0 === 0 ? undefined : r2;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * @param {CompleteBot} bot
+     */
+    constructor(bot) {
+        _assertClass(bot, CompleteBot);
+        const ret = wasm.bvh_new(bot.__wbg_ptr);
+        this.__wbg_ptr = ret >>> 0;
+        BvhFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) Bvh.prototype[Symbol.dispose] = Bvh.prototype.free;
+
 export class CompleteBot {
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
@@ -163,26 +205,6 @@ export class PlaybackHead {
         wasm.playbackhead_advance_time(this.__wbg_ptr, bot.__wbg_ptr, time);
     }
     /**
-     * Returns an array of [pitch, yaw, roll] in radians.  Yaw is not restricted to any particular range.
-     * @param {CompleteBot} bot
-     * @param {number} time
-     * @returns {Float32Array}
-     */
-    get_angles(bot, time) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            _assertClass(bot, CompleteBot);
-            wasm.playbackhead_get_angles(retptr, this.__wbg_ptr, bot.__wbg_ptr, time);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var v1 = getArrayF32FromWasm0(r0, r1).slice();
-            wasm.__wbindgen_export4(r0, r1 * 4, 4);
-            return v1;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
      * Returns the camera angles yaw delta between the last game tick and the most recent game tick.
      * @returns {number}
      */
@@ -211,6 +233,16 @@ export class PlaybackHead {
     get_head_time(time) {
         const ret = wasm.playbackhead_get_head_time(this.__wbg_ptr, time);
         return ret;
+    }
+    /**
+     * @param {CompleteBot} bot
+     * @param {number} time
+     * @returns {Vector3}
+     */
+    get_position(bot, time) {
+        _assertClass(bot, CompleteBot);
+        const ret = wasm.playbackhead_get_position(this.__wbg_ptr, bot.__wbg_ptr, time);
+        return Vector3.__wrap(ret);
     }
     /**
      * @param {CompleteBot} bot
@@ -300,6 +332,43 @@ export class PlaybackHead {
     }
 }
 if (Symbol.dispose) PlaybackHead.prototype[Symbol.dispose] = PlaybackHead.prototype.free;
+
+export class Vector3 {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Vector3.prototype);
+        obj.__wbg_ptr = ptr;
+        Vector3Finalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        Vector3Finalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_vector3_free(ptr, 0);
+    }
+    /**
+     * @returns {Float32Array}
+     */
+    to_array() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.vector3_to_array(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayF32FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+}
+if (Symbol.dispose) Vector3.prototype[Symbol.dispose] = Vector3.prototype.free;
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -673,7 +742,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_1634(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_1699(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1290,13 +1359,13 @@ function __wbg_get_imports() {
             getObject(arg0).writeTexture(getObject(arg1), getObject(arg2), getObject(arg3), getObject(arg4));
         }, arguments); },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 131, function: Function { arguments: [Externref], shim_idx: 132, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1213, __wasm_bindgen_func_elem_1214);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 132, function: Function { arguments: [Externref], shim_idx: 133, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1284, __wasm_bindgen_func_elem_1285);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 85, function: Function { arguments: [Externref], shim_idx: 86, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_629, __wasm_bindgen_func_elem_630);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 86, function: Function { arguments: [Externref], shim_idx: 87, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_701, __wasm_bindgen_func_elem_702);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0) {
@@ -1328,14 +1397,14 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_630(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_630(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_702(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_702(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1214(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1285(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1214(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1285(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1346,8 +1415,8 @@ function __wasm_bindgen_func_elem_1214(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1634(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_1634(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_1699(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_1699(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 
@@ -1424,6 +1493,9 @@ const __wbindgen_enum_GpuVertexFormat = ["uint8", "uint8x2", "uint8x4", "sint8",
 
 
 const __wbindgen_enum_GpuVertexStepMode = ["vertex", "instance"];
+const BvhFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_bvh_free(ptr >>> 0, 1));
 const CompleteBotFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_completebot_free(ptr >>> 0, 1));
@@ -1436,6 +1508,9 @@ const GraphicsFinalization = (typeof FinalizationRegistry === 'undefined')
 const PlaybackHeadFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_playbackhead_free(ptr >>> 0, 1));
+const Vector3Finalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_vector3_free(ptr >>> 0, 1));
 
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
