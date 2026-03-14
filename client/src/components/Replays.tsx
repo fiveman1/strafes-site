@@ -902,7 +902,7 @@ function Replays() {
                                     <Typography 
                                         variant="body1"
                                         display="inline-block"
-                                        mr={1}
+                                        mr={0.75}
                                     >
                                         {formatTime(replay.time)}
                                     </Typography>

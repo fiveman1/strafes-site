@@ -1035,10 +1035,35 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
         time.placement = placements[0].placement;
     }
 
-    const promises = [setUserInfoForList(authClient, [time]), setTimeDiffs([time])];
+    const promises = [setUserInfoForList(authClient, [time])];
+    let compareTimeId: string | undefined = undefined;
+    
+    if (time.placement === 1) {
+        const promise = async () => {
+            // Uses same parameters that the maps page would use, more likely to hit cache that way
+            const times = await getTimes(undefined, time.mapId, 100, 1, time.game, time.style, time.course, TimeSortBy.TimeAsc);
+            if (times && times.data.length > 1) {
+                const second = times.data[1];
+                time.wrDiff = time.time - second.time;
+                compareTimeId = second.id;
+            }
+        };
+        promises.push(promise());
+    }
+    else {
+        const promise = async () => {
+            const wr = await globalsClient.getMapWR(time.mapId, time.game, time.style, time.course);
+            if (wr) {
+                time.wrDiff = time.time - wr.time;
+                compareTimeId = wr.id;
+            }
+        };
+        promises.push(promise());
+    }
+
     await Promise.all(promises);
 
-    const replay = await convertTimeToReplay(globalsClient, time);
+    const replay = await convertTimeToReplay(globalsClient, time, compareTimeId);
     if (replay.hasBot && req.ip) {
         const user = await authClient.getAuthenticatedUser(req, res);
         await logViewForReplay(globalsClient, replay, req.ip, user?.userId);

@@ -1,27 +1,15 @@
 import AsyncLock from "async-lock";
 import memoize from "memoize";
-import { Replay, Time, TimeSortBy } from "shared";
+import { Replay, Time } from "shared";
 import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
-import { getTimes } from "./strafes_api/api.js";
 
-export async function convertTimeToReplay(client: GlobalsClient, time: Time): Promise<Replay> {
+export async function convertTimeToReplay(client: GlobalsClient, time: Time, compareTimeId: string | undefined): Promise<Replay> {
     const replay: Replay = {
         ...time,
-        views: 0
+        views: 0,
+        compareTimeId: compareTimeId
     };
-
-    if (time.placement !== 1) {
-        const wr = await client.getMapWR(time.mapId, time.game, time.style, time.course);
-        replay.compareTimeId = wr?.id;
-    }
-    else {
-        // Uses same parameters that the maps page would use, more likely to hit cache that way
-        const times = await getTimes(undefined, time.mapId, 100, 1, time.game, time.style, time.course, TimeSortBy.TimeAsc);
-        if (times && times.data.length > 1) {
-            replay.compareTimeId = times.data[1].id;
-        }
-    }
 
     await setViewsForReplay(client, replay);
 
