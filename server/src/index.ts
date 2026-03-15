@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
@@ -1157,7 +1157,15 @@ app.get("*splat", async (req, res): Promise<any> => {
                             if (time.mode_id !== MAIN_COURSE) {
                                 mapFormatted += ` (${formatCourse(time.mode_id, true)})`;
                             }
-                            title = `${mapFormatted} in ${formatTime(time.time)} by ${time.user.username} - replays`;
+                            const placements = await getPlacements([time.id]);
+                            if (placements && placements.length > 0) {
+                                const placement = placements[0].placement;
+                                const placementText = placement === 1 ? "WR" : `${formatPlacement(placement)} place`;
+                                title = `${mapFormatted} in ${formatTime(time.time)} by ${time.user.username} (${placementText}) - replays`;
+                            }
+                            else {
+                                title = `${mapFormatted} in ${formatTime(time.time)} by ${time.user.username} - replays`;
+                            }
                             description = `Watch @${time.user.username} beat ${mapFormatted} in ${formatTime(time.time)} (game: ${formatGame(time.game_id)}, style: ${formatStyle(time.style_id)}, course: ${formatCourse(time.mode_id)})`;
                         }
                     }
