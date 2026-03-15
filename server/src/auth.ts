@@ -43,8 +43,18 @@ export class AuthClient {
         this.baseURL = baseURL;
     }
 
+    protected readonly pathValidator = vine.create({
+        path: vine.string()
+    });
+
     // Entrypoints
-    public async redirectToAuthURL(response: Response) {
+    public async redirectToAuthURL(request: Request, response: Response) {
+        const [error, result] = await this.pathValidator.tryValidate(request.query);
+        if (error) {
+            response.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+            return;
+        }
+
         const codeVerifier = client.randomPKCECodeVerifier();
         const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
 
@@ -70,14 +80,14 @@ export class AuthClient {
         const options = this.createCookieOptions(new Date(expiresAt));
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);
+        response.cookie("path", result.path, options);
 
         response.status(200).json({ url: client.buildAuthorizationUrl(this.config, params).href });
     }
 
     public async authorizeAndSetTokens(request: Request, response: Response) {
-        let userId = "";
+        const cookies = request.signedCookies as LoginCookies;
         try {
-            const cookies = request.signedCookies as LoginCookies;
             const tokens = await client.authorizationCodeGrant(
                 this.config,
                 new URL(this.baseURL + request.url),
@@ -90,7 +100,6 @@ export class AuthClient {
             const sessionToken = AuthClient.generateSessionToken();
             const session = AuthClient.createSessionObject(sessionToken, AuthClient.hashSessionToken(sessionToken), tokens);
             if (session) {
-                userId = session.userId;
                 response.cookie("session", sessionToken, this.createCookieOptions(session.refreshExpiresAt));
                 await this.insertSessionToDB(session);
             }
@@ -99,10 +108,12 @@ export class AuthClient {
             console.error(err);
         }
 
+        const url = cookies.path ? `${AFTER_AUTH_URL}${cookies.path}` : AFTER_AUTH_URL;
+
         response.clearCookie("codeVerifier");
         response.clearCookie("state");
+        response.clearCookie("path");
 
-        const url = userId ? `${AFTER_AUTH_URL}users/${userId}` : AFTER_AUTH_URL;
         response.redirect(url);
     }
 
@@ -415,6 +426,7 @@ interface AuthCookies {
 interface LoginCookies {
     codeVerifier?: string
     state?: string
+    path?: string
 }
 
 interface SessionRow {

@@ -67,7 +67,7 @@ app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json());
 
 app.get("/api/login", async (req, res) => {
-    await authClient.redirectToAuthURL(res);
+    await authClient.redirectToAuthURL(req, res);
 });
 
 app.get("/api/logout", async (req, res) => {

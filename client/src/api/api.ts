@@ -201,8 +201,10 @@ export async function getLoggedInUser() {
     return res.data as LoginUserWithInfo;
 }
 
-export async function login() {
-    const res = await tryGetRequest("login");
+export async function login(path: string) {
+    const res = await tryGetRequest("login", {
+        path: path
+    });
 
     if (!res) return undefined;
 

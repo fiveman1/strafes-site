@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import Button from '@mui/material/Button';
 import Box from "@mui/material/Box";
 import { AppBar, ButtonGroup, CircularProgress, Link, Menu, MenuItem, Toolbar, useMediaQuery, useTheme } from "@mui/material";
@@ -146,13 +146,13 @@ function AppMenu(props: IAppMenuProps) {
         userLink += `/${loggedInUser.userId}`
     }
     
-    const openNavMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const openNavMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
-    };
+    }, []);
 
-    const closeNavMenu = () => {
+    const closeNavMenu = useCallback(() => {
         setAnchorEl(null);
-    };
+    }, []);
 
     const navMenuWidth = 125;
 
@@ -205,10 +205,10 @@ function MainAppBar(props: IMainAppBarProps) {
     
     const isLightMode = theme.palette.mode === "light";
 
-    const onLogin = async () => {
-        const url = await login();
+    const onLogin = useCallback(async () => {
+        const url = await login(window.location.pathname.slice(1) + window.location.search);
         if (url) window.location.href = url; // Force external redirect
-    };
+    }, []);
 
     const outerWidth = smallScreen ? 75 : 100;
 
