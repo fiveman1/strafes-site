@@ -41,12 +41,14 @@ function MapTierListItem(props: MapTierListItemProps) {
 
     return (
         <Box 
-            component="span"
+            component="button"
             p={0.25}
             onClick={onClick}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             sx={{
+                bgcolor: "transparent",
+                border: 0,
                 transition: "scale 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 cursor: readOnly ? undefined : "pointer",
                 ":hover": {
@@ -70,7 +72,7 @@ function MapTierListItem(props: MapTierListItemProps) {
                     border: 1,
                     borderColor: color,
                     userSelect: "none",
-                    opacity: emphasized ? undefined : 0.7
+                    opacity: emphasized ? undefined : 0.5
                 }}
             >
                 {formatTier(undefined)}
@@ -85,9 +87,10 @@ function MapTierListItem(props: MapTierListItemProps) {
                     borderRadius: "4px",
                     width: 24,
                     height: 24,
-                    color: isLightMode ? (emphasized ? "white" : darken(color, 0.1) ) : color,
-                    bgcolor: isLightMode ? (emphasized ? darken(color, 0.1) : undefined) : undefined,
-                    borderColor: isLightMode ? color : undefined,
+                    color: emphasized ? "white" : darken(color, 0.1),
+                    bgcolor: emphasized ? darken(color, 0.4) : undefined,
+                    borderColor: color,
+                    textShadow: emphasized ? "black 1px 1px 1px" : undefined,
                     userSelect: "none"
                 }}
             >
