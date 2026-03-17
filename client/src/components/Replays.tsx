@@ -147,6 +147,7 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
 }
 
 async function readWithProgress(res: Response, setLength: (len: number) => void, setReceived: (rec: number) => void) {
+    setReceived(0);
     setLength(+(res.headers.get("Content-Length") ?? 0));
 
     if (!res.body) {
