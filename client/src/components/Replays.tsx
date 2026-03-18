@@ -20,6 +20,7 @@ import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import { clamp } from "../common/utils";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -50,7 +51,17 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackHead,
 }
 
 function getSafeTime(time: number, bot: CompleteBot) {
-    return Math.max(0.0001, Math.min(time, bot.duration() - 0.0001));
+    return clamp(time, 0, bot.duration() - 0.0001);
+}
+
+function getReplayRunDuration(replay: Replay, bot: CompleteBot) {
+    try {
+        return bot.run_duration(replay.course);
+    }
+    catch (err) {
+        console.warn(err);
+        return replay.time / 1000;
+    }
 }
 
 function getMapTitle(replay: Replay) {
@@ -489,7 +500,7 @@ function Replays() {
                 graphics.change_map(map);
 
                 const botDuration = bot.duration();
-                const runDuration = bot.run_duration(replay.course) ?? (replay.time / 1000);
+                const runDuration = getReplayRunDuration(replay, bot);
                 setDuration(runDuration);
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);

@@ -13,7 +13,7 @@ export class CompleteBot {
     [Symbol.dispose](): void;
     duration(): number;
     constructor(data: Uint8Array);
-    run_duration(mode_id: number): number | undefined;
+    run_duration(mode_id: number): number;
 }
 
 export class CompleteMap {
@@ -82,7 +82,7 @@ export interface InitOutput {
     readonly completebot_new: (a: number, b: number, c: number) => void;
     readonly completebot_run_duration: (a: number, b: number, c: number) => void;
     readonly completemap_new: (a: number, b: number, c: number) => void;
-    readonly graphics_change_map: (a: number, b: number) => void;
+    readonly graphics_change_map: (a: number, b: number, c: number) => void;
     readonly graphics_render: (a: number, b: number, c: number, d: number) => void;
     readonly graphics_resize: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly playbackhead_advance_time: (a: number, b: number, c: number) => void;
@@ -102,11 +102,11 @@ export interface InitOutput {
     readonly playbackhead_set_scale: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
     readonly vector3_to_array: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1288: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_705: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1289: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1703: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_706: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1295: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_712: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1296: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1710: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_713: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
