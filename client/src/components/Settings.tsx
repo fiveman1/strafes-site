@@ -12,7 +12,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { ContextParams } from "../common/common";
 import CountrySelector from "./forms/CountrySelector";
 import { dateFormat, relativeTimeFormat } from "../common/datetime";
-import { useGameStyleNoParams } from "../common/states";
+import { useGameStyleNoParams, useNow } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
@@ -26,11 +26,12 @@ function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
 function Settings() {
     const { settings, setSettings, setMode, loggedInUser } = useOutletContext() as ContextParams;
 
-    const [mockSettings, setMockSettings] = useState({...settings});
-    const {game, setGame: setGameState, style, setStyle: setStyleState} = useGameStyleNoParams();
-    const [isSaving, setIsSaving] = useState(false);
+    const [ mockSettings, setMockSettings ] = useState({...settings});
+    const { game, setGame: setGameState, style, setStyle: setStyleState } = useGameStyleNoParams();
+    const [ isSaving, setIsSaving ] = useState(false);
+    const [ now ] = useNow();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [ searchParams ] = useSearchParams();
 
     useEffect(() => {
         if (!loggedInUser) {
@@ -92,7 +93,7 @@ function Settings() {
         handleExit();
     }, [handleExit, mockSettings, setSettings]);
 
-    const threeDaysAgo = new Date().getTime() - (3 * 24 * 60 * 60 * 1000);
+    const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
     
     if (!loggedInUser) {
         return <></>;

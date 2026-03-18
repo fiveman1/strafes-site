@@ -88,7 +88,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const now = new Date().getTime();
+            const now = Date.now();
             setWasRecentAction((now - lastAction.current) < 3000);
             setWasRecentMouseOver((now - lastMouseOver.current) < 3000);
         }, 100);
@@ -103,11 +103,11 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const onPointerMove = useCallback((event: React.PointerEvent) => {
         if (event.pointerType === "touch") {
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
         }
         else {
             setWasRecentMouseOver(true);
-            lastMouseOver.current = new Date().getTime();
+            lastMouseOver.current = Date.now();
         }
         setIsHovering(true);
     }, []);
@@ -130,7 +130,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
     const onTouchPausePlay = useCallback(() => {
         setWasRecentAction(true);
-        lastAction.current = new Date().getTime();
+        lastAction.current = Date.now();
         onSetPause(!paused);
     }, [onSetPause, paused]);
 
@@ -140,7 +140,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
     const onTouchFullscreen = useCallback(() => {
         setWasRecentAction(true);
-        lastAction.current = new Date().getTime();
+        lastAction.current = Date.now();
         onFullscreen(!fullscreen);
     }, [fullscreen, onFullscreen]);
 
@@ -151,7 +151,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         }
         if (event.pointerType === "touch") {
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
         }
         else {
             onPausePlay();
@@ -196,7 +196,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [showDiffSetting]);
 
     const onFinishChangingSpeed = useCallback(() => {
-        lastChangedSpeed.current = new Date().getTime();
+        lastChangedSpeed.current = Date.now();
         isDraggingSpeed.current = false;
     }, []);
 
@@ -242,7 +242,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         if (didAction) {
             event.preventDefault();
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
         }
     }, [onPausePlay, onReset, onSeek, onSetPause, onSwapFullscreen]);
 
@@ -266,7 +266,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const closeSettingsIfClickedOutside = useCallback((target: EventTarget | null, treatAsAction?: boolean) => {
         if (!settingsEl) return;
 
-        const now = new Date().getTime();
+        const now = Date.now();
         if (isDraggingSpeed.current || now - lastChangedSpeed.current < 10) {
             // Allow up to 10ms window to prevent settings menu from closing
             // In case you were dragging the speed and your cursor went outside the settings menu
@@ -289,7 +289,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
         if (treatAsAction) {
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
         }
     }, [settingsEl]);
 
@@ -303,14 +303,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             event.preventDefault();
             setIsBottomHovering(true);
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
         };
 
         const touchEnd = (event: TouchEvent) => {
             event.preventDefault();
             setIsBottomHovering(false);
             setWasRecentAction(true);
-            lastAction.current = new Date().getTime();
+            lastAction.current = Date.now();
 
             if (event.changedTouches.length === 1) {
                 const target = event.changedTouches[0].target;
@@ -340,7 +340,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
     const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
     const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
-    const timeTextWidth = (timeText.length * 8) + 16;
     const curSettingsMenuId = settingsOpen ? settingsMenuId : undefined;
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
 
@@ -583,10 +582,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     borderRadius="4px"
                     ml={1}
                     mr={1.5}
-                    style={{
-                        width: `${timeTextWidth}px`,
-                        minWidth: `${timeTextWidth}px`
-                    }}
+                    px={1.25}
+                    whiteSpace="nowrap"
                 >
                     {timeText}
                 </Typography>

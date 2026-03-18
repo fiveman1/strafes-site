@@ -5,6 +5,7 @@ import { useOutletContext } from "react-router";
 import TimeAgo from "react-timeago";
 import { ContextParams } from "../../common/common";
 import { dateFormat, dateTimeFormat, relativeTimeFormatter } from "../../common/datetime";
+import { useNow } from "../../common/states";
 
 const timeFormat = Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
@@ -22,10 +23,11 @@ interface IDateDisplayProps {
 
 function DateDisplay(props: IDateDisplayProps) {
     const { date, fontWeight, tooltipPlacement, color, useDateTime, variant } = props;
-    const context = useOutletContext() as ContextParams;
+    const [ now ] = useNow();
+    const { settings } = useOutletContext() as ContextParams;
 
     const dateValue = new Date(date);
-    const maxDaysAgo = new Date().getTime() - (context.settings.maxDaysRelativeDates * 24 * 60 * 60 * 1000);
+    const maxDaysAgo = now - (settings.maxDaysRelativeDates * 24 * 60 * 60 * 1000);
     const lessThanMaxDaysAgo = dateValue.getTime() > maxDaysAgo;
     const placement = tooltipPlacement ? tooltipPlacement : "right";
     const tooltipText = lessThanMaxDaysAgo ? dateTimeFormat.format(dateValue) : timeFormat.format(dateValue);

@@ -232,3 +232,7 @@ export function useDebounce<T>(value: T, delay: number) {
 
     return state;
 }
+
+export function useNow() {
+    return useState(() => Date.now());
+}

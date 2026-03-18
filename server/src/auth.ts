@@ -76,7 +76,7 @@ export class AuthClient {
             params.state = client.randomState();
         }
 
-        const expiresAt = new Date().getTime() + (60 * 1000); // 1 minute
+        const expiresAt = Date.now() + (60 * 1000); // 1 minute
         const options = this.createCookieOptions(new Date(expiresAt));
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);
@@ -255,6 +255,8 @@ export class AuthClient {
 
         const now = new Date();
         if (now > session.refreshExpiresAt) {
+            response.clearCookie("session");
+            await this.deleteSessionFromDB(session);
             return undefined;
         }
 
@@ -392,7 +394,7 @@ export class AuthClient {
             return undefined;
         }
 
-        const now = new Date().getTime();
+        const now = Date.now();
         const accessExpiresIn = (tokenSet.expiresIn() ?? 0) * 1000;
         const refreshExpiresIn = 30 * 60 * 60 * 24 * 1000; // 30 days
 
