@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
-import { readFileSync } from "fs";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
 import { AuthClient } from "./auth.js";
@@ -19,6 +18,7 @@ import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
+import { readFile } from "fs/promises";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -1037,7 +1037,7 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
 
     const promises = [setUserInfoForList(authClient, [time])];
     let compareTimeId: string | undefined = undefined;
-    
+
     if (time.placement === 1) {
         const promise = async () => {
             // Uses same parameters that the maps page would use, more likely to hit cache that way
@@ -1077,9 +1077,10 @@ app.get("*splat", async (req, res): Promise<any> => {
     try {
         // Inject meta tags for title and description based on the requested URL
         // It's either this or SSR... I chose this
-        let html = readFileSync(path.resolve(buildDir, "index.html"), "utf8");
+        let html = await readFile(path.resolve(buildDir, "index.html"), { encoding: "utf8" });
         let title = "strafes";
         let description = "Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)";
+        let imageUrl = "/favicon-32x32.png";
         try {
             const url = req.params.splat.slice(1);
             const game = req.query.game ? formatGame(+req.query.game) : formatGame(Game.bhop);
@@ -1105,6 +1106,9 @@ app.get("*splat", async (req, res): Promise<any> => {
                         if (user) {
                             title = `@${user.username} - users`;
                             description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
+                            if (user.userThumb) {
+                                imageUrl = user.userThumb;
+                            }
                         }
                     }
                 }
@@ -1125,6 +1129,9 @@ app.get("*splat", async (req, res): Promise<any> => {
                             }
                             const mapGame = req.query.game ? game : formatGame(mapInfo.game);
                             description = `View the top times on ${mapInfo.name} (game: ${mapGame}, style: ${style}, course: ${course})`;
+                            if (mapInfo.largeThumb) {
+                                imageUrl = mapInfo.largeThumb;
+                            }
                         }
                     }
                 }
@@ -1167,6 +1174,10 @@ app.get("*splat", async (req, res): Promise<any> => {
                                 title = `${mapFormatted} in ${formatTime(time.time)} by ${time.user.username} - replays`;
                             }
                             description = `Watch @${time.user.username} beat ${mapFormatted} in ${formatTime(time.time)} (game: ${formatGame(time.game_id)}, style: ${formatStyle(time.style_id)}, course: ${formatCourse(time.mode_id)})`;
+                            const mapInfo = await globalsClient.getMap(time.map.id);
+                            if (mapInfo?.largeThumb) {
+                                imageUrl = mapInfo.largeThumb;
+                            }
                         }
                     }
                 }
@@ -1180,6 +1191,7 @@ app.get("*splat", async (req, res): Promise<any> => {
         // Don't give anyone an XSS attack
         html = html.replace("__META_OG_TITLE__", escapeHTML(title));
         html = html.replaceAll("__META_DESCRIPTION__", escapeHTML(description));
+        html = html.replace("__META_IMAGE__", escapeHTML(imageUrl));
 
         if (GOOGLE_SITE_VERIFICATION) {
             html = html.replace("__GOOGLE_SITE_VERIFICATION__", escapeHTML(GOOGLE_SITE_VERIFICATION));
