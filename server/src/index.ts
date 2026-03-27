@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement, formatStyleShort } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
@@ -1139,16 +1139,29 @@ app.get("*splat", async (req, res): Promise<any> => {
             else if (url[0] === "compare") {
                 title = "compare";
                 description = "Compare users head-to-head";
-                const user1 = req.query.user1;
-                const user2 = req.query.user2;
-                if (user1 && typeof user1 === "string" && user2 && typeof user2 === "string" && !isNaN(+user1) && !isNaN(+user2)) {
-                    const user1InfoPromise = getUserData(authClient, +user1);
-                    const user2InfoPromise = getUserData(authClient, +user2);
-                    const user1Info = await user1InfoPromise;
-                    const user2Info = await user2InfoPromise;
-                    if (user1Info && user2Info) {
-                        title = `@${user1Info.username} vs @${user2Info.username} - compare`;
-                        description = `Compare @${user1Info.username} vs @${user2Info.username} head-to-head (game: ${game}, style: ${style})`;
+                const users = req.query.users;
+                if (users && typeof users === "string") {
+                    const promises = [];
+                    const entries = users.split(",")
+                        .map(part => {
+                            const [userId, styleStr] = part.split(":");
+                            const style = Number(styleStr);
+                            if (!userId || isNaN(style) || isNaN(+userId)) return null;
+                            return { userId: +userId, style: style as Style };
+                        })
+                        .filter((entry) => entry !== null)
+                        .slice(0, 4);
+                    for (const entry of entries) {
+                        const promise = async () => {
+                            return {user: await getUserData(authClient, entry.userId), style: entry.style};
+                        };
+                        promises.push(promise());
+                    }
+                    const entryInfo = (await Promise.all(promises)).filter((entry) => entry.user !== undefined);
+                    if (entryInfo.length > 1) {
+                        const versusString = entryInfo.map((entry) => `@${entry.user!.username} (${formatStyleShort(entry.style)})`).join(" vs ");
+                        title = `${versusString} - compare`;
+                        description = `Compare ${versusString} head-to-head (game: ${game})`;
                     }
                 }
             }
