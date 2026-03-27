@@ -1,14 +1,15 @@
 import memoize from "memoize";
-import { UserRole } from "shared";
+import { StrafesUserRole, UserRole } from "shared";
 import { tryGetRequest } from "./requests.js";
 
 const RBHOP_GROUP_ID = 2607715;
+const STRAFES_NET_GROUP_ID = 6980477;
 
-async function getUsersWithRole(role: UserRole): Promise<number[]> {
+async function getUsersWithRole(role: number, groupId: number): Promise<number[]> {
     let cursor = "";
     const users : number[] = [];
     do {
-        const res = await tryGetRequest(`https://groups.roproxy.com/v1/groups/${RBHOP_GROUP_ID}/roles/${role}/users`, {
+        const res = await tryGetRequest(`https://groups.roproxy.com/v1/groups/${groupId}/roles/${role}/users`, {
             limit: 100,
             cursor: cursor ? cursor : undefined,
             sortOrder: "Asc"
@@ -40,7 +41,30 @@ async function getAllUsersToRolesCore(): Promise<Map<number, UserRole>> {
         }
         
         const promise = async () => {
-            const users = await getUsersWithRole(role);
+            const users = await getUsersWithRole(role, RBHOP_GROUP_ID);
+            for (const user of users) {
+                roles.set(user, role);
+            }
+        };
+        promises.push(promise());
+    }
+
+    await Promise.all(promises);
+    return roles;
+}
+
+export const getAllUsersToStrafesRoles = memoize(getAllUsersToStrafesRolesCore, {maxAge: 60 * 60 * 1000});
+async function getAllUsersToStrafesRolesCore(): Promise<Map<number, StrafesUserRole>> {
+    const roles = new Map<number, StrafesUserRole>();
+
+    const promises = [];
+    for (const role of Object.values(StrafesUserRole)) {
+        if (typeof role === "string") {
+            continue;
+        }
+        
+        const promise = async () => {
+            const users = await getUsersWithRole(role, STRAFES_NET_GROUP_ID);
             for (const user of users) {
                 roles.set(user, role);
             }

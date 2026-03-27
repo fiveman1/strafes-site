@@ -156,6 +156,12 @@ export enum UserRole {
     GameCreator = 17295536
 }
 
+export enum StrafesUserRole {
+    MapCouncil = 230094155,
+    MapAdmin = 230586111,
+    MapAccess = 44311204
+}
+
 export interface LeaderboardCount extends UserInfo {
     count: number
     bonusCount: number

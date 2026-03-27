@@ -1,8 +1,9 @@
-import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationStatus, Style, TierVotingEligibilityInfo } from "shared";
+import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationStatus, Style, TierVotingEligibilityInfo, StrafesUserRole } from "shared";
 import { getTimes, getUserInfo } from "./strafes_api/api.js";
 import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
 import memoize from "memoize";
+import { getAllUsersToStrafesRoles } from "./roles.js";
 
 export async function loadTierVotingEligibility(userId: number): Promise<TierVotingEligibilityInfo> {
     const userInfoPromise = getUserInfo(userId);
@@ -74,6 +75,12 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
 }
 
 async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
+    const strafesRoles = await getAllUsersToStrafesRoles();
+    const role = strafesRoles.get(userId);
+    if (role === StrafesUserRole.MapAdmin || role === StrafesUserRole.MapCouncil || role == StrafesUserRole.MapAccess) {
+        return 10;
+    }
+
     const times = await getTimes(userId, map.id, 20, 1, map.game, Style.all, 0);
     if (times) {
         // Not faste or low gravity
