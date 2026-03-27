@@ -11,6 +11,7 @@ interface IUserSearchProps {
     setUserId: (id: string | undefined) => void
     disableNavigate?: boolean
     userSearch: UserSearchInfo
+    disabled?: boolean
 }
 
 function prevUsernamesContains(data: UserSearchData, search: string) {
@@ -21,7 +22,7 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 }
 
 function UserSearch(props: IUserSearchProps) {
-    const { setUserId, disableNavigate, userSearch } = props;
+    const { setUserId, disableNavigate, userSearch, disabled } = props;
     const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
 
     const navigate = useNavigate();
@@ -145,6 +146,7 @@ function UserSearch(props: IUserSearchProps) {
             disableClearable
             selectOnFocus
             size="small"
+            disabled={disabled}
             renderInput={(params) => 
                 <TextField {...params} 
                     error={hasError} 

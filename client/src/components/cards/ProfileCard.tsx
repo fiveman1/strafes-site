@@ -147,7 +147,7 @@ function ProfileCard(props: IProfileCardProps) {
                 disabled={disableButton}
                 title={user ? `Compare @${user.username} to other users` : "Compare to other users"} 
                 LinkComponent={Link} 
-                href={disableButton ? "/compare" : `/compare?game=${game}&style=${style}&user1=${userId}`}>
+                href={disableButton ? "/compare" : `/compare?game=${game}&users=${userId}:${style}`}>
                 <CompareArrowsIcon fontSize="inherit" />
             </IconButton>
         </Box>

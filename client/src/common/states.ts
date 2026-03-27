@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
-import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsStringEnum, useQueryState } from "nuqs";
+import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { useMediaQuery, useTheme } from '@mui/material';
 
 export function useSettings() {
@@ -235,4 +235,20 @@ export function useDebounce<T>(value: T, delay: number) {
 
 export function useNow() {
     return useState(() => Date.now());
+}
+
+export function useCompareEntries() {
+    return useQueryState("users",
+        parseAsString
+            .withDefault("")
+            .withOptions({ history: "replace" })
+    );
+}
+
+export function useComparePage() {
+    return useQueryState("page",
+        parseAsInteger
+            .withDefault(1)
+            .withOptions({ history: "replace" })
+    );
 }
