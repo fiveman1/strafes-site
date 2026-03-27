@@ -93,7 +93,7 @@ function makeColumns(game: Game, style: Style) {
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
             const time = params.row.earliestTime;
-            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game == Game.all} showStyle={style == Style.all} />
+            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game === Game.all} showStyle={style === Style.all} />
         }
     });
 
@@ -106,7 +106,7 @@ function makeColumns(game: Game, style: Style) {
         sortable: false,
         renderCell: (params: GridRenderCellParams<LeaderboardCount, string>) => {
             const time = params.row.latestTime;
-            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game == Game.all} showStyle={style == Style.all} />
+            return <MapLink id={time.mapId} name={time.map} game={time.game} style={time.style} course={time.course} showCourse showGame={game === Game.all} showStyle={style === Style.all} />
         }
     });
     

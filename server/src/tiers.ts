@@ -77,7 +77,7 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
 async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
     const strafesRoles = await getAllUsersToStrafesRoles();
     const role = strafesRoles.get(userId);
-    if (role === StrafesUserRole.MapAdmin || role === StrafesUserRole.MapCouncil || role == StrafesUserRole.MapAccess) {
+    if (role === StrafesUserRole.MapAdmin || role === StrafesUserRole.MapCouncil || role === StrafesUserRole.MapAccess) {
         return 10;
     }
 
