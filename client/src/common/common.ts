@@ -141,6 +141,8 @@ function getStyleColorCore(style: Style) {
             return "#b92eff";
         case Style.low_gravity:
             return "#df2a8e";
+        case Style.boost:
+            return "#25d483";
         case Style.all:
             return "#df2a33";
     }

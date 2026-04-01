@@ -58,6 +58,8 @@ export function formatStyle(style: Style) {
             return "w-only";
         case Style.low_gravity:
             return "low gravity";
+        case Style.boost:
+            return "boost";
         case Style.fly:
             return "fly";
         case Style.fly_sustain:
@@ -95,6 +97,8 @@ export function formatStyleShort(style: Style) {
             return "wo";
         case Style.low_gravity:
             return "lg";
+        case Style.boost:
+            return "boost";
         case Style.fly:
             return "fly";
         case Style.fly_sustain:
