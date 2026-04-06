@@ -20,37 +20,41 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
     }
 }
 
-export async function getUserIdFromName(username: string): Promise<number | undefined> {
+export async function getUserIdFromName(username: string): Promise<number | null> {
+    if (!username) return null;
+
     const params = {
         username: username
     };
     
     const res = await tryGetRequest("username", params);
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data.id;
 }
 
-export async function getUserData(userId: string | undefined): Promise<User | undefined> {
-    if (!userId) return undefined;
+export async function getUserData(userId: string | undefined): Promise<User | null> {
+    if (!userId) return null
 
     const res = await tryGetRequest("user/" + userId);
-    if (!res) return undefined;
+    if (!res) return null;
     
     return res.data as User;
 }
 
-export async function getUserRank(userId: string, game: Game, style: Style): Promise<Rank | undefined> {
+export async function getUserRank(userId: string, game: Game, style: Style): Promise<Rank | null> {
+    if (!userId) return null;
+
     const res = await tryGetRequest("user/rank/" + userId, {
         game: game,
         style: style
     });
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as Rank;
 }
 
-export async function getRanks(start: number | string, end: number | string, sortBy: RankSortBy, game: Game, style: Style): Promise<Rank[] | undefined>  {
+export async function getRanks(start: number | string, end: number | string, sortBy: RankSortBy, game: Game, style: Style): Promise<Rank[] | null>  {
     const res = await tryGetRequest("ranks", {
         start: start,
         end: end,
@@ -58,7 +62,7 @@ export async function getRanks(start: number | string, end: number | string, sor
         game: game,
         style: style
     });
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as Rank[]
 }
@@ -73,7 +77,7 @@ export async function getTimeData(
     userId?: string, 
     mapId?: string, 
     onlyWR?: boolean
-): Promise<{ times: Time[], pagination: Pagination } | undefined> {
+): Promise<{ times: Time[], pagination: Pagination } | null> {
     
     let res: AxiosResponse | undefined;
     if (userId) {
@@ -108,10 +112,10 @@ export async function getTimeData(
         });
     }
     else {
-        return undefined;
+        return null;
     }
     
-    if (!res) return undefined;
+    if (!res) return null;
 
     return {
         times: res.data.data,
@@ -119,35 +123,39 @@ export async function getTimeData(
     };
 }
 
-export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | undefined> {
+export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | null> {
     const res = await tryGetRequest("user/times/all/" + userId, {
         game: game,
         style: style
     });
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data.data;
 }
 
-export async function getCompletionsForUser(userId: string, game: Game, style: Style): Promise<number | undefined> {
+export async function getCompletionsForUser(userId: string, game: Game, style: Style): Promise<number | null> {
+    if (!userId) return null;
+
     const res = await tryGetRequest("user/times/completions/" + userId, {
         game: game,
         style: style,
     });
     
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data.completions;
 }
 
-export async function getNumWRsForUser(userId: string, game: Game, style: Style): Promise<WRCount | undefined> {
+export async function getNumWRsForUser(userId: string, game: Game, style: Style): Promise<WRCount | null> {
+    if (!userId) return null;
+
     const res = await tryGetRequest("user/times/wrs/" + userId, {
         game: game,
         style: style,
     });
     
-    if (!res) return undefined;
+    if (!res) return null;
     
     const data = res.data as WRCount;
 
@@ -194,7 +202,7 @@ export async function getLeaderboardPage(start: number | string, end: number | s
         sort: sort
     });
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as LeaderboardPage;
 }
@@ -202,7 +210,7 @@ export async function getLeaderboardPage(start: number | string, end: number | s
 export async function getLoggedInUser() {
     const res = await tryGetRequest("auth/user");
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as LoginUserWithInfo;
 }
@@ -236,7 +244,7 @@ export async function updateSettings(settings: SettingsValues) {
 export async function getVotingInfo() {
     const res = await tryGetRequest("auth/user/tiers");
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as TierVotingEligibilityInfo;
 }

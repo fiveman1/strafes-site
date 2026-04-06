@@ -27,7 +27,7 @@ function Users() {
     const apiRef = useGridApiRef();
     const navigate = useNavigate();
 
-    const userQuery = useQuery(queries.users.byId(userId));
+    const userQuery = useQuery(queries.users.fromId(userId));
     const user = userQuery.data ?? undefined;
     const userLoading = userQuery.isLoading;
     

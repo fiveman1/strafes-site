@@ -13,10 +13,19 @@ import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import MapsHome from './components/MapsHome';
 import Replays from './components/Replays';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 5 * 60 * 1000 // Queries persist in memory for 5 minutes at a time by default
+        }
+    }
+});
 
 const router = createBrowserRouter([
     {
@@ -52,7 +61,9 @@ const router = createBrowserRouter([
 export default function Index() {
     return (
     <React.StrictMode>
-        <RouterProvider router={router} />
+        <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+        </QueryClientProvider>
     </React.StrictMode>
     );
 }

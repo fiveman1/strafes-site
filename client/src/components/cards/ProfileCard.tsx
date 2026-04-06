@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
-import { Game, ModerationStatus, Rank, Style, User, WRCount, formatRank, formatSkill } from "shared";
+import { Game, ModerationStatus, Style, User, formatRank, formatSkill } from "shared";
 import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { useOutletContext } from "react-router";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import { getCompletionsForUser, getNumWRsForUser, getUserRank } from "../../api/api";
 import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../../common/common";
+import { useQuery } from "@tanstack/react-query";
+import { queries } from "../../api/queries";
 
 export interface IProfileCardProps {
     userId?: string
@@ -21,72 +22,15 @@ export interface IProfileCardProps {
 
 function ProfileCard(props: IProfileCardProps) {
     const { userId, game, style, user, userLoading, minHeight } = props;
-
-    const [rank, setRank] = useState<Rank>();
-    const [rankLoading, setRankLoading] = useState(false);
-    const [comps, setComps] = useState<number>();
-    const [compsLoading, setCompsLoading] = useState(false);
-    const [wrs, setWrs] = useState<WRCount>();
-    const [wrsLoading, setWrsLoading] = useState(false);
-
     const { mapCounts } = useOutletContext() as ContextParams;
 
-    useEffect(() => {
-        if (!userId || game === Game.all || style === Style.all) {
-            setComps(undefined);
-            setRank(undefined);
-            return;
-        }
-
-        setCompsLoading(true);
-        setRankLoading(true);
-        getUserRank(userId, game, style).then((rankData) => {
-            if (!rankData) {
-                setRank(undefined);
-                setRankLoading(false);
-                return;
-            }
-            if (rankData.userId === +userId) {
-                setRankLoading(false);
-                setRank(rankData);
-            }
-        });
-
-        let compsActive = true;
-        getCompletionsForUser(userId, game, style).then((completions) => {
-            if (!compsActive) return;
-            setComps(completions);
-            setCompsLoading(false);
-        });
-
-        return () => {
-            compsActive = false;
-        }
-    }, [userId, game, style]);
-
-    useEffect(() => {
-        if (!userId) {
-            setWrs(undefined);
-            return;
-        }
-
-        let wrsActive = true;
-        setWrsLoading(true);
-
-        getNumWRsForUser(userId, game, style).then((wrs) => {
-            if (!wrsActive) return;
-            setWrs(wrs);
-            setWrsLoading(false);
-        });
-
-        return () => {
-            wrsActive = false;
-        }
-    }, [userId, game, style]);
+    const { data: rank, isLoading: rankLoading } = useQuery(queries.users.rank(userId ?? "", game, style));
+    const { data: comps, isLoading: compsLoading  } = useQuery(queries.users.completions(userId ?? "", game, style));
+    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.users.wrCount(userId ?? "", game, style));
 
     const compsFormatted = useMemo(() => {
         let compsFormatted = "n/a";
-        if (comps !== undefined) {
+        if (comps !== undefined && comps !== null) {
             let count = 0;
             switch (game) {
                 case Game.bhop:
@@ -223,7 +167,7 @@ function ProfileCard(props: IProfileCardProps) {
                         <Box display="flex" flexDirection="row">
                             <EmojiEventsIcon htmlColor={yellow[800]} sx={{fontSize: "24px"}} />
                         </Box>
-                        {wrs === undefined ?
+                        {!wrs ?
                         <Typography variant="h6" marginLeft={1}>
                             n/a
                         </Typography>

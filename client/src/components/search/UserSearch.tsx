@@ -3,8 +3,9 @@ import { Autocomplete, Box, InputAdornment, TextField } from "@mui/material";
 import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
 import { UserSearchInfo } from "../../common/states";
-import { getUserIdFromName } from "../../api/api";
 import UserAvatar from "../displays/UserAvatar";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../../api/queries";
 
 interface IUserSearchProps {
     setUserId: (id: string | undefined) => void
@@ -21,6 +22,7 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 
 function UserSearch(props: IUserSearchProps) {
     const { setUserId, userSearch, disabled } = props;
+    const queryClient = useQueryClient();
     const { userText, setUserText, selectedUser, setSelectedUser, options, loadingOptions } = userSearch
 
     const [ hasError, setHasError ] = useState(false);
@@ -33,29 +35,21 @@ function UserSearch(props: IUserSearchProps) {
     const onSearch = useCallback(async (search: string | UserSearchData) => {
         if (!search) {
             setSelectedUser({username: ""});
+            setUserId(undefined);
             return;
         }
 
-        let userId: number | undefined;
-        if (typeof search === "string") {
-            setSelectedUser({username: search});
-            userId = await getUserIdFromName(search);
-        }
-        else {
-            setSelectedUser(search);
-            userId = search.userId;
-            if (!userId) {
-                userId = await getUserIdFromName(search.username);
-            }
-        }
+        const newSelectedUser = typeof search === "string" ? {username: search} : search;
+        const userId = await queryClient.fetchQuery(queries.users.fromSearch(newSelectedUser));
+        setSelectedUser(newSelectedUser);
 
-        if (userId !== undefined) {
+        if (userId !== null) {
             setUserId(userId.toString());
         }
         else {
             setHasError(true);
         }
-    }, [setSelectedUser, setUserId]);
+    }, [queryClient, setSelectedUser, setUserId]);
 
     const sortedOptions = useMemo(() => {
         if (userText === "" || loadingOptions) {

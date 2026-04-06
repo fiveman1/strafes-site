@@ -1,12 +1,13 @@
 import { PaletteMode } from "@mui/material";
 import { useEffect, useState } from "react";
-import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
+import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, LoginUser, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { useMediaQuery, useTheme } from '@mui/material';
 import { queries } from "../api/queries";
 import { useQuery } from "@tanstack/react-query";
+import { getLoggedInUser, getMaps } from "../api/api";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -159,7 +160,7 @@ export function useUserSearch(): UserSearchInfo {
     const debounced = useDebounce(userText, 300);
     const [ selectedUser, setSelectedUser ] = useState<UserSearchData>({ username: "" });
 
-    const optionsQuery = useQuery(queries.users.byUsername(debounced));
+    const optionsQuery = useQuery(queries.users.search(debounced));
 
     return {
         userText: userText,
@@ -240,4 +241,22 @@ export function useComparePage() {
             .withDefault(1)
             .withOptions({ history: "replace" })
     );
+}
+
+export function useLoginUser()  {
+    return useQuery({
+        ...queries.auth.user,
+        queryFn: () => getLoggedInUser()
+    });
+}
+
+export function useVotingInfo(user: LoginUser | undefined) {
+    return useQuery(queries.auth.tierVoting(user));
+}
+
+export function useMaps() {
+    return useQuery({
+       ...queries.maps.maps,
+       queryFn: () => getMaps()
+    });
 }

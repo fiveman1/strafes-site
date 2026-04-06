@@ -10,12 +10,13 @@ import { Game, Style } from "shared";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import { getLeaderboardPage } from "../api/api";
 import { makeUserColumn } from "./cards/grids/util/columns";
 import { useGameStyle, useIncludeBonuses } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NumberGridPagination from "./cards/grids/NumberGridPagination";
 import MapLink from "./displays/MapLink";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(true);
@@ -123,6 +124,7 @@ function LeaderboardCard(props: IRanksCardProps) {
 
     const [rowCount, setRowCount] = useState(0);
     const apiRef = useGridApiRef();
+    const queryClient = useQueryClient();
 
     const gridCols = makeColumns(game, style);
 
@@ -131,9 +133,9 @@ function LeaderboardCard(props: IRanksCardProps) {
     }, [apiRef, game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
-        const page = await getLeaderboardPage(start, end, game, style, sort);
+        const page = await queryClient.fetchQuery(queries.wrs.leaderboards(start, end, game, style, sort));
 
-        if (page === undefined) {
+        if (!page) {
             return { rows: [], rowCount: 0 };
         }
 
@@ -141,7 +143,7 @@ function LeaderboardCard(props: IRanksCardProps) {
             rows: page.data,
             rowCount: page.total
         };
-    }, [game, style]);
+    }, [game, queryClient, style]);
 
     const onSortChange = () => {
         apiRef.current?.setPage(0);

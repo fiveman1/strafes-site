@@ -6,7 +6,6 @@ import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
 import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, useGridApiRef } from "@mui/x-data-grid";
 import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../common/common";
-import { getRanks } from "../api/api";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "./cards/grids/util/columns";
@@ -14,6 +13,8 @@ import { numDigits } from "../common/utils";
 import { useGameStyle } from "../common/states";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
@@ -92,6 +93,7 @@ function RanksCard(props: IRanksCardProps) {
     const [maxPage, setMaxPage] = useState(0);
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     const apiRef = useGridApiRef();
+    const queryClient = useQueryClient();
 
     const placementWidth = numDigits(maxPage) > 3 ? 62 : 50;
     const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
@@ -105,9 +107,9 @@ function RanksCard(props: IRanksCardProps) {
     }, []);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: RankSortBy) => {
-        const ranks = await getRanks(start, end, sortBy, game, style);
+        const ranks = await queryClient.fetchQuery(queries.ranks.ranks(start, end, sortBy, game, style));
 
-        if (ranks === undefined) {
+        if (!ranks) {
             return { rows: [], pageInfo: {hasNextPage: false} }
         }
 
@@ -116,7 +118,7 @@ function RanksCard(props: IRanksCardProps) {
             rows: ranks,
             pageInfo: {hasNextPage: hasMore}
         }
-    }, [game, style]);
+    }, [game, queryClient, style]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {

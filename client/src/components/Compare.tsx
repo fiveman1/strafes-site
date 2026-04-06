@@ -5,7 +5,6 @@ import GameSelector from "./forms/GameSelector";
 import UserSearch from "./search/UserSearch";
 import { Game, Style, Time, User, formatStyle, getAllowedStyles } from "shared";
 import { useOutletContext } from "react-router";
-import { getAllTimesForUser } from "../api/api";
 import { ContextParams } from "../common/common";
 import { useCompareEntries, useComparePage, useGame, useUserSearch } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -153,7 +152,7 @@ function Compare() {
             // Fetch user profile if not cached
             if (!idToUser[userId]) {
                 setIdToUser(userId, true);
-                queryClient.fetchQuery(queries.users.byId(userId)).then((user) => {
+                queryClient.fetchQuery(queries.users.fromId(userId)).then((user) => {
                     setIdToUser(userId, false, user ?? undefined)
                 });
             }
@@ -161,8 +160,8 @@ function Compare() {
             // Fetch times if not cached
             if (!getUserTimesFromState(userTimes, userId, game, style)) {
                 setUserTimes(userId, game, style, true);
-                getAllTimesForUser(userId, game, style).then((times) => {
-                    setUserTimes(userId, game, style, false, times);
+                queryClient.fetchQuery(queries.users.allTimes(userId, game, style)).then((times) => {
+                    setUserTimes(userId, game, style, false, times ?? undefined);
                 });
             }
         }

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
 import { Game, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
-import { getTimeData } from "../../../api/api";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { MAP_THUMB_SIZE } from "../../displays/MapLink";
 import { GridApiCommunity } from "@mui/x-data-grid/internals";
@@ -10,6 +9,8 @@ import { numDigits } from "../../../common/utils";
 import { UNRELEASED_MAP_COLOR } from "../../../common/colors";
 import NumberGridPagination from "./NumberGridPagination";
 import { parseAsInteger, parseAsNumberLiteral, useQueryState } from "nuqs";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../../../api/queries";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,
@@ -119,6 +120,8 @@ function TimesGrid(props: ITimesCardProps) {
         apiRef = gridApiRef;
     }
 
+    const queryClient = useQueryClient();
+
     const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
     const shortScreen = useMediaQuery("@media screen and (max-height: 1000px)");
@@ -227,8 +230,8 @@ function TimesGrid(props: ITimesCardProps) {
         if (!allowOnlyWRs && !userId && !mapId) {
             return { rows: [], rowCount: 0 }
         }
-
-        const timeData = await getTimeData(start, end, sortBy, course, game, style, userId, mapId, onlyWRs);
+        
+        const timeData = await queryClient.fetchQuery(queries.times.times(start, end, sortBy, course, game, style, userId, mapId, onlyWRs));
 
         if (onLoadTimes && timeData?.times) {
             onLoadTimes(timeData.times);
@@ -242,7 +245,7 @@ function TimesGrid(props: ITimesCardProps) {
             rows: timeData.times,
             rowCount: timeData.pagination.totalItems
         }
-    }, [allowOnlyWRs, course, game, mapId, onLoadTimes, onlyWRs, style, userId]);
+    }, [allowOnlyWRs, course, game, mapId, onLoadTimes, onlyWRs, queryClient, style, userId]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
