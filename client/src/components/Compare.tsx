@@ -5,7 +5,7 @@ import GameSelector from "./forms/GameSelector";
 import UserSearch from "./search/UserSearch";
 import { Game, Style, Time, User, formatStyle, getAllowedStyles } from "shared";
 import { useOutletContext } from "react-router";
-import { getAllTimesForUser, getUserData } from "../api/api";
+import { getAllTimesForUser } from "../api/api";
 import { ContextParams } from "../common/common";
 import { useCompareEntries, useComparePage, useGame, useUserSearch } from "../common/states";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -24,6 +24,8 @@ import {
 import CompareEntryList from "./compare/CompareEntryList";
 import CompareChart from "./compare/CompareChart";
 import CompareTimesGrid from "./compare/CompareTimesGrid";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 interface UserToTimes {
     [key: string]: {
@@ -45,10 +47,14 @@ function getUserTimesFromState(userToTimes: UserToTimes, userId: string, game: G
 
 function Compare() {
     const { maps } = useOutletContext() as ContextParams;
+    const queryClient = useQueryClient();
+    
     const [game, setGameState] = useGame();
-    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
+    const userSearch = useUserSearch();
     const [selectedSlice, setSelectedSlice] = useState<number>();
     const [, setPage] = useComparePage();
+
+    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
 
     const [idToUser, setIdToUserState] = useState<IdToUser>({});
     const setIdToUser = (userId: string, loading: boolean, user?: User) => {
@@ -112,9 +118,6 @@ function Compare() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // User search state
-    const [userSearch] = useUserSearch();
-
     // Add user from search
     const onAddUser = (userId: string | undefined) => {
         if (!userId || entries.length >= MAX_ENTRIES) return;
@@ -150,8 +153,8 @@ function Compare() {
             // Fetch user profile if not cached
             if (!idToUser[userId]) {
                 setIdToUser(userId, true);
-                getUserData(userId).then((user) => {
-                    setIdToUser(userId, false, user);
+                queryClient.fetchQuery(queries.users.byId(userId)).then((user) => {
+                    setIdToUser(userId, false, user ?? undefined)
                 });
             }
 
@@ -163,7 +166,7 @@ function Compare() {
                 });
             }
         }
-    }, [entries, game, idToUser, userTimes]);
+    }, [entries, game, idToUser, queryClient, userTimes]);
 
     // Derive loading state and entry times
     const { entryTimes, isLoading } = useMemo(() => {
@@ -270,7 +273,6 @@ function Compare() {
                     <UserSearch
                         setUserId={onAddUser}
                         userSearch={userSearch}
-                        disableNavigate
                         disabled={entries.length >= MAX_ENTRIES}
                     />
                 </Box>

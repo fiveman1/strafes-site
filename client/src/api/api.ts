@@ -31,7 +31,9 @@ export async function getUserIdFromName(username: string): Promise<number | unde
     return res.data.id;
 }
 
-export async function getUserData(userId: string): Promise<User | undefined> {
+export async function getUserData(userId: string | undefined): Promise<User | undefined> {
+    if (!userId) return undefined;
+
     const res = await tryGetRequest("user/" + userId);
     if (!res) return undefined;
     
@@ -169,6 +171,10 @@ export async function getMaps(): Promise<Maps> {
 }
 
 export async function searchByUsername(username: string): Promise<UserSearchData[]> {
+    if (username === "") {
+        return [];
+    }
+
     const res = await tryGetRequest("usersearch", {username: username});
     if (!res) return [];
 

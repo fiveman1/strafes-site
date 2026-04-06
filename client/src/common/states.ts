@@ -5,6 +5,8 @@ import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { useMediaQuery, useTheme } from '@mui/material';
+import { queries } from "../api/queries";
+import { useQuery } from "@tanstack/react-query";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -149,36 +151,24 @@ export interface UserSearchInfo {
     selectedUser: UserSearchData
     setSelectedUser: React.Dispatch<React.SetStateAction<UserSearchData>>
     options: readonly UserSearchData[]
-    setOptions: React.Dispatch<React.SetStateAction<readonly UserSearchData[]>>
     loadingOptions: boolean
-    setIsLoadingOptions: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export function useUserSearch(): [UserSearchInfo, (search: UserSearchInfo) => void] {
-    const [userText, setUserText] = useState("");
-    const [selectedUser, setSelectedUser] = useState<UserSearchData>({ username: "" });
-    const [options, setOptions] = useState<readonly UserSearchData[]>([]);
-    const [loadingOptions, setIsLoadingOptions] = useState(false);
+export function useUserSearch(): UserSearchInfo {
+    const [ userText, setUserText ] = useState("");
+    const debounced = useDebounce(userText, 300);
+    const [ selectedUser, setSelectedUser ] = useState<UserSearchData>({ username: "" });
 
-    const search = {
+    const optionsQuery = useQuery(queries.users.byUsername(debounced));
+
+    return {
         userText: userText,
         setUserText: setUserText,
         selectedUser: selectedUser,
         setSelectedUser: setSelectedUser,
-        options: options,
-        setOptions: setOptions,
-        loadingOptions: loadingOptions,
-        setIsLoadingOptions: setIsLoadingOptions
+        options: optionsQuery.data ?? [],
+        loadingOptions: optionsQuery.isLoading || userText !== debounced
     };
-
-    const setUserSearch = (search: UserSearchInfo) => {
-        setUserText(search.userText);
-        setSelectedUser(search.selectedUser);
-        setOptions(search.options);
-        setIsLoadingOptions(search.loadingOptions);
-    };
-
-    return [search, setUserSearch];
 }
 
 // https://github.com/mui/material-ui/issues/10739#issuecomment-1484828925
@@ -217,8 +207,7 @@ export function useFilterTiers() {
 }
 
 export function useDebounce<T>(value: T, delay: number) {
-    const state = useState(value);
-    const [, setDebouncedValue] = state;
+    const [state, setDebouncedValue] = useState(value);
 
     useEffect(() => {
         const handler = setTimeout(() => {

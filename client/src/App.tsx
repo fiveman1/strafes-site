@@ -18,6 +18,7 @@ import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
 import MainAppBar from "./components/other/MainAppBar";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const LinkBehavior = React.forwardRef<
     HTMLAnchorElement,
@@ -27,6 +28,8 @@ const LinkBehavior = React.forwardRef<
     // Map href (Material UI) -> to (react-router)
     return <RouterLink ref={ref} to={href} {...other} />;
 });
+
+const queryClient = new QueryClient();
 
 function App() {
     const [ maps, setMaps ] = useState<Maps>({});
@@ -144,39 +147,41 @@ function App() {
     )}, [mode]);
 
     return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline enableColorScheme />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} />
-            <Box component="main" display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
-                <NuqsAdapter>
-                    <Outlet context={contextParams}/>
-                </NuqsAdapter>
-            </Box>
-            <Box component="footer">
-                <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>
-                    <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
-                        bhop
-                        <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
-                    </Link>
-                    <Link href="https://www.roblox.com/games/5315066937/surf" display="flex" underline="hover">
-                        surf
-                        <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
-                    </Link>
-                    <Link href="https://discord.gg/Fw8E75X" display="flex">
-                        <DiscordIcon size={24} color={theme.palette.primary.main} />
-                    </Link>
-                    <Link href="https://github.com/fiveman1/strafes-site" display="flex">
-                        <GithubIcon size={24} color={theme.palette.primary.main} />
-                    </Link>
-                    <Link href="/terms" display="flex" underline="hover">
-                        terms
-                    </Link>
-                    <Link href="/privacy" display="flex" underline="hover">
-                        privacy
-                    </Link>
-                </Breadcrumbs>
-            </Box>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider theme={theme}>
+                <CssBaseline enableColorScheme />
+                <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} />
+                <Box component="main" display="flex" flexGrow={1} flexDirection="column" padding={smallScreen ? 1 : 2} marginBottom="auto">
+                    <NuqsAdapter>
+                        <Outlet context={contextParams}/>
+                    </NuqsAdapter>
+                </Box>
+                <Box component="footer">
+                    <Breadcrumbs separator="-" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}}}>
+                        <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
+                            bhop
+                            <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
+                        </Link>
+                        <Link href="https://www.roblox.com/games/5315066937/surf" display="flex" underline="hover">
+                            surf
+                            <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
+                        </Link>
+                        <Link href="https://discord.gg/Fw8E75X" display="flex">
+                            <DiscordIcon size={24} color={theme.palette.primary.main} />
+                        </Link>
+                        <Link href="https://github.com/fiveman1/strafes-site" display="flex">
+                            <GithubIcon size={24} color={theme.palette.primary.main} />
+                        </Link>
+                        <Link href="/terms" display="flex" underline="hover">
+                            terms
+                        </Link>
+                        <Link href="/privacy" display="flex" underline="hover">
+                            privacy
+                        </Link>
+                    </Breadcrumbs>
+                </Box>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 }
 

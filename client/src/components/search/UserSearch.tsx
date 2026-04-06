@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Autocomplete, Box, debounce, InputAdornment, TextField } from "@mui/material";
-import { useNavigate } from "react-router";
+import { useCallback, useMemo, useState } from "react";
+import { Autocomplete, Box, InputAdornment, TextField } from "@mui/material";
 import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
 import { UserSearchInfo } from "../../common/states";
-import { getUserIdFromName, searchByUsername } from "../../api/api";
+import { getUserIdFromName } from "../../api/api";
 import UserAvatar from "../displays/UserAvatar";
 
 interface IUserSearchProps {
     setUserId: (id: string | undefined) => void
-    disableNavigate?: boolean
     userSearch: UserSearchInfo
     disabled?: boolean
 }
@@ -22,76 +20,19 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 }
 
 function UserSearch(props: IUserSearchProps) {
-    const { setUserId, disableNavigate, userSearch, disabled } = props;
-    const { userText, setUserText, selectedUser, setSelectedUser, options, setOptions, loadingOptions, setIsLoadingOptions } = userSearch
+    const { setUserId, userSearch, disabled } = props;
+    const { userText, setUserText, selectedUser, setSelectedUser, options, loadingOptions } = userSearch
 
-    const navigate = useNavigate();
-    const [hasError, setHasError] = useState(false);
-
-    const fetchSearchOptions = useMemo(() => debounce(async (searchText: string, callback: (usernames: UserSearchData[]) => void) => {
-        const usernames = await searchByUsername(searchText);
-        callback(usernames);
-    }, 300), []);
-
-    useEffect(() => {
-        setHasError(false);
-
-        if (!userText) {
-            setIsLoadingOptions(false);
-            setOptions([]);
-            return;
-        }
-
-        let active = true;
-
-        setIsLoadingOptions(true);
-        setOptions([]);
-        fetchSearchOptions(userText, (usernames) => {
-            if (!active) return;
-
-            // Always put search text at top of the list
-            let found = false;
-            const lowerUserText = userText.toLowerCase();
-            for (const data of usernames) {
-                if (data.username.toLowerCase() === lowerUserText) {
-                    found = true;
-                }
-                else if (prevUsernamesContains(data, lowerUserText)) {
-                    found = true;
-                }
-
-                if (found) {
-                    const newUsernames = [data];
-                    for (const copyData of usernames) {
-                        if (copyData.username === data.username) continue;
-                        newUsernames.push(copyData);
-                    }
-                    usernames = newUsernames;
-                    break;
-                }
-            }
-            if (!found) {
-                usernames = [{username: userText}, ...usernames];
-            }
-            
-            setOptions(usernames);
-        });
-
-        return () => {
-            setIsLoadingOptions(false);
-            active = false;
-        }
-    }, [fetchSearchOptions, setIsLoadingOptions, setOptions, userText]);
+    const [ hasError, setHasError ] = useState(false);
 
     const onInputChange = useCallback((val: string) => {
         setUserText(val);
+        setHasError(false);
     }, [setUserText]);
 
     const onSearch = useCallback(async (search: string | UserSearchData) => {
         if (!search) {
             setSelectedUser({username: ""});
-            setUserId(undefined);
-            if (!disableNavigate) navigate({pathname: "/users", search: location.search});
             return;
         }
 
@@ -109,17 +50,39 @@ function UserSearch(props: IUserSearchProps) {
         }
 
         if (userId !== undefined) {
-            if (!disableNavigate) {
-                navigate({pathname: `/users/${userId}`, search: location.search});
-            }
-            else {
-                setUserId(userId.toString());
-            }
+            setUserId(userId.toString());
         }
         else {
             setHasError(true);
         }
-    }, [navigate, disableNavigate, setSelectedUser, setUserId]);
+    }, [setSelectedUser, setUserId]);
+
+    const sortedOptions = useMemo(() => {
+        if (userText === "" || loadingOptions) {
+            return [];
+        }
+        
+        let found = false;
+        const lowerUserText = userText.toLowerCase();
+        let sorted: UserSearchData[] = [];
+        for (const data of options) {
+            if (data.username.toLowerCase() === lowerUserText || prevUsernamesContains(data, lowerUserText)) {
+                found = true;
+                const newUsernames = [data];
+                for (const copyData of options) {
+                    if (copyData.username === data.username) continue;
+                    newUsernames.push(copyData);
+                }
+                sorted = newUsernames;
+                break;
+            }
+        }
+        if (!found) {
+            sorted = [{username: userText}, ...options];
+        }
+        
+        return sorted;
+    }, [loadingOptions, options, userText]);
 
     return (
         <Autocomplete 
@@ -136,7 +99,7 @@ function UserSearch(props: IUserSearchProps) {
             onChange={(e, v) => onSearch(v ?? "")}
             isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
             filterOptions={(x) => x}
-            options={options}
+            options={sortedOptions}
             loading={loadingOptions}
             autoComplete
             autoHighlight

@@ -6,10 +6,9 @@ import { useNavigate, useParams } from "react-router";
 import ProfileCard from "./cards/ProfileCard";
 import TimesCard from "./cards/grids/TimesCard";
 import UserSearch from "./search/UserSearch";
-import { Time, TimeSortBy, User, ALL_COURSES, MAIN_COURSE } from "shared";
+import { Time, TimeSortBy, ALL_COURSES, MAIN_COURSE } from "shared";
 import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
-import { getUserData } from "../api/api";
 import ViewedTimes from "./cards/grids/ViewedTimes";
 import { useGridApiRef } from "@mui/x-data-grid";
 import CachedIcon from '@mui/icons-material/Cached';
@@ -18,18 +17,24 @@ import { useGameStyle, useIncludeBonuses, useUserSearch } from "../common/states
 import UserAvatar from "./displays/UserAvatar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { parseAsBoolean, useQueryState } from "nuqs";
+import { useQuery } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 function Users() {
     const { id } = useParams();
-    const [userId, setUserId] = useState<string>();
-    const {game, setGame, style, setStyle} = useGameStyle(true);
-    
-    const [user, setUserInfo] = useState<User>();
-    const [userLoading, setIsUserLoading] = useState(false);
-    const [advanced, setAdvanced] = useState(false);
-    const [userSearch] = useUserSearch();
-    const [viewedTimes, setViewedTimes] = useState<Time[]>([]);
+    const userId = id;
+
     const apiRef = useGridApiRef();
+    const navigate = useNavigate();
+
+    const userQuery = useQuery(queries.users.byId(userId));
+    const user = userQuery.data ?? undefined;
+    const userLoading = userQuery.isLoading;
+    
+    const { game, setGame, style, setStyle } = useGameStyle(true);
+    const [ advanced, setAdvanced ] = useState(false);
+    const userSearch = useUserSearch();
+    const [ viewedTimes, setViewedTimes ] = useState<Time[]>([]);
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     const smallScreenProfile = useMediaQuery("@media screen and (max-width: 800px)");
@@ -58,8 +63,6 @@ function Users() {
         return unique;
     }, [advanced, viewedTimes]);
 
-    const navigate = useNavigate();
-
     const [onlyWRs, setOnlyWRs] = useQueryState("wrs", 
         parseAsBoolean
         .withDefault(false)
@@ -72,30 +75,10 @@ function Users() {
         document.title = user ? `@${user.username} - users - strafes` : "users - strafes";
     }, [user]);
 
-    if (id !== userId) {
-        setUserId(id);
-    }
-    useEffect(() => {
-        if (!userId) {
-            setUserInfo(undefined);
-            setIsUserLoading(false);
-            return;
-        }
-        setIsUserLoading(true);
-        getUserData(userId).then((userData) => {
-            setIsUserLoading(false);
-            setUserInfo(userData);
-        });
-    }, [userId, setIsUserLoading, setUserInfo]);
-
-    const handleChangeOnlyWRs = (checked: boolean) => {
-        setOnlyWRs(checked);
-    };
-
-    const onResetViewed = () => {
+    const onResetViewed = useCallback(() => {
         setViewedTimes([]);
         apiRef.current?.dataSource.cache.clear();
-    };
+    }, [apiRef]);
 
     const breadcrumbs: React.ReactElement[] = [];
     if (user) {
@@ -119,6 +102,12 @@ function Users() {
         );
     }
 
+    const onSetUserId = useCallback((userId: string | undefined) => {
+        if (userId) {
+            navigate({pathname: `/users/${userId}`, search: location.search});
+        }
+    }, [navigate]);
+
     return (
     <Box flexGrow={1}>
         <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={smallScreen ? 0 : 0.5}>
@@ -130,7 +119,7 @@ function Users() {
             </Breadcrumbs>
             <Box padding={smallScreen ? 1 : 0.25} pt={0.25} pb={0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
                 <UserSearch 
-                    setUserId={setUserId} 
+                    setUserId={onSetUserId} 
                     userSearch={userSearch}
                 />
             </Box>
@@ -149,7 +138,7 @@ function Users() {
             <Box padding={1} pt={0.25} pb={0.25}>
                 <FormGroup>
                     <FormControlLabel label="Only WRs" control={
-                        <Checkbox checked={onlyWRs} onChange={(event, checked) => handleChangeOnlyWRs(checked)} />}  
+                        <Checkbox checked={onlyWRs} onChange={(event, checked) => setOnlyWRs(checked)} />}  
                     />
                 </FormGroup>
                 <FormHelperText sx={{mt: -0.5}}>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
