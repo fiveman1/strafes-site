@@ -166,7 +166,7 @@ function useCardSize() {
 
 function MapSquareCard(props: MapCardProps) {
     const { map } = props;
-    const { highPercentileLoadCount: ninetiethPercentileLoadCount } = useOutletContext() as ContextParams;
+    const { highPercentileLoadCount } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
     const isLightMode = theme.palette.mode === "light";
@@ -184,7 +184,7 @@ function MapSquareCard(props: MapCardProps) {
 
     const gameColor = getGameColor(map.game, theme);
     const tierColor = getMapTierColor(map.tier);
-    const popColor = getColorForPopularity(map, ninetiethPercentileLoadCount);
+    const popColor = getColorForPopularity(map, highPercentileLoadCount);
 
     return (
         <Box

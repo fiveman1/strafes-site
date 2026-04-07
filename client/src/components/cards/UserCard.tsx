@@ -24,10 +24,10 @@ interface IUserCardProps {
 
 function UserCardAvatar(props: IUserDisplayProps) {
     const { user } = props;
-    const { loggedInUser } = useOutletContext() as ContextParams;
+    const { loginUser } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
-    const isCurrentUser = loggedInUser && user && +user.userId === +loggedInUser.userId;
+    const isCurrentUser = loginUser && user && +user.userId === +loginUser.userId;
 
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
@@ -56,13 +56,13 @@ function UserCardAvatar(props: IUserDisplayProps) {
 
 function UserDisplay(props: IUserDisplayProps) {
     const { user } = props;
-    const { loggedInUser, settings } = useOutletContext() as ContextParams;
+    const { loginUser, settings } = useOutletContext() as ContextParams;
     const theme = useTheme();
 
     const dateValue = new Date(user.joinedOn);
     const tooltipText = dateTimeFormat.format(dateValue);
 
-    const country = (loggedInUser && user.userId === loggedInUser.userId) ? settings.country : user.userCountry; // To get around caching
+    const country = (loginUser && user.userId === loginUser.userId) ? settings.country : user.userCountry; // To get around caching
 
     return (
         <Box display="flex" flexDirection="row">

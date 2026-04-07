@@ -11,7 +11,7 @@ import { Breadcrumbs, useMediaQuery } from "@mui/material";
 import { Game, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./common/sort";
-import { saveSettingsToLocalStorage, useLoginUser, useMaps, useSettings, useVotingInfo } from "./common/states";
+import { saveSettingsToLocalStorage, useLoginUser, useMaps, useSettings, useVoteEligibility } from "./common/states";
 import RobloxIcon from "./components/icons/RobloxIcon";
 import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
@@ -34,7 +34,7 @@ function App() {
     const loggedInUser = loginUserQuery.data ?? undefined;
     const loggedInUserLoading = loginUserQuery.isLoading;
     
-    const { data: votingInfo } = useVotingInfo(loggedInUser);
+    const { data: voteEligibility } = useVoteEligibility(loggedInUser);
     const [ settings, setSettingsState ] = useSettings();
     const [ mode, setMode ] = useState<PaletteMode>(localStorage.getItem("theme") as PaletteMode || "dark");
     
@@ -92,12 +92,12 @@ function App() {
             mapCounts: mapInfo.mapCounts,
             highPercentileLoadCount: mapInfo.highPercentileLoadCount,
             settings: settings,
-            loggedInUser: loggedInUser ?? undefined,
+            loginUser: loggedInUser ?? undefined,
             setSettings: setSettings,
             setMode: setMode,
-            votingInfo: votingInfo ?? undefined
+            voteEligibility: voteEligibility ?? undefined
         };
-    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.highPercentileLoadCount, mapInfo.sortedMaps, setSettings, settings, votingInfo]);
+    }, [loggedInUser, mapInfo.mapCounts, mapInfo.maps, mapInfo.highPercentileLoadCount, mapInfo.sortedMaps, setSettings, settings, voteEligibility]);
 
     useEffect(() => {
         if (loggedInUser?.settings) {

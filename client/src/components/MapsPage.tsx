@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import { Breadcrumbs, darken, IconButton, Link, Paper, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, Link as RouterLink } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps, mapsToCsv } from "../common/common";
-import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVotingEligibilityInfo, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
+import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVoteEligibility, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
 import StyleSelector from "./forms/StyleSelector";
 import TimesCard from "./cards/grids/TimesCard";
 import GameSelector from "./forms/GameSelector";
@@ -214,67 +214,67 @@ function MapDetailSection(props: MapDetailSectionProps) {
     );
 }
 
-function getEligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
-    if (!voteInfo) {
+function getEligibleReason(voteEligibility: TierVoteEligibility | undefined, game: Game) {
+    if (!voteEligibility) {
         return "";
     }
-    if (voteInfo.moderationStatus === ModerationStatus.Whitelisted) {
+    if (voteEligibility.moderationStatus === ModerationStatus.Whitelisted) {
         return "You are eligible (whitelisted)";
     }
-    if (game === Game.bhop && voteInfo.bhopCompletions >= 20) {
-        return `You are eligible (${voteInfo.bhopCompletions} bhop completions)`;
+    if (game === Game.bhop && voteEligibility.bhopCompletions >= 20) {
+        return `You are eligible (${voteEligibility.bhopCompletions} bhop completions)`;
     }
-    if (game === Game.surf && voteInfo.surfCompletions >= 20) {
-        return `You are eligible (${voteInfo.surfCompletions} surf completions)`;
+    if (game === Game.surf && voteEligibility.surfCompletions >= 20) {
+        return `You are eligible (${voteEligibility.surfCompletions} surf completions)`;
     }
     return "";
 }
 
-function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, game: Game) {
-    if (!voteInfo) {
+function getIneligibleReason(voteEligibility: TierVoteEligibility | undefined, game: Game) {
+    if (!voteEligibility) {
         return "You are not logged in";
     }
-    if (voteInfo.moderationStatus === ModerationStatus.Blacklisted) {
+    if (voteEligibility.moderationStatus === ModerationStatus.Blacklisted) {
         return "You are blacklisted";
     }
-    if (voteInfo.moderationStatus === ModerationStatus.Pending) {
+    if (voteEligibility.moderationStatus === ModerationStatus.Pending) {
         return "You are pending moderation review";
     }
-    if (game === Game.bhop && voteInfo.bhopCompletions < 20) {
-        return `You have less than 20 bhop completions (${voteInfo.bhopCompletions})`;
+    if (game === Game.bhop && voteEligibility.bhopCompletions < 20) {
+        return `You have less than 20 bhop completions (${voteEligibility.bhopCompletions})`;
     }
-    if (game === Game.surf && voteInfo.surfCompletions < 20) {
-        return `You have less than 20 surf completions (${voteInfo.surfCompletions})`;
+    if (game === Game.surf && voteEligibility.surfCompletions < 20) {
+        return `You have less than 20 surf completions (${voteEligibility.surfCompletions})`;
     }
     return "";
 }
 
 function MapTierVotingSection(props: MapDetailSectionProps) {
     const { selectedMap } = props;
-    const { loggedInUser, votingInfo } = useOutletContext() as ContextParams;
+    const { loginUser, voteEligibility } = useOutletContext() as ContextParams;
     const theme = useTheme();
     const queryClient = useQueryClient();
 
-    const tierVoteQuery = useMapTierVote(loggedInUser, selectedMap.id);
-    const tierVoteInfo = tierVoteQuery.data ?? undefined;
-    const tierVoteLoading = tierVoteQuery.isLoading;
+    const tierVoteQuery = useMapTierVote(loginUser, selectedMap.id);
+    const voteData = tierVoteQuery.data ?? undefined;
+    const voteLoading = tierVoteQuery.isLoading;
 
     const onMutateVote = useCallback((info: { mapId: number, tier: number | null }) => {
         const { mapId, tier } = info;
         const fakeTier: MapTierInfo | null = tier === null ? null : {
-            userId: loggedInUser?.userId ?? 0,
+            userId: loginUser?.userId ?? 0,
             mapId: mapId,
             tier: tier,
             weight: 0,
             updatedAt: ""
         };
-        queryClient.setQueryData(queries.maps.tierVote(loggedInUser, selectedMap.id).queryKey, fakeTier);
+        queryClient.setQueryData(queries.maps.tierVote(loginUser, selectedMap.id).queryKey, fakeTier);
         return voteForMapTier(mapId, tier);
-    }, [loggedInUser, queryClient, selectedMap.id]);
+    }, [loginUser, queryClient, selectedMap.id]);
 
     const onMutateVoteSuccess = useCallback((data: MapTierInfo | null) => {
-        queryClient.setQueryData(queries.maps.tierVote(loggedInUser, selectedMap.id).queryKey, data);
-    }, [loggedInUser, queryClient, selectedMap.id]);
+        queryClient.setQueryData(queries.maps.tierVote(loginUser, selectedMap.id).queryKey, data);
+    }, [loginUser, queryClient, selectedMap.id]);
     
     const voteMutation = useMutation({
         mutationFn: onMutateVote,
@@ -282,13 +282,13 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     });
 
     const isLightMode = theme.palette.mode === "light";
-    const isEligible = (votingInfo && isEligibleForVoting(votingInfo, selectedMap.game));
-    const reason = isEligible ? getEligibleReason(votingInfo, selectedMap.game) : getIneligibleReason(votingInfo, selectedMap.game);
+    const isEligible = (voteEligibility && isEligibleForVoting(voteEligibility, selectedMap.game));
+    const reason = isEligible ? getEligibleReason(voteEligibility, selectedMap.game) : getIneligibleReason(voteEligibility, selectedMap.game);
 
     const onChange = useCallback((val: number) => {
-        const tier = val === tierVoteInfo?.tier ? null : val;
+        const tier = val === voteData?.tier ? null : val;
         voteMutation.mutate({ mapId: selectedMap.id, tier: tier });
-    }, [selectedMap.id, tierVoteInfo?.tier, voteMutation]);
+    }, [selectedMap.id, voteData?.tier, voteMutation]);
 
     const tierAxisNames: number[] = [];
     const colors: string[] = [];
@@ -313,11 +313,11 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 </Tooltip>}
             </Box>
             <Box display="flex" alignItems="center" justifyContent="center">
-                {tierVoteLoading ?
+                {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
                 :
                 <MapTierListSelector 
-                    selectedTiers={tierVoteInfo ? [tierVoteInfo.tier] : []}
+                    selectedTiers={voteData ? [voteData.tier] : []}
                     onSelectTier={onChange}
                     disabled={!isEligible}
                     readOnly={voteMutation.isPending}
@@ -358,10 +358,10 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     <ChartsTooltip />
                 </ChartContainer>
             </Box>}
-            {tierVoteInfo?.updatedAt &&
-            <Tooltip title={dateTimeFormat.format(new Date(tierVoteInfo.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
+            {voteData?.updatedAt &&
+            <Tooltip title={dateTimeFormat.format(new Date(voteData.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
                 <Typography variant="caption" color="textSecondary" mt={0.5} textAlign="center">
-                    Submitted {<TimeAgo date={tierVoteInfo.updatedAt} title="" formatter={relativeTimeFormatter} />}
+                    Submitted {<TimeAgo date={voteData.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
             </Tooltip>}
         </Box>

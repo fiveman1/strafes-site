@@ -24,7 +24,7 @@ function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
 }
 
 function Settings() {
-    const { settings, setSettings, setMode, loggedInUser } = useOutletContext() as ContextParams;
+    const { settings, setSettings, setMode, loginUser } = useOutletContext() as ContextParams;
 
     const [ mockSettings, setMockSettings ] = useState({...settings});
     const { game, setGame: setGameState, style, setStyle: setStyleState } = useGameStyleNoParams();
@@ -34,11 +34,11 @@ function Settings() {
     const [ searchParams ] = useSearchParams();
 
     useEffect(() => {
-        if (!loggedInUser) {
+        if (!loginUser) {
             // In case you logout with settings open, navigate back to home page
             navigate("/");
         }
-    }, [loggedInUser, navigate]);
+    }, [loginUser, navigate]);
 
     const isDirty = useMemo(() => {
         return !areSettingsEquals(settings, mockSettings);
@@ -95,7 +95,7 @@ function Settings() {
 
     const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
     
-    if (!loggedInUser) {
+    if (!loginUser) {
         return <></>;
     }
     
@@ -108,20 +108,20 @@ function Settings() {
                 </Typography>
             </Box>
             <Box display="flex" alignItems="center" padding={1.5}>
-                <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loggedInUser.username} userThumb={loggedInUser.thumbnailUrl} />
+                <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loginUser.username} userThumb={loginUser.thumbnailUrl} />
                 <Box display="flex" flexDirection="column">
                     <Typography>
-                        {loggedInUser.displayName} 
+                        {loginUser.displayName} 
                     </Typography>
                     <Box>
                         <Link 
-                            href={loggedInUser.profileUrl}
+                            href={loginUser.profileUrl}
                             color="secondary"
                             display="inline-flex"
                             sx={{verticalAlign: "top"}}
                         >
                             <Typography variant="subtitle2" overflow="hidden" whiteSpace="nowrap" >
-                                @{loggedInUser.username}
+                                @{loginUser.username}
                             </Typography>
                         </Link>
                     </Box>

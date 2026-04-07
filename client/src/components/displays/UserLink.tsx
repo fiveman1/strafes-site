@@ -14,9 +14,9 @@ interface IUserLinkProps extends LinkProps, UserInfo {
 function UserLink(props: IUserLinkProps) {
     const { userId, username, userRole, userCountry, userThumb, game, strafesStyle, ...linkProps }  = props;
     const theme = useTheme();
-    const { loggedInUser } = useOutletContext() as ContextParams;
+    const { loginUser } = useOutletContext() as ContextParams;
 
-    const isCurrentUser = loggedInUser && userId === loggedInUser.userId;
+    const isCurrentUser = loginUser && userId === loginUser.userId;
 
     return (
     <Link {...linkProps} 

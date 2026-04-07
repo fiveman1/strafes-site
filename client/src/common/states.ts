@@ -246,7 +246,7 @@ export function useLoginUser()  {
     return useQuery(queries.auth.user);
 }
 
-export function useVotingInfo(user: LoginUser | undefined) {
+export function useVoteEligibility(user: LoginUser | undefined) {
     return useQuery(queries.auth.voteEligibility(user));
 }
 

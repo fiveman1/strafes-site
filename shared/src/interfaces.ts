@@ -196,13 +196,13 @@ export interface SettingsValues {
     country: string | undefined
 }
 
-export interface TierVotingEligibilityInfo {
+export interface TierVoteEligibility {
     moderationStatus: ModerationStatus
     bhopCompletions: number
     surfCompletions: number
 }
 
-export function isEligibleForVoting(info: TierVotingEligibilityInfo, game: Game) {
+export function isEligibleForVoting(info: TierVoteEligibility, game: Game) {
     return info.moderationStatus === ModerationStatus.Whitelisted ||
         (game === Game.bhop && info.bhopCompletions >= 20) ||
         (game === Game.surf && info.surfCompletions >= 20);

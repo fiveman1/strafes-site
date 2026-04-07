@@ -187,7 +187,7 @@ async function readWithProgress(res: Response, setLength: (len: number) => void,
 
 function Replays() {
     const { id } = useParams() as { id: string };
-    const { maps, loggedInUser } = useOutletContext() as ContextParams;
+    const { maps, loginUser } = useOutletContext() as ContextParams;
     const [ replay, setReplay ] = useState<Replay>();
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
@@ -575,7 +575,7 @@ function Replays() {
     const mapLink = replay ? `/maps/${replay.mapId}?game=${replay.game}&style=${replay.style}&course=${replay.course}` : "";
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
-    const isCurrentUser = loggedInUser && replay?.userId === loggedInUser.userId;
+    const isCurrentUser = loginUser && replay?.userId === loginUser.userId;
     const allowDiff = Boolean(replay?.compareTimeId);
 
     return (

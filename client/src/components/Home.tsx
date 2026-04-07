@@ -12,15 +12,15 @@ import { ContextParams } from "../common/common";
 
 function Home() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 520px)");
-    const { loggedInUser } = useOutletContext() as ContextParams;
+    const { loginUser } = useOutletContext() as ContextParams;
     
     useEffect(() => {
         document.title = "home - strafes"
     }, []);
 
     let userLink = "/users";
-    if (loggedInUser) {
-        userLink += `/${loggedInUser.userId}`
+    if (loginUser) {
+        userLink += `/${loginUser.userId}`
     }
 
     return (

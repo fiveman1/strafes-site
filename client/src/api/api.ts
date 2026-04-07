@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVotingEligibilityInfo, MapTierInfo, Replay } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay } from "shared";
 import { JsonObject } from "../common/utils";
 
 async function tryGetRequest(url: string, params?: JsonObject) {
@@ -246,7 +246,7 @@ export async function getVotingInfo() {
 
     if (!res) return null;
 
-    return res.data as TierVotingEligibilityInfo;
+    return res.data as TierVoteEligibility;
 }
 
 export async function getCurrentMapTierVote(mapId: number) {

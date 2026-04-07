@@ -1,11 +1,11 @@
-import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationStatus, Style, TierVotingEligibilityInfo, StrafesUserRole } from "shared";
+import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationStatus, Style, TierVoteEligibility, StrafesUserRole } from "shared";
 import { getTimes, getUserInfo } from "./strafes_api/api.js";
 import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
 import memoize from "memoize";
 import { getAllUsersToStrafesRoles } from "./roles.js";
 
-export async function loadTierVotingEligibility(userId: number): Promise<TierVotingEligibilityInfo> {
+export async function loadTierVotingEligibility(userId: number): Promise<TierVoteEligibility> {
     const userInfoPromise = getUserInfo(userId);
     const bhopTimesPromise = getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0);
     const surfTimesPromise = getTimes(userId, undefined, 1, 1, Game.surf, Style.all, 0);
