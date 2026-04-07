@@ -5,7 +5,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCountryCode, formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
-import { getBotFileResponse, getMapFileResponse, getReplayById } from "../api/api";
+import { getBotFileResponse, getMapFileResponse } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
@@ -21,6 +21,8 @@ import { getMapTierColor } from "../common/colors";
 import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { clamp } from "../common/utils";
+import { useQuery } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -127,8 +129,8 @@ function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
 
 const FOOTER_HEIGHT = 156;
 
-function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLElement, diffTime: number, diffSpeed: number) {
-    const diffMs = Math.round(diffTime * 1000);
+function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLElement, timeDiff: number, speedDiff: number) {
+    const diffMs = Math.round(timeDiff * 1000);
     const timePos = diffMs >= 0;
     let timeText = timePos ? "+" : "-";
     timeText += formatDiff(Math.abs(diffMs));
@@ -143,9 +145,9 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
         diffTimeElement.classList.add("worse");
     }
     
-    const speedPos = diffSpeed >= 0;
+    const speedPos = speedDiff >= 0;
     let speedText = speedPos ? "+" : "";
-    speedText += diffSpeed.toFixed(2) + " u/s";
+    speedText += speedDiff.toFixed(2) + " u/s";
     diffSpeedElement.innerText = speedText;
     if (speedPos) {
         diffSpeedElement.classList.remove("better");
@@ -188,7 +190,13 @@ async function readWithProgress(res: Response, setLength: (len: number) => void,
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps, loginUser } = useOutletContext() as ContextParams;
-    const [ replay, setReplay ] = useState<Replay>();
+
+    const theme = useTheme();
+    const smallScreen = useMediaQuery("(max-width: 600px)");
+
+    const replayQuery = useQuery(queries.replays.replay(id));
+    const replay = replayQuery.data;
+    
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
@@ -201,10 +209,8 @@ function Replays() {
     const [ mapFileReceived, setMapFileReceived ] = useState(0);
     const [ botFileLength, setBotFileLength ] = useState(0);
     const [ botFileReceived, setBotFileReceived ] = useState(0);
-    const [ wrBotFileLength, setWrBotFileLength ] = useState(0);
-    const [ wrBotFileReceived, setWrBotFileReceived ] = useState(0);
-    const theme = useTheme();
-    const smallScreen = useMediaQuery("(max-width: 600px)");
+    const [ diffBotFileLength, setDiffBotFileLength ] = useState(0);
+    const [ diffBotFileReceived, setDiffBotFileReceived ] = useState(0);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
@@ -214,10 +220,10 @@ function Replays() {
     const diffSpeedTextRef = useRef<HTMLElement>(null);
     const graphicsRef = useRef<Graphics>(null);
     const botRef = useRef<CompleteBot>(null);
-    const wrBotRef = useRef<CompleteBot>(null);
-    const wrBvhRef = useRef<Bvh>(null);
+    const diffBotRef = useRef<CompleteBot>(null);
+    const diffBvhRef = useRef<Bvh>(null);
     const playbackRef = useRef<PlaybackHead>(null);
-    const wrPlaybackRef = useRef<PlaybackHead>(null);
+    const diffPlaybackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
@@ -229,20 +235,148 @@ function Replays() {
         botRef.current = null;
     }, []);
 
-    // Update current run timer on a 17ms interval
-    // Separated from animation loop for *important* performance reasons
     useEffect(() => {
-        const interval = setInterval(() => {
-            const playback = playbackRef.current;
-            if (playback) {
-                const headTime = playback.get_head_time(sessionTimer.current);
-                const curPlayerTime = Math.min(headTime - botOffset, duration);
-                setPlaybackTime(curPlayerTime);
-            }
-        }, 17);
+        if (replay) {
+            const placementText = replay.placement === 1 ? "WR" : `${formatPlacement(replay.placement)} place`;
+            document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} (${placementText}) - replays - strafes`;
+        }
+        else {
+            document.title = `replays - strafes`;
+        }
+    }, [replay]);
 
-        return () => clearInterval(interval);
-    }, [botOffset, duration]);
+    useEffect(() => {
+        if (replayQuery.isSuccess || replayQuery.isError) {
+            if (!replay) {
+                setError(`Invalid replay (ID: ${id}).`);
+                return;
+            }
+
+            if (!replay.hasBot) {
+                setError("No replay exists for this time.");
+                return;
+            }
+
+        }
+        else if (!replay) {
+            return;
+        }
+
+        let isCanceled = false;
+        setMapFileReceived(0);
+        setBotFileReceived(0);
+        setDiffBotFileReceived(0);
+        
+        const promise = async () => {
+            if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
+                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
+                return;
+            }
+
+            setLoading(true);
+            
+            await init();
+
+            if (isCanceled) return;
+
+            const mapPromise = getMapFileResponse(replay.mapId);
+            const botPromise = getBotFileResponse(replay.id);
+            let diffBotPromise: Promise<Response | null> | null = null;
+            if (replay.compareTimeId) {
+                diffBotPromise = getBotFileResponse(replay.compareTimeId);
+            }
+            const mapRes = await mapPromise;
+            const botRes = await botPromise;
+            const diffBotRes = diffBotPromise ? await diffBotPromise : null;
+
+            if (!mapRes) {
+                setError("Couldn't load map file.");
+                return;
+            }
+
+            if (!botRes) {
+                setError("Couldn't load bot file.");
+                return;
+            }
+
+            if (isCanceled) return;
+
+            
+            const mapFilePromise = readWithProgress(mapRes, setMapFileLength, setMapFileReceived);
+            const botFilePromise = readWithProgress(botRes, setBotFileLength, setBotFileReceived);
+            let diffBotFilePromise: Promise<Uint8Array> | undefined = undefined;
+            if (diffBotRes) {
+                diffBotFilePromise = readWithProgress(diffBotRes, setDiffBotFileLength, setDiffBotFileReceived);
+            }
+
+            const mapFile = await mapFilePromise;
+            const botFile = await botFilePromise;
+            const diffBotFile = diffBotFilePromise ? await diffBotFilePromise : undefined;
+
+            if (isCanceled) return;
+
+            const canvas = canvasRef.current;
+            if (!canvas) {
+                setError("Couldn't setup bot playback.");
+                return;
+            }
+
+            try {
+                const map = new CompleteMap(mapFile);
+                const bot = new CompleteBot(botFile);
+                const playback = new PlaybackHead(bot, 0);
+                const graphics = await setup_graphics(canvas);
+
+                playbackRef.current = playback;
+                graphicsRef.current = graphics;
+                botRef.current = bot;
+
+                if (diffBotFile) {
+                    const diffBot = new CompleteBot(diffBotFile);
+                    diffBotRef.current = diffBot;
+                    diffBvhRef.current = new Bvh(diffBot);
+                    diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
+                }
+
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                handleCanvasSize(width, height, playback, graphics);
+
+                playback.advance_time(bot, 0);
+                playback.set_head_time(bot, 0, 0);
+                graphics.change_map(map);
+
+                const botDuration = bot.duration();
+                const runDuration = getReplayRunDuration(replay, bot);
+                setDuration(runDuration);
+                const offset = botDuration - runDuration;
+                setBotOffset(offset);
+                setPlaybackTime(-offset);
+                setLoading(false);
+            }
+            catch (err) {
+                console.error(err);
+                setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
+            }
+        };
+        promise();
+
+        return () => { 
+            isCanceled = true;
+            if (playbackRef.current) {
+                playbackRef.current.free();
+                playbackRef.current = null;
+            }
+            if (graphicsRef.current) {
+                graphicsRef.current.free();
+                graphicsRef.current = null;
+            }
+            if (botRef.current) {
+                botRef.current.free();
+                botRef.current = null;
+            }
+        };
+    }, [id, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -274,24 +408,24 @@ function Replays() {
                     }
                     updateInputDisplay(input, playback);
 
-                    const wrBot = wrBotRef.current;
-                    const bvh = wrBvhRef.current;
-                    const wrPlayback = wrPlaybackRef.current;
+                    const diffBot = diffBotRef.current;
+                    const bvh = diffBvhRef.current;
+                    const diffPlayback = diffPlaybackRef.current;
                     const diffTimeElement = diffTimeTextRef.current;
                     const diffSpeedElement = diffSpeedTextRef.current;
 
-                    if (wrBot && bvh && wrPlayback && diffTimeElement && diffSpeedElement) {
+                    if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
                         const pos = playback.get_position(bot, newSessionTime);
-                        const wrPlaybackTime = bvh.closest_time_to_point(wrBot, pos);
-                        if (wrPlaybackTime !== undefined) {
-                            wrPlayback.set_head_time(wrBot, newSessionTime, getSafeTime(wrPlaybackTime, wrBot));
+                        const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
+                        if (diffPlaybackTime !== undefined) {
+                            diffPlayback.set_head_time(diffBot, newSessionTime, getSafeTime(diffPlaybackTime, diffBot));
                             const botTime = playback.get_run_time(bot, newSessionTime, replay.course) ?? 0;
-                            const wrTime = wrPlayback.get_run_time(wrBot, newSessionTime, replay.course) ?? 0;
-                            const wrDiff = botTime - wrTime;
-                            const wrSpeed = wrPlayback.get_speed(wrBot, newSessionTime);
-                            const wrSpeedDiff = speed - wrSpeed;
+                            const diffBotTime = diffPlayback.get_run_time(diffBot, newSessionTime, replay.course) ?? 0;
+                            const timeDiff = botTime - diffBotTime;
+                            const diffBotSpeed = diffPlayback.get_speed(diffBot, newSessionTime);
+                            const speedDiff = speed - diffBotSpeed;
 
-                            updateDiffDisplay(diffTimeElement, diffSpeedElement, wrDiff, wrSpeedDiff);
+                            updateDiffDisplay(diffTimeElement, diffSpeedElement, timeDiff, speedDiff);
                         }
                     }
                 }
@@ -309,6 +443,21 @@ function Replays() {
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
     }, [setError, replay?.course]);
+
+    // Update current run timer on a 17ms interval
+    // Separated from animation loop for *important* performance reasons
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const playback = playbackRef.current;
+            if (playback) {
+                const headTime = playback.get_head_time(sessionTimer.current);
+                const curPlayerTime = Math.min(headTime - botOffset, duration);
+                setPlaybackTime(curPlayerTime);
+            }
+        }, 17);
+
+        return () => clearInterval(interval);
+    }, [botOffset, duration]);
 
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
@@ -397,145 +546,11 @@ function Replays() {
         };
     }, [onFullscreen]);
 
-    useEffect(() => {
-        document.title = `replays - strafes`;
-
-        let isCanceled = false;
-        setMapFileReceived(0);
-        setBotFileReceived(0);
-        setWrBotFileReceived(0);
-        
-        const promise = async () => {
-            if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
-
-            setLoading(true);
-            
-            await init();
-
-            const replay = await getReplayById(id);
-            if (!replay) {
-                setError(`Invalid replay (ID: ${id}).`);
-                return;
-            }
-
-            setReplay(replay);
-
-            if (!replay.hasBot) {
-                setError("No replay exists for this time.");
-                return;
-            }
-
-            document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} - replays - strafes`;
-
-            if (isCanceled) return;
-
-            const mapPromise = getMapFileResponse(replay.mapId);
-            const botPromise = getBotFileResponse(replay.id);
-            let wrBotPromise: Promise<Response | undefined> | undefined = undefined;
-            if (replay.compareTimeId) {
-                wrBotPromise = getBotFileResponse(replay.compareTimeId);
-            }
-            const mapRes = await mapPromise;
-            const botRes = await botPromise;
-            const wrBotRes = wrBotPromise ? await wrBotPromise : undefined;
-
-            if (!mapRes) {
-                setError("Couldn't load map file.");
-                return;
-            }
-
-            if (!botRes) {
-                setError("Couldn't load bot file.");
-                return;
-            }
-
-            if (isCanceled) return;
-
-            
-            const mapFilePromise = readWithProgress(mapRes, setMapFileLength, setMapFileReceived);
-            const botFilePromise = readWithProgress(botRes, setBotFileLength, setBotFileReceived);
-            let wrBotFilePromise: Promise<Uint8Array> | undefined = undefined;
-            if (wrBotRes) {
-                wrBotFilePromise = readWithProgress(wrBotRes, setWrBotFileLength, setWrBotFileReceived);
-            }
-
-            const mapFile = await mapFilePromise;
-            const botFile = await botFilePromise;
-            const wrBotFile = wrBotFilePromise ? await wrBotFilePromise : undefined;
-
-            if (isCanceled) return;
-
-            const canvas = canvasRef.current;
-            if (!canvas) {
-                setError("Couldn't setup bot playback.");
-                return;
-            }
-
-            try {
-                const map = new CompleteMap(mapFile);
-                const bot = new CompleteBot(botFile);
-                const playback = new PlaybackHead(bot, 0);
-                const graphics = await setup_graphics(canvas);
-
-                playbackRef.current = playback;
-                graphicsRef.current = graphics;
-                botRef.current = bot;
-
-                if (wrBotFile) {
-                    const wrBot = new CompleteBot(wrBotFile);
-                    wrBotRef.current = wrBot;
-                    wrBvhRef.current = new Bvh(wrBot);
-                    wrPlaybackRef.current = new PlaybackHead(wrBot, 0);
-                }
-
-                const width = canvas.clientWidth;
-                const height = canvas.clientHeight;
-                handleCanvasSize(width, height, playback, graphics);
-
-                playback.advance_time(bot, 0);
-                playback.set_head_time(bot, 0, 0);
-                graphics.change_map(map);
-
-                const botDuration = bot.duration();
-                const runDuration = getReplayRunDuration(replay, bot);
-                setDuration(runDuration);
-                const offset = botDuration - runDuration;
-                setBotOffset(offset);
-                setPlaybackTime(-offset);
-                setLoading(false);
-            }
-            catch (err) {
-                console.error(err);
-                setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
-            }
-        };
-        promise();
-
-        return () => { 
-            isCanceled = true;
-            if (playbackRef.current) {
-                playbackRef.current.free();
-                playbackRef.current = null;
-            }
-            if (graphicsRef.current) {
-                graphicsRef.current.free();
-                graphicsRef.current = null;
-            }
-            if (botRef.current) {
-                botRef.current.free();
-                botRef.current = null;
-            }
-        };
-    }, [id, setError]);
-
     let downloadProgress = -1;
     if (loading) {
         let mapProgress = -1;
         let botProgress = -1;
-        let wrBotProgress = -1;
+        let diffBotProgress = -1;
         
         if (mapFileLength !== 0) {
             mapProgress = mapFileReceived / mapFileLength;
@@ -545,13 +560,13 @@ function Replays() {
             botProgress = botFileReceived / botFileLength;
         }
 
-        if (wrBotFileLength !== 0) {
-            wrBotProgress = wrBotFileReceived / wrBotFileLength;
+        if (diffBotFileLength !== 0) {
+            diffBotProgress = diffBotFileReceived / diffBotFileLength;
         }
 
         let progress = Math.min(mapProgress, botProgress);
-        if (wrBotProgress !== -1) {
-            progress = Math.min(progress, wrBotProgress);
+        if (diffBotProgress !== -1) {
+            progress = Math.min(progress, diffBotProgress);
         }
 
         if (progress !== -1) {
@@ -567,7 +582,7 @@ function Replays() {
     }
 
     let footerHeight = FOOTER_HEIGHT;
-    if (fullscreen || (error && !replay)) {
+    if (fullscreen) {
         footerHeight = 0;
     }
 
@@ -653,6 +668,7 @@ function Replays() {
                                     playerHeight={playerHeight}
                                     inputContainerRef={inputContainerRef}
                                     loading={loading}
+                                    errorReplay={!!error}
                                     diffSpeedTextRef={diffSpeedTextRef}
                                     diffTimeTextRef={diffTimeTextRef}
                                     allowDiff={allowDiff}

@@ -44,6 +44,7 @@ interface PlaybackOverlayProps {
     playerHeight: number
     inputContainerRef: React.Ref<HTMLDivElement>
     loading: boolean
+    errorReplay: boolean
     diffTimeTextRef: React.Ref<HTMLElement>
     diffSpeedTextRef: React.Ref<HTMLElement>
     allowDiff: boolean
@@ -56,7 +57,7 @@ const SHOW_DIFF_SETTING = "player_showDiff";
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
-        playerHeight, inputContainerRef, loading, diffTimeTextRef, diffSpeedTextRef, allowDiff } = props;
+        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff } = props;
 
     const theme = useTheme();
     
@@ -373,7 +374,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 onPointerUp={onClickPlayer}
             >
                 <Box
-                    display={smallScreen || loading ? "none" : "flex"}
+                    display={smallScreen || loading || errorReplay ? "none" : "flex"}
                     position="absolute"
                     alignItems="center"
                     height="150px"

@@ -7,7 +7,7 @@ async function tryGetRequest(url: string, params?: JsonObject) {
         return await axios.get("/api/" + url, {params: params, timeout: 15000});
     } 
     catch {
-        return undefined;
+        return null;
     }
 }
 
@@ -16,7 +16,7 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
         return await axios.post("/api/" + url, params, {timeout: 5000});
     } 
     catch {
-        return undefined;
+        return null;
     }
 }
 
@@ -79,7 +79,7 @@ export async function getTimeData(
     onlyWR?: boolean
 ): Promise<{ times: Time[], pagination: Pagination } | null> {
     
-    let res: AxiosResponse | undefined;
+    let res: AxiosResponse | null;
     if (userId) {
         res = await tryGetRequest("user/times/" + userId, {
             start: start,
@@ -220,7 +220,7 @@ export async function login(path: string) {
         path: path
     });
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data.url as string;
 }
@@ -273,7 +273,7 @@ export async function voteForMapTier(mapId: number, tier: number | null) {
 export async function getReplayById(id: string) {
     const res = await tryGetRequest("replays/times/" + id);
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as Replay;
 }
@@ -281,13 +281,13 @@ export async function getReplayById(id: string) {
 export async function getBotFileResponse(timeId: string) {
     const res = await tryGetRequest("replays/bots/" + timeId);
     
-    if (!res) return undefined;
+    if (!res) return null;
 
     const url = res.data.url as string;
 
     const fileRes = await fetch(url);
 
-    if (!fileRes.ok) return undefined;
+    if (!fileRes.ok) return null;
 
     return fileRes;
 }
@@ -295,13 +295,13 @@ export async function getBotFileResponse(timeId: string) {
 export async function getMapFileResponse(mapId: number) {
     const res = await tryGetRequest("replays/maps/" + mapId);
     
-    if (!res) return undefined;
+    if (!res) return null;
 
     const url = res.data.url as string;
 
     const fileRes = await fetch(url);
     
-    if (!fileRes.ok) return undefined;
+    if (!fileRes.ok) return null;
 
     return fileRes;
 }

@@ -1,5 +1,5 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMaps, getNumWRsForUser, getRanks, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { getAllTimesForUser, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMaps, getNumWRsForUser, getRanks, getReplayById, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
 import { Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
@@ -96,6 +96,12 @@ export const queries = createQueryKeyStore({
         tierVote: (user: LoginUser | undefined, mapId: number) => ({
             queryKey: [user?.userId, mapId],
             queryFn: () => getMapTierVoteWrapper(user, mapId)
+        })
+    },
+    replays: {
+        replay: (timeId: string) => ({
+            queryKey: [timeId],
+            queryFn: () => getReplayById(timeId)
         })
     }
 });
