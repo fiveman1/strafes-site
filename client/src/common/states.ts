@@ -7,7 +7,6 @@ import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, p
 import { useMediaQuery, useTheme } from '@mui/material';
 import { queries } from "../api/queries";
 import { useQuery } from "@tanstack/react-query";
-import { getLoggedInUser, getMaps } from "../api/api";
 
 export function useSettings() {
     const theme = localStorage.getItem("theme") as PaletteMode || "dark";
@@ -244,19 +243,17 @@ export function useComparePage() {
 }
 
 export function useLoginUser()  {
-    return useQuery({
-        ...queries.auth.user,
-        queryFn: () => getLoggedInUser()
-    });
+    return useQuery(queries.auth.user);
 }
 
 export function useVotingInfo(user: LoginUser | undefined) {
-    return useQuery(queries.auth.tierVoting(user));
+    return useQuery(queries.auth.voteEligibility(user));
 }
 
 export function useMaps() {
-    return useQuery({
-       ...queries.maps.maps,
-       queryFn: () => getMaps()
-    });
+    return useQuery(queries.maps.maps);
+}
+
+export function useMapTierVote(user: LoginUser | undefined, mapId: number) {
+    return useQuery(queries.maps.tierVote(user, mapId));
 }

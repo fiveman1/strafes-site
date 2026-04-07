@@ -10,7 +10,7 @@ import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
-import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort } from "../common/states";
+import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort, useMapTierVote } from "../common/states";
 import MapSearch from "./search/MapSearch";
 import { grey } from "@mui/material/colors";
 import { sortAndFilterMaps } from "../common/sort";
@@ -19,7 +19,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ColorChip from "./displays/ColorChip";
 import MapThumb from "./displays/MapThumb";
-import { getCurrentMapTierVote, voteForMapTier } from "../api/api";
+import { voteForMapTier } from "../api/api";
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import BlockIcon from '@mui/icons-material/Block';
 import { dateTimeFormat, relativeTimeFormatter, shortDateFormat } from "../common/datetime";
@@ -27,6 +27,8 @@ import TimeAgo from "react-timeago";
 import MapTierListSelector from "./forms/MapTierListSelector";
 import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
 import MapFilterSortOptions from "./forms/MapFilterSortOptions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queries } from "../api/queries";
 
 const longDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -39,39 +41,12 @@ const longDateFormat = Intl.DateTimeFormat(undefined, {
 function MapInfoCard(props: MapDetailsProps) {
     const { selectedMap } = props;
 
-    const { sortedMaps, loggedInUser } = useOutletContext() as ContextParams;
+    const { sortedMaps } = useOutletContext() as ContextParams;
 
     const [ filterGame, setFilterGame ] = useFilterGame();
     const [ filterTiers, setFilterTiers ] = useFilterTiers();
     const [ sort, setSort ] = useMapSort();
     const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") !== "false"); // Expanded by default
-    const [ tierVoteInfo, setTierVoteInfo ] = useState<MapTierInfo>();
-    const [ tierVoteLoading, setTierVoteLoading ] = useState(true);
-
-    useEffect(() => {
-        if (!loggedInUser || !selectedMap) {
-            setTierVoteInfo(undefined);
-            setTierVoteLoading(false);
-            return;
-        }
-
-        let isLoading = true;
-        setTierVoteLoading(true);
-        
-        const promise = async () => {
-            const info = await getCurrentMapTierVote(selectedMap.id);
-            if (!isLoading) {
-                return;
-            }
-            setTierVoteInfo(info);
-            setTierVoteLoading(false);
-        }
-        promise();
-
-        return () => {
-            isLoading = false;
-        }
-    }, [loggedInUser, selectedMap]);
 
     const handleExpand = useCallback((expanded: boolean) => {
         setExpanded(expanded);
@@ -121,7 +96,7 @@ function MapInfoCard(props: MapDetailsProps) {
             </Box>
             <MapSearch {...props} maps={maps} />
             {selectedMap && expanded ?
-                <MapDetailSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />
+                <MapDetailSection selectedMap={selectedMap} />
                 : undefined}
         </Paper>
     )
@@ -129,13 +104,10 @@ function MapInfoCard(props: MapDetailsProps) {
 
 interface MapDetailSectionProps {
     selectedMap: Map
-    tierVoteInfo: MapTierInfo | undefined
-    setTierVoteInfo: (info: MapTierInfo | undefined) => void
-    tierVoteLoading: boolean
 }
 
 function MapDetailSection(props: MapDetailSectionProps) {
-    const { selectedMap, tierVoteInfo, setTierVoteInfo, tierVoteLoading } = props;
+    const { selectedMap } = props;
     
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
     const theme = useTheme();
@@ -182,7 +154,7 @@ function MapDetailSection(props: MapDetailSectionProps) {
                     </Box>
                     <Box display="flex" flexDirection="column" alignItems="center">
                         {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
-                        <MapTierVotingSection selectedMap={selectedMap} tierVoteInfo={tierVoteInfo} setTierVoteInfo={setTierVoteInfo} tierVoteLoading={tierVoteLoading} />}
+                        <MapTierVotingSection selectedMap={selectedMap} />}
                     </Box>
                 </Box>
                 <Box
@@ -278,29 +250,45 @@ function getIneligibleReason(voteInfo: TierVotingEligibilityInfo | undefined, ga
 }
 
 function MapTierVotingSection(props: MapDetailSectionProps) {
-    const { selectedMap, tierVoteInfo, setTierVoteInfo, tierVoteLoading } = props;
-    const { votingInfo } = useOutletContext() as ContextParams;
+    const { selectedMap } = props;
+    const { loggedInUser, votingInfo } = useOutletContext() as ContextParams;
     const theme = useTheme();
+    const queryClient = useQueryClient();
+
+    const tierVoteQuery = useMapTierVote(loggedInUser, selectedMap.id);
+    const tierVoteInfo = tierVoteQuery.data ?? undefined;
+    const tierVoteLoading = tierVoteQuery.isLoading;
+
+    const onMutateVote = useCallback((info: { mapId: number, tier: number | null }) => {
+        const { mapId, tier } = info;
+        const fakeTier: MapTierInfo | null = tier === null ? null : {
+            userId: loggedInUser?.userId ?? 0,
+            mapId: mapId,
+            tier: tier,
+            weight: 0,
+            updatedAt: ""
+        };
+        queryClient.setQueryData(queries.maps.tierVote(loggedInUser, selectedMap.id).queryKey, fakeTier);
+        return voteForMapTier(mapId, tier);
+    }, [loggedInUser, queryClient, selectedMap.id]);
+
+    const onMutateVoteSuccess = useCallback((data: MapTierInfo | null) => {
+        queryClient.setQueryData(queries.maps.tierVote(loggedInUser, selectedMap.id).queryKey, data);
+    }, [loggedInUser, queryClient, selectedMap.id]);
+    
+    const voteMutation = useMutation({
+        mutationFn: onMutateVote,
+        onSuccess: onMutateVoteSuccess
+    });
 
     const isLightMode = theme.palette.mode === "light";
     const isEligible = (votingInfo && isEligibleForVoting(votingInfo, selectedMap.game));
     const reason = isEligible ? getEligibleReason(votingInfo, selectedMap.game) : getIneligibleReason(votingInfo, selectedMap.game);
-    const [ fakeTier, setFakeTier ] = useState(tierVoteInfo?.tier ?? null);
-    const [ pendingUpdate, setPendingUpdate ] = useState(false);
 
-    const onChange = useCallback(async (val: number) => {
-        const tier = val === fakeTier ? null : val;
-        setFakeTier(tier);
-        setPendingUpdate(true);
-        const info = await voteForMapTier(selectedMap.id, tier);
-        setTierVoteInfo(info);
-        setFakeTier(info ? info.tier : null);
-        setPendingUpdate(false);
-    }, [fakeTier, selectedMap.id, setTierVoteInfo]);
-
-    useEffect(() => {
-        setFakeTier(tierVoteInfo?.tier ?? null);
-    }, [tierVoteInfo?.tier]);
+    const onChange = useCallback((val: number) => {
+        const tier = val === tierVoteInfo?.tier ? null : val;
+        voteMutation.mutate({ mapId: selectedMap.id, tier: tier });
+    }, [selectedMap.id, tierVoteInfo?.tier, voteMutation]);
 
     const tierAxisNames: number[] = [];
     const colors: string[] = [];
@@ -329,10 +317,10 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 <Skeleton height="28px" width="200px"></Skeleton>
                 :
                 <MapTierListSelector 
-                    selectedTiers={fakeTier ? [fakeTier] : []} 
-                    onSelectTier={onChange} 
+                    selectedTiers={tierVoteInfo ? [tierVoteInfo.tier] : []}
+                    onSelectTier={onChange}
                     disabled={!isEligible}
-                    readOnly={pendingUpdate} 
+                    readOnly={voteMutation.isPending}
                 />}
             </Box>
             {selectedMap.tier !== undefined &&
@@ -370,7 +358,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     <ChartsTooltip />
                 </ChartContainer>
             </Box>}
-            {tierVoteInfo &&
+            {tierVoteInfo?.updatedAt &&
             <Tooltip title={dateTimeFormat.format(new Date(tierVoteInfo.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
                 <Typography variant="caption" color="textSecondary" mt={0.5} textAlign="center">
                     Submitted {<TimeAgo date={tierVoteInfo.updatedAt} title="" formatter={relativeTimeFormatter} />}

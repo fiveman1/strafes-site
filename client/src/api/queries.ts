@@ -1,5 +1,5 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getCompletionsForUser, getLeaderboardPage, getNumWRsForUser, getRanks, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { getAllTimesForUser, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMaps, getNumWRsForUser, getRanks, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
 import { Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
@@ -12,6 +12,11 @@ async function queryByUserSearch(search: UserSearchData) {
 async function getVotingInfoWrapper(user: LoginUser | undefined | null) {
     if (!user) return null;
     return await getVotingInfo();
+}
+
+async function getMapTierVoteWrapper(user: LoginUser | undefined, mapId: number) {
+    if (!user) return null;
+    return await getCurrentMapTierVote(mapId);
 }
 
 export const queries = createQueryKeyStore({
@@ -74,13 +79,23 @@ export const queries = createQueryKeyStore({
         })
     },
     auth: {
-        user: null,
-        tierVoting: (user: LoginUser | undefined | null) => ({
+        user: {
+            queryKey: null,
+            queryFn: () => getLoggedInUser()
+        },
+        voteEligibility: (user: LoginUser | undefined | null) => ({
             queryKey: [user?.userId],
             queryFn: () => getVotingInfoWrapper(user)
         })
     },
     maps: {
-        maps: null
+        maps: {
+            queryKey: null,
+            queryFn: () => getMaps()
+        },
+        tierVote: (user: LoginUser | undefined, mapId: number) => ({
+            queryKey: [user?.userId, mapId],
+            queryFn: () => getMapTierVoteWrapper(user, mapId)
+        })
     }
 });

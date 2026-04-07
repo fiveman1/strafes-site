@@ -254,7 +254,7 @@ export async function getCurrentMapTierVote(mapId: number) {
         mapId: mapId
     });
 
-    if (!res) return undefined;
+    if (!res) return null;
 
     return res.data as MapTierInfo | undefined;
 }
@@ -265,9 +265,9 @@ export async function voteForMapTier(mapId: number, tier: number | null) {
         tier: tier
     });
 
-    if (!res) return undefined;
+    if (!res) return null;
 
-    return res.data.result as MapTierInfo | undefined;
+    return (res.data.result ?? null) as MapTierInfo | null;
 }
 
 export async function getReplayById(id: string) {

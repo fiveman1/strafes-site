@@ -4,7 +4,7 @@ import { Breadcrumbs, Link, Paper, Tooltip, Typography, useMediaQuery } from "@m
 import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, useGridApiRef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortModel, useGridApiRef } from "@mui/x-data-grid";
 import { RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../common/common";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -15,6 +15,7 @@ import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import { parseAsNumberLiteral, useQueryState } from "nuqs";
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
@@ -95,6 +96,12 @@ function RanksCard(props: IRanksCardProps) {
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
 
+    const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
+        parseAsNumberLiteral([RankSortBy.RankAsc, RankSortBy.SkillAsc])
+        .withDefault(RankSortBy.RankAsc)
+        .withOptions({ history: "replace" })
+    );
+
     const placementWidth = numDigits(maxPage) > 3 ? 62 : 50;
     const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
 
@@ -122,11 +129,27 @@ function RanksCard(props: IRanksCardProps) {
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
-            const sort = params.sortModel.at(0);
-            const sortBy = sort?.field === "skill" ? RankSortBy.SkillAsc : RankSortBy.RankAsc;
+            const sort = params.sortModel[0];
+            const sortBy = sort.field === "skill" ? RankSortBy.SkillAsc : RankSortBy.RankAsc;
+
             return await updateRowData(+params.start, params.end, sortBy);
         }
     }), [updateRowData]);
+
+    const onSortChanged = useCallback((model: GridSortModel) => {
+        const sort = model[0];
+        const sortBy = sort.field === "skill" ? RankSortBy.SkillAsc : RankSortBy.RankAsc;
+        setCurrentSortBy(sortBy);
+    }, [setCurrentSortBy]);
+
+    const sort: GridSortModel = useMemo(() => {
+        switch (currentSortBy) {
+            case RankSortBy.RankAsc:
+                return [{ field: "rank", sort: "asc" }];
+            case RankSortBy.SkillAsc:
+                return [{ field: "skill", sort: "asc" }];
+        }
+    }, [currentSortBy]);
 
     return (
     <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
@@ -148,13 +171,14 @@ function RanksCard(props: IRanksCardProps) {
                     rowCount: -1
                 },
                 sorting: {
-                    sortModel: [{ field: "rank", sort: "asc" }],
+                    sortModel: sort,
                 }
             }}
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
             onPaginationModelChange={onPageChange}
+            onSortModelChange={onSortChanged}
             sx={{
                 "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
             }}
