@@ -251,12 +251,10 @@ function Replays() {
                 setError(`Invalid replay (ID: ${id}).`);
                 return;
             }
-
             if (!replay.hasBot) {
                 setError("No replay exists for this time.");
                 return;
             }
-
         }
         else if (!replay) {
             return;
@@ -266,14 +264,13 @@ function Replays() {
         setMapFileReceived(0);
         setBotFileReceived(0);
         setDiffBotFileReceived(0);
+        setLoading(true);
         
         const promise = async () => {
             if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
                 setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
                 return;
             }
-
-            setLoading(true);
             
             await init();
 
@@ -300,7 +297,6 @@ function Replays() {
             }
 
             if (isCanceled) return;
-
             
             const mapFilePromise = readWithProgress(mapRes, setMapFileLength, setMapFileReceived);
             const botFilePromise = readWithProgress(botRes, setBotFileLength, setBotFileReceived);
