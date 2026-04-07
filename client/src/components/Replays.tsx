@@ -670,7 +670,7 @@ function Replays() {
                                     allowDiff={allowDiff}
                                 />
                             </Box>
-                            {loading && 
+                            {(loading && !error) && 
                             <Box
                                 position="absolute"
                                 top="50%"
