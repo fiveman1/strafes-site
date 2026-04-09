@@ -604,6 +604,32 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     });
 });
 
+const recordValidator = vine.create({
+    mapId: vine.number().withoutDecimals().nonNegative(),
+    userId: vine.number().withoutDecimals().nonNegative()
+});
+
+app.get("/api/times/records", rateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const [error, result] = await recordValidator.tryValidate(req.query);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const userId = result.userId;
+    const mapId = result.mapId;
+
+    const timeData = await getTimesPaged(0, 99, TimeSortBy.DateDesc, -1, false, Game.all, Style.all, { userId, mapId });
+    if (!timeData) {
+        res.status(404).json({ error: "Not found" });
+        return;
+    }
+
+    await setTimeDiffs(timeData.data);
+
+    res.status(200).json(timeData.data);
+});
+
 async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     if (times.length < 1) {
         return;

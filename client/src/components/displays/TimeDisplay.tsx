@@ -41,7 +41,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                         <Typography variant="inherit" color="textPrimary" className="timeValue">
                             {formatTime(ms)}
                         </Typography>
-                        <SmartDisplayIcon className="videoIcon" color="secondary" fontSize="small" sx={{ ml: 0.75, mb: "2px", transition: "color .15s ease" }} />
+                        <SmartDisplayIcon className="videoIcon" color="secondary" sx={{ ml: 0.75, mb: "1px", transition: "color .15s ease", fontSize: "17px" }} />
                     </Box>
                 </Link>
             );
@@ -73,7 +73,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                         {formatTime(ms)}
                     </Typography>
                     <DiffDisplay ms={ms} diff={diff} />
-                    <SmartDisplayIcon className="videoIcon" color="secondary" fontSize="small" sx={{ ml: 0.75, mb: "2px", transition: "color .15s ease" }} />
+                    <SmartDisplayIcon className="videoIcon" color="secondary" fontSize="small" sx={{ ml: 0.75, mb: "1px", transition: "color .15s ease", fontSize: "17px",  }} />
                 </Box>
             </Link>
         );

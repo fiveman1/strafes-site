@@ -123,6 +123,17 @@ export async function getTimeData(
     };
 }
 
+export async function getRecords(mapId: number, userId: number) {
+    const res = await tryGetRequest("times/records", {
+        mapId: mapId,
+        userId: userId
+    });
+
+    if (!res) return null
+
+    return res.data as Time[];
+}
+
 export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | null> {
     const res = await tryGetRequest("user/times/all/" + userId, {
         game: game,

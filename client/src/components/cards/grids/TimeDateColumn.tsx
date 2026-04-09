@@ -8,7 +8,7 @@ function TimeDateColumn(props: {time: Time}) {
     const { time } = props;
 
     return (
-        <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center" alignItems="center">
+        <Box display="flex" flexDirection="column" height="100%" lineHeight="normal" justifyContent="center" alignItems="center" gap="1px">
             <TimeDisplay time={time} hideDiff />
             <DiffDisplay ms={time.time} diff={time.wrDiff} />
             <DateDisplay date={time.date} color="text.secondary" />

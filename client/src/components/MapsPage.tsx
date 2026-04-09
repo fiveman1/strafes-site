@@ -29,6 +29,7 @@ import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
 import MapFilterSortOptions from "./forms/MapFilterSortOptions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import RecordCard from "./cards/RecordCard";
 
 const longDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -370,7 +371,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
 
 function MapsPage() {
     const { id } = useParams() as { id: string };
-    const { maps, sortedMaps } = useOutletContext() as ContextParams;
+    const { maps, sortedMaps, loginUser } = useOutletContext() as ContextParams;
 
     const [initalLoadComplete, setInitalLoadComplete] = useState(false);
     const [selectedMap, setSelectedMap] = useState<Map>();
@@ -504,6 +505,10 @@ function MapsPage() {
                 <StyleSelector game={game} style={style} setStyle={setStyle} />
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
             </Box>
+            {loginUser &&
+            <Box padding={1}>
+                <RecordCard mapId={+id} userId={loginUser.userId} game={game} style={style} course={course} />
+            </Box>}
             <Box padding={1}>
                 <TimesCard defaultSort={TimeSortBy.TimeAsc} mapId={id} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
