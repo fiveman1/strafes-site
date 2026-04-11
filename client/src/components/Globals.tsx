@@ -88,7 +88,7 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "string",
         field: "earliestWR",
-        headerName: "Earliest WR",
+        headerName: "Oldest WR",
         flex: 30,
         minWidth: 185,
         sortable: false,
@@ -101,7 +101,7 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "string",
         field: "latestWR",
-        headerName: "Latest WR",
+        headerName: "Newest WR",
         flex: 30,
         minWidth: 185,
         sortable: false,
