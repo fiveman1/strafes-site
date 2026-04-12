@@ -43,7 +43,7 @@ export async function getUserData(userId: string | undefined): Promise<User | nu
 }
 
 export async function getUserRank(userId: string, game: Game, style: Style): Promise<Rank | null> {
-    if (!userId) return null;
+    if (!userId || game === Game.all || style === Style.all) return null;
 
     const res = await tryGetRequest("user/rank/" + userId, {
         game: game,
@@ -146,7 +146,7 @@ export async function getAllTimesForUser(userId: string, game: Game, style: Styl
 }
 
 export async function getCompletionsForUser(userId: string, game: Game, style: Style): Promise<number | null> {
-    if (!userId) return null;
+    if (!userId || game === Game.all || style === Style.all) return null;
 
     const res = await tryGetRequest("user/times/completions/" + userId, {
         game: game,
