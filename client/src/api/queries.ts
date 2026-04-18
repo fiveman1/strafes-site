@@ -1,5 +1,5 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMaps, getNumWRsForUser, getRanks, getRecords, getReplayById, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { getAllTimesForUser, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMaps, getNumWRsForUser, getRanks, getReplayById, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
 import { Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
@@ -64,13 +64,6 @@ export const queries = createQueryKeyStore({
         ) => ({
             queryKey: [game, style, userId, mapId, onlyWR, course, sortBy, start, end],
             queryFn: () => getTimeData(start, end, sortBy, course, game, style, userId, mapId, onlyWR)
-        }),
-        records: (
-            mapId: number,
-            userId: number
-        ) => ({
-            queryKey: [mapId, userId],
-            queryFn: () => getRecords(mapId, userId)
         })
     },
     wrs: {

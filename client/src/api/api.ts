@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay } from "shared";
 import { JsonObject } from "../common/utils";
 
@@ -79,41 +79,17 @@ export async function getTimeData(
     onlyWR?: boolean
 ): Promise<{ times: Time[], pagination: Pagination } | null> {
     
-    let res: AxiosResponse | null;
-    if (userId) {
-        res = await tryGetRequest("user/times/" + userId, {
-            start: start,
-            end: end,
-            sort: sortBy,
-            game: game,
-            style: style,
-            course: course,
-            onlyWR: !!onlyWR
-        });
-    }
-    else if (mapId) {
-        res = await tryGetRequest("map/times/" + mapId, {
-            start: start,
-            end: end,
-            sort: sortBy,
-            game: game,
-            style: style,
-            course: course
-        });
-    }
-    else if (onlyWR) {
-        res = await tryGetRequest("wrs", {
-            start: start,
-            end: end,
-            sort: sortBy,
-            game: game,
-            style: style,
-            course: course
-        });
-    }
-    else {
-        return null;
-    }
+    const res = await tryGetRequest("times", {
+        userId: userId,
+        mapId: mapId,
+        start: start,
+        end: end,
+        sort: sortBy,
+        game: game,
+        style: style,
+        course: course,
+        onlyWR: !!onlyWR
+    });
     
     if (!res) return null;
 
@@ -121,17 +97,6 @@ export async function getTimeData(
         times: res.data.data,
         pagination: res.data.pagination
     };
-}
-
-export async function getRecords(mapId: number, userId: number) {
-    const res = await tryGetRequest("times/records", {
-        mapId: mapId,
-        userId: userId
-    });
-
-    if (!res) return null
-
-    return res.data as Time[];
 }
 
 export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | null> {

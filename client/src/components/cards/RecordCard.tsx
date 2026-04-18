@@ -3,7 +3,7 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { useQuery } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
-import { formatCourse, formatPlacement, formatStyle, formatTime, Game, MAIN_COURSE, Style } from "shared";
+import { formatCourse, formatPlacement, formatStyle, formatTime, Game, MAIN_COURSE, Style, TimeSortBy } from "shared";
 import DiffDisplay from "../displays/DiffDisplay";
 import DateDisplay from "../displays/DateDisplay";
 import { CircularProgress, Stack, useMediaQuery, useTheme } from "@mui/material";
@@ -24,9 +24,9 @@ function RecordCard(props: RecordCardProps) {
     const { maps } = useOutletContext() as ContextParams;
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 480px)");
-    const { data: records, isLoading } = useQuery(queries.times.records(mapId, userId));
+    const { data, isLoading } = useQuery(queries.times.times(0, 99, TimeSortBy.DateDesc, -1, Game.all, Style.all, userId.toString(), mapId.toString(), false));
 
-    const record = records ? records.find((time) => time.course === course && time.game === game && time.style === style) : undefined;
+    const record = data ? data.times.find((time) => time.course === course && time.game === game && time.style === style) : undefined;
     const selectedMap = maps[mapId];
 
     return (

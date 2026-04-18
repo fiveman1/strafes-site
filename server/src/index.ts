@@ -405,7 +405,9 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     res.status(200).json(rankArr);
 });
 
-const userTimesValidator = vine.create({
+const timesValidator = vine.create({
+    mapId: vine.number().withoutDecimals().nonNegative().optional(),
+    userId: vine.number().withoutDecimals().nonNegative().optional(),
     game: validators.gameOrAll(),
     style: validators.styleOrAll(),
     course: vine.number().withoutDecimals(),
@@ -415,20 +417,15 @@ const userTimesValidator = vine.create({
     sort: validators.timesSort()
 });
 
-app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
-    const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
-    if (paramsError) {
-        res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
-        return;
-    }
-
-    const [error, result] = await userTimesValidator.tryValidate(req.query);
+app.get("/api/times", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+    const [error, result] = await timesValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
         return;
     }
 
-    const userId = paramsResult.id;
+    const userId = result.userId;
+    const mapId = result.mapId;
     const game = result.game;
     const style = result.style;
     const course = result.course;
@@ -441,19 +438,48 @@ app.get("/api/user/times/:id", pagedRateLimitSettings, cache("5 minutes"), async
         res.status(400).json({ error: "Start must be lower than end" });
     }
 
-    const timeInfo = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId });
+    const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId });
 
-    if (!timeInfo) {
+    if (!timeData) {
         res.status(404).json({ error: "Not found" });
         return;
     }
 
+    const times = timeData.data;
     if (!onlyWR) {
-        await setTimeDiffs(timeInfo.data);
+        if (userId === undefined && mapId !== undefined && sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc) {
+            // Can determine placemnts on a map sorted by time ourself
+            // Also sort ties by date (because the API doesn't for some reason)
+            sortTimes(times, sort === TimeSortBy.TimeAsc);
+            let i = 1;
+            for (const time of times) {
+                if (sort === TimeSortBy.TimeAsc) {
+                    time.placement = start + i;
+                }
+                else if (sort === TimeSortBy.TimeDesc) {
+                    time.placement = timeData.pagination.totalItems - (start + i) + 1;
+                }
+                ++i;
+            }
+        }
+
+        await setTimeDiffs(times);
     }
 
-    res.status(200).json(timeInfo);
+    res.status(200).json(timeData);
 });
+
+function sortTimes(times: Time[], isAsc: boolean) {
+    times.sort((a, b) => {
+        const timeDiff = a.time - b.time;
+        if (timeDiff !== 0) {
+            return isAsc ? timeDiff : -timeDiff;
+        }
+        // Sort by date
+        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return isAsc ? dateDiff : -dateDiff;
+    });
+}
 
 const userCompletionsValidator = vine.create({
     game: validators.game(),
@@ -604,32 +630,6 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     });
 });
 
-const recordValidator = vine.create({
-    mapId: vine.number().withoutDecimals().nonNegative(),
-    userId: vine.number().withoutDecimals().nonNegative()
-});
-
-app.get("/api/times/records", rateLimitSettings, cache("5 minutes"), async (req, res) => {
-    const [error, result] = await recordValidator.tryValidate(req.query);
-    if (error) {
-        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
-        return;
-    }
-
-    const userId = result.userId;
-    const mapId = result.mapId;
-
-    const timeData = await getTimesPaged(0, 99, TimeSortBy.DateDesc, -1, false, Game.all, Style.all, { userId, mapId });
-    if (!timeData) {
-        res.status(404).json({ error: "Not found" });
-        return;
-    }
-
-    await setTimeDiffs(timeData.data);
-
-    res.status(200).json(timeData.data);
-});
-
 async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
     if (times.length < 1) {
         return;
@@ -678,43 +678,6 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
 function getMapKey(time: Time) {
     return `${time.mapId},${time.game},${time.style},${time.course}`;
 }
-
-const wrsValidator = vine.create({
-    game: validators.gameOrAll(),
-    style: validators.styleOrAll(),
-    course: vine.number().withoutDecimals(),
-    start: vine.number().withoutDecimals().nonNegative(),
-    end: vine.number().withoutDecimals().nonNegative(),
-    sort: validators.timesSort()
-});
-
-app.get("/api/wrs", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
-    const [error, result] = await wrsValidator.tryValidate(req.query);
-    if (error) {
-        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
-        return;
-    }
-
-    const game = result.game;
-    const style = result.style;
-    const course = result.course;
-    const start = result.start;
-    const end = result.end;
-    const sort = result.sort;
-
-    if (start >= end) {
-        res.status(400).json({ error: "Start must be lower than end" });
-    }
-
-    const timeInfo = await getTimesPaged(start, end, sort, course, true, game, style, {});
-
-    if (!timeInfo) {
-        res.status(404).json({ error: "Not found" });
-        return;
-    }
-
-    res.status(200).json(timeInfo);
-});
 
 const publicWrsValidator = vine.create({
     game: validators.game().optional(),
@@ -916,81 +879,6 @@ function apiTimeToTime(time: ApiTime): Time {
         hasBot: time.has_bot
     };
 }
-
-function sortTimes(times: Time[], isAsc: boolean) {
-    times.sort((a, b) => {
-        const timeDiff = a.time - b.time;
-        if (timeDiff !== 0) {
-            return isAsc ? timeDiff : -timeDiff;
-        }
-        // Sort by date
-        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
-        return isAsc ? dateDiff : -dateDiff;
-    });
-}
-
-const mapTimesValidator = vine.create({
-    game: validators.game(),
-    style: validators.style(),
-    course: vine.number().withoutDecimals(),
-    start: vine.number().withoutDecimals().nonNegative(),
-    end: vine.number().withoutDecimals().nonNegative(),
-    sort: validators.timesSort()
-});
-
-app.get("/api/map/times/:id", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
-    const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
-    if (paramsError) {
-        res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
-        return;
-    }
-
-    const [error, result] = await mapTimesValidator.tryValidate(req.query);
-    if (error) {
-        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
-        return;
-    }
-
-    const mapId = paramsResult.id;
-    const game = result.game;
-    const style = result.style;
-    const course = result.course;
-    const start = result.start;
-    const end = result.end;
-    const sort = result.sort;
-
-    if (start >= end) {
-        res.status(400).json({ error: "Start must be lower than end" });
-    }
-
-    const timeData = await getTimesPaged(start, end, sort, course, false, game, style, { mapId: mapId });
-
-    if (!timeData) {
-        res.status(404).json({ error: "Not found" });
-        return;
-    }
-
-    const times = timeData.data;
-
-    if (sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc) {
-        sortTimes(times, sort === TimeSortBy.TimeAsc);
-        let i = 1;
-        for (const time of times) {
-            if (sort === TimeSortBy.TimeAsc) {
-                time.placement = start + i;
-            }
-            else if (sort === TimeSortBy.TimeDesc) {
-                time.placement = timeData.pagination.totalItems - (start + i) + 1;
-            }
-            ++i;
-        }
-    }
-
-    const promises = [setUserInfoForList(authClient, times), setTimeDiffs(times)];
-    await Promise.all(promises);
-
-    res.status(200).json(timeData);
-});
 
 app.get("/api/maps", rateLimitSettings, cache("30 minutes"), async (req, res) => {
     const maps = await getAllMapsWithTiers(globalsClient);
