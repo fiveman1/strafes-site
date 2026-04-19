@@ -126,7 +126,7 @@ function CompareChart(props: ICompareChartProps) {
         const getEntryLabel = (i: number) => {
             const user = idToUser[entries[i].userId]?.user;
             const name = user?.username ?? "...";
-            return numEntries > 2 ? `${name} (${formatStyleShort(entries[i].style)})` : name;
+            return `${name} (${formatStyleShort(entries[i].style)})`;
         };
 
         const data: PieValueType[] = [];
