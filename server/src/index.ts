@@ -447,7 +447,7 @@ app.get("/api/times", pagedRateLimitSettings, cache("5 minutes"), async (req, re
 
     const times = timeData.data;
     if (!onlyWR) {
-        if (userId === undefined && mapId !== undefined && sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc) {
+        if (userId === undefined && mapId !== undefined && (sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc)) {
             // Can determine placemnts on a map sorted by time ourself
             // Also sort ties by date (because the API doesn't for some reason)
             sortTimes(times, sort === TimeSortBy.TimeAsc);
