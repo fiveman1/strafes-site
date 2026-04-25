@@ -85,7 +85,8 @@ export const queries = createQueryKeyStore({
         },
         voteEligibility: (user: LoginUser | undefined | null) => ({
             queryKey: [user?.userId],
-            queryFn: () => getVotingInfoWrapper(user)
+            queryFn: () => getVotingInfoWrapper(user),
+            staleTime: Infinity
         })
     },
     maps: {
