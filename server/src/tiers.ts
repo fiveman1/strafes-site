@@ -5,7 +5,8 @@ import { RowDataPacket } from "mysql2";
 import memoize from "memoize";
 import { getAllUsersToStrafesRoles } from "./roles.js";
 
-export async function loadTierVotingEligibility(userId: number): Promise<TierVoteEligibility> {
+export const loadTierVotingEligibility = memoize(loadTierVotingEligibilityCore, {cacheKey: JSON.stringify, maxAge: 4 * 60 * 60 * 1000});
+async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEligibility> {
     const userInfoPromise = getUserInfo(userId);
     const bhopTimesPromise = getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0);
     const surfTimesPromise = getTimes(userId, undefined, 1, 1, Game.surf, Style.all, 0);
@@ -37,7 +38,7 @@ export async function loadTierVotingEligibility(userId: number): Promise<TierVot
 }
 
 export async function canUserVoteOnMap(client: GlobalsClient, userId: number, mapId: number): Promise<boolean> {
-    const info = await loadTierVotingEligibility(userId);
+    const info = await loadTierVotingEligibilityCore(userId);
     const map = await client.getMap(mapId);
     if (!map) {
         return false;
