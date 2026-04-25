@@ -1,6 +1,6 @@
 import { lighten, PaletteMode, Theme } from "@mui/material";
 import { Maps } from "../api/api";
-import { formatGame, Game, LoginUser, Map, SettingsValues, Style, TierVoteEligibility, UserRole } from "shared";
+import { formatGame, Game, LoginUser, Map, SettingsValues, Style, UserRole } from "shared";
 import { download, generateCsv, mkConfig } from "export-to-csv";
 
 export interface MapCount {
@@ -18,7 +18,6 @@ export interface ContextParams {
     settings: SettingsValues
     setSettings: (val: SettingsValues) => void
     setMode: (mode: PaletteMode) => void
-    voteEligibility: TierVoteEligibility | undefined
 }
 
 export function getUserRoleColor(role: UserRole, theme: Theme) {

@@ -10,7 +10,7 @@ import GameSelector from "./forms/GameSelector";
 import CourseSelector from "./forms/CourseSelector";
 import DownloadIcon from '@mui/icons-material/Download';
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
-import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort, useMapTierVote } from "../common/states";
+import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort, useMapTierVote, useVoteEligibility } from "../common/states";
 import MapSearch from "./search/MapSearch";
 import { grey } from "@mui/material/colors";
 import { sortAndFilterMaps } from "../common/sort";
@@ -252,7 +252,9 @@ function getIneligibleReason(voteEligibility: TierVoteEligibility | undefined, g
 
 function MapTierVotingSection(props: MapDetailSectionProps) {
     const { selectedMap } = props;
-    const { loginUser, voteEligibility } = useOutletContext() as ContextParams;
+    const { loginUser } = useOutletContext() as ContextParams;
+    const voteEligibilityQuery = useVoteEligibility(loginUser);
+    const voteEligibility = voteEligibilityQuery.data ?? undefined;
     const theme = useTheme();
     const queryClient = useQueryClient();
 
