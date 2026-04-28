@@ -34,7 +34,7 @@ async function setProfileInfoForList(client: AuthClient, users: UserInfo[]) {
     for (const user of users) {
         const settings = userIdToSettings.get(user.userId);
         if (settings?.country) {
-             user.userCountry = settings.country;
+            user.userCountry = settings.country;
         }
     }
 }
