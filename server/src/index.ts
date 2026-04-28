@@ -284,6 +284,7 @@ app.get("/api/wrs/leaderboard", pagedRateLimitSettings, cache("5 minutes"), asyn
 
     if (start >= end) {
         res.status(400).json({ error: "Start must be lower than end" });
+        return;
     }
 
     const pageRes = await globalsClient.getWRLeaderboardPage(start, end, game, style, sort);
@@ -356,6 +357,7 @@ app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, re
 
     if (start >= end) {
         res.status(400).json({ error: "Start must be lower than end" });
+        return;
     }
 
     const page = Math.floor(start / 100) + 1;
@@ -436,6 +438,7 @@ app.get("/api/times", pagedRateLimitSettings, cache("5 minutes"), async (req, re
 
     if (start >= end) {
         res.status(400).json({ error: "Start must be lower than end" });
+        return;
     }
 
     const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId });
