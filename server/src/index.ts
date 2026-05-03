@@ -222,7 +222,7 @@ const userRankValidator = vine.create({
     style: validators.style()
 });
 
-app.get("/api/user/rank/:id", rateLimitSettings, cache("5 minutes"), async (req, res) => {
+app.get("/api/user/rank/:id", rateLimitSettings, cache("15 minutes"), async (req, res) => {
     const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
     if (paramsError) {
         res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
@@ -342,7 +342,7 @@ const ranksValidator = vine.create({
     sort: validators.rankSort()
 });
 
-app.get("/api/ranks", pagedRateLimitSettings, cache("5 minutes"), async (req, res) => {
+app.get("/api/ranks", pagedRateLimitSettings, cache("15 minutes"), async (req, res) => {
     const [error, result] = await ranksValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
