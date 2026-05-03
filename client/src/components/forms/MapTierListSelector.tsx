@@ -51,6 +51,7 @@ function MapTierListItem(props: MapTierListItemProps) {
                 border: 0,
                 transition: "scale 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 cursor: readOnly ? undefined : "pointer",
+                touchAction: "manipulation",
                 ":hover": {
                     scale: readOnly ? undefined : 1.15
                 }
