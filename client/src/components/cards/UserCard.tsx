@@ -97,8 +97,15 @@ function UserDisplay(props: IUserDisplayProps) {
                     </Typography>
                 </Box>
                 <Box display="flex" flexDirection="column">
-                    {user.userRole === undefined ? undefined :
-                    <ColorChip color={getUserRoleColor(user.userRole, theme)} label={formatUserRole(user.userRole)} />}
+                    {user.userRoles === undefined ? undefined :
+                    <Box component="ul" display="flex" flexWrap="wrap" m={0} pl={0} sx={{ listStyle: "none" }}>
+                        {user.userRoles.map((role) => {
+                        return (
+                        <Box key={role} component="li" px={0.375}>
+                            <ColorChip color={getUserRoleColor(role, theme)} label={formatUserRole(role)} />
+                        </Box>
+                        )})}
+                    </Box>}
                     <Box display="inline-flex">
                         <Tooltip title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
                             <Typography variant="body2">

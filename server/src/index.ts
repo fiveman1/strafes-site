@@ -738,7 +738,7 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
                 username: time.username,
                 thumbnail: time.userThumb ?? null,
                 country: time.userCountry ?? null,
-                role: time.userRole ?? null
+                role: time.userRoles ?? null
             },
             map: {
                 id: time.mapId,

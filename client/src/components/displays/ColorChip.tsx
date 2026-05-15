@@ -1,14 +1,14 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { darken } from "@mui/system";
 
 interface ColorChipProps {
     color: string
     label: string
-    outlined?: boolean
 }
 
 function ColorChip(props: ColorChipProps) {
-    const { color, label, outlined } = props;
+    const { color, label } = props;
 
     return (
         <Box display="inline-flex">
@@ -16,18 +16,16 @@ function ColorChip(props: ColorChipProps) {
                 display="inline-flex"
                 alignItems="center"
                 variant="body2" 
-                color={outlined ? color : "white"} 
-                border={outlined ? `1px solid ${color}` : undefined} 
-                bgcolor={outlined ? undefined : color}
-                borderRadius="16px"
-                pr={1.25} 
-                pl={1.25} 
-                pt={0.375}
-                pb={0.375}
-                mt={0.25} 
-                mb={0.25}
+                fontWeight="bold"
+                color={"white"} 
+                border={`1px solid ${color}`} 
+                bgcolor={darken(color, 0.3)}
+                borderRadius="8px"
+                px={0.5}
+                py={0.25}
+                my={0.25}
                 sx={{
-                    textShadow: outlined ? undefined : "black 1px 1px 1px"
+                    textShadow: "black 1px 1px 1px"
                 }}
             >
                 {label}

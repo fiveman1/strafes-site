@@ -1,5 +1,5 @@
 import memoize from "memoize";
-import { StrafesUserRole, UserRole } from "shared";
+import { getUserRoleWeight, StrafesUserRole, UserRole } from "shared";
 import { tryGetRequest } from "./requests.js";
 
 const RBHOP_GROUP_ID = 2607715;
@@ -31,8 +31,8 @@ async function getUsersWithRole(role: number, groupId: number): Promise<number[]
 }
 
 export const getAllUsersToRoles = memoize(getAllUsersToRolesCore, {maxAge: 60 * 60 * 1000});
-async function getAllUsersToRolesCore(): Promise<Map<number, UserRole>> {
-    const roles = new Map<number, UserRole>();
+async function getAllUsersToRolesCore(): Promise<Map<number, UserRole[]>> {
+    const roles = new Map<number, UserRole[]>();
 
     const promises = [];
     for (const role of Object.values(UserRole)) {
@@ -43,7 +43,14 @@ async function getAllUsersToRolesCore(): Promise<Map<number, UserRole>> {
         const promise = async () => {
             const users = await getUsersWithRole(role, RBHOP_GROUP_ID);
             for (const user of users) {
-                roles.set(user, role);
+                const userRoles = roles.get(user);
+                if (userRoles) {
+                    userRoles.push(role);
+                    userRoles.sort((a, b) => getUserRoleWeight(b) - getUserRoleWeight(a));
+                }
+                else {
+                    roles.set(user, [role]);
+                }
             }
         };
         promises.push(promise());

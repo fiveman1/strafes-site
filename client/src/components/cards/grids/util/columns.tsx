@@ -49,7 +49,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
                 <UserLink 
                     userId={time.userId} 
                     username={time.username} 
-                    userRole={time.userRole} 
+                    userRoles={time.userRoles} 
                     userCountry={time.userCountry} 
                     userThumb={time.userThumb}
                     game={linkGame} 

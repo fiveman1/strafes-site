@@ -19,7 +19,7 @@ async function setUserRolesForList(users: UserInfo[]) {
     const roles = await getAllUsersToRoles();
 
     for (const user of users) {
-        user.userRole = roles.get(user.userId);
+        user.userRoles = roles.get(user.userId);
     }
 }
 
@@ -128,7 +128,7 @@ export async function getUserData(client: AuthClient, userId: number): Promise<u
         displayName: user.displayName,
         joinedOn: user.created,
         userThumb: partialUser.userThumb,
-        userRole: partialUser.userRole,
+        userRoles: partialUser.userRoles,
         userCountry: partialUser.userCountry
     };
 

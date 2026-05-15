@@ -1,7 +1,7 @@
 export interface UserInfo {
     userId: number
     username: string
-    userRole?: UserRole
+    userRoles?: UserRole[]
     userCountry?: string
     userThumb?: string
 }
@@ -155,6 +155,29 @@ export enum UserRole {
     Dev = 99336516,
     DatabaseMan = 44154401,
     GameCreator = 17295536
+}
+
+export function getUserRoleWeight(role: UserRole) {
+    switch (role) {
+        case UserRole.Faste:
+            return 10;
+        case UserRole.MapMaker:
+            return 0;
+        case UserRole.MapAdmin:
+            return 15;
+        case UserRole.ChatMod:
+            return 20;
+        case UserRole.InGameMod:
+            return 25;
+        case UserRole.InGameHeadMod:
+            return 30;
+        case UserRole.Dev:
+            return 40;
+        case UserRole.DatabaseMan:
+            return 99;
+        case UserRole.GameCreator:
+            return 100;
+    }
 }
 
 export enum StrafesUserRole {
