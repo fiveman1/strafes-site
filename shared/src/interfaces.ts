@@ -148,13 +148,14 @@ export interface UserSearchDataComplete extends UserSearchData {
 export enum UserRole {
     Faste = 17639145,
     MapMaker = 17307028,
+    ContentCreator = 717561008,
     MapAdmin = 108480632,
     ChatMod = 135242269,
     InGameMod = 17720479,
     InGameHeadMod = 108511840,
     Dev = 99336516,
     DatabaseMan = 44154401,
-    GameCreator = 17295536
+    GameCreator = 17295536,
 }
 
 export function getUserRoleWeight(role: UserRole) {
@@ -163,6 +164,8 @@ export function getUserRoleWeight(role: UserRole) {
             return 10;
         case UserRole.MapMaker:
             return 0;
+        case UserRole.ContentCreator:
+            return 5;
         case UserRole.MapAdmin:
             return 15;
         case UserRole.ChatMod:

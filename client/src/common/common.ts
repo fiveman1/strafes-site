@@ -39,6 +39,8 @@ function getUserRoleColorCore(role: UserRole) {
             return "#b92eff";
         case UserRole.MapMaker:
             return "#f17a2b";
+        case UserRole.ContentCreator:
+            return "#a487fa";
         case UserRole.MapAdmin:
             return "#ffc423";
         case UserRole.ChatMod:

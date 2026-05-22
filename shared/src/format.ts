@@ -234,6 +234,8 @@ export function formatUserRole(role: UserRole) {
             return "faste";
         case UserRole.MapMaker:
             return "map maker";
+        case UserRole.ContentCreator:
+            return "content creator";
         case UserRole.MapAdmin:
             return "map admin";
         case UserRole.ChatMod:
