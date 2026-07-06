@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import DownloadIcon from '@mui/icons-material/Download';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import IconButton from "@mui/material/IconButton";
-import { ReactElement, useCallback, useEffect, useMemo } from "react";
+import { ReactElement, useCallback, useEffect, useMemo, useState } from "react";
 import { ContextParams, getGameColor, mapsToCsv } from "../common/common";
 import { darken, lighten, useTheme } from "@mui/material/styles";
 import { Link as RouterLink, useOutletContext } from "react-router";
@@ -27,6 +27,7 @@ import { shortDateFormat } from "../common/datetime";
 import Paper from "@mui/material/Paper";
 import { MapTimesSort, useFilterGame, useFilterTiers, useMapSort } from "../common/states";
 import MapFilterSortOptions from "./forms/MapFilterSortOptions";
+import Fade from "@mui/material/Fade";
 
 function getColorForPopularity(map: StrafesMap, ninetyPercentile: number) {
     const plays = Math.min(map.loadCount, ninetyPercentile);
@@ -168,6 +169,11 @@ function MapSquareCard(props: MapCardProps) {
     const { map } = props;
     const { highPercentileLoadCount } = useOutletContext() as ContextParams;
     const theme = useTheme();
+    const [ show, setShow ] = useState(false);
+
+    useEffect(() => {
+        setShow(true);
+    }, []);
 
     const isLightMode = theme.palette.mode === "light";
 
@@ -187,218 +193,220 @@ function MapSquareCard(props: MapCardProps) {
     const popColor = getColorForPopularity(map, highPercentileLoadCount);
 
     return (
-        <Box
-            width={cardSize}
-            height={cardSize}
-            display="flex"
-            flexDirection="column"
-            component={RouterLink}
-            to={`/maps/${map.id}`}
-            sx={{
-                userSelect: "none",
-                transition: "transform .1s ease",
-                ":hover": {
-                    transform: "translateY(-2px)",
-                    "& .mapCard": { boxShadow: 6 },
-                    "& .mapImg": { transform: "scale(1.08)" },
-                    "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
-                }
-            }}
-        >
+        <Fade in={show} timeout={200}>
             <Box
-                className="mapCard"
-                position="relative"
-                borderRadius="6px"
-                boxShadow={2}
-                bgcolor={isLightMode ? grey[300] : grey[800]}
-                overflow="hidden"
+                width={cardSize}
+                height={cardSize}
+                display="flex"
+                flexDirection="column"
+                component={RouterLink}
+                to={`/maps/${map.id}`}
                 sx={{
-                    transition: ".4s ease",
+                    userSelect: "none",
+                    transition: "transform .1s ease",
+                    ":hover": {
+                        transform: "translateY(-2px)",
+                        "& .mapCard": { boxShadow: 6 },
+                        "& .mapImg": { transform: "scale(1.08)" },
+                        "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
+                    }
                 }}
             >
-                <MapThumb
-                    className="mapImg"
-                    size={cardSize}
-                    map={map}
-                    useLargeThumb
-                    disableUnreleasedColor
+                <Box
+                    className="mapCard"
+                    position="relative"
+                    borderRadius="6px"
+                    boxShadow={2}
+                    bgcolor={isLightMode ? grey[300] : grey[800]}
+                    overflow="hidden"
                     sx={{
-                        borderRadius: "6px 6px 8px 8px",
-                        border: 0,
-                        transition: "transform .4s ease"
-                    }}
-                />
-                <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="flex-end"
-                    position="absolute"
-                    top="8px"
-                    right="8px"
-                >
-                    <Typography
-                        variant="body2"
-                        fontWeight="bold"
-                        sx={{
-                            width: "fit-content",
-                            padding: 0.4,
-                            lineHeight: 1.1,
-                            overflow: "hidden",
-                            backgroundColor: gameColor,
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px"
-                        }}
-                    >
-                        {cardSize < 230 ? formatGameShort(map.game) : formatGame(map.game)}
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        fontWeight="bold"
-                        mt={0.4}
-                        sx={{
-                            width: "fit-content",
-                            padding: 0.4,
-                            lineHeight: 1.0,
-                            overflow: "hidden",
-                            backgroundColor: darken(tierColor, 0.4),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            border: 1,
-                            borderColor: tierColor
-                        }}
-                    >
-                        {formatTier(map.tier)}
-                    </Typography>
-                </Box>
-                <Box
-                    display="flex"
-                    flexDirection="column"
-                    position="absolute"
-                    top="8px"
-                    left="8px"
-                >
-                    <Typography
-                        display="inline-block"
-                        variant="body2"
-                        fontWeight="bold"
-                        sx={{
-                            width: "fit-content",
-                            padding: 0.4,
-                            lineHeight: 1.0,
-                            overflow: "hidden",
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
-                            border: 1,
-                            borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
-                        }}
-                    >
-                        {shortDateFormat.format(mapDate)}
-                    </Typography>
-                    <Typography
-                        mt={0.4}
-                        display="inline-block"
-                        variant="body2"
-                        fontWeight="bold"
-                        sx={{
-                            width: "fit-content",
-                            padding: 0.4,
-                            lineHeight: 1.0,
-                            overflow: "hidden",
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            bgcolor: darken(popColor, 0.15),
-                            border: 1,
-                            borderColor: popColor
-                        }}
-                    >
-                        {map.loadCount} plays
-                    </Typography>
-                </Box>
-                <Box
-                    sx={{
-                        position: "absolute",
-                        bottom: creatorHeight,
-                        height: nameHeight,
-                        width: "100%",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        bgcolor: "#80808050",
-                        backdropFilter: "blur(16px)",
+                        transition: ".4s ease",
                     }}
                 >
+                    <MapThumb
+                        className="mapImg"
+                        size={cardSize}
+                        map={map}
+                        useLargeThumb
+                        disableUnreleasedColor
+                        sx={{
+                            borderRadius: "6px 6px 8px 8px",
+                            border: 0,
+                            transition: "transform .4s ease"
+                        }}
+                    />
                     <Box
-                        display="inline-flex"
-                        height={nameHeight}
-                        width={cardSize}
-                        pl={1.25}
-                        pr={1.25}
-                        alignItems="center"
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="flex-end"
+                        position="absolute"
+                        top="8px"
+                        right="8px"
                     >
                         <Typography
-                            variant={cardSize < 230 ? "h6" : "h5"}
-                            title={map.name}
+                            variant="body2"
                             fontWeight="bold"
-                            color="white"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
                             sx={{
-                                textShadow: "black 1px 1px 1px"
+                                width: "fit-content",
+                                padding: 0.4,
+                                lineHeight: 1.1,
+                                overflow: "hidden",
+                                backgroundColor: gameColor,
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px"
                             }}
                         >
-                            {map.name}
+                            {cardSize < 230 ? formatGameShort(map.game) : formatGame(map.game)}
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            mt={0.4}
+                            sx={{
+                                width: "fit-content",
+                                padding: 0.4,
+                                lineHeight: 1.0,
+                                overflow: "hidden",
+                                backgroundColor: darken(tierColor, 0.4),
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px",
+                                border: 1,
+                                borderColor: tierColor
+                            }}
+                        >
+                            {formatTier(map.tier)}
                         </Typography>
                     </Box>
-                </Box>
-                <Box
-                    className="mapCreator"
-                    sx={{
-                        position: "absolute",
-                        bottom: "0px",
-                        height: creatorHeight,
-                        width: "100%",
-                        borderRadius: "0 0 6px 6px",
-                        boxShadow: 0,
-                        bgcolor: darken(tierColor, 0.25),
-                        transition: ".4s ease"
-                    }}
-                >
                     <Box
-                        display="inline-flex"
-                        height={creatorHeight}
-                        width={cardSize}
-                        justifyContent="flex-end"
-                        alignItems="center"
-                        p={1}
+                        display="flex"
+                        flexDirection="column"
+                        position="absolute"
+                        top="8px"
+                        left="8px"
                     >
-                        <PersonIcon
-                            fontSize="inherit"
-                            htmlColor="white"
-                        />
                         <Typography
-                            variant="subtitle2"
-                            color="white"
-                            title={map.creator}
-                            ml={0.5}
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                            whiteSpace="nowrap"
+                            display="inline-block"
+                            variant="body2"
+                            fontWeight="bold"
+                            sx={{
+                                width: "fit-content",
+                                padding: 0.4,
+                                lineHeight: 1.0,
+                                overflow: "hidden",
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px",
+                                bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
+                                border: 1,
+                                borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
+                            }}
                         >
-                            {map.creator}
+                            {shortDateFormat.format(mapDate)}
                         </Typography>
+                        <Typography
+                            mt={0.4}
+                            display="inline-block"
+                            variant="body2"
+                            fontWeight="bold"
+                            sx={{
+                                width: "fit-content",
+                                padding: 0.4,
+                                lineHeight: 1.0,
+                                overflow: "hidden",
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px",
+                                bgcolor: darken(popColor, 0.15),
+                                border: 1,
+                                borderColor: popColor
+                            }}
+                        >
+                            {map.loadCount} plays
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            bottom: creatorHeight,
+                            height: nameHeight,
+                            width: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            bgcolor: "#80808050",
+                            backdropFilter: "blur(16px)",
+                        }}
+                    >
+                        <Box
+                            display="inline-flex"
+                            height={nameHeight}
+                            width={cardSize}
+                            pl={1.25}
+                            pr={1.25}
+                            alignItems="center"
+                        >
+                            <Typography
+                                variant={cardSize < 230 ? "h6" : "h5"}
+                                title={map.name}
+                                fontWeight="bold"
+                                color="white"
+                                overflow="hidden"
+                                textOverflow="ellipsis"
+                                whiteSpace="nowrap"
+                                sx={{
+                                    textShadow: "black 1px 1px 1px"
+                                }}
+                            >
+                                {map.name}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box
+                        className="mapCreator"
+                        sx={{
+                            position: "absolute",
+                            bottom: "0px",
+                            height: creatorHeight,
+                            width: "100%",
+                            borderRadius: "0 0 6px 6px",
+                            boxShadow: 0,
+                            bgcolor: darken(tierColor, 0.25),
+                            transition: ".4s ease"
+                        }}
+                    >
+                        <Box
+                            display="inline-flex"
+                            height={creatorHeight}
+                            width={cardSize}
+                            justifyContent="flex-end"
+                            alignItems="center"
+                            p={1}
+                        >
+                            <PersonIcon
+                                fontSize="inherit"
+                                htmlColor="white"
+                            />
+                            <Typography
+                                variant="subtitle2"
+                                color="white"
+                                title={map.creator}
+                                ml={0.5}
+                                overflow="hidden"
+                                textOverflow="ellipsis"
+                                whiteSpace="nowrap"
+                            >
+                                {map.creator}
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
             </Box>
-        </Box>
+        </Fade>
     );
 }
 
