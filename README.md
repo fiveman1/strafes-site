@@ -4,7 +4,19 @@ https://strafes.fiveman1.net/
 
 Serves content from the StrafesNET Roblox bhop and surf games.
 
-## Setup
+## Just frontend setup
+
+Use this if you just want to make changes to the frontend and don't want to bother setting up the backend. This allows you to run the frontend from source and proxy all backend requests to https://strafes.fiveman1.net/. You can easily test and make changes to files under the `client` directory this way.
+
+`yarn install`
+
+`yarn build`
+
+Run the frontend website
+
+`yarn run dev-proxy`
+
+## Full setup (frontend + backend)
 
 `yarn install`
 

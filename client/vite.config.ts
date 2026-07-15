@@ -1,10 +1,12 @@
-import { defineConfig, PluginOption } from "vite";
+import { defineConfig, loadEnv, PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import eslintPlugin from "@nabla/vite-plugin-eslint";
 
 // https://vitejs.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+	const env = loadEnv(mode, process.cwd());
+
 	return {
 		plugins: [
 			react() as PluginOption[],
@@ -17,7 +19,7 @@ export default defineConfig(() => {
 			open: true,
 			proxy: {
 				"/api": {
-					target: "http://localhost:8080",
+					target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://localhost:8080",
 					changeOrigin: true,
 					secure: false
 				}
