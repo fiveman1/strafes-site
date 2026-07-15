@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from "react-router";
+import Box from '@mui/material/Box';
 import App from './App';
 import Home from './components/Home';
-import Users from './components/Users';
-import Ranks from './components/Ranks';
-import Globals from './components/Globals';
-import MapsPage from './components/MapsPage';
-import Compare from './components/Compare';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
-import Settings from './components/Settings';
-import MapsHome from './components/MapsHome';
-import Replays from './components/Replays';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { NotFoundPage, RouteErrorPage } from './components/ErrorPage';
+import { loadCompare, loadGlobals, loadMapsHome, loadMapsPage, loadRanks, loadReplays, loadSettings, loadUsers, prefetchCommonRouteModules } from './routeModules';
+
+const Users = lazy(loadUsers);
+const Ranks = lazy(loadRanks);
+const Globals = lazy(loadGlobals);
+const MapsPage = lazy(loadMapsPage);
+const Compare = lazy(loadCompare);
+const Settings = lazy(loadSettings);
+const MapsHome = lazy(loadMapsHome);
+const Replays = lazy(loadReplays);
+
+function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
+    return function SuspendedRoute() {
+        return (
+            <Suspense fallback={
+                <Box
+                    sx={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 1300,
+                        pointerEvents: "none",
+                        backgroundColor: "rgba(8, 9, 17, 0.01)",
+                        animation: "routeLoadingBlur 620ms ease-in-out infinite alternate"
+                    }}
+                />
+            }>
+                <Component />
+            </Suspense>
+        );
+    };
+}
+
+const LazyUsers = withSuspense(Users);
+const LazyRanks = withSuspense(Ranks);
+const LazyGlobals = withSuspense(Globals);
+const LazyMapsPage = withSuspense(MapsPage);
+const LazyCompare = withSuspense(Compare);
+const LazySettings = withSuspense(Settings);
+const LazyMapsHome = withSuspense(MapsHome);
+const LazyReplays = withSuspense(Replays);
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -22,7 +56,10 @@ const root = ReactDOM.createRoot(
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: 5 * 60 * 1000 // Queries persist in memory for 5 minutes at a time by default
+            staleTime: 10 * 60 * 1000,
+            gcTime: 30 * 60 * 1000,
+            refetchOnWindowFocus: false,
+            retry: 1
         }
     }
 });
@@ -31,34 +68,46 @@ const router = createBrowserRouter([
     {
         path: "/",
         Component: App,
+        ErrorBoundary: RouteErrorPage,
         children: [
             { index: true, Component: Home },
             { 
                 path: "users", 
                 children: [
-                    { index: true, Component: Users },
-                    { path: ":id", Component: Users }
+                    { index: true, Component: LazyUsers },
+                    { path: ":id", Component: LazyUsers }
                 ]
             },
             { 
                 path: "maps", 
                 children: [
-                    { index: true, Component: MapsHome },
-                    { path: ":id", Component: MapsPage }
+                    { index: true, Component: LazyMapsHome },
+                    { path: ":id", Component: LazyMapsPage }
                 ]
             },
-            { path: "ranks", Component: Ranks },
-            { path: "globals", Component: Globals },
-            { path: "compare", Component: Compare },
+            { path: "ranks", Component: LazyRanks },
+            { path: "globals", Component: LazyGlobals },
+            { path: "compare", Component: LazyCompare },
             { path: "terms", Component: Terms },
             { path: "privacy", Component: Privacy },
-            { path: "settings", Component: Settings },
-            { path: "replays/:id", Component: Replays }
+            { path: "settings", Component: LazySettings },
+            { path: "replays/:id", Component: LazyReplays },
+            { path: "*", Component: NotFoundPage }
         ]
     }
 ]);
 
 export default function Index() {
+    useEffect(() => {
+        if ("requestIdleCallback" in window) {
+            const idleId = window.requestIdleCallback(prefetchCommonRouteModules, { timeout: 3000 });
+            return () => window.cancelIdleCallback(idleId);
+        }
+
+        const timeoutId = window.setTimeout(prefetchCommonRouteModules, 1200);
+        return () => window.clearTimeout(timeoutId);
+    }, []);
+
     return (
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>

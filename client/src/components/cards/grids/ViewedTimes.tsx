@@ -48,6 +48,7 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
         className="viewedTimesGrid"
         columns={makeColumns()}
         rows={times}
+        autoHeight
         pagination
         pageSizeOptions={[20, 50]}
         rowHeight={Math.round(MAP_THUMB_SIZE * 1.6667)}

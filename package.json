@@ -2,6 +2,14 @@
     "name": "strafes-site",
     "license": "MIT",
     "private": true,
+    "description": "Open-source StrafesNET browser and WebGPU replay viewer",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/plusbyminuss-coder/epicstrafe.git"
+    },
+    "engines": {
+        "node": ">=22"
+    },
     "workspaces": [
         "client",
         "server",
@@ -11,12 +19,14 @@
         "concurrently": "^9.2.0"
     },
     "scripts": {
-        "dev:frontend": "yarn workspace client run dev",
-        "dev:backend": "yarn workspace server run dev",
-        "dev:shared": "yarn workspace shared run dev",
-        "dev": "NODE_ENV=development concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
-        "dev-proxy": "VITE_USE_PROXY=true yarn run dev:frontend",
-        "build": "yarn workspace shared run build && yarn workspace client run build && yarn workspace server run build",
-        "start": "NODE_ENV=production yarn workspace server run start"
+        "dev:frontend": "npm run dev --workspace client",
+        "dev:backend": "npm run dev --workspace server",
+        "dev:shared": "npm run dev --workspace shared",
+        "dev": "NODE_ENV=development concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"npm run dev:shared\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+        "build:shared": "npm run build --workspace shared",
+        "build:frontend": "npm run build:shared && npm run build --workspace client",
+        "build": "npm run build:shared && npm run build --workspace client && npm run build --workspace server",
+        "lint": "npm exec --workspace client eslint -- src --ignore-pattern '**/*.d.ts' && npm exec --workspace server eslint -- src && npm exec --workspace shared eslint -- src",
+        "start": "NODE_ENV=production npm run start --workspace server"
     }
 }

@@ -1,10 +1,10 @@
 import { Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
 import { Link as RouterLink, useOutletContext } from "react-router";
-import { formatCountryCode, Game, Style, UserInfo } from "shared";
+import { Game, Style, UserInfo } from "shared";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import ReactCountryFlag from "react-country-flag";
 import { ContextParams, getUserRoleColor } from "../../common/common";
 import UserAvatar from "./UserAvatar";
+import CountryFlag from "./CountryFlag";
 
 interface IUserLinkProps extends LinkProps, UserInfo {
     game: Game
@@ -34,7 +34,7 @@ function UserLink(props: IUserLinkProps) {
             </Typography>
             
             {userCountry ? 
-            <ReactCountryFlag style={{marginLeft: 6}} title={formatCountryCode(userCountry)} countryCode={userCountry} svg /> 
+            <CountryFlag countryCode={userCountry} marginLeft={6} />
             : undefined}
             
             {isCurrentUser ? 

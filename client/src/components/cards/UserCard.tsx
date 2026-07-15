@@ -1,15 +1,15 @@
 import { Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
-import { User, formatCountryCode, formatUserRole } from "shared";
+import { User, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ContextParams, getUserRoleColor } from "../../common/common";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import TimeAgo from "react-timeago";
-import ReactCountryFlag from "react-country-flag";
 import { dateTimeFormat, relativeTimeFormatter } from "../../common/datetime";
 import UserAvatar from "../displays/UserAvatar";
 import ColorChip from "../displays/ColorChip";
+import CountryFlag from "../displays/CountryFlag";
 
 interface IUserDisplayProps {
     user: User
@@ -34,7 +34,7 @@ function UserCardAvatar(props: IUserDisplayProps) {
             <UserAvatar sx={{height: 100, width: 100}} username={user.username} userThumb={user.userThumb} />
             {isCurrentUser ?
             <Box
-                title="You" 
+                title="You"
                 sx={{
                     position: "absolute",
                     bottom: 5,
@@ -62,7 +62,7 @@ function UserDisplay(props: IUserDisplayProps) {
     const dateValue = new Date(user.joinedOn);
     const tooltipText = dateTimeFormat.format(dateValue);
 
-    const country = (loginUser && user.userId === loginUser.userId) ? settings.country : user.userCountry; // To get around caching
+    const country = (loginUser && user.userId === loginUser.userId) ? settings.country : user.userCountry;
 
     return (
         <Box display="flex" flexDirection="row">
@@ -75,9 +75,9 @@ function UserDisplay(props: IUserDisplayProps) {
                         <Box lineHeight={1} sx={{wordBreak: "break-word", }} display="flex" alignItems="center">
                             <Typography variant="h5" >
                                 {user.displayName}
-                                {country ? <ReactCountryFlag style={{verticalAlign: "text-top", marginLeft: 8}} title={formatCountryCode(country)} countryCode={country} svg /> : undefined}
+                                {country ? <CountryFlag countryCode={country} marginLeft={8} /> : undefined}
                             </Typography>
-                            
+
                         </Box>
                     </Box>
                     <Box display="inline-flex">
@@ -121,18 +121,18 @@ function UserDisplay(props: IUserDisplayProps) {
 
 function UserCard(props: IUserCardProps) {
     const { minHeight, loading, user, center } = props;
-    
+
     return (
     <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "row", minHeight: minHeight}}>
         <Box display="flex" width="100%" flexDirection="row" alignItems="center" justifyContent={center ? "center" : undefined}>
-        {user && !loading ? 
-            <UserDisplay user={user} /> 
-        : 
-        loading ? 
+        {user && !loading ?
+            <UserDisplay user={user} />
+        :
+        loading ?
             <Box flexGrow={1} display="flex" justifyContent="center">
                 <CircularProgress size="72px" />
             </Box>
-        : 
+        :
             <PermIdentityIcon sx={{ fontSize: 72, flexGrow: 1 }} />}
         </Box>
     </Paper>);

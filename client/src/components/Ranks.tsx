@@ -16,6 +16,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import { parseAsNumberLiteral, useQueryState } from "nuqs";
+import NumberGridPagination from "./cards/grids/NumberGridPagination";
 
 function makeColumns(placementWidth: number) {
     const cols: GridColDef[] = [];
@@ -28,7 +29,7 @@ function makeColumns(placementWidth: number) {
         sortable: false,
         valueFormatter: (value) => value
     });
-    
+
     cols.push(makeUserColumn<Rank>(270));
 
     cols.push({
@@ -58,7 +59,7 @@ function makeColumns(placementWidth: number) {
             </Tooltip>
         ),
         flex: 240,
-        minWidth: 128, // min width to not cutoff Getting There (7)
+        minWidth: 128,
         sortingOrder: ["asc"],
         valueFormatter: formatRank
     });
@@ -75,11 +76,11 @@ function makeColumns(placementWidth: number) {
             </Tooltip>
         ),
         flex: 160,
-        minWidth: 101, // min width to not cutoff column header when sorted
+        minWidth: 101,
         sortingOrder: ["asc"],
         valueFormatter: formatSkill
     });
-    
+
     return cols;
 }
 
@@ -95,8 +96,9 @@ function RanksCard(props: IRanksCardProps) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 20 });
 
-    const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
+    const [currentSortBy, setCurrentSortBy] = useQueryState("sort",
         parseAsNumberLiteral([RankSortBy.RankAsc, RankSortBy.SkillAsc])
         .withDefault(RankSortBy.RankAsc)
         .withOptions({ history: "replace" })
@@ -106,10 +108,11 @@ function RanksCard(props: IRanksCardProps) {
     const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
 
     useEffect(() => {
-        apiRef.current?.setPage(0);
-    }, [apiRef, game, style]);
+        setPaginationModel((model) => model.page === 0 ? model : { ...model, page: 0 });
+    }, [currentSortBy, game, style]);
 
     const onPageChange = useCallback((model: GridPaginationModel) => {
+        setPaginationModel(model);
         setMaxPage((model.page + 1) * model.pageSize);
     }, []);
 
@@ -120,7 +123,7 @@ function RanksCard(props: IRanksCardProps) {
             return { rows: [], pageInfo: {hasNextPage: false} }
         }
 
-        const hasMore = ranks.length >= (end - start);
+        const hasMore = ranks.length === (end - start + 1);
         return {
             rows: ranks,
             pageInfo: {hasNextPage: hasMore}
@@ -162,12 +165,13 @@ function RanksCard(props: IRanksCardProps) {
             className="ranksGrid"
             columns={gridCols}
             apiRef={apiRef}
+            autoHeight
             pagination
             dataSource={dataSource}
+            paginationModel={paginationModel}
             pageSizeOptions={[20]}
             initialState={{
-                pagination: { 
-                    paginationModel: { pageSize: 20 },
+                pagination: {
                     rowCount: -1
                 },
                 sorting: {
@@ -179,8 +183,15 @@ function RanksCard(props: IRanksCardProps) {
             disableRowSelectionOnClick
             onPaginationModelChange={onPageChange}
             onSortModelChange={onSortChanged}
+            slotProps={{
+                basePagination: {
+                    material: {
+                        ActionsComponent: (props) => <NumberGridPagination rowCount={-1} allowAnyPage {...props} />
+                    }
+                }
+            }}
             sx={{
-                "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
+                "--DataGrid-overlayHeight": `${36 * 20}px`
             }}
         />
     </Paper>
@@ -189,11 +200,11 @@ function RanksCard(props: IRanksCardProps) {
 
 function Ranks() {
     const {game, setGame, style, setStyle} = useGameStyle();
-    
+
     useEffect(() => {
         document.title = "ranks - strafes"
     }, []);
-    
+
     return (
     <Box display="flex" flexDirection="column" flexGrow={1}>
         <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>

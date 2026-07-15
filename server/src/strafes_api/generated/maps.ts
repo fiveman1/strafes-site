@@ -1,14 +1,7 @@
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
-/*
- * ---------------------------------------------------------------
- * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
- * ##                                                           ##
- * ## AUTHOR: acacode                                           ##
- * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
- * ---------------------------------------------------------------
- */
+
 
 export interface Error {
   error?: string;
@@ -30,21 +23,21 @@ export interface Map {
 }
 
 export interface PagedResponseMap {
-  /** Data contains the actual response payload */
+
   data?: Map[];
-  /** Pagination contains information about paging */
+
   pagination?: Pagination;
 }
 
 export interface Pagination {
-  /** Current page number */
+
   page?: number;
-  /** Number of items per page */
+
   page_size?: number;
 }
 
 export interface ResponseMap {
-  /** Data contains the actual response payload */
+
   data?: Map;
 }
 
@@ -52,21 +45,21 @@ export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
 export interface FullRequestParams extends Omit<RequestInit, "body"> {
-  /** set parameter to `true` for call `securityWorker` for this request */
+
   secure?: boolean;
-  /** request path */
+
   path: string;
-  /** content type of request body */
+
   type?: ContentType;
-  /** query params */
+
   query?: QueryParamsType;
-  /** format of response (i.e. response.json() -> format: "json") */
+
   format?: ResponseFormat;
-  /** request body */
+
   body?: unknown;
-  /** base url */
+
   baseUrl?: string;
-  /** request cancellation token */
+
   cancelToken?: CancelToken;
 }
 
@@ -303,42 +296,17 @@ export class HttpClient<SecurityDataType = unknown> {
   };
 }
 
-/**
- * @title StrafesNET Maps API
- * @version 1.0
- * @baseUrl /public-api/v1
- * @contact
- *
- * Obtain an api key at https://dev.strafes.net
- * Requires Maps:Read permission
- */
+
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
   map = {
-    /**
-     * @description Get a list of maps
-     *
-     * @tags maps
-     * @name GetMap
-     * @summary List maps
-     * @request GET:/map
-     * @secure
-     */
+
     getMap: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
         game_id?: number;
       },
@@ -353,17 +321,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a specific map by its ID
-     *
-     * @tags maps
-     * @name GetMap2
-     * @summary Get map by ID
-     * @request GET:/map/{id}
-     * @originalName getMap
-     * @duplicate
-     * @secure
-     */
+
     getMap2: (id: number, params: RequestParams = {}) =>
       this.request<ResponseMap, Error>({
         path: `/map/${id}`,
@@ -373,15 +331,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Redirects to a signed download URL for a map's SNFM file
-     *
-     * @tags maps
-     * @name SnfmList
-     * @summary Download SNFM file
-     * @request GET:/map/{id}/snfm
-     * @secure
-     */
+
     snfmList: (id: number, params: RequestParams = {}) =>
       this.request<any, void | Error>({
         path: `/map/${id}/snfm`,

@@ -25,7 +25,7 @@ async function setUserRolesForList(users: UserInfo[]) {
 
 async function setProfileInfoForList(client: AuthClient, users: UserInfo[]) {
     const userIds = Array.from(new Set<number>(users.map((val) => val.userId)));
-    
+
     const userIdToSettings = await client.loadSettingsFromDBMulti(userIds);
     if (!userIdToSettings) {
         return;
@@ -78,11 +78,11 @@ export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boole
     }
 
     const data = thumbRes.data.data as ThumbnailData[];
-    
+
     const idToThumb = new Map<number, string>();
     for (const thumbInfo of data) {
         idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
-        cache.put(getUserThumbKey(thumbInfo.targetId, largeThumbs), thumbInfo.imageUrl, 4 * 60 * 60 * 1000); // 4 hours
+        cache.put(getUserThumbKey(thumbInfo.targetId, largeThumbs), thumbInfo.imageUrl, 4 * 60 * 60 * 1000);
     }
 
     for (const user of users) {

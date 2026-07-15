@@ -41,8 +41,8 @@ function translateSort(val: MapTimesSortRaw): string {
 
 function MapSortSelector(props: IMapSortSelectorProps) {
     const { sort, setSort } = props;
-    
-    // const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
+
+
     const rawSort: MapTimesSortRaw = useMemo(() => {
         switch (sort) {
             case "nameAsc":
@@ -99,7 +99,7 @@ function MapSortSelector(props: IMapSortSelectorProps) {
                     {(["name", "creator", "date", "count", "tier"] as MapTimesSortRaw[]).map((sort) => <MenuItem value={sort}>{translateSort(sort)}</MenuItem>)}
                 </Select>
             </FormControl>
-            <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}> 
+            <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}>
                 {isAsc ? <ArrowDownwardIcon/> : <ArrowUpwardIcon/>}
             </IconButton>
         </Box>

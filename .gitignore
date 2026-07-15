@@ -1,4 +1,26 @@
-.env
-node_modules
-yarn.lock
+# Dependencies
+node_modules/
+package-lock.json
+
+# Builds and caches
+build/
+dist/
 .eslintcache
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!client/.env.example
+!server/.env.example
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

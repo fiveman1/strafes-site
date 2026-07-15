@@ -5,16 +5,13 @@ import { useGridSelector } from "@mui/x-data-grid/internals";
 import { numDigits } from "../../../common/utils";
 import SimpleNumberField from "../../forms/SimpleNumberField";
 
-function calcRowNum(page: number, rowsPerPage: number, rowCount: number) {
-    return Math.max(1, Math.min((page + 1) * rowsPerPage, rowCount));
-}
-
 interface NumberGridPaginationProps extends TablePaginationActionsProps {
     rowCount: number
+    allowAnyPage?: boolean
 }
 
 function NumberGridPagination(props: NumberGridPaginationProps) {
-    const { page, onPageChange, className, rowsPerPage, rowCount } = props;
+    const { page, className, rowCount, allowAnyPage = false } = props;
 
     const apiRef = useGridApiContext();
     const pageCount = useGridSelector(apiRef, gridPageCountSelector);
@@ -23,20 +20,29 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
     const screen430px = useMediaQuery(`@media screen and (max-width: 430px)`);
     const smallScreen = useMediaQuery(`@media screen and (max-width: 530px)`);
 
-    const rowDigits = numDigits(rowCount);
+    const rowDigits = numDigits(Math.max(0, rowCount));
     let showPageInput = !screen390px;
     if (rowDigits > 5) showPageInput = !screen430px;
     else if (rowDigits > 4) showPageInput = !screen410px;
 
+    const changePage = useCallback((newPage: number) => {
+        if (allowAnyPage) {
+            apiRef.current.setPage(Math.max(0, newPage));
+            return;
+        }
+        const lastPage = Math.max(0, pageCount - 1);
+        apiRef.current.setPage(Math.max(0, Math.min(newPage, lastPage)));
+    }, [allowAnyPage, apiRef, pageCount]);
+
     const renderItem = useCallback((item: PaginationRenderItemParams): JSX.Element | null => {
-        // There is always exactly 0 or 1 selected page, use that to render our page selector
+
         if (item.selected && showPageInput) {
-            // Padding on left/right is 14px * 2 = 28. Add 8 per digit that can be shown
-            const width = numDigits(rowCount) * 8 + 28;
+
+            const width = numDigits(pageCount) * 8 + 28;
             return (
-                <SimpleNumberField 
-                    size="small" 
-                    disabled={rowCount <= rowsPerPage}
+                <SimpleNumberField
+                    size="small"
+                    disabled={!allowAnyPage && pageCount <= 1}
                     sx={{
                         width: `${width}px`,
                         "& input": {
@@ -45,25 +51,25 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
                             fontSize: "14px"
                         }
                     }}
-                    value={calcRowNum(page, rowsPerPage, rowCount)}
+                    value={page + 1}
                     onValueChange={(value) => {
-                        const newPage = Math.floor((value - 1) / rowsPerPage);
-                        onPageChange(null, newPage);
-                        return calcRowNum(newPage, rowsPerPage, rowCount);
-                    }} 
-                    max={rowCount}
+                        const newPage = value - 1;
+                        changePage(newPage);
+                        return allowAnyPage ? Math.max(1, value) : Math.max(1, Math.min(value, pageCount));
+                    }}
+                    max={allowAnyPage ? undefined : pageCount}
                 />
             );
         }
-        
-        // Hide the page buttons and ellipses
+
+
         if (item.type === "page" || item.type === "start-ellipsis" || item.type === "end-ellipsis") {
             return null;
         }
-        
-        // Show arrows
+
+
         return <PaginationItem {...item} />;
-    }, [onPageChange, page, rowCount, rowsPerPage, showPageInput]);
+    }, [allowAnyPage, changePage, page, pageCount, showPageInput]);
 
     return (
         <Pagination
@@ -74,7 +80,7 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
             showLastButton={!smallScreen}
             siblingCount={0}
             boundaryCount={0}
-            onChange={(event, newPage) => onPageChange(null, newPage - 1)}
+            onChange={(event, newPage) => changePage(newPage - 1)}
             renderItem={renderItem}
         />
     );

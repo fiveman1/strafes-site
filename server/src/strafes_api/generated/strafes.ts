@@ -1,14 +1,7 @@
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
-/*
- * ---------------------------------------------------------------
- * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
- * ##                                                           ##
- * ## AUTHOR: acacode                                           ##
- * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
- * ---------------------------------------------------------------
- */
+
 
 export interface Error {
   error?: string;
@@ -22,55 +15,55 @@ export interface Map {
 }
 
 export interface PagedResponseMap {
-  /** Data contains the actual response payload */
+
   data: Map[];
-  /** Pagination contains information about paging */
+
   pagination: Pagination;
 }
 
 export interface PagedResponseRank {
-  /** Data contains the actual response payload */
+
   data: Rank[];
-  /** Pagination contains information about paging */
+
   pagination: Pagination;
 }
 
 export interface PagedResponseTime {
-  /** Data contains the actual response payload */
+
   data: Time[];
-  /** Pagination contains information about paging */
+
   pagination: Pagination;
 }
 
 export interface PagedResponseUser {
-  /** Data contains the actual response payload */
+
   data: User[];
-  /** Pagination contains information about paging */
+
   pagination: Pagination;
 }
 
 export interface PagedTotalResponseTime {
-  /** Data contains the actual response payload */
+
   data: Time[];
-  /** Pagination contains information about paging */
+
   pagination: PaginationWithTotal;
 }
 
 export interface Pagination {
-  /** Current page number */
+
   page: number;
-  /** Number of items per page */
+
   page_size: number;
 }
 
 export interface PaginationWithTotal {
-  /** Current page number */
+
   page: number;
-  /** Number of items per page */
+
   page_size: number;
-  /** Total number of items across all pages */
+
   total_items: number;
-  /** Total number of pages */
+
   total_pages: number;
 }
 
@@ -86,27 +79,27 @@ export interface Rank {
 }
 
 export interface ResponseMap {
-  /** Data contains the actual response payload */
+
   data: Map;
 }
 
 export interface ResponseRank {
-  /** Data contains the actual response payload */
+
   data: Rank;
 }
 
 export interface ResponseTime {
-  /** Data contains the actual response payload */
+
   data: Time;
 }
 
 export interface ResponseUser {
-  /** Data contains the actual response payload */
+
   data: User;
 }
 
 export interface ResponseArrayTimePlacement {
-  /** Data contains the actual response payload */
+
   data: TimePlacement[];
 }
 
@@ -138,21 +131,21 @@ export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
 export interface FullRequestParams extends Omit<RequestInit, "body"> {
-  /** set parameter to `true` for call `securityWorker` for this request */
+
   secure?: boolean;
-  /** request path */
+
   path: string;
-  /** content type of request body */
+
   type?: ContentType;
-  /** query params */
+
   query?: QueryParamsType;
-  /** format of response (i.e. response.json() -> format: "json") */
+
   format?: ResponseFormat;
-  /** request body */
+
   body?: unknown;
-  /** base url */
+
   baseUrl?: string;
-  /** request cancellation token */
+
   cancelToken?: CancelToken;
 }
 
@@ -389,42 +382,17 @@ export class HttpClient<SecurityDataType = unknown> {
   };
 }
 
-/**
- * @title StrafesNET Data API
- * @version 1.0
- * @baseUrl /api/v1
- * @contact
- *
- * Obtain an api key at https://dev.strafes.net
- * Requires Data:Read permission
- */
+
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
   map = {
-    /**
-     * @description Get a list of maps
-     *
-     * @tags maps
-     * @name GetMap
-     * @summary List maps
-     * @request GET:/map
-     * @secure
-     */
+
     getMap: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
         game_id?: number;
       },
@@ -439,17 +407,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a specific map by its ID
-     *
-     * @tags maps
-     * @name GetMap2
-     * @summary Get map by ID
-     * @request GET:/map/{id}
-     * @originalName getMap
-     * @duplicate
-     * @secure
-     */
+
     getMap2: (id: number, params: RequestParams = {}) =>
       this.request<ResponseMap, Error>({
         path: `/map/${id}`,
@@ -460,36 +418,14 @@ export class Api<
       }),
   };
   rank = {
-    /**
-     * @description Get a list of ranks with pagination and filtering
-     *
-     * @tags ranks
-     * @name RankList
-     * @summary List ranks
-     * @request GET:/rank
-     * @secure
-     */
+
     rankList: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
-        /**
-         * Sort by (1: rank asc, 2: skill)
-         * @min 1
-         * @max 2
-         * @default 1
-         */
+
         sort_by?: 1 | 2;
         game_id?: number;
         mode_id?: number;
@@ -507,39 +443,19 @@ export class Api<
       }),
   };
   time = {
-    /**
-     * @description Get a list of times
-     *
-     * @tags times
-     * @name TimeList
-     * @summary List times
-     * @request GET:/time
-     * @secure
-     */
+
     timeList: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
         game_id?: number;
         map_id?: number;
         mode_id?: number;
         style_id?: number;
         user_id?: number;
-        /**
-         * Sort field (time ASC, time DESC, date ASC, date DESC)
-         * @default "0"
-         */
+
         sort_by?: 0 | 1 | 2 | 3;
       },
       params: RequestParams = {},
@@ -553,18 +469,10 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get placement information for multiple times Invalid or not found time IDs are omitted in the response
-     *
-     * @tags times
-     * @name PlacementList
-     * @summary Get placement batch
-     * @request GET:/time/placement
-     * @secure
-     */
+
     placementList: (
       query: {
-        /** Comma-separated array of time IDs (25 Limit) */
+
         ids: string;
       },
       params: RequestParams = {},
@@ -578,29 +486,12 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a list of world records sorted by most recent NOTE: World records are recalutated once every hour and this endpoint is not realtime
-     *
-     * @tags times
-     * @name WorldrecordList
-     * @summary Get world records
-     * @request GET:/time/worldrecord
-     * @secure
-     */
+
     worldrecordList: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
         game_id?: number;
         map_id?: number;
@@ -619,15 +510,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a specific time by its ID
-     *
-     * @tags times
-     * @name TimeDetail
-     * @summary Get time by ID
-     * @request GET:/time/{id}
-     * @secure
-     */
+
     timeDetail: (id: string, params: RequestParams = {}) =>
       this.request<ResponseTime, Error>({
         path: `/time/${id}`,
@@ -637,15 +520,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a HTTP 302 Redirect to the download url for the bot replay of a time by its ID if it exists
-     *
-     * @tags times
-     * @name GetTime
-     * @summary Get redirect to bot download url by time ID
-     * @request GET:/time/{id}/bot
-     * @secure
-     */
+
     getTime: (id: string, params: RequestParams = {}) =>
       this.request<any, void | Error>({
         path: `/time/${id}/bot`,
@@ -655,29 +530,12 @@ export class Api<
       }),
   };
   user = {
-    /**
-     * @description Get a list of users
-     *
-     * @tags users
-     * @name UserList
-     * @summary List users
-     * @request GET:/user
-     * @secure
-     */
+
     userList: (
       query?: {
-        /**
-         * Page size (max 100)
-         * @min 1
-         * @max 100
-         * @default 10
-         */
+
         page_size?: number;
-        /**
-         * Page number
-         * @min 1
-         * @default 1
-         */
+
         page_number?: number;
         state_id?: number;
       },
@@ -692,15 +550,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a specific user by their ID
-     *
-     * @tags users
-     * @name UserDetail
-     * @summary Get user by ID
-     * @request GET:/user/{id}
-     * @secure
-     */
+
     userDetail: (id: number, params: RequestParams = {}) =>
       this.request<ResponseUser, Error>({
         path: `/user/${id}`,
@@ -710,15 +560,7 @@ export class Api<
         ...params,
       }),
 
-    /**
-     * @description Get a specific rank for a user by their ID
-     *
-     * @tags users
-     * @name RankList
-     * @summary Get rank by user ID
-     * @request GET:/user/{id}/rank
-     * @secure
-     */
+
     rankList: (
       id: number,
       query: {

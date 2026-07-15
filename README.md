@@ -1,69 +1,49 @@
-# strafes-site
+# epicstrafe 
 
-https://strafes.fiveman1.net/
+This repository is based on the original MIT-licensed [`fiveman1/strafes-site`](https://github.com/fiveman1/strafes-site). The refreshed version and improvements were made by **@quadrics** on Discord.
 
-Serves content from the StrafesNET Roblox bhop and surf games.
+## Improvements
 
-## Just frontend setup
+- World record replay loading times cache
+- Interface
+- UX
+  
+## Requirements
 
-Use this if you just want to make changes to the frontend and don't want to bother setting up the backend. This allows you to run the frontend from source and proxy all backend requests to https://strafes.fiveman1.net/. You can easily test and make changes to files under the `client` directory this way.
+- [Node.js](https://nodejs.org/) 22 or newer
+- npm 10 or newer
 
-`yarn install`
+## Run the public frontend locally
 
-`yarn build`
+This is the quickest way to work on the project. In development, Vite proxies public `/api` requests to the original Strafes API.
 
-Run the frontend website
-
-`yarn run dev-proxy`
-
-## Full setup (frontend + backend)
-
-`yarn install`
-
-`yarn build`
-
-Make a `.env` in the root directory (this folder) with the following:
-
-```sh
-STRAFES_KEY=<your key>
+```bash
+git clone https://github.com/plusbyminuss-coder/epicstrafe.git
+cd epicstrafe-main
+npm install
+npm run build:shared
+npm run dev:frontend
 ```
 
-### Setup OAuth 2.0
+Uses [http://localhost:3000](http://localhost:3000).
 
-Create a MySQL database named `strafes_auth_users`
+## Commands
 
-Create the `sessions` and `settings` table (see `server/sql/auth.sql`)
-
-Add the following to your `.env`
-
-```sh
-AUTH_DB_USER=<your MySQL user>
-AUTH_DB_PASSWORD=<your MySQL password>
-ROBLOX_CLIENT_ID=<your Roblox OAuth 2.0 client ID>
-ROBLOX_CLIENT_SECRET=<your Roblox OAuth 2.0 client secret>
-BASE_URL=<the base URL for the site>, such as "https://strafes.fiveman1.net"
-COOKIE_SECRET=<a randomly generated secret of your choice>
+```bash
+npm run dev:frontend    # Frontend only
+npm run build:frontend  # Build shared package and frontend
+npm run lint            # Check the source code
 ```
 
-### Setup strafes_globals DB
+## Contributing
 
-You will need to setup and run https://github.com/fiveman1/strafes-globals-db then add the following to your `.env`
+Issues and pull requests are welcome. Install dependencies with `npm install`, keep changes focused, and run `npm run lint` and `npm run build` before submitting. Do not commit credentials, `.env` files, databases, generated builds, or dependency folders.
 
-```sh
-STRAFES_DB_USER=<your MySQL user>
-STRAFES_DB_PASSWORD=<your MySQL password>
-```
+For security issues involving authentication, credentials, cookies, or databases, contact the repository owner privately rather than opening a public issue. Never include live secrets in a report.
 
-## How to build/run/dev
+## Credits and license
 
-### Run dev server
+- Original project: [fiveman1/strafes-site](https://github.com/fiveman1/strafes-site)
+- Interface redesign and replay reliability improvements: **@quadrics**
 
-`yarn run dev`
-
-### Build production
-
-`yarn build`
-
-### Run production server
-
-`yarn start`
+Released under the [MIT License](LICENSE). The original copyright notice is preserved.

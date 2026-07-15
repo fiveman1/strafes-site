@@ -9,7 +9,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 
-// https://mui.com/material-ui/react-number-field/
+
 
 export default function NumberSpinner({
     id: idProp,
@@ -64,7 +64,7 @@ export default function NumberSpinner({
                         cursor: 'ew-resize',
                         fontSize: '0.875rem',
                         color: 'text.secondary',
-                        //fontWeight: 500,
+
                         lineHeight: 1.5,
                         mb: 0.5,
                     }}

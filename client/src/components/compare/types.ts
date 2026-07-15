@@ -79,7 +79,7 @@ export function hasDuplicateEntries(entries: CompareEntry[]): boolean {
 }
 
 export function getSliceCount(numEntries: number): number {
-    // N "wins" slices + 1 "tie" slice + N "exclusive" slices
+
     return numEntries * 2 + 1;
 }
 
@@ -102,7 +102,7 @@ export function shouldIncludeTimes(
 ): boolean {
     const tieIndex = getTieSliceIndex(numEntries);
 
-    // Win slice for entry i
+
     if (filterSlice < numEntries) {
         if (times.length < 2) return false;
         const best = times[0];
@@ -110,12 +110,12 @@ export function shouldIncludeTimes(
         return best.entryIndex === filterSlice && best.time !== second.time;
     }
 
-    // Tie slice
+
     if (filterSlice === tieIndex) {
         return times.length >= 2 && times[0].time === times[1].time;
     }
 
-    // Exclusive slice for entry i
+
     const exclusiveEntryIndex = filterSlice - numEntries - 1;
     if (exclusiveEntryIndex >= 0 && exclusiveEntryIndex < numEntries) {
         return times.length === 1 && times[0].entryIndex === exclusiveEntryIndex;

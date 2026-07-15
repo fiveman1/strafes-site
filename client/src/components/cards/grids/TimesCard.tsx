@@ -128,7 +128,7 @@ function TimesGrid(props: ITimesCardProps) {
 
     const [rowCount, setRowCount] = useState(0);
 
-    const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
+    const [currentSortBy, setCurrentSortBy] = useQueryState("sort",
         parseAsNumberLiteral([TimeSortBy.DateAsc, TimeSortBy.DateDesc, TimeSortBy.TimeAsc, TimeSortBy.TimeDesc])
         .withDefault(defaultSort)
         .withOptions({ history: "replace" })
@@ -145,20 +145,21 @@ function TimesGrid(props: ITimesCardProps) {
     let pageSize = propPageSize ?? 10;
     if (shortScreen) pageSize = 10;
     const initPage = Math.floor(start / pageSize);
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: initPage, pageSize });
     const [maxVisisbleRow, setMaxVisisbleRow] = useState((initPage + 1) * pageSize);
 
     useEffect(() => {
-        apiRef.current?.setPageSize(pageSize);
-    }, [apiRef, pageSize]);
+        setPaginationModel((model) => model.pageSize === pageSize ? model : { ...model, pageSize });
+    }, [pageSize]);
 
-    // Reset page to 0 when changing something that would load new data
+
     useEffect(() => {
         const newKey = getGridKey(userId, mapId, game, style, course, onlyWRs, currentSortBy);
         if (newKey !== gridKey) {
-            apiRef.current?.setPage(0);
+            setPaginationModel((model) => model.page === 0 ? model : { ...model, page: 0 });
             setGridKey(newKey);
         }
-    }, [userId, mapId, game, style, course, onlyWRs, currentSortBy, apiRef, gridKey]);
+    }, [userId, mapId, game, style, course, onlyWRs, currentSortBy, gridKey]);
 
     const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
 
@@ -182,6 +183,7 @@ function TimesGrid(props: ITimesCardProps) {
     }, [getSort, setCurrentSortBy]);
 
     const onPageChange = useCallback((model: GridPaginationModel) => {
+        setPaginationModel(model);
         const start = (model.page * model.pageSize) + 1;
         setStart(start);
         setMaxVisisbleRow((model.page + 1) * model.pageSize);
@@ -230,7 +232,7 @@ function TimesGrid(props: ITimesCardProps) {
         if (!allowOnlyWRs && !userId && !mapId) {
             return { rows: [], rowCount: 0 }
         }
-        
+
         const timeData = await queryClient.fetchQuery(queries.times.times(start, end, sortBy, course, game, style, userId, mapId, onlyWRs));
 
         if (onLoadTimes && timeData?.times) {
@@ -240,7 +242,7 @@ function TimesGrid(props: ITimesCardProps) {
         if (!timeData) {
             return { rows: [], rowCount: 0 }
         }
-        
+
         return {
             rows: timeData.times,
             rowCount: timeData.pagination.totalItems
@@ -270,24 +272,23 @@ function TimesGrid(props: ITimesCardProps) {
     let rowHeight: number | undefined = undefined;
     if (isCompact) rowHeight = 100;
     else if (!hideMap) rowHeight = Math.round(MAP_THUMB_SIZE * 1.6667);
+    const overlayHeight = Math.floor((rowHeight ?? 52) * 0.7) * pageSize;
 
     return (
         <DataGrid
             className="timesGrid"
             columns={gridCols}
             apiRef={apiRef}
+            autoHeight
             pagination
             dataSource={dataSource}
+            paginationModel={paginationModel}
             pageSizeOptions={propPageSize !== undefined && propPageSize !== 10 ? [10, propPageSize] : [10]}
             rowCount={rowCount}
             rowHeight={rowHeight}
             columnHeaderHeight={isCompact ? 76 : 56}
             initialState={{
                 pagination: {
-                    paginationModel: { 
-                        pageSize: pageSize, 
-                        page: initPage
-                    },
                     rowCount: 0
                 },
                 sorting: {
@@ -312,14 +313,15 @@ function TimesGrid(props: ITimesCardProps) {
                 }
             }}
             sx={{
+                "--DataGrid-overlayHeight": `${overlayHeight}px`,
                 ".MuiDataGrid-iconButtonContainer": {
                     display: isCompact ? "none !important" : undefined
                 },
                 [`& .${tablePaginationClasses.selectLabel}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none",
                 },
                 [`& .${tablePaginationClasses.input}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none",
                 },
             }}
         />

@@ -21,6 +21,11 @@ function TimeDisplay(props: ITimeDisplayProps) {
     const ms = time.time;
     const diff = time.wrDiff;
     const hasBot = time.hasBot;
+    const preloadReplay = () => {
+        void import("../Replays").then(({ preloadReplayAssets }) => {
+            preloadReplayAssets(time.id, time.mapId);
+        });
+    };
 
     if (hideDiff) {
         if (hasBot) {
@@ -28,6 +33,9 @@ function TimeDisplay(props: ITimeDisplayProps) {
                 <Link
                     component={RouterLink} 
                     to={`/replays/${time.id}`}
+                    onMouseEnter={preloadReplay}
+                    onFocus={preloadReplay}
+                    onTouchStart={preloadReplay}
                     underline="none"
                     sx={{
                         textDecoration: "none",
@@ -59,6 +67,9 @@ function TimeDisplay(props: ITimeDisplayProps) {
             <Link
                 component={RouterLink} 
                 to={`/replays/${time.id}`}
+                onMouseEnter={preloadReplay}
+                onFocus={preloadReplay}
+                onTouchStart={preloadReplay}
                 underline="none"
                 sx={{
                     textDecoration: "none",

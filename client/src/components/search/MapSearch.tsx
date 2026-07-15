@@ -8,7 +8,7 @@ import MapThumb from "../displays/MapThumb";
 import { getMapTierColor } from "../../common/colors";
 import { filterMapsBySearch } from "../../common/sort";
 
-// Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
+
 
 type ItemData = Array<[React.ReactElement, StrafesMap]>;
 interface MyRowComponentProps {
@@ -36,24 +36,24 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
             <MapThumb size={70} map={mapOption} />
             <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
                 <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="32px">
-                    <Typography 
-                        variant="h6" 
-                        overflow="hidden" 
-                        color="textPrimary" 
-                        display="inline-block" 
-                        textOverflow="ellipsis" 
+                    <Typography
+                        variant="h6"
+                        overflow="hidden"
+                        color="textPrimary"
+                        display="inline-block"
+                        textOverflow="ellipsis"
                         flexGrow={1}
                     >
                         {mapOption.name}
                     </Typography>
-                    <Typography 
+                    <Typography
                         variant="caption"
-                        fontWeight="bold" 
+                        fontWeight="bold"
                         lineHeight={1.2}
                         ml={0.75}
                         sx={{
                             backgroundColor: getGameColor(mapOption.game, theme),
-                            textAlign: "center", 
+                            textAlign: "center",
                             color: "white",
                             textShadow: "black 1px 1px 1px",
                             borderRadius: "6px",
@@ -64,11 +64,11 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                     </Typography>
                 </Box>
                 <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="24px">
-                    <Typography 
-                        variant="body2" 
-                        overflow="hidden" 
-                        color="textSecondary" 
-                        display="inline-block" 
+                    <Typography
+                        variant="body2"
+                        overflow="hidden"
+                        color="textSecondary"
+                        display="inline-block"
                         textOverflow="ellipsis"
                         flexGrow={1}
                     >
@@ -98,7 +98,7 @@ interface ListboxComponentProps {
     selectedMapId: number | undefined
 }
 
-// Adapter for react-window v2
+
 const ListboxComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLElement> & ListboxComponentProps> (
 function ListboxComponent(props, ref) {
     const { children, setListRef, selectedMapId, ...other } = props;
@@ -113,7 +113,7 @@ function ListboxComponent(props, ref) {
     const itemSize = 80;
     const rowCount = smallScreen ? 6 : 8;
 
-    // Separate className for List, other props for wrapper div (ARIA, handlers)
+
     const { className, ...otherProps } = other;
     delete otherProps.style;
 
@@ -165,7 +165,7 @@ const ADORNMENT_SIZE = 40;
 
 function MapSearch(props: MapSearchProps) {
     const { maps, selectedMap, setSelectedMap } = props;
-    
+
     const [ listRef, setListRef ] = useListCallbackRef(null);
     const [ inputValue, setIntputValue ] = useState("");
 
@@ -173,7 +173,7 @@ function MapSearch(props: MapSearchProps) {
         setSelectedMap(map);
     }, [setSelectedMap]);
 
-    // Scroll to right element when using arrow keys
+
     const onHighlightChange = useCallback((option: StrafesMap | null, reason: AutocompleteHighlightChangeReason) => {
         if (reason !== "keyboard" || !option || !listRef) {
             return;
@@ -194,7 +194,7 @@ function MapSearch(props: MapSearchProps) {
     return (
     <Autocomplete
         sx={{
-            // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+
             "[type=\"search\"]::-webkit-search-decoration": { appearance: "none" },
             "[type=\"search\"]::-webkit-search-cancel-button": { appearance: "none" }
         }}
@@ -225,15 +225,15 @@ function MapSearch(props: MapSearchProps) {
                         ...params.inputProps,
                         maxLength: 50
                     },
-                    input: { 
+                    input: {
                         ...params.InputProps,
                         startAdornment: (
                             <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${ADORNMENT_SIZE}px`}}>
                                 {selectedMap ?
                                 <MapThumb size={ADORNMENT_SIZE} map={selectedMap} />
-                                :  
+                                :
                                 <SearchIcon />}
-                            </InputAdornment> 
+                            </InputAdornment>
                         )
                     }
                 }}
@@ -250,7 +250,7 @@ function MapSearch(props: MapSearchProps) {
                 component: ListboxComponent,
                 setListRef: setListRef,
                 selectedMapId: selectedMap?.id
-            // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any
         }}

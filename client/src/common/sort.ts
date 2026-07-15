@@ -69,7 +69,7 @@ export function filterMapsBySearch(options: Map[], inputValue: string): Map[] {
     const alreadyFilteredMaps = new Set<number>();
     const search = inputValue.toLowerCase();
 
-    // Exact map name matches
+
     for (const map of options) {
         if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().startsWith(search)) {
             filteredMaps.push(map);
@@ -77,7 +77,7 @@ export function filterMapsBySearch(options: Map[], inputValue: string): Map[] {
         }
     }
 
-    // Near map name matches
+
     for (const map of options) {
         if (!alreadyFilteredMaps.has(map.id) && map.name.toLowerCase().includes(search)) {
             filteredMaps.push(map);
@@ -85,7 +85,7 @@ export function filterMapsBySearch(options: Map[], inputValue: string): Map[] {
         }
     }
 
-    // Exact creator matches
+
     for (const map of options) {
         if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().startsWith(search)) {
             filteredMaps.push(map);
@@ -93,7 +93,7 @@ export function filterMapsBySearch(options: Map[], inputValue: string): Map[] {
         }
     }
 
-    // Near creator matches
+
     for (const map of options) {
         if (!alreadyFilteredMaps.has(map.id) && map.creator.toLowerCase().includes(search)) {
             filteredMaps.push(map);

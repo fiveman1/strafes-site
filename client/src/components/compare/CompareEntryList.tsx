@@ -98,10 +98,10 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                 minWidth: smallScreen ? undefined : "200px",
                             }}
                         >
-                            {/* Avatar + username row */}
+                            {}
                             <Box display="flex">
                                 <Link
-                                    to={{pathname: user ? `/users/${user.userId}` : "/users", search: `?style=${entry.style}&game=${game}`}} 
+                                    to={{pathname: user ? `/users/${user.userId}` : "/users", search: `?style=${entry.style}&game=${game}`}}
                                     component={RouterLink}
                                     color="textPrimary"
                                     display="inline-flex"
@@ -128,14 +128,14 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                 </Link>
                             </Box>
                             <Box display="flex" mt={smallScreen ? 0.5 : 0}>
-                                {/* Style selector */}
+                                {}
                                 <StyleSelector
                                     game={game}
                                     style={entry.style}
                                     setStyle={(style) => onStyleChange(index, style as Style)}
                                     label="Style"
                                 />
-                                {/* Action buttons */}
+                                {}
                                 <Box display="flex" alignItems="center">
                                     <Tooltip title="Duplicate" disableInteractive>
                                         <Box component="span">
@@ -158,7 +158,7 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     </IconButton>
                                 </Box>
                             </Box>
-                            
+
                         </Box>
                     );
                 })}

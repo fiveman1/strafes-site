@@ -55,12 +55,12 @@ const SHOW_INPUT_SETTING = "player_showInput";
 const SHOW_DIFF_SETTING = "player_showDiff";
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
-    const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
-        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
+    const { time, duration, paused, offset, fullscreen, speed, onDragPlayback,
+        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef,
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff } = props;
 
     const theme = useTheme();
-    
+
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
@@ -70,7 +70,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ showInput, setShowInput ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
     const [ showDiffSetting, setShowDiff ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
-    
+
     const playerRef = useRef<HTMLDivElement>(null);
     const playerMainRef = useRef<HTMLDivElement>(null);
     const settingsMenuId = useId();
@@ -146,7 +146,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [fullscreen, onFullscreen]);
 
     const onClickPlayer = useCallback((event: React.PointerEvent) => {
-        // Click must have originated within the player main content
+
         if (!lastPointerDownRef.current || !playerMainRef.current || !playerMainRef.current.contains(lastPointerDownRef.current)) {
             return;
         }
@@ -160,7 +160,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [onPausePlay]);
 
     const onClickSettings = useCallback(() => {
-        // Click must have originated within settings button
+
         if (!lastPointerDownRef.current || !settingsButtonRef.current || !settingsButtonRef.current.contains(lastPointerDownRef.current)) {
             return;
         }
@@ -180,12 +180,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const onClickNormalSpeedButton = useCallback(() => onSetSpeed(1.0), [onSetSpeed]);
     const onClickDoubleSpeedButton = useCallback(() => onSetSpeed(2.0), [onSetSpeed]);
     const onClickHalfSpeedButton = useCallback(() => onSetSpeed(0.5), [onSetSpeed]);
-    
+
     const onClickSpeedButton = useCallback(() => {
         setShowSpeed(!showSpeed);
         localStorage.setItem(SHOW_SPEED_SETTING, !showSpeed ? "true" : "false");
     }, [showSpeed]);
-    
+
     const onClickInputButton = useCallback(() => {
         setShowInput(!showInput);
         localStorage.setItem(SHOW_INPUT_SETTING, !showInput ? "true" : "false");
@@ -203,12 +203,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
     const onKeyDown = useCallback((event: KeyboardEvent) => {
         if (event.repeat) {
-            // If you held the key down for a bit then don't repeat the same action
+
             return;
         }
 
         let didAction = false;
-        
+
         if (event.key === " ") {
             didAction = true;
             onPausePlay();
@@ -269,23 +269,23 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
         const now = Date.now();
         if (isDraggingSpeed.current || now - lastChangedSpeed.current < 10) {
-            // Allow up to 10ms window to prevent settings menu from closing
-            // In case you were dragging the speed and your cursor went outside the settings menu
+
+
             return;
         }
 
-        // The settings button will close the menu if clicked
-        // We can keep the menu open when switching to fullscreen
-        // And we don't want to close the menu if we clicked on the menu
-        if (target && target instanceof Node && 
-            (settingsMenuRef.current?.contains(target) 
+
+
+
+        if (target && target instanceof Node &&
+            (settingsMenuRef.current?.contains(target)
             || settingsButtonRef.current?.contains(target)
             || fullscreenButtonRef.current?.contains(target))) {
-            
+
             return;
         }
 
-        // Close the settings menu
+
         setSettingsEl(null);
 
         if (treatAsAction) {
@@ -299,7 +299,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     useEffect(() => {
         const div = document.getElementById(bottomDivId);
         if (!div) return;
-        
+
         const touchStart = (event: TouchEvent) => {
             event.preventDefault();
             setIsBottomHovering(true);
@@ -345,11 +345,11 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
 
     return (
-        <Box 
+        <Box
             ref={playerRef}
-            width="100%" 
-            height="100%" 
-            display="flex" 
+            width="100%"
+            height="100%"
+            display="flex"
             flexDirection="column"
             onPointerMove={onPointerMove}
             onPointerLeave={onPointerLeave}
@@ -392,14 +392,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         fontWeight="bold"
                         fontSize="28px"
                         lineHeight={1.2}
-                        sx={{ 
+                        sx={{
                             textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
                             userSelect: "none",
                             color: "white"
                         }}
                     />
-                    <Box 
-                        display={showDiffSetting && allowDiff ? "flex" : "none"} 
+                    <Box
+                        display={showDiffSetting && allowDiff ? "flex" : "none"}
                         flexDirection="column"
                         alignItems="center"
                         sx={{
@@ -434,7 +434,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             className="diffText"
                         />
                     </Box>
-                    <Box 
+                    <Box
                         ref={inputContainerRef}
                         display={showInput ? "flex" : "none"}
                         flexDirection="column"
@@ -536,13 +536,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         </Box>
                         <Box display="flex" height="4px" mt={0.25}>
                             <Box width="4px" />
-                            <Box 
+                            <Box
                                 id={InputState.Jump}
-                                display="flex" 
-                                width="100%" 
+                                display="flex"
+                                width="100%"
                                 sx={{
                                     "&.inputActive": {
-                                        bgcolor: "#bbff00bb" 
+                                        bgcolor: "#bbff00bb"
                                     }
                                 }}
                             />
@@ -553,10 +553,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             </Box>
             <Box
                 id={bottomDivId}
-                width="100%" 
-                height="40px" 
-                display="flex" 
-                alignItems="center" 
+                width="100%"
+                height="40px"
+                display="flex"
+                alignItems="center"
                 p={1}
                 onMouseOver={onBottomMouseOver}
                 onMouseLeave={onBottomMouseLeave}
@@ -565,14 +565,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     opacity: shouldShow ? 1 : 0,
                 }}
             >
-                <IconButton 
-                    size="small" 
-                    onClick={onPausePlay} 
+                <IconButton
+                    size="small"
+                    onClick={onPausePlay}
                     onTouchEnd={onTouchPausePlay}
                 >
                     {paused ? <PlayArrowIcon /> : <PauseIcon />}
                 </IconButton>
-                <Typography 
+                <Typography
                     variant="subtitle2"
                     bgcolor="#00000080"
                     color="white"
@@ -588,7 +588,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 >
                     {timeText}
                 </Typography>
-                <ProgressSlider 
+                <ProgressSlider
                     min={-offset}
                     max={duration}
                     value={time}
@@ -597,7 +597,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     isDragging={isDragging}
                     setIsDragging={setIsDragging}
                 />
-                <IconButton 
+                <IconButton
                     ref={settingsButtonRef}
                     aria-describedby={curSettingsMenuId}
                     size="small"
@@ -618,10 +618,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 >
                     {({ TransitionProps }) => (
                     <Fade {...TransitionProps} timeout={100}>
-                        <Box 
+                        <Box
                             ref={settingsMenuRef}
-                            display="flex" 
-                            flexDirection="column" 
+                            display="flex"
+                            flexDirection="column"
                             padding={1}
                             sx={{
                                 bgcolor: "#00000080",
@@ -640,7 +640,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     {speed.toFixed(1)}x
                                 </Typography>
                                 <Box display="flex" pl={1} pr={1}>
-                                    <Slider 
+                                    <Slider
                                         size="small"
                                         value={speed}
                                         min={0.1}
@@ -650,7 +650,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         onChangeCommitted={onFinishChangingSpeed}
                                     />
                                 </Box>
-                                <Box 
+                                <Box
                                     mt={verySmallScreen ? 0.5 : 1}
                                     display="flex"
                                     justifyContent="space-evenly"
@@ -706,7 +706,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         </Typography>
                                         <MonitorIcon fontSize="small" sx={{ ml: 0.75 }} />
                                     </Box>
-                                    <Box 
+                                    <Box
                                         mt={1}
                                         display="flex"
                                         flexDirection="column"
@@ -776,10 +776,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     </Fade>
                     )}
                 </Popper>
-                <IconButton 
+                <IconButton
                     ref={fullscreenButtonRef}
-                    size="small" 
-                    onClick={onSwapFullscreen} 
+                    size="small"
+                    onClick={onSwapFullscreen}
                     onTouchEnd={onTouchFullscreen}
                     sx={{
                         ml: 0.5

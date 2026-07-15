@@ -19,8 +19,8 @@ export const shortDateFormat = Intl.DateTimeFormat(undefined, {
     month: "short"
 });
 
-// So react-timeago has this makeIntlFormatter that you're supposed to be able to import and use out of the box,
-// but they forgot to export it. So basically I'm making my own version of it.
+
+
 export const relativeTimeFormat = new Intl.RelativeTimeFormat(undefined, {
     style: "long",
     numeric: "auto"

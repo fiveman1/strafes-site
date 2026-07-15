@@ -12,7 +12,7 @@ interface IDiffDisplayProps {
 
 function DiffDisplay(props: IDiffDisplayProps) {
     const { ms, diff } = props;
-    
+
     const theme = useTheme();
 
     if (diff === undefined) {
@@ -25,8 +25,8 @@ function DiffDisplay(props: IDiffDisplayProps) {
         const wrTime = ms - diff;
         let ratio = diff / wrTime;
         const maxRatio = 0.05;
-        // Desaturate the color, if it's 5% worse than WR then use full saturation,
-        // otherwise we will scale it linearly on a normalized scale between 0% to 5%.
+
+
         if (ratio < maxRatio) {
             ratio = normalize(ratio, 0, maxRatio, 0.55, 1);
             const hsl = convertToHSL(diffColor);
@@ -46,7 +46,7 @@ function DiffDisplay(props: IDiffDisplayProps) {
     else if (diff < 0) {
         diffText = `-${formatted}`;
     }
-    
+
     return (
         <Box display="inline-block" color={diffColor}>
             {`(${diffText})`}

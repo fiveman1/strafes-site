@@ -52,13 +52,14 @@ export class GlobalsClient {
 
     protected readonly _pool: mysql.Pool;
 
-    public constructor(user: string, password: string) {
+    public constructor(user: string, password: string, host = "localhost", port = 3306) {
         this._pool = mysql.createPool({
-            host: "localhost",
+            host: host,
+            port: port,
             user: user,
             password: password,
             database: "strafes_globals",
-            timezone: "Z", // UTC
+            timezone: "Z",
             supportBigNumbers: true,
             bigNumberStrings: true,
             dateStrings: ["TIMESTAMP"]
@@ -71,25 +72,25 @@ export class GlobalsClient {
 
     public async getMapWR(mapId: number, game: Game, style: Style, course: number): Promise<Time | undefined> {
         const query = `SELECT globals.*, users.username, maps.name as map_name
-            FROM globals 
-            INNER JOIN users ON globals.user_id = users.user_id 
+            FROM globals
+            INNER JOIN users ON globals.user_id = users.user_id
             INNER JOIN maps ON globals.map_id = maps.map_id
             WHERE globals.map_id = ? AND globals.game = ? AND globals.style = ? AND globals.course = ?
         ;`;
         const [[record]] = await this.pool.execute<RecordRow[]>(query, [mapId, game, style, course]);
-        
+
         if (!record) {
             return undefined;
         }
-        
+
         return GlobalsClient.recordToTime(record);
     }
 
-    // TODO: This is only being used to get total WR counts, replace this with something that just does that
+
     public async getUserWRs(userId: number, game: Game, style: Style, course?: number): Promise<Time[] | undefined> {
-        let query = `SELECT globals.*, users.username, maps.name as map_name 
-        FROM globals 
-        INNER JOIN users ON globals.user_id = users.user_id 
+        let query = `SELECT globals.*, users.username, maps.name as map_name
+        FROM globals
+        INNER JOIN users ON globals.user_id = users.user_id
         INNER JOIN maps ON globals.map_id = maps.map_id
         WHERE globals.user_id = ?`;
 
@@ -123,8 +124,8 @@ export class GlobalsClient {
 
     public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number, mapId?: number): Promise<{ total: number; wrs: Time[]; }> {
         let query = `SELECT globals.*, users.username, maps.name as map_name, COUNT(globals.time_id) OVER() as totalCount
-        FROM globals 
-        INNER JOIN users ON globals.user_id = users.user_id 
+        FROM globals
+        INNER JOIN users ON globals.user_id = users.user_id
         INNER JOIN maps ON globals.map_id = maps.map_id`;
 
         const values = [];
@@ -156,7 +157,7 @@ export class GlobalsClient {
         }
 
         if (whereClause !== "") {
-            query += " WHERE " + whereClause.slice(5); // Remove the first " AND "
+            query += " WHERE " + whereClause.slice(5);
         }
 
         query += " ORDER BY ";
@@ -209,14 +210,14 @@ export class GlobalsClient {
     }
 
     public async getWRLeaderboardPage(start: number, end: number, game: Game, style: Style, sort: LeaderboardSortBy): Promise<{ total: number; data: GlobalCountSQL[]; }> {
-        let query = `SELECT 
-            COUNT(CASE WHEN course = 0 THEN 1 ELSE NULL END) as count, 
-            COUNT(CASE WHEN course <> 0 THEN 1 ELSE NULL END) as bonusCount, 
-            globals.user_id as userId, 
-            users.username, 
-            COUNT(globals.user_id) OVER() as totalCount 
-            FROM globals 
-            INNER JOIN users ON globals.user_id = users.user_id 
+        let query = `SELECT
+            COUNT(CASE WHEN course = 0 THEN 1 ELSE NULL END) as count,
+            COUNT(CASE WHEN course <> 0 THEN 1 ELSE NULL END) as bonusCount,
+            globals.user_id as userId,
+            users.username,
+            COUNT(globals.user_id) OVER() as totalCount
+            FROM globals
+            INNER JOIN users ON globals.user_id = users.user_id
         `;
         const values: any[] = [];
 
@@ -232,7 +233,7 @@ export class GlobalsClient {
         }
 
         if (whereClause !== "") {
-            query += " WHERE " + whereClause.slice(5); // Remove the first " AND "
+            query += " WHERE " + whereClause.slice(5);
         }
 
         query += " GROUP BY globals.user_id ORDER BY ";
@@ -279,7 +280,7 @@ export class GlobalsClient {
         }
 
         if (!(await this.wrsHaveMapsLoaded(wrs))) {
-            // Don't want to cause a foreign key constraint not met error
+
             return;
         }
 
@@ -306,8 +307,8 @@ export class GlobalsClient {
             record.hasBot
         ]);
 
-        query = `INSERT INTO globals (time_id, user_id, map_id, game, style, course, date, time, has_bot) 
-            VALUES ? AS new 
+        query = `INSERT INTO globals (time_id, user_id, map_id, game, style, course, date, time, has_bot)
+            VALUES ? AS new
             ON DUPLICATE KEY UPDATE
                 time_id=new.time_id,
                 user_id=new.user_id,
@@ -366,7 +367,7 @@ export class GlobalsClient {
             name: row.name,
             creator: row.creator,
             game: row.game,
-            date: row.date.toISOString(), // ISO strings for consistency
+            date: row.date.toISOString(),
             modes: row.modes,
             loadCount: row.load_count,
             smallThumb: row.small_thumb ?? undefined,

@@ -13,11 +13,7 @@ export class Bvh {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_bvh_free(ptr, 0);
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {Vector3} point
-     * @returns {number | undefined}
-     */
+
     closest_time_to_point(bot, point) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -31,9 +27,7 @@ export class Bvh {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
-    /**
-     * @param {CompleteBot} bot
-     */
+
     constructor(bot) {
         _assertClass(bot, CompleteBot);
         const ret = wasm.bvh_new(bot.__wbg_ptr);
@@ -55,16 +49,12 @@ export class CompleteBot {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_completebot_free(ptr, 0);
     }
-    /**
-     * @returns {number}
-     */
+
     duration() {
         const ret = wasm.completebot_duration(this.__wbg_ptr);
         return ret;
     }
-    /**
-     * @param {Uint8Array} data
-     */
+
     constructor(data) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -84,10 +74,7 @@ export class CompleteBot {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
-    /**
-     * @param {number} mode_id
-     * @returns {number}
-     */
+
     run_duration(mode_id) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -117,9 +104,7 @@ export class CompleteMap {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_completemap_free(ptr, 0);
     }
-    /**
-     * @param {Uint8Array} data
-     */
+
     constructor(data) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -160,9 +145,7 @@ export class Graphics {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_graphics_free(ptr, 0);
     }
-    /**
-     * @param {CompleteMap} map
-     */
+
     change_map(map) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -177,22 +160,13 @@ export class Graphics {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {PlaybackHead} head
-     * @param {number} time
-     */
+
     render(bot, head, time) {
         _assertClass(bot, CompleteBot);
         _assertClass(head, PlaybackHead);
         wasm.graphics_render(this.__wbg_ptr, bot.__wbg_ptr, head.__wbg_ptr, time);
     }
-    /**
-     * @param {number} width
-     * @param {number} height
-     * @param {number} fov_slope_x
-     * @param {number} fov_slope_y
-     */
+
     resize(width, height, fov_slope_x, fov_slope_y) {
         wasm.graphics_resize(this.__wbg_ptr, width, height, fov_slope_x, fov_slope_y);
     }
@@ -210,60 +184,38 @@ export class PlaybackHead {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_playbackhead_free(ptr, 0);
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {number} time
-     */
+
     advance_time(bot, time) {
         _assertClass(bot, CompleteBot);
         wasm.playbackhead_advance_time(this.__wbg_ptr, bot.__wbg_ptr, time);
     }
-    /**
-     * Returns the camera angles yaw delta between the last game tick and the most recent game tick.
-     * @returns {number}
-     */
+
     get_angles_yaw_delta() {
         const ret = wasm.playbackhead_get_angles_yaw_delta(this.__wbg_ptr);
         return ret;
     }
-    /**
-     * @returns {number}
-     */
+
     get_fov_slope_y() {
         const ret = wasm.playbackhead_get_fov_slope_y(this.__wbg_ptr);
         return ret;
     }
-    /**
-     * @returns {number}
-     */
+
     get_game_controls() {
         const ret = wasm.playbackhead_get_game_controls(this.__wbg_ptr);
         return ret >>> 0;
     }
-    /**
-     * @param {number} time
-     * @returns {number}
-     */
+
     get_head_time(time) {
         const ret = wasm.playbackhead_get_head_time(this.__wbg_ptr, time);
         return ret;
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {number} time
-     * @returns {Vector3}
-     */
+
     get_position(bot, time) {
         _assertClass(bot, CompleteBot);
         const ret = wasm.playbackhead_get_position(this.__wbg_ptr, bot.__wbg_ptr, time);
         return Vector3.__wrap(ret);
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {number} time
-     * @param {number} mode_id
-     * @returns {number | undefined}
-     */
+
     get_run_time(bot, time, mode_id) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -276,43 +228,28 @@ export class PlaybackHead {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
-    /**
-     * @returns {number}
-     */
+
     get_scale() {
         const ret = wasm.playbackhead_get_scale(this.__wbg_ptr);
         return ret;
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {number} time
-     * @returns {number}
-     */
+
     get_speed(bot, time) {
         _assertClass(bot, CompleteBot);
         const ret = wasm.playbackhead_get_speed(this.__wbg_ptr, bot.__wbg_ptr, time);
         return ret;
     }
-    /**
-     * @param {number} mode_id
-     * @returns {boolean | undefined}
-     */
+
     is_run_finished(mode_id) {
         const ret = wasm.playbackhead_is_run_finished(this.__wbg_ptr, mode_id);
         return ret === 0xFFFFFF ? undefined : ret !== 0;
     }
-    /**
-     * @param {number} mode_id
-     * @returns {boolean | undefined}
-     */
+
     is_run_in_progress(mode_id) {
         const ret = wasm.playbackhead_is_run_in_progress(this.__wbg_ptr, mode_id);
         return ret === 0xFFFFFF ? undefined : ret !== 0;
     }
-    /**
-     * @param {CompleteBot} bot
-     * @param {number} time
-     */
+
     constructor(bot, time) {
         _assertClass(bot, CompleteBot);
         const ret = wasm.playbackhead_new(bot.__wbg_ptr, time);
@@ -320,27 +257,16 @@ export class PlaybackHead {
         PlaybackHeadFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
-    /**
-     * Set the playback head position to new_time.
-     * @param {CompleteBot} bot
-     * @param {number} time
-     * @param {number} new_time
-     */
+
     set_head_time(bot, time, new_time) {
         _assertClass(bot, CompleteBot);
         wasm.playbackhead_set_head_time(this.__wbg_ptr, bot.__wbg_ptr, time, new_time);
     }
-    /**
-     * @param {number} time
-     * @param {boolean} paused
-     */
+
     set_paused(time, paused) {
         wasm.playbackhead_set_paused(this.__wbg_ptr, time, paused);
     }
-    /**
-     * @param {number} time
-     * @param {number} scale
-     */
+
     set_scale(time, scale) {
         wasm.playbackhead_set_scale(this.__wbg_ptr, time, scale);
     }
@@ -365,9 +291,7 @@ export class Vector3 {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_vector3_free(ptr, 0);
     }
-    /**
-     * @returns {Float32Array}
-     */
+
     to_array() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -384,10 +308,7 @@ export class Vector3 {
 }
 if (Symbol.dispose) Vector3.prototype[Symbol.dispose] = Vector3.prototype.free;
 
-/**
- * @param {HTMLCanvasElement} canvas
- * @returns {Promise<Graphics>}
- */
+
 export function setup_graphics(canvas) {
     const ret = wasm.setup_graphics(addHeapObject(canvas));
     return takeObject(ret);
@@ -1372,27 +1293,27 @@ function __wbg_get_imports() {
             getObject(arg0).writeTexture(getObject(arg1), getArrayU8FromWasm0(arg2, arg3), getObject(arg4), getObject(arg5));
         }, arguments); },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 139, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+
             const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1715);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 88, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+
             const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_725);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0) {
-            // Cast intrinsic for `F64 -> Externref`.
+
             const ret = arg0;
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0, arg1) {
-            // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8Array")`.
+
             const ret = getArrayU8FromWasm0(arg0, arg1);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000005: function(arg0, arg1) {
-            // Cast intrinsic for `Ref(String) -> Externref`.
+
             const ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
         },
@@ -1545,7 +1466,7 @@ const CLOSURE_DTORS = (typeof FinalizationRegistry === 'undefined')
     : new FinalizationRegistry(state => wasm.__wbindgen_export4(state.a, state.b));
 
 function debugString(val) {
-    // primitive types
+
     const type = typeof val;
     if (type == 'number' || type == 'boolean' || val == null) {
         return  `${val}`;
@@ -1569,7 +1490,7 @@ function debugString(val) {
             return 'Function';
         }
     }
-    // objects
+
     if (Array.isArray(val)) {
         const length = val.length;
         let debug = '[';
@@ -1582,30 +1503,30 @@ function debugString(val) {
         debug += ']';
         return debug;
     }
-    // Test for built-in
+
     const builtInMatches = /\[object ([^\]]+)\]/.exec(toString.call(val));
     let className;
     if (builtInMatches && builtInMatches.length > 1) {
         className = builtInMatches[1];
     } else {
-        // Failed to match the standard '[object ClassName]'
+
         return toString.call(val);
     }
     if (className == 'Object') {
-        // we're a user defined class or Object
-        // JSON.stringify avoids problems with cycles, and is generally much
-        // easier than looping through ownProperties of `val`.
+
+
+
         try {
             return 'Object(' + JSON.stringify(val) + ')';
         } catch (_) {
             return 'Object';
         }
     }
-    // errors
+
     if (val instanceof Error) {
         return `${val.name}: ${val.message}\n${val.stack}`;
     }
-    // TODO we could test for more things here, like `Set`s and `Map`s.
+
     return className;
 }
 
@@ -1690,9 +1611,9 @@ function makeMutClosure(arg0, arg1, f) {
     const state = { a: arg0, b: arg1, cnt: 1 };
     const real = (...args) => {
 
-        // First up with a closure we increment the internal reference
-        // count. This ensures that the Rust closure environment won't
-        // be deallocated while we're invoking it.
+
+
+
         state.cnt++;
         const a = state.a;
         state.a = 0;

@@ -7,7 +7,7 @@ import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
 import IncludeBonusCheckbox from "./forms/IncludeBonusCheckbox";
 import { Game, Style } from "shared";
-import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridRenderCellParams, useGridApiRef } from "@mui/x-data-grid";
 import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "./cards/grids/util/columns";
@@ -125,12 +125,13 @@ function LeaderboardCard(props: IRanksCardProps) {
     const [rowCount, setRowCount] = useState(0);
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
 
     const gridCols = makeColumns(game, style);
 
     useEffect(() => {
-        apiRef.current?.setPage(0);
-    }, [apiRef, game, style]);
+        setPaginationModel((model) => model.page === 0 ? model : { ...model, page: 0 });
+    }, [game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
         const page = await queryClient.fetchQuery(queries.wrs.leaderboards(start, end, game, style, sort));
@@ -175,15 +176,17 @@ function LeaderboardCard(props: IRanksCardProps) {
         <DataGrid
             columns={gridCols}
             apiRef={apiRef}
+            autoHeight
             pagination
             dataSource={dataSource}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[10]}
             rowCount={rowCount}
             onRowCountChange={setRowCount}
             rowHeight={100}
             initialState={{
                 pagination: { 
-                    paginationModel: { pageSize: 10 }
                 },
                 sorting: {
                     sortModel: [{ field: "count", sort: "desc" }],
@@ -194,6 +197,9 @@ function LeaderboardCard(props: IRanksCardProps) {
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
+            sx={{
+                "--DataGrid-overlayHeight": `${70 * 10}px`
+            }}
             slotProps={{
                 basePagination: {
                     material: {

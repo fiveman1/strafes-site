@@ -1,19 +1,38 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay } from "shared";
 import { JsonObject } from "../common/utils";
 
+const apiClient = axios.create({
+    baseURL: "/api/",
+    timeout: 15000
+});
+
+const pendingGetRequests = new globalThis.Map<string, Promise<AxiosResponse>>();
+
 async function tryGetRequest(url: string, params?: JsonObject) {
+    const requestKey = `${url}:${JSON.stringify(params ?? {})}`;
+    const pendingRequest = pendingGetRequests.get(requestKey);
+    if (pendingRequest) {
+        return pendingRequest;
+    }
+
+    const request = apiClient.get(url, {params});
+    pendingGetRequests.set(requestKey, request);
+
     try {
-        return await axios.get("/api/" + url, {params: params, timeout: 15000});
+        return await request;
     } 
     catch {
         return null;
+    }
+    finally {
+        pendingGetRequests.delete(requestKey);
     }
 }
 
 export async function tryPostRequest(url: string, params?: JsonObject) {
     try {
-        return await axios.post("/api/" + url, params, {timeout: 5000});
+        return await apiClient.post(url, params, {timeout: 5000});
     } 
     catch {
         return null;
@@ -254,6 +273,32 @@ export async function getReplayById(id: string) {
     return res.data as Replay;
 }
 
+const REPLAY_ASSET_TIMEOUT = 15000;
+const REPLAY_ASSET_ATTEMPTS = 2;
+
+async function fetchReplayAsset(url: string) {
+    for (let attempt = 0; attempt < REPLAY_ASSET_ATTEMPTS; ++attempt) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), REPLAY_ASSET_TIMEOUT);
+        try {
+            const response = await fetch(url, { signal: controller.signal });
+            if (response.ok) {
+                return response;
+            }
+        }
+        catch (error) {
+            if (attempt === REPLAY_ASSET_ATTEMPTS - 1) {
+                console.warn("Replay asset download failed", error);
+            }
+        }
+        finally {
+            window.clearTimeout(timeout);
+        }
+    }
+
+    return null;
+}
+
 export async function getBotFileResponse(timeId: string) {
     const res = await tryGetRequest("replays/bots/" + timeId);
     
@@ -261,11 +306,7 @@ export async function getBotFileResponse(timeId: string) {
 
     const url = res.data.url as string;
 
-    const fileRes = await fetch(url);
-
-    if (!fileRes.ok) return null;
-
-    return fileRes;
+    return fetchReplayAsset(url);
 }
 
 export async function getMapFileResponse(mapId: number) {
@@ -275,9 +316,5 @@ export async function getMapFileResponse(mapId: number) {
 
     const url = res.data.url as string;
 
-    const fileRes = await fetch(url);
-    
-    if (!fileRes.ok) return null;
-
-    return fileRes;
+    return fetchReplayAsset(url);
 }

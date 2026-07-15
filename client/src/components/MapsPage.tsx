@@ -47,7 +47,7 @@ function MapInfoCard(props: MapDetailsProps) {
     const [ filterGame, setFilterGame ] = useFilterGame();
     const [ filterTiers, setFilterTiers ] = useFilterTiers();
     const [ sort, setSort ] = useMapSort();
-    const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") !== "false"); // Expanded by default
+    const [ expanded, setExpanded ] = useState(localStorage.getItem("expandMapDetail") !== "false");
 
     const handleExpand = useCallback((expanded: boolean) => {
         setExpanded(expanded);
@@ -83,10 +83,10 @@ function MapInfoCard(props: MapDetailsProps) {
                         Map
                     </Typography>
                 </Box>
-                <MapFilterSortOptions 
-                    filterGame={filterGame} 
-                    setFilterGame={setFilterGame} 
-                    selectedTiers={selectedTiers} 
+                <MapFilterSortOptions
+                    filterGame={filterGame}
+                    setFilterGame={setFilterGame}
+                    selectedTiers={selectedTiers}
                     onSelectFilterTier={onSelectFilterTier}
                     sort={sort}
                     setSort={setSort}
@@ -109,7 +109,7 @@ interface MapDetailSectionProps {
 
 function MapDetailSection(props: MapDetailSectionProps) {
     const { selectedMap } = props;
-    
+
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
     const theme = useTheme();
 
@@ -154,7 +154,7 @@ function MapDetailSection(props: MapDetailSectionProps) {
                         </Typography>
                     </Box>
                     <Box display="flex" flexDirection="column" alignItems="center">
-                        {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
+                        {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) &&
                         <MapTierVotingSection selectedMap={selectedMap} />}
                     </Box>
                 </Box>
@@ -278,7 +278,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     const onMutateVoteSuccess = useCallback((data: MapTierInfo | null) => {
         queryClient.setQueryData(queries.maps.tierVote(loginUser, selectedMap.id).queryKey, data);
     }, [loginUser, queryClient, selectedMap.id]);
-    
+
     const voteMutation = useMutation({
         mutationFn: onMutateVote,
         onSuccess: onMutateVoteSuccess
@@ -306,11 +306,11 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 <Typography component="legend" variant="body2" mr={0.25}>
                     Tier voting
                 </Typography>
-                {isEligible ? 
+                {isEligible ?
                 <Tooltip title={reason} placement="right" arrow>
-                    <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} /> 
+                    <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} />
                 </Tooltip>
-                : 
+                :
                 <Tooltip title={reason} placement="right" arrow>
                     <BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" />
                 </Tooltip>}
@@ -319,7 +319,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
                 :
-                <MapTierListSelector 
+                <MapTierListSelector
                     selectedTiers={voteData ? [voteData.tier] : []}
                     onSelectTier={onChange}
                     disabled={!isEligible}
@@ -328,8 +328,8 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
             </Box>
             {selectedMap.tier !== undefined &&
             <Box display="flex" justifyContent="center" pt={0.5} pb={0.25}>
-                <ChartContainer 
-                    width={28 * MAX_TIER} 
+                <ChartContainer
+                    width={28 * MAX_TIER}
                     height={22}
                     xAxis={[{
                         data: tierAxisNames,
@@ -342,7 +342,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                         valueFormatter: (val) => formatTier(val)
                     }]}
                     yAxis={[{
-                        position: "none", 
+                        position: "none",
                         domainLimit: "strict"
                     }]}
                     margin={0}
@@ -409,20 +409,20 @@ function MapsPage() {
         setInitalLoadComplete(true);
         setSelectedMap(map);
 
-        // Make sure game is set to a valid game
+
         const allowedGames = getAllowedGameForMap(map);
         if (!allowedGames.includes(game)) {
             setGame(allowedGames[0]);
         }
 
-        // Reset course to main
+
         setCourse(0);
 
         if (href) navigate(href, { replace: true });
     }, [game, navigate, setCourse, setGame, style]);
 
     useEffect(() => {
-        // Load map on initial load
+
         if (initalLoadComplete || selectedMap !== undefined) return;
 
         const mapId = id && !isNaN(+id) ? +id : undefined;

@@ -50,18 +50,20 @@ function MapListCard(props: MapCardProps) {
 
     return (
         <Paper
-            elevation={2}
+            elevation={0}
             component={RouterLink}
             to={`/maps/${map.id}`}
             sx={{
                 display: "flex",
-                borderRadius: "6px",
+                borderRadius: "12px",
                 height: "70px",
-                transition: ".2s ease",
+                overflow: "hidden",
+                transition: "transform .18s ease, border-color .18s ease, box-shadow .18s ease",
                 textDecoration: "none",
                 ":hover": {
                     transform: "translateY(-2px)",
-                    boxShadow: 4,
+                    borderColor: "primary.main",
+                    boxShadow: isLightMode ? "0 10px 28px rgba(25, 20, 28, .09)" : "0 12px 30px rgba(0, 0, 0, .28)",
                     bgcolor: isLightMode ? grey[100] : grey[900]
                 }
             }}
@@ -70,7 +72,7 @@ function MapListCard(props: MapCardProps) {
                 size={70}
                 map={map}
                 sx={{
-                    borderRadius: "6px 0px 0px 6px",
+                    borderRadius: 0,
                     border: 0
                 }}
             />
@@ -203,11 +205,15 @@ function MapSquareCard(props: MapCardProps) {
                 to={`/maps/${map.id}`}
                 sx={{
                     userSelect: "none",
-                    transition: "transform .1s ease",
+                    textDecoration: "none",
+                    transition: "transform .18s ease",
                     ":hover": {
-                        transform: "translateY(-2px)",
-                        "& .mapCard": { boxShadow: 6 },
-                        "& .mapImg": { transform: "scale(1.08)" },
+                        transform: "translateY(-3px)",
+                        "& .mapCard": {
+                            borderColor: "primary.main",
+                            boxShadow: isLightMode ? "0 16px 34px rgba(25, 20, 28, .12)" : "0 18px 38px rgba(0, 0, 0, .32)"
+                        },
+                        "& .mapImg": { transform: "scale(1.045)" },
                         "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
                     }
                 }}
@@ -215,12 +221,14 @@ function MapSquareCard(props: MapCardProps) {
                 <Box
                     className="mapCard"
                     position="relative"
-                    borderRadius="6px"
-                    boxShadow={2}
+                    borderRadius="14px"
+                    border={1}
+                    borderColor="divider"
+                    boxShadow={0}
                     bgcolor={isLightMode ? grey[300] : grey[800]}
                     overflow="hidden"
                     sx={{
-                        transition: ".4s ease",
+                        transition: "border-color .18s ease, box-shadow .18s ease",
                     }}
                 >
                     <MapThumb
@@ -230,9 +238,9 @@ function MapSquareCard(props: MapCardProps) {
                         useLargeThumb
                         disableUnreleasedColor
                         sx={{
-                            borderRadius: "6px 6px 8px 8px",
+                            borderRadius: "13px",
                             border: 0,
-                            transition: "transform .4s ease"
+                            transition: "transform .35s ease"
                         }}
                     />
                     <Box
@@ -373,7 +381,7 @@ function MapSquareCard(props: MapCardProps) {
                             bottom: "0px",
                             height: creatorHeight,
                             width: "100%",
-                            borderRadius: "0 0 6px 6px",
+                            borderRadius: "0 0 13px 13px",
                             boxShadow: 0,
                             bgcolor: darken(tierColor, 0.25),
                             transition: ".4s ease"

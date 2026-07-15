@@ -84,11 +84,11 @@ async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
 
     const times = await getTimes(userId, map.id, 20, 1, map.game, Style.all, 0);
     if (times) {
-        // Not faste or low gravity
+
         const allowedStyles = new Set([Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards]);
         for (const time of times.data) {
             if (allowedStyles.has(time.style_id)) {
-                return 5; // Extra weight for people who have beaten the map
+                return 5;
             }
         }
     }
@@ -109,8 +109,8 @@ export async function setUserTierForMap(client: GlobalsClient, userId: number, m
 
     const weight = await getVoteWeight(userId, map);
 
-    const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?, ?, ?, ?) AS new 
-        ON DUPLICATE KEY UPDATE 
+    const query = `INSERT INTO tier_votes (tier, weight, user_id, map_id) VALUES (?, ?, ?, ?) AS new
+        ON DUPLICATE KEY UPDATE
         tier=new.tier,
         weight=new.weight
     ;`;
@@ -134,8 +134,8 @@ type CalcTierRow = CalcTierSQL & RowDataPacket;
 export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, number>> {
     const mapIdToTier = new Map<number, number>();
 
-    // Calculates the weighted average for every map
-    // Ignores outliers (more than 1 standard deviation)
+
+
     const query = `
         SELECT
             tier_votes.map_id,

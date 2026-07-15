@@ -55,7 +55,7 @@ function UserSearch(props: IUserSearchProps) {
         if (userText === "" || loadingOptions) {
             return [];
         }
-        
+
         let found = false;
         const lowerUserText = userText.toLowerCase();
         let sorted: UserSearchData[] = [];
@@ -74,14 +74,14 @@ function UserSearch(props: IUserSearchProps) {
         if (!found) {
             sorted = [{username: userText}, ...options];
         }
-        
+
         return sorted;
     }, [loadingOptions, options, userText]);
 
     return (
-        <Autocomplete 
+        <Autocomplete
             sx={{
-                // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+
                 "[type=\"search\"]::-webkit-search-decoration": {appearance: "none"},
                 "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"}
             }}
@@ -104,20 +104,20 @@ function UserSearch(props: IUserSearchProps) {
             selectOnFocus
             size="small"
             disabled={disabled}
-            renderInput={(params) => 
-                <TextField {...params} 
-                    error={hasError} 
+            renderInput={(params) =>
+                <TextField {...params}
+                    error={hasError}
                     helperText={hasError ? "Invalid username." : ""}
-                    fullWidth 
-                    label="" 
+                    fullWidth
+                    label=""
                     placeholder="Search by username"
                     variant="outlined"
                     type="search"
                     slotProps={{
                         htmlInput: {
-                            ...params.inputProps, 
+                            ...params.inputProps,
                             maxLength: 50
-                        }, 
+                        },
                         input: {
                             ...params.InputProps,
                             startAdornment: (

@@ -5,7 +5,7 @@ import { InputAdornment, useMediaQuery } from '@mui/material';
 import ReactCountryFlag from 'react-country-flag';
 import { CODE_TO_COUNTRY, COUNTRIES } from 'shared';
 
-// Adapted from the Country select example here https://mui.com/material-ui/react-autocomplete/
+
 
 interface ICountrySelectProps {
     country: string | undefined
@@ -44,8 +44,8 @@ export default function CountrySelector(props: ICountrySelectProps) {
                     slotProps={{
                         htmlInput: {
                             ...params.inputProps,
-                            autoComplete: "one-time-code", // disable autocomplete and autofill
-                        }, 
+                            autoComplete: "one-time-code",
+                        },
                         input: {
                             ...params.InputProps,
                             startAdornment: (

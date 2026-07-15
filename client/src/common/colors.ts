@@ -18,7 +18,7 @@ export function convertToHSL(colorStr: string): HSL {
     return {h: 0, s: 0, l: 0};
 }
 
-// https://www.jameslmilner.com/posts/converting-rgb-hex-hsl-colors/
+
 export function RGBToHSL(rgb: {
     r: number;
     g: number;
@@ -38,7 +38,7 @@ export function RGBToHSL(rgb: {
     const l = h;
 
     if (max === min) {
-        // Achromatic
+
         return { h: 0, s: 0, l };
     }
 
@@ -68,7 +68,7 @@ export function HSLToHex(hsl: HSL): string {
         const k = (n + h / 30) % 12;
         const color = hDecimal - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
 
-        // Convert to Hex and prefix with "0" if required
+
         return Math.round(255 * color)
             .toString(16)
             .padStart(2, "0");
@@ -99,7 +99,7 @@ export function HexToHSL(hex: string): HSL {
     let l = h;
 
     if (max === min) {
-        // Achromatic
+
         return { h: 0, s: 0, l };
     }
 

@@ -53,7 +53,7 @@ function ProfileCard(props: IProfileCardProps) {
         }
         return compsFormatted;
     }, [comps, game, mapCounts.bhop, mapCounts.flyTrials, mapCounts.surf]);
-    
+
     let rankFormatted = "n/a";
     let skillFormatted = "n/a";
     if (rank) {
@@ -86,11 +86,11 @@ function ProfileCard(props: IProfileCardProps) {
             <Typography variant="caption" flexGrow={1}>
                 Profile
             </Typography>
-            <IconButton 
-                size="small" 
+            <IconButton
+                size="small"
                 disabled={disableButton}
-                title={user ? `Compare @${user.username} to other users` : "Compare to other users"} 
-                LinkComponent={Link} 
+                title={user ? `Compare @${user.username} to other users` : "Compare to other users"}
+                LinkComponent={Link}
                 href={disableButton ? "/compare" : `/compare?game=${game}&users=${userId}:${style}`}>
                 <CompareArrowsIcon fontSize="inherit" />
             </IconButton>
@@ -104,7 +104,7 @@ function ProfileCard(props: IProfileCardProps) {
                             <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     </Tooltip>
-                    {rankLoading ? <CircularProgress size="32px" /> : 
+                    {rankLoading ? <CircularProgress size="32px" /> :
                     <Typography variant="h6">
                         {rankFormatted}
                     </Typography>}
@@ -118,7 +118,7 @@ function ProfileCard(props: IProfileCardProps) {
                             <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     </Tooltip>
-                    {rankLoading ? <CircularProgress size="32px" /> : 
+                    {rankLoading ? <CircularProgress size="32px" /> :
                     <Typography variant="h6">
                         {skillFormatted}
                     </Typography>}
@@ -129,12 +129,12 @@ function ProfileCard(props: IProfileCardProps) {
                     <Typography variant="subtitle1">
                         Moderation status
                     </Typography>
-                    {userLoading ? <CircularProgress size="32px" /> : 
-                    tooltip ? 
-                    <Tooltip 
-                        title={tooltip} 
-                        arrow 
-                        placement="bottom-start" 
+                    {userLoading ? <CircularProgress size="32px" /> :
+                    tooltip ?
+                    <Tooltip
+                        title={tooltip}
+                        arrow
+                        placement="bottom-start"
                         sx={{marginRight: "auto"}}>
                     {
                         <Typography variant="h6">
@@ -142,7 +142,7 @@ function ProfileCard(props: IProfileCardProps) {
                             <InfoOutlineIcon sx={{marginLeft: "6px"}} fontSize="inherit" color="secondary" />
                         </Typography>
                     }
-                    </Tooltip> : 
+                    </Tooltip> :
                     <Typography variant="h6">{formattedStatus}</Typography>}
                 </Box>
             </Box>
@@ -151,7 +151,7 @@ function ProfileCard(props: IProfileCardProps) {
                     <Typography variant="subtitle1">
                         Completions
                     </Typography>
-                    {compsLoading ? <CircularProgress size="32px" /> : 
+                    {compsLoading ? <CircularProgress size="32px" /> :
                     <Typography variant="h6">
                         {compsFormatted}
                     </Typography>}
@@ -162,7 +162,7 @@ function ProfileCard(props: IProfileCardProps) {
                     <Typography variant="subtitle1">
                         World Records
                     </Typography>
-                    {wrsLoading ? <CircularProgress size="32px" /> : 
+                    {wrsLoading ? <CircularProgress size="32px" /> :
                     <Box display="flex" flexDirection="row" alignItems="center">
                         <Box display="flex" flexDirection="row">
                             <EmojiEventsIcon htmlColor={yellow[800]} sx={{fontSize: "24px"}} />
@@ -189,17 +189,7 @@ function ProfileCard(props: IProfileCardProps) {
                     </Box>}
                 </Box>
             </Box>
-            {/* <Box flexGrow={1} padding={1}>
-                <Box display="flex" flexDirection="column">
-                    <Typography variant="subtitle1">
-                        Chat muted?
-                    </Typography>
-                    {userLoading ? <CircularProgress size="32px" /> : 
-                    <Typography variant="h6">
-                        {user?.muted !== undefined ? (user.muted ? "Yes" : "No") : "n/a"}
-                    </Typography>}
-                </Box>
-            </Box> */}
+            {}
         </Box>
     </Paper>
     );

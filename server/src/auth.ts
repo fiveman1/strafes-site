@@ -8,7 +8,7 @@ import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import { IS_DEV_MODE } from "./util.js";
 
-// If running the dev site, go back across the proxy
+
 const AFTER_AUTH_URL = IS_DEV_MODE ? "http://localhost:3000/" : "/";
 
 export class AuthClient {
@@ -20,23 +20,24 @@ export class AuthClient {
     protected readonly pool: mysql.Pool;
     protected readonly lock = new AsyncLock();
 
-    public static async Create(clientId: string, clientSecret: string, dbUser: string, dbPassword: string, baseURL: string) {
+    public static async Create(clientId: string, clientSecret: string, dbUser: string, dbPassword: string, baseURL: string, dbHost = "localhost", dbPort = 3306) {
         const config = await client.discovery(
             new URL("https://apis.roblox.com/oauth/.well-known/openid-configuration"),
             clientId,
             clientSecret
         );
-        return new AuthClient(config, dbUser, dbPassword, baseURL);
+        return new AuthClient(config, dbUser, dbPassword, baseURL, dbHost, dbPort);
     }
 
-    protected constructor(config: client.Configuration, dbUser: string, dbPassword: string, baseURL: string) {
+    protected constructor(config: client.Configuration, dbUser: string, dbPassword: string, baseURL: string, dbHost: string, dbPort: number) {
         this.config = config;
         this.pool = mysql.createPool({
-            host: "localhost",
+            host: dbHost,
+            port: dbPort,
             user: dbUser,
             password: dbPassword,
             database: "strafes_auth_users",
-            timezone: "Z", // UTC
+            timezone: "Z",
             supportBigNumbers: true,
             bigNumberStrings: true
         });
@@ -47,7 +48,7 @@ export class AuthClient {
         path: vine.string()
     });
 
-    // Entrypoints
+
     public async redirectToAuthURL(request: Request, response: Response) {
         const [error, result] = await this.pathValidator.tryValidate(request.query);
         if (error) {
@@ -67,16 +68,11 @@ export class AuthClient {
         };
 
         if (!this.config.serverMetadata().supportsPKCE()) {
-            /**
-             * We cannot be sure the server supports PKCE so we're going to use state too.
-             * Use of PKCE is backwards compatible even if the AS doesn't support it which
-             * is why we're using it regardless. Like PKCE, random state must be generated
-             * for every redirect to the authorization_endpoint.
-             */
+
             params.state = client.randomState();
         }
 
-        const expiresAt = Date.now() + (60 * 1000); // 1 minute
+        const expiresAt = Date.now() + (60 * 1000);
         const options = this.createCookieOptions(new Date(expiresAt));
         response.cookie("codeVerifier", codeVerifier, options);
         response.cookie("state", params.state, options);
@@ -123,7 +119,7 @@ export class AuthClient {
             return undefined;
         }
 
-        // Don't want concurrent processes potentially refreshing a token and making an old one expired at the same time
+
         return this.lock.acquire(sessionToken, async () => {
             const session = await this.loadSession(request, response);
             if (!session) {
@@ -135,7 +131,7 @@ export class AuthClient {
                 userInfo = await client.fetchUserInfo(this.config, session.accessToken, session.userId) as client.UserInfoResponse & RobloxClaims;
             }
             catch {
-                // Refresh and try again
+
                 const newSession = await this.refreshSession(response, session);
                 if (!newSession) {
                     return undefined;
@@ -228,7 +224,7 @@ export class AuthClient {
         response.status(200).json({ success: true });
     }
 
-    // Helpers
+
     protected async loadSession(request: Request, response: Response, noRefresh?: boolean): Promise<Session | undefined> {
         const sessionToken = AuthClient.getSessionToken(request);
         if (!sessionToken) {
@@ -292,8 +288,8 @@ export class AuthClient {
     }
 
     protected async insertSessionToDB(session: SessionRow) {
-        const query = `INSERT INTO sessions (sessionHash, refreshToken, accessToken, refreshExpiresAt, accessExpiresAt, userId) 
-            VALUES (?, ?, ?, ?, ?, ?) AS new 
+        const query = `INSERT INTO sessions (sessionHash, refreshToken, accessToken, refreshExpiresAt, accessExpiresAt, userId)
+            VALUES (?, ?, ?, ?, ?, ?) AS new
             ON DUPLICATE KEY UPDATE
                 refreshToken=new.refreshToken,
                 accessToken=new.accessToken,
@@ -344,8 +340,8 @@ export class AuthClient {
     }
 
     protected async updateSettingsToDB(settings: SettingsRow) {
-        const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative, countryCode) 
-            VALUES (?, ?, ?, ?, ?, ?) AS new 
+        const query = `INSERT INTO settings (userId, theme, game, style, maxDaysRelative, countryCode)
+            VALUES (?, ?, ?, ?, ?, ?) AS new
             ON DUPLICATE KEY UPDATE
                 theme=new.theme,
                 game=new.game,
@@ -365,7 +361,7 @@ export class AuthClient {
         await this.pool.execute(query, values);
     }
 
-    // Utils
+
     protected static getSessionToken(request: Request) {
         const cookies = request.signedCookies as AuthCookies;
         return cookies.session;
@@ -396,7 +392,7 @@ export class AuthClient {
 
         const now = Date.now();
         const accessExpiresIn = (tokenSet.expiresIn() ?? 0) * 1000;
-        const refreshExpiresIn = 30 * 60 * 60 * 24 * 1000; // 30 days
+        const refreshExpiresIn = 30 * 60 * 60 * 24 * 1000;
 
         return {
             sessionToken: sessionToken,
@@ -420,7 +416,7 @@ export class AuthClient {
     }
 }
 
-// Types
+
 interface AuthCookies {
     session?: string
 }
@@ -450,8 +446,8 @@ interface RobloxClaims {
     nickname: string,
     preferred_username: string,
     created_at: number,
-    profile: string, // URL
-    picture: string // URL
+    profile: string,
+    picture: string
 }
 
 export interface SettingsRow {

@@ -47,7 +47,7 @@ function getUserTimesFromState(userToTimes: UserToTimes, userId: string, game: G
 function Compare() {
     const { maps } = useOutletContext() as ContextParams;
     const queryClient = useQueryClient();
-    
+
     const [game, setGameState] = useGame();
     const userSearch = useUserSearch();
     const [selectedSlice, setSelectedSlice] = useState<number>();
@@ -86,7 +86,7 @@ function Compare() {
         });
     };
 
-    // URL state for entries
+
     const [entriesRaw, setEntriesRaw] = useCompareEntries();
     const entries = useMemo(() => deserializeEntries(entriesRaw), [entriesRaw]);
     const setEntries = (newEntries: CompareEntry[]) => {
@@ -95,7 +95,7 @@ function Compare() {
         setPage(1);
     };
 
-    // Backward compatibility: migrate old user1/user2 params
+
     const [oldUser1, setOldUser1] = useQueryState("user1", parseAsString.withOptions({ history: "replace" }));
     const [oldUser2, setOldUser2] = useQueryState("user2", parseAsString.withOptions({ history: "replace" }));
     const [oldStyle] = useQueryState("style", parseAsString.withOptions({ history: "replace" }));
@@ -117,7 +117,7 @@ function Compare() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Add user from search
+
     const onAddUser = (userId: string | undefined) => {
         if (!userId || entries.length >= MAX_ENTRIES) return;
         const allowedStyles = getAllowedStyles(game);
@@ -129,7 +129,7 @@ function Compare() {
     const setGame = useCallback((game: Game) => {
         setGameState(game);
         setSelectedSlice(undefined);
-        // Validate styles when game changes
+
         const allowedStyles = getAllowedStyles(game);
         let changed = false;
         const newEntries = entries.map((entry) => {
@@ -144,12 +144,12 @@ function Compare() {
         }
     }, [entries, setEntriesRaw, setGameState]);
 
-    // Data fetching for all entries
+
     useEffect(() => {
         for (const entry of entries) {
             const { userId, style } = entry;
 
-            // Fetch user profile if not cached
+
             if (!idToUser[userId]) {
                 setIdToUser(userId, true);
                 queryClient.fetchQuery(queries.users.fromId(userId)).then((user) => {
@@ -157,7 +157,7 @@ function Compare() {
                 });
             }
 
-            // Fetch times if not cached
+
             if (!getUserTimesFromState(userTimes, userId, game, style)) {
                 setUserTimes(userId, game, style, true);
                 queryClient.fetchQuery(queries.users.allTimes(userId, game, style)).then((times) => {
@@ -167,7 +167,7 @@ function Compare() {
         }
     }, [entries, game, idToUser, queryClient, userTimes]);
 
-    // Derive loading state and entry times
+
     const { entryTimes, isLoading } = useMemo(() => {
         let isLoading = false;
         const entryTimes: (Time[] | undefined)[] = [];
@@ -184,9 +184,9 @@ function Compare() {
         return { entryTimes, isLoading };
     }, [entries, game, idToUser, userTimes]);
 
-    // Build merged comparison data
+
     const allComparedTimes = useMemo(() => {
-        // Need at least 2 entries with loaded times
+
         const loadedCount = entryTimes.filter(t => t !== undefined).length;
         if (loadedCount < 2 || isLoading) return [];
 
@@ -231,7 +231,7 @@ function Compare() {
         return Array.from(mapToTimeInfo.values());
     }, [entries, entryTimes, idToUser, isLoading, maps]);
 
-    // Check for duplicate entries (same user + same style)
+
     const duplicateWarning = useMemo(() => {
         const dupes = findDuplicateEntries(entries);
         if (dupes.length === 0) return undefined;
@@ -243,7 +243,7 @@ function Compare() {
         return `Duplicate entries: ${descriptions.join(", ")}. Each user + style combination must be unique.`;
     }, [entries, idToUser]);
 
-    // Page title
+
     useEffect(() => {
         if (entries.length === 0) {
             document.title = "compare - strafes";
@@ -258,7 +258,7 @@ function Compare() {
 
     return (
         <Box display="flex" flexDirection="column" flexGrow={1}>
-            {/* Breadcrumbs + Search row */}
+            {}
             <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={smallScreen ? 0 : 0.5}>
                 <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex" }}>
                     <Link underline="hover" color="inherit" href="/">
@@ -281,7 +281,7 @@ function Compare() {
                 <GameSelector game={game} setGame={setGame} />
             </Box>
 
-            {/* Compare users/entries */}
+            {}
             <Box padding={1}>
                 <CompareEntryList
                     entries={entries}
@@ -291,7 +291,7 @@ function Compare() {
                 />
             </Box>
 
-            {/* Pie chart */}
+            {}
             <Box padding={1}>
                 <CompareChart
                     entries={entries}
@@ -304,7 +304,7 @@ function Compare() {
                 />
             </Box>
 
-            {/* Paginated times grid */}
+            {}
             <Box padding={1}>
                 <CompareTimesGrid
                     allTimes={allComparedTimes}

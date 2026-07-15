@@ -3,9 +3,12 @@ import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import eslintPlugin from "@nabla/vite-plugin-eslint";
 
-// https://vitejs.dev/config/
+
 export default defineConfig(({ mode }) => {
-	const env = loadEnv(mode, process.cwd());
+	const env = loadEnv(mode, process.cwd(), "");
+
+
+	const apiTarget = env.VITE_API_PROXY_TARGET || "https://strafes.fiveman1.net";
 
 	return {
 		plugins: [
@@ -19,9 +22,9 @@ export default defineConfig(({ mode }) => {
 			open: true,
 			proxy: {
 				"/api": {
-					target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://localhost:8080",
+					target: apiTarget,
 					changeOrigin: true,
-					secure: false
+					secure: true
 				}
 			},
 			watch: {

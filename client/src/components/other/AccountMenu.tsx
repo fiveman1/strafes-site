@@ -124,7 +124,7 @@ function AccountMenu(props: IAccountMenuProps) {
                 <MenuItem onClick={async () => {
                     handleClose();
                     await logout();
-                    navigate(0); // Refresh the page
+                    navigate(0);
                 }}>
                     <ListItemIcon>
                         <Logout fontSize="small" />

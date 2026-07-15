@@ -22,13 +22,15 @@ import { readFile } from "fs/promises";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
+const DB_HOST = process.env.DB_HOST ?? "localhost";
+const DB_PORT = +(process.env.DB_PORT ?? "3306");
 
 if (!STRAFES_DB_USER || !STRAFES_DB_PASSWORD) {
     console.error("Missing strafes global database user/password");
     exit(1);
 }
 
-const globalsClient = new GlobalsClient(STRAFES_DB_USER, STRAFES_DB_PASSWORD);
+const globalsClient = new GlobalsClient(STRAFES_DB_USER, STRAFES_DB_PASSWORD, DB_HOST, DB_PORT);
 
 const CLIENT_ID = process.env.ROBLOX_CLIENT_ID;
 const CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET;
@@ -41,7 +43,7 @@ if (!CLIENT_ID || !CLIENT_SECRET || !AUTH_DB_USER || !AUTH_DB_PASSWORD) {
     exit(1);
 }
 
-const authClient = await AuthClient.Create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL);
+const authClient = await AuthClient.Create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL, DB_HOST, DB_PORT);
 
 const app = express();
 
@@ -451,8 +453,8 @@ app.get("/api/times", pagedRateLimitSettings, cache("5 minutes"), async (req, re
     const times = timeData.data;
     if (!onlyWR) {
         if (userId === undefined && mapId !== undefined && (sort === TimeSortBy.TimeAsc || sort === TimeSortBy.TimeDesc)) {
-            // Can determine placemnts on a map sorted by time ourself
-            // Also sort ties by date (because the API doesn't for some reason)
+
+
             sortTimes(times, sort === TimeSortBy.TimeAsc);
             let i = 1;
             for (const time of times) {
@@ -478,7 +480,7 @@ function sortTimes(times: Time[], isAsc: boolean) {
         if (timeDiff !== 0) {
             return isAsc ? timeDiff : -timeDiff;
         }
-        // Sort by date
+
         const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
         return isAsc ? dateDiff : -dateDiff;
     });
@@ -619,7 +621,7 @@ app.get("/api/user/times/all/:id", rateLimitSettings, cache("5 minutes"), async 
     for (const timeData of allTimes) {
         for (const time of timeData.data) {
             if (timeIds.has(time.id)) {
-                // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+
                 continue;
             }
             timeIds.add(time.id);
@@ -674,7 +676,7 @@ async function setTimeDiffs(times: Time[], skipUpdate?: boolean) {
 
     if (newWrs.length > 0) {
         await globalsClient.updateWRs(newWrs);
-        await setTimeDiffs(times, true); // Recalculate
+        await setTimeDiffs(times, true);
     }
 }
 
@@ -801,9 +803,9 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         }
 
         if (mapId === undefined || (sort !== TimeSortBy.TimeAsc && sort !== TimeSortBy.TimeDesc)) {
-            // Calc placements, placements endpoint does 25 at a time
-            // Batch them up efficiently into 25 time windows in order to reduce API calls
-            // getPlacements caches each placement for 5 minutes
+
+
+
             const startWindow = Math.floor(pageStart / 25) * 25;
             const endWindow = Math.ceil((pageEnd + 1) / 25) * 25;
             const placementPromises = [];
@@ -835,7 +837,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
         for (let i = pageStart; (i < resTimes.length) && (i <= pageEnd); ++i) {
             const time = resTimes[i];
             if (timeIds.has(time.id)) {
-                // There is a bug with the API where sometimes it returns duplicate times! Awesome!
+
                 continue;
             }
             timeIds.add(time.id);
@@ -903,7 +905,7 @@ app.get("/api/replays/bots/:id", rateLimitSettings, async (req, res) => {
         return;
     }
 
-    const id = req.params.id as string; // Don't want to convert to number
+    const id = req.params.id as string;
 
     const url = await getBotDownloadURL(id);
     if (!url) {
@@ -938,7 +940,7 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
         return;
     }
 
-    const id = req.params.id as string; // Don't want to convert to number
+    const id = req.params.id as string;
     const apiTime = await getTimeById(id);
     if (!apiTime) {
         res.status(404).send({ error: "Invalid time" });
@@ -957,7 +959,7 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
 
     if (time.placement === 1) {
         const promise = async () => {
-            // Uses same parameters that the maps page would use, more likely to hit cache that way
+
             const times = await getTimes(undefined, time.mapId, 100, 1, time.game, time.style, time.course, TimeSortBy.TimeAsc);
             if (times && times.data.length > 1) {
                 const second = times.data[1];
@@ -992,8 +994,8 @@ app.get("/api/replays/times/:id", rateLimitSettings, async (req, res) => {
 app.use(express.static(buildDir, { index: false }));
 app.get("*splat", async (req, res): Promise<any> => {
     try {
-        // Inject meta tags for title and description based on the requested URL
-        // It's either this or SSR... I chose this
+
+
         let html = await readFile(path.resolve(buildDir, "index.html"), { encoding: "utf8" });
         let title = "strafes";
         let description = "Browse and view users, world records, maps, and ranks from the StrafesNET Roblox games (bhop and surf)";
@@ -1114,11 +1116,11 @@ app.get("*splat", async (req, res): Promise<any> => {
             }
         }
         catch (err) {
-            // Someone probably gave bad input
+
             console.log(err);
         }
 
-        // Don't give anyone an XSS attack
+
         html = html.replace("__META_OG_TITLE__", escapeHTML(title));
         html = html.replaceAll("__META_DESCRIPTION__", escapeHTML(description));
         html = html.replace("__META_IMAGE__", escapeHTML(imageUrl));

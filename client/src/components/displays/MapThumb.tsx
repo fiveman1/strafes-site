@@ -43,7 +43,7 @@ function MapThumb(props: MapThumbProps) {
             borderRadius={`${Math.min(10, Math.round(size / 12))}px`}
             sx={{
                 ...sx,
-                aspectRatio: 1 // Makes sure browser reserves the right amount of space while image still loading
+                aspectRatio: 1
             }}
         />
     );

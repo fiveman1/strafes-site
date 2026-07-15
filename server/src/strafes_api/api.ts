@@ -52,7 +52,7 @@ export async function getPlacements(timeIds: string[]) {
         if (notCachedIds.size > 0) {
             const res = await STRAFES_CLIENT.time.placementList({ids: Array.from(notCachedIds).join(",")});
             for (const placement of res.data.data) {
-                placementCache.put(placement.id, placement.placement, 5 * 60 * 1000); // 5 minutes
+                placementCache.put(placement.id, placement.placement, 5 * 60 * 1000);
                 placements.push(placement);
             }
         }
@@ -79,7 +79,7 @@ async function getTimesCore(userId: number | undefined, mapId: number | undefine
             mode_id: course >= 0 ? course : undefined,
             sort_by: sort
         });
-        
+
         return res.data;
     }
     catch (err) {

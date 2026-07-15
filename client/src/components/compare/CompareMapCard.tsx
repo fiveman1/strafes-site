@@ -35,7 +35,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                 },
             }}
         >
-            {/* Compact header: thumbnail + map name */}
+            {}
             <Box
                 sx={{
                     display: "flex",
@@ -88,7 +88,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                 </Typography>
             </Box>
 
-            {/* Time rows */}
+            {}
             <List disablePadding dense>
                 {times.map((time, i) => {
                     const diff = i === 0 ? 0 : +time.time - +times[0].time;
@@ -100,7 +100,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                             {i > 0 && <Divider />}
                             <ListItem sx={{ px: 1.5, py: 0.75 }}>
                                 <Box display="flex" width="100%" gap={1}>
-                                    {/* Left: color indicator + avatar + username/style stacked */}
+                                    {}
                                     <Box
                                         sx={{
                                             borderLeft: `3px solid ${time.userColor}`,
@@ -131,7 +131,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                             <Box>
                                                 <Typography
                                                     lineHeight={1.0}
-                                                    fontWeight="bold" 
+                                                    fontWeight="bold"
                                                     variant="caption"
                                                     display="inline-flex"
                                                     sx={{
@@ -154,7 +154,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                         </Box>
                                     </Box>
 
-                                    {/* Right: Time/diff/date */}
+                                    {}
                                     <Box display="flex" flexDirection="column" alignItems="flex-end" flexGrow={1} justifyContent="center" sx={{textAlign: "right"}}>
                                         <Typography
                                             variant="body2"

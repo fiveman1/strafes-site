@@ -40,14 +40,14 @@ function CompareChart(props: ICompareChartProps) {
     const series: PieSeriesType<PieValueType>[] = useMemo(() => {
         if (entries.length < 2) return [];
 
-        // Check all times are loaded
+
         for (const times of entryTimes) {
             if (times === undefined) return [];
         }
 
         const numEntries = entries.length;
 
-        // Build map: mapId -> entryIndex -> Time
+
         const mapToEntryTimes = new Map<number, Map<number, Time>>();
         for (let i = 0; i < numEntries; i++) {
             const times = entryTimes[i]!;
@@ -57,14 +57,14 @@ function CompareChart(props: ICompareChartProps) {
                     entryMap = new Map();
                     mapToEntryTimes.set(time.mapId, entryMap);
                 }
-                // Only keep the first (best) time per entry per map
+
                 if (!entryMap.has(i)) {
                     entryMap.set(i, time);
                 }
             }
         }
 
-        // Count outcomes
+
         const wins = new Array(numEntries).fill(0);
         const exclusive = new Array(numEntries).fill(0);
         let ties = 0;
@@ -77,13 +77,13 @@ function CompareChart(props: ICompareChartProps) {
                 return;
             }
 
-            // Find the best time
+
             let bestTime = Infinity;
             for (const [, time] of presentEntries) {
                 if (time.time < bestTime) bestTime = time.time;
             }
 
-            // Count how many entries have the best time
+
             const winners = presentEntries.filter(([, time]) => time.time === bestTime);
             if (winners.length > 1) {
                 ties++;
@@ -100,20 +100,20 @@ function CompareChart(props: ICompareChartProps) {
             roundedPercents = percentRound(percents, 1).map((num) => num.toFixed(1));
         }
 
-        // Build slice colors
+
         const sliceColors: string[] = [];
-        // Win slices
+
         for (let i = 0; i < numEntries; i++) {
             sliceColors.push(ENTRY_COLORS[i % ENTRY_COLORS.length]);
         }
-        // Tie slice
+
         sliceColors.push(TIE_COLOR);
-        // Exclusive slices
+
         for (let i = 0; i < numEntries; i++) {
             sliceColors.push(lighten(ENTRY_COLORS[i % ENTRY_COLORS.length], 0.5));
         }
 
-        // Gray out non-selected slices
+
         if (selectedSlice !== undefined) {
             for (let i = 0; i < sliceColors.length; i++) {
                 if (i !== selectedSlice) {
@@ -122,7 +122,7 @@ function CompareChart(props: ICompareChartProps) {
             }
         }
 
-        // Build labels
+
         const getEntryLabel = (i: number) => {
             const user = idToUser[entries[i].userId]?.user;
             const name = user?.username ?? "...";
