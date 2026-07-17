@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useRef, useState } from 'react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 
 // Adapted from here https://github.com/mui/material-ui/issues/44284#issuecomment-2687922477
@@ -16,6 +16,11 @@ export default function SimpleNumberField(allProps: NumberFieldProps) {
 
     const [fieldValue, setFieldValue] = useState<string | number>(value || "");
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setFieldValue(value || "");
+    }, [value]);
+
 
     // Handle updating the input and real value
     const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, isBlur?: boolean) => {
@@ -42,7 +47,7 @@ export default function SimpleNumberField(allProps: NumberFieldProps) {
             setFieldValue(parsed);
         }
     };
-    
+
     const handleBlur = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         handleChange(event, true);
     };

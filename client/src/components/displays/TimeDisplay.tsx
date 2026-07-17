@@ -6,6 +6,7 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import Link from "@mui/material/Link";
 import { Link as RouterLink } from "react-router";
 import { lighten, useTheme } from "@mui/material/styles";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ITimeDisplayProps {
     time: Time
@@ -15,19 +16,28 @@ interface ITimeDisplayProps {
 function TimeDisplay(props: ITimeDisplayProps) {
     const { time, hideDiff } = props;
     const theme = useTheme();
+    const queryClient = useQueryClient();
 
     const isLight = theme.palette.mode === "light";
-    
+
     const ms = time.time;
     const diff = time.wrDiff;
     const hasBot = time.hasBot;
+    const preloadReplay = () => {
+        void import("../../api/replayAssets").then(({ prefetchReplayMap }) => {
+            void prefetchReplayMap(queryClient, time.mapId);
+        });
+    };
 
     if (hideDiff) {
         if (hasBot) {
             return (
                 <Link
-                    component={RouterLink} 
+                    component={RouterLink}
                     to={`/replays/${time.id}`}
+                    onMouseEnter={preloadReplay}
+                    onFocus={preloadReplay}
+                    onTouchStart={preloadReplay}
                     underline="none"
                     sx={{
                         textDecoration: "none",
@@ -59,6 +69,9 @@ function TimeDisplay(props: ITimeDisplayProps) {
             <Link
                 component={RouterLink} 
                 to={`/replays/${time.id}`}
+                onMouseEnter={preloadReplay}
+                onFocus={preloadReplay}
+                onTouchStart={preloadReplay}
                 underline="none"
                 sx={{
                     textDecoration: "none",
@@ -78,7 +91,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
             </Link>
         );
     }
-    
+
     return (
         <Box display="flex" flexDirection="row" alignItems="center">
             <Typography variant="inherit" width="72px">

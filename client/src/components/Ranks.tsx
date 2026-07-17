@@ -158,6 +158,7 @@ function RanksCard(props: IRanksCardProps) {
                 Ranks
             </Typography>
         </Box>
+        <Box height={`${Math.floor(56 * 0.7) + (36 * 20) + 52}px`}>
         <DataGrid
             className="ranksGrid"
             columns={gridCols}
@@ -183,6 +184,7 @@ function RanksCard(props: IRanksCardProps) {
                 "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
             }}
         />
+        </Box>
     </Paper>
     );
 }

@@ -25,13 +25,13 @@ function StyleSelector(props: IStyleSelectorProps) {
     if (allowSelectAll) {
         styles.push(Style.all);
     }
-    
+
     const realStyle = styles.includes(style) ? style : styles[0];
     const inputLabel = label ?? "Style";
 
     return (
         <Box padding={1} pb={0.5}>
-            <FormControl sx={{ width: "150px" }}>
+            <FormControl sx={{ width: "160px" }}>
                 <InputLabel>{inputLabel}</InputLabel>
                 <Select
                     value={realStyle}

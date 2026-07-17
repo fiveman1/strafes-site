@@ -36,7 +36,7 @@ function makeColumns() {
     cols.push(makeTimeColumn());
 
     cols.push(makeDateColumn());
-    
+
     return cols;
 }
 
@@ -48,11 +48,12 @@ function ViewedTimesGrid(props: IViewedTimesProps) {
         className="viewedTimesGrid"
         columns={makeColumns()}
         rows={times}
+        autoHeight
         pagination
         pageSizeOptions={[20, 50]}
         rowHeight={Math.round(MAP_THUMB_SIZE * 1.6667)}
         initialState={{
-            pagination: { 
+            pagination: {
                 paginationModel: { pageSize: 20 },
             },
             sorting: {
