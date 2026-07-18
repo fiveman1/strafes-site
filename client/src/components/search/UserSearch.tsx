@@ -35,21 +35,23 @@ function UserSearch(props: IUserSearchProps) {
     const onSearch = useCallback(async (search: string | UserSearchData) => {
         if (!search) {
             setSelectedUser({username: ""});
+            setUserText("");
             setUserId(undefined);
             return;
         }
 
         const newSelectedUser = typeof search === "string" ? {username: search} : search;
         const userId = await queryClient.fetchQuery(queries.users.fromSearch(newSelectedUser));
-        setSelectedUser(newSelectedUser);
 
         if (userId !== null) {
+            setSelectedUser({...newSelectedUser, userId});
+            setUserText("");
             setUserId(userId.toString());
         }
         else {
             setHasError(true);
         }
-    }, [queryClient, setSelectedUser, setUserId]);
+    }, [queryClient, setSelectedUser, setUserId, setUserText]);
 
     const sortedOptions = useMemo(() => {
         if (userText === "" || loadingOptions) {
@@ -89,7 +91,11 @@ function UserSearch(props: IUserSearchProps) {
             inputMode="search"
             inputValue={userText}
             value={selectedUser}
-            onInputChange={(e, v) => onInputChange(v ?? "")}
+            onInputChange={(e, v, reason) => {
+                if (reason === "input" || reason === "clear") {
+                    onInputChange(v ?? "");
+                }
+            }}
             onChange={(e, v) => onSearch(v ?? "")}
             isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
             filterOptions={(x) => x}

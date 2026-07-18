@@ -15,7 +15,7 @@
         "dev:backend": "yarn workspace server run dev",
         "dev:shared": "yarn workspace shared run dev",
         "dev": "NODE_ENV=development concurrently -n \"SHARED,FRONTEND,BACKEND\" -c \"green,red,blue\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\" \"yarn run dev:backend\"",
-        "dev-proxy": "VITE_USE_PROXY=true yarn run dev:frontend",
+        "dev-proxy": "yarn workspace shared run build && NODE_ENV=development VITE_USE_PROXY=true concurrently -n \"SHARED,FRONTEND\" -c \"green,red\" -p \"[{name}]\" \"yarn run dev:shared\" \"yarn run dev:frontend\"",
         "build": "yarn workspace shared run build && yarn workspace client run build && yarn workspace server run build",
         "start": "NODE_ENV=production yarn workspace server run start"
     }

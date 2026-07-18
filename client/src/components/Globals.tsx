@@ -51,6 +51,7 @@ function Globals() {
                 course={includeBonuses ? ALL_COURSES : MAIN_COURSE} 
                 onlyWRs 
                 allowOnlyWRs 
+                stabilizePageHeight
             />
         </Box>
         <Box padding={1} flexGrow={1}>
@@ -172,6 +173,7 @@ function LeaderboardCard(props: IRanksCardProps) {
                 Leaderboards
             </Typography>
         </Box>
+        <Box height={`${Math.floor(56 * 0.7) + (70 * 10) + 52}px`}>
         <DataGrid
             columns={gridCols}
             apiRef={apiRef}
@@ -194,6 +196,9 @@ function LeaderboardCard(props: IRanksCardProps) {
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
+            sx={{
+                "--DataGrid-overlayHeight": `${70 * 10}px`
+            }}
             slotProps={{
                 basePagination: {
                     material: {
@@ -202,6 +207,7 @@ function LeaderboardCard(props: IRanksCardProps) {
                 }
             }}
         />
+        </Box>
     </Paper>
     );
 }

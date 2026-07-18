@@ -31,7 +31,7 @@ function MapLink(props: IMapLinkProps) {
     const tierColor = getMapTierColor(tier);
     const gameColor = getGameColor(game, theme);
     const styleColor = getStyleColor(style, theme);
-    
+
     return (
         <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
             component={RouterLink} 
@@ -43,10 +43,8 @@ function MapLink(props: IMapLinkProps) {
             alignItems="center"
             sx={{
                 textDecoration: "none",
-                ":hover": {
-                    "& .map-name": {
-                        textDecoration: "underline"
-                    }
+                "&:hover .map-name": {
+                    textDecoration: "underline !important"
                 }
             }}
         >

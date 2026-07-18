@@ -3,9 +3,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "../bot_player/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
-import { formatCountryCode, formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
+import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
-import { getBotFileResponse, getMapFileResponse } from "../api/api";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
@@ -18,11 +17,12 @@ import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
-import ReactCountryFlag from "react-country-flag";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { clamp } from "../common/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import CountryFlag from "./displays/CountryFlag";
+import { botAssetProgressKey, mapAssetProgressKey, replayAssetQueries, subscribeToReplayAssetProgress } from "../api/replayAssets";
 
 const ASPECT_RATIO = 16 / 9;
 
@@ -71,16 +71,6 @@ function getMapTitle(replay: Replay) {
         return replay.map;
     }
     return `${replay.map} (${formatCourse(replay.course, true)})`;
-}
-
-function chunksToArray(chunks: Uint8Array[], length: number) {
-    const chunksAll = new Uint8Array(length);
-    let position = 0;
-    for (const chunk of chunks) {
-        chunksAll.set(chunk, position);
-        position += chunk.length;
-    }
-    return chunksAll;
 }
 
 const controlToState = new Map([
@@ -138,13 +128,13 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
     if (timePos) {
         diffTimeElement.classList.add("better");
         diffTimeElement.classList.remove("worse");
-        
+
     }
     else {
         diffTimeElement.classList.remove("better");
         diffTimeElement.classList.add("worse");
     }
-    
+
     const speedPos = speedDiff >= 0;
     let speedText = speedPos ? "+" : "";
     speedText += speedDiff.toFixed(2) + " u/s";
@@ -159,44 +149,17 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
     }
 }
 
-async function readWithProgress(res: Response, setLength: (len: number) => void, setReceived: (rec: number) => void) {
-    setReceived(0);
-    setLength(+(res.headers.get("Content-Length") ?? 0));
-
-    if (!res.body) {
-        return new Uint8Array(await res.arrayBuffer());
-    }
-
-    const reader = res.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let received = 0;
-
-    await reader.read().then(function process({ done, value }) {
-        if (done) {
-            return;
-        }
-
-        chunks.push(value);
-        received += value.byteLength;
-        setReceived(received);
-        return reader.read().then(process);
-    });
-
-    reader.releaseLock();
-
-    return chunksToArray(chunks, received);
-}
-
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps, loginUser } = useOutletContext() as ContextParams;
 
     const theme = useTheme();
     const smallScreen = useMediaQuery("(max-width: 600px)");
+    const queryClient = useQueryClient();
 
     const replayQuery = useQuery(queries.replays.replay(id));
     const replay = replayQuery.data;
-    
+
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
@@ -211,6 +174,7 @@ function Replays() {
     const [ botFileReceived, setBotFileReceived ] = useState(0);
     const [ diffBotFileLength, setDiffBotFileLength ] = useState(0);
     const [ diffBotFileReceived, setDiffBotFileReceived ] = useState(0);
+    const [ diffReady, setDiffReady ] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
@@ -264,50 +228,53 @@ function Replays() {
         setMapFileReceived(0);
         setBotFileReceived(0);
         setDiffBotFileReceived(0);
+        setDiffReady(false);
         setLoading(true);
-        
+
+        const unsubscribeMapProgress = subscribeToReplayAssetProgress(mapAssetProgressKey(replay.mapId), (progress) => {
+            setMapFileLength(progress.total);
+            setMapFileReceived(progress.received);
+        });
+        const unsubscribeBotProgress = subscribeToReplayAssetProgress(botAssetProgressKey(replay.id), (progress) => {
+            setBotFileLength(progress.total);
+            setBotFileReceived(progress.received);
+        });
+        const unsubscribeDiffBotProgress = replay.compareTimeId
+            ? subscribeToReplayAssetProgress(botAssetProgressKey(replay.compareTimeId), (progress) => {
+                setDiffBotFileLength(progress.total);
+                setDiffBotFileReceived(progress.received);
+            })
+            : () => undefined;
+
         const promise = async () => {
-            if (!("gpu" in navigator) || await navigator.gpu.requestAdapter() === null) {
+            if (!("gpu" in navigator)) {
                 setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
                 return;
             }
-            
-            await init();
 
-            if (isCanceled) return;
+            const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
+            const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
+            const [adapter, , mapFile, botFile] = await Promise.all([
+                navigator.gpu.requestAdapter(),
+                init(),
+                mapFilePromise,
+                botFilePromise
+            ]);
 
-            const mapPromise = getMapFileResponse(replay.mapId);
-            const botPromise = getBotFileResponse(replay.id);
-            let diffBotPromise: Promise<Response | null> | null = null;
-            if (replay.compareTimeId) {
-                diffBotPromise = getBotFileResponse(replay.compareTimeId);
+            if (adapter === null) {
+                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
+                return;
             }
-            const mapRes = await mapPromise;
-            const botRes = await botPromise;
-            const diffBotRes = diffBotPromise ? await diffBotPromise : null;
 
-            if (!mapRes) {
+            if (!mapFile) {
                 setError("Couldn't load map file.");
                 return;
             }
 
-            if (!botRes) {
+            if (!botFile) {
                 setError("Couldn't load bot file.");
                 return;
             }
-
-            if (isCanceled) return;
-            
-            const mapFilePromise = readWithProgress(mapRes, setMapFileLength, setMapFileReceived);
-            const botFilePromise = readWithProgress(botRes, setBotFileLength, setBotFileReceived);
-            let diffBotFilePromise: Promise<Uint8Array> | undefined = undefined;
-            if (diffBotRes) {
-                diffBotFilePromise = readWithProgress(diffBotRes, setDiffBotFileLength, setDiffBotFileReceived);
-            }
-
-            const mapFile = await mapFilePromise;
-            const botFile = await botFilePromise;
-            const diffBotFile = diffBotFilePromise ? await diffBotFilePromise : undefined;
 
             if (isCanceled) return;
 
@@ -327,13 +294,6 @@ function Replays() {
                 graphicsRef.current = graphics;
                 botRef.current = bot;
 
-                if (diffBotFile) {
-                    const diffBot = new CompleteBot(diffBotFile);
-                    diffBotRef.current = diffBot;
-                    diffBvhRef.current = new Bvh(diffBot);
-                    diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
-                }
-
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, playback, graphics);
@@ -349,16 +309,45 @@ function Replays() {
                 setBotOffset(offset);
                 setPlaybackTime(-offset);
                 setLoading(false);
+
+
+
+
+                if (replay.compareTimeId) {
+                    void (async () => {
+                        const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!)).catch(() => null);
+                        if (!diffBotFile || isCanceled) return;
+
+                        try {
+                            const diffBot = new CompleteBot(diffBotFile);
+                            diffBotRef.current = diffBot;
+                            diffBvhRef.current = new Bvh(diffBot);
+                            diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
+                            setDiffReady(true);
+                        }
+                        catch (error) {
+                            console.warn("Couldn't initialize comparison replay", error);
+                        }
+                    })().catch((error) => console.warn("Couldn't load comparison replay", error));
+                }
             }
             catch (err) {
                 console.error(err);
                 setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
             }
         };
-        promise();
+        promise().catch((err) => {
+            if (!isCanceled) {
+                console.error(err);
+                setError(err instanceof Error ? err.message : "Something went wrong trying to load the replay.");
+            }
+        });
 
-        return () => { 
+        return () => {
             isCanceled = true;
+            unsubscribeMapProgress();
+            unsubscribeBotProgress();
+            unsubscribeDiffBotProgress();
             if (playbackRef.current) {
                 playbackRef.current.free();
                 playbackRef.current = null;
@@ -371,8 +360,20 @@ function Replays() {
                 botRef.current.free();
                 botRef.current = null;
             }
+            if (diffPlaybackRef.current) {
+                diffPlaybackRef.current.free();
+                diffPlaybackRef.current = null;
+            }
+            if (diffBvhRef.current) {
+                diffBvhRef.current.free();
+                diffBvhRef.current = null;
+            }
+            if (diffBotRef.current) {
+                diffBotRef.current.free();
+                diffBotRef.current = null;
+            }
         };
-    }, [id, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
+    }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -390,7 +391,7 @@ function Replays() {
             const graphics = graphicsRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
-            
+
             if (playback && bot && graphics && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
@@ -547,11 +548,11 @@ function Replays() {
         let mapProgress = -1;
         let botProgress = -1;
         let diffBotProgress = -1;
-        
+
         if (mapFileLength !== 0) {
             mapProgress = mapFileReceived / mapFileLength;
         }
-        
+
         if (botFileLength !== 0) {
             botProgress = botFileReceived / botFileLength;
         }
@@ -587,7 +588,7 @@ function Replays() {
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
     const isCurrentUser = loginUser && replay?.userId === loginUser.userId;
-    const allowDiff = Boolean(replay?.compareTimeId);
+    const allowDiff = Boolean(replay?.compareTimeId && diffReady);
 
     return (
         <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
@@ -595,7 +596,7 @@ function Replays() {
             <Alert severity="error" sx={{ mb: 1 }}>
                 {error}
             </Alert>}
-            <Box 
+            <Box
                 ref={playerRef}
                 sx={{
                     width: "100%",
@@ -646,15 +647,15 @@ function Replays() {
                                     height: playerHeight
                                 }}
                             >
-                                <PlaybackOverlay 
-                                    time={playbackTime} 
-                                    duration={duration} 
+                                <PlaybackOverlay
+                                    time={playbackTime}
+                                    duration={duration}
                                     paused={paused}
                                     offset={botOffset}
                                     fullscreen={fullscreen}
                                     speed={playbackSpeed}
-                                    onDragPlayback={onDragPlayback} 
-                                    onSetPlayback={onSetPlayback} 
+                                    onDragPlayback={onDragPlayback}
+                                    onSetPlayback={onSetPlayback}
                                     onSetPause={onSetPause}
                                     onFullscreen={onFullscreen}
                                     onSeek={onSeek}
@@ -670,7 +671,7 @@ function Replays() {
                                     allowDiff={allowDiff}
                                 />
                             </Box>
-                            {(loading && !error) && 
+                            {(loading && !error) &&
                             <Box
                                 position="absolute"
                                 top="50%"
@@ -679,13 +680,13 @@ function Replays() {
                                 flexDirection="column"
                                 alignItems="center"
                                 justifyContent="center"
-                                sx={{ 
+                                sx={{
                                     transform: "translate(-50%, -50%)",
                                     userSelect: "none"
                                 }}
                             >
                                 <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
-                                <Box 
+                                <Box
                                     mt={1}
                                     display="flex"
                                     alignItems="center"
@@ -699,7 +700,7 @@ function Replays() {
                                 </Box>
                             </Box>}
                         </Box>
-                        <Box 
+                        <Box
                             display={fullscreen ? "none" : "flex"}
                             flexDirection="row"
                             pt={1}
@@ -707,11 +708,11 @@ function Replays() {
                             style={{ width: playerWidth }}
                             minHeight={FOOTER_HEIGHT}
                         >
-                            {replay && 
+                            {replay &&
                             <>
                             {!smallScreen &&
-                            <Box 
-                                display="flex" 
+                            <Box
+                                display="flex"
                                 mr={1.5}
                             >
                                 <Link
@@ -721,8 +722,8 @@ function Replays() {
                                     component={RouterLink}
                                     to={mapLink}
                                 >
-                                    <Box 
-                                        width={thumbSize} 
+                                    <Box
+                                        width={thumbSize}
                                         height={thumbSize}
                                         overflow="hidden"
                                         sx={{
@@ -738,23 +739,23 @@ function Replays() {
                                     </Box>
                                 </Link>
                             </Box>}
-                            <Box 
-                                display="flex" 
-                                flexDirection="column" 
+                            <Box
+                                display="flex"
+                                flexDirection="column"
                                 flexGrow={1}
                                 overflow="hidden"
                                 sx={{
                                     "p": {
-                                        overflowWrap: "break-word", 
-                                        wordBreak: "break-word", 
-                                        whiteSpace: "normal", 
+                                        overflowWrap: "break-word",
+                                        wordBreak: "break-word",
+                                        whiteSpace: "normal",
                                         textWrap: "wrap"
                                     }
                                 }}
                             >
-                                <Box 
-                                    display="inline-flex" 
-                                    alignItems="center" 
+                                <Box
+                                    display="inline-flex"
+                                    alignItems="center"
                                 >
                                     {smallScreen &&
                                     <Link
@@ -763,8 +764,8 @@ function Replays() {
                                         to={mapLink}
                                         mr={1.5}
                                     >
-                                        <Box 
-                                            width={48} 
+                                        <Box
+                                            width={48}
                                             height={48}
                                             overflow="hidden"
                                             sx={{
@@ -779,8 +780,8 @@ function Replays() {
                                             <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                         </Box>
                                     </Link>}
-                                    <Link 
-                                        display="inline-flex" 
+                                    <Link
+                                        display="inline-flex"
                                         alignItems="center"
                                         underline="none"
                                         component={RouterLink}
@@ -795,7 +796,7 @@ function Replays() {
                                             }
                                         }}
                                     >
-                                        <Typography 
+                                        <Typography
                                             variant="h5"
                                             display="inline-block"
                                             className="map-name"
@@ -804,7 +805,7 @@ function Replays() {
                                             {getMapTitle(replay)}
                                         </Typography>
                                     </Link>
-                                    <Typography 
+                                    <Typography
                                         lineHeight={1.0}
                                         variant="caption"
                                         fontWeight="bold"
@@ -819,9 +820,9 @@ function Replays() {
                                             borderRadius: "6px",
                                             border: 1,
                                             borderColor: tierColor,
-                                            overflowWrap: "normal", 
-                                            wordBreak: "normal", 
-                                            whiteSpace: "normal", 
+                                            overflowWrap: "normal",
+                                            wordBreak: "normal",
+                                            whiteSpace: "normal",
                                             textWrap: "auto"
                                         }}
                                     >
@@ -829,13 +830,13 @@ function Replays() {
                                     </Typography>
                                 </Box>
                                 <Box
-                                    display="inline-flex" 
-                                    alignItems="center" 
+                                    display="inline-flex"
+                                    alignItems="center"
                                     mt={smallScreen ? 1 : 0.25}
                                 >
                                     <Typography
                                         lineHeight={1.0}
-                                        fontWeight="bold" 
+                                        fontWeight="bold"
                                         variant="caption"
                                         sx={{
                                             padding: 0.3,
@@ -852,7 +853,7 @@ function Replays() {
                                     </Typography>
                                     <Typography
                                         lineHeight={1.0}
-                                        fontWeight="bold" 
+                                        fontWeight="bold"
                                         variant="caption"
                                         ml={0.5}
                                         sx={{
@@ -869,13 +870,13 @@ function Replays() {
                                         {formatStyle(replay.style)}
                                     </Typography>
                                 </Box>
-                                <Box 
+                                <Box
                                     mt={1}
-                                    display="inline-flex" 
+                                    display="inline-flex"
                                     alignItems="center"
                                 >
-                                    <Link 
-                                        display="inline-flex" 
+                                    <Link
+                                        display="inline-flex"
                                         alignItems="center"
                                         underline="none"
                                         component={RouterLink}
@@ -891,31 +892,31 @@ function Replays() {
                                         }}
                                     >
                                         <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
-                                        <Typography 
-                                            variant="body1" 
-                                            ml={0.75} 
+                                        <Typography
+                                            variant="body1"
+                                            ml={0.75}
                                             display="inline-block"
                                         >
                                             @{replay.username}
                                         </Typography>
-                                        
+
                                     </Link>
                                     {replay.userCountry &&
-                                    <ReactCountryFlag style={{marginLeft: 6}} title={formatCountryCode(replay.userCountry)} countryCode={replay.userCountry} svg />}
+                                    <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
                                     {isCurrentUser &&
                                     <Box display="flex" title="You">
-                                        <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                                        <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
                                     </Box>}
                                 </Box>
                                 <Box display="flex" alignItems="center" mt={0.5}>
-                                    <Typography 
+                                    <Typography
                                         variant="body1"
-                                        display="inline-block" 
+                                        display="inline-block"
                                         fontFamily="monospace"
                                     >
                                         {formatPlacement(replay.placement)}
                                     </Typography>
-                                    <Typography 
+                                    <Typography
                                         variant="body1"
                                         display="inline-block"
                                         ml={0.75}
@@ -923,7 +924,7 @@ function Replays() {
                                     >
                                         -
                                     </Typography>
-                                    <Typography 
+                                    <Typography
                                         variant="body1"
                                         display="inline-block"
                                         mr={0.75}
@@ -932,8 +933,8 @@ function Replays() {
                                     </Typography>
                                     <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
                                 </Box>
-                                <Box 
-                                    display="inline-flex" 
+                                <Box
+                                    display="inline-flex"
                                     flexDirection="row"
                                     alignItems="center"
                                     justifyContent="space-between"
@@ -942,7 +943,7 @@ function Replays() {
                                     <Typography
                                         variant="body2"
                                         fontWeight="bold"
-                                        display="inline-block" 
+                                        display="inline-block"
                                     >
                                         {replay.views === 1 ? "1 view" : `${replay.views} views`}
                                     </Typography>
