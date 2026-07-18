@@ -43,15 +43,14 @@ function Globals() {
             <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
         </Box>
         <Box padding={1} flexGrow={1}>
-            <TimesCard 
-                title="World Records" 
-                defaultSort={TimeSortBy.DateDesc} 
-                game={game} 
-                style={style} 
-                course={includeBonuses ? ALL_COURSES : MAIN_COURSE} 
-                onlyWRs 
-                allowOnlyWRs 
-                stabilizePageHeight
+            <TimesCard
+                title="World Records"
+                defaultSort={TimeSortBy.DateDesc}
+                game={game}
+                style={style}
+                course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
+                onlyWRs
+                allowOnlyWRs
             />
         </Box>
         <Box padding={1} flexGrow={1}>
@@ -173,11 +172,11 @@ function LeaderboardCard(props: IRanksCardProps) {
                 Leaderboards
             </Typography>
         </Box>
-        <Box height={`${Math.floor(56 * 0.7) + (70 * 10) + 52}px`}>
         <DataGrid
             columns={gridCols}
             apiRef={apiRef}
             pagination
+            autoHeight
             dataSource={dataSource}
             pageSizeOptions={[10]}
             rowCount={rowCount}
@@ -204,10 +203,12 @@ function LeaderboardCard(props: IRanksCardProps) {
                     material: {
                         ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
                     }
+                },
+                loadingOverlay: {
+                    noRowsVariant: "linear-progress"
                 }
             }}
         />
-        </Box>
     </Paper>
     );
 }

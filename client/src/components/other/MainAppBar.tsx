@@ -207,23 +207,13 @@ function AppMenu(props: IAppMenuProps) {
 function MainAppBar(props: IMainAppBarProps) {
     const { loggedInUser, isUserLoading, disableSettings } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-    const useAppMenu = useMediaQuery("@media screen and (max-width: 800px)");
+    const useAppMenu = useMediaQuery("@media screen and (max-width: 840px)");
     const onLogin = useCallback(async () => {
-        const configuredAuthOrigin = import.meta.env.VITE_EXTERNAL_AUTH_ORIGIN as string | undefined;
-        const isLocalDevelopment = import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname);
-        if (isLocalDevelopment || configuredAuthOrigin) {
-
-
-            const authOrigin = (configuredAuthOrigin ?? "https://strafes.fiveman1.net").replace(/\/$/, "");
-            window.location.href = `${authOrigin}${window.location.pathname}${window.location.search}`;
-            return;
-        }
-
         const url = await login(window.location.pathname.slice(1) + window.location.search);
         if (url) window.location.href = url; // Force external redirect
     }, []);
 
-    const outerWidth = smallScreen ? 52 : 132;
+    const outerWidth = smallScreen ? 75 : 132;
 
     return (
         <AppBar position="sticky">
@@ -248,7 +238,7 @@ function MainAppBar(props: IMainAppBarProps) {
                         />
                         <Typography
                             sx={{
-                                display: {xs: "none", lg: "block"},
+                                display: useAppMenu ? "none" : "block",
                                 fontFamily: '"Goldman", sans-serif',
                                 fontWeight: 700,
                                 letterSpacing: "-0.035em",
@@ -276,7 +266,7 @@ function MainAppBar(props: IMainAppBarProps) {
                             startIcon={<LoginIcon />}
                             onClick={onLogin}
                             sx={{
-                                width: outerWidth,
+                                width: smallScreen ? 75 : 100,
                                 whiteSpace: "nowrap",
                                 color: "text.primary",
                                 borderColor: "divider",

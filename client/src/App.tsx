@@ -122,7 +122,7 @@ function App() {
                     contrastText: "#ffffff"
                 },
                 secondary: {
-                    main: isLight ? "#08748f" : "#55bfd6",
+                    main: "#55bfd6",
                     light: "#91dce9",
                     dark: "#07677c"
                 },
@@ -141,37 +141,27 @@ function App() {
                 }
             },
             shape: {
-                borderRadius: 16
+                borderRadius: 6
             },
             typography: {
-                fontFamily: '"Inter", "Roboto", system-ui, sans-serif',
-                h1: { fontWeight: 700, letterSpacing: "-0.04em" },
-                h2: { fontWeight: 700, letterSpacing: "-0.035em" },
-                h3: { fontWeight: 700, letterSpacing: "-0.03em" },
-                h4: { fontWeight: 700, letterSpacing: "-0.025em" },
-                h5: { fontWeight: 600, letterSpacing: "-0.015em" },
-                h6: { fontWeight: 600, letterSpacing: "-0.01em" },
-                button: { fontWeight: 600, letterSpacing: "-0.01em" }
+                h1: { fontWeight: 700 },
+                h2: { fontWeight: 700 },
+                h3: { fontWeight: 700 },
+                h4: { fontWeight: 700 },
+                h5: { fontWeight: 600 },
+                h6: { fontWeight: 600 },
+                button: { fontWeight: 600 }
             },
             components: {
                 MuiCssBaseline: {
                     styleOverrides: {
                         html: { backgroundColor: isLight ? "#f5f3f5" : "#090809" },
                         body: {
-                            backgroundColor: isLight ? "#f8f6f8" : "#090809",
-                            backgroundImage: isLight
-                                ? "radial-gradient(circle at 48% -12%, rgba(223, 47, 120, 0.08), transparent 38rem), radial-gradient(circle at 92% 35%, rgba(85, 191, 214, 0.035), transparent 32rem)"
-                                : "radial-gradient(circle at 48% -12%, rgba(223, 47, 120, 0.10), transparent 42rem), radial-gradient(circle at 92% 38%, rgba(85, 191, 214, 0.035), transparent 36rem)",
-                            backgroundAttachment: "fixed"
-                },
+                            backgroundColor: isLight ? "#f8f6f8" : "#090809"
+                        },
                         "#root": {
-                            position: "relative",
                             isolation: "isolate",
-                            backgroundImage: isLight
-                                ? "linear-gradient(rgba(46, 32, 56, 0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(46, 32, 56, 0.022) 1px, transparent 1px)"
-                                : "linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px)",
-                            backgroundSize: "64px 64px"
-                    },
+                        },
                         "#root::before, #root::after": {
                             content: '\"\"',
                             position: "fixed",
@@ -183,17 +173,17 @@ function App() {
                             filter: "blur(100px)",
                             opacity: isLight ? 0.12 : 0.14,
                             willChange: "transform"
-                },
+                        },
                         "#root::before": {
                             top: "-22%",
                             left: "-13%",
-                            background: "#df2f78",
+                            background: alpha("#df2f78", 0.3),
                             animation: "ambientDriftA 18s ease-in-out infinite alternate"
-            },
+                        },
                         "#root::after": {
                             right: "-15%",
                             bottom: "-30%",
-                            background: isLight ? "#55bfd6" : "#278da3",
+                            background: isLight ? alpha("#55bfd6", 0.3) : alpha("#278da3", 0.3),
                             animation: "ambientDriftB 22s ease-in-out infinite alternate"
                         },
                         "@keyframes ambientDriftA": {
@@ -215,10 +205,10 @@ function App() {
                         "::selection": {
                             backgroundColor: alpha("#ec3b83", 0.32)
                         },
-                        "*": {
-                            scrollbarWidth: "thin",
-                            scrollbarColor: `${alpha(isLight ? "#202027" : "#ffffff", 0.22)} transparent`
-                        },
+                        // "*": {
+                        //     scrollbarWidth: "thin",
+                        //     scrollbarColor: `${alpha(isLight ? "#202027" : "#ffffff", 0.22)} transparent`
+                        // },
                         "h1, h2, h3": {
                             letterSpacing: "-0.03em"
                         },
@@ -254,12 +244,12 @@ function App() {
                             width: "calc(100% - 32px)",
                             maxWidth: "1450px",
                             top: 12,
-                            margin: "0 auto 12px",
+                            margin: "0 auto 4px",
                             color: isLight ? "#202027" : "#f4f4f6",
                             backgroundColor: alpha(isLight ? "#ffffff" : "#10111a", isLight ? 0.72 : 0.62),
                             backgroundImage: "none",
                             border: `1px solid ${border}`,
-                            borderRadius: 18,
+                            borderRadius: 12,
                             overflow: "hidden",
                             boxShadow: isLight ? "0 14px 50px rgba(60, 32, 70, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)" : "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(255, 79, 154, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
                             backdropFilter: "blur(30px) saturate(180%)",
@@ -275,7 +265,7 @@ function App() {
                                 width: "calc(100% - 16px)",
                                 top: 8,
                                 marginBottom: 8,
-                                borderRadius: 15
+                                borderRadius: 10
                             }
                         }
                     }
@@ -319,7 +309,7 @@ function App() {
                 MuiButton: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 12,
+                            borderRadius: 8,
                             textTransform: "none",
                             transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
                             "&:active": {
@@ -334,7 +324,7 @@ function App() {
                 MuiIconButton: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 12,
+                            borderRadius: 8,
                             transition: "transform 180ms ease, background-color 180ms ease, color 180ms ease",
                             "&:active": {
                                 transform: "scale(0.92)"
@@ -345,7 +335,7 @@ function App() {
                 MuiOutlinedInput: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 13,
+                            borderRadius: 8,
                             backgroundColor: alpha(surface, isLight ? 0.68 : 0.48),
                             transition: "border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease",
                             "&:hover .MuiOutlinedInput-notchedOutline": {
@@ -364,7 +354,7 @@ function App() {
                     styleOverrides: {
                         paper: {
                             marginTop: 6,
-                            borderRadius: 14,
+                            borderRadius: 10,
                             boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
                         },
                         list: {
@@ -375,7 +365,7 @@ function App() {
                 MuiMenuItem: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 8,
+                            borderRadius: 6,
                             margin: "2px 0"
                         }
                     }
@@ -383,7 +373,7 @@ function App() {
                 MuiDialog: {
                     styleOverrides: {
                         paper: {
-                            borderRadius: 20,
+                            borderRadius: 12,
                             boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
                         }
                     }
@@ -391,7 +381,7 @@ function App() {
                 MuiChip: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 9,
+                            borderRadius: 6,
                             backdropFilter: "blur(12px)",
                             fontWeight: 600
                         }
@@ -430,7 +420,7 @@ function App() {
                     styleOverrides: {
                         root: {
                             border: `1px solid ${isLight ? "rgba(45, 32, 55, 0.18)" : "rgba(255, 255, 255, 0.20)"}`,
-                            borderRadius: 10,
+                            borderRadius: 8,
                             overflow: "hidden",
                             backgroundColor: isLight ? "#ffffff" : "#141114",
                             boxShadow: isLight
@@ -451,7 +441,6 @@ function App() {
                             overflowY: "hidden"
                         },
                         row: {
-                            transition: "background-color 120ms ease",
                             "&:hover": {
                                 backgroundColor: alpha("#ec3b83", isLight ? 0.045 : 0.065)
                             }
@@ -459,14 +448,18 @@ function App() {
                         footerContainer: {
                             borderColor: border
                         }
+                    },
+                    defaultProps: {
+                        localeText: {paginationDisplayedRows: ({ from, to, count }) => count === -1 ? `${from}–${to} of more than ${to}` : `${from}–${to} of ${count}`},
+                        dataSourceKeepPreviousData: true
                     }
                 },
                 MuiTooltip: {
                     styleOverrides: {
                         tooltip: {
-                            borderRadius: 8,
+                            borderRadius: 6,
                             fontSize: "0.75rem",
-                            padding: "7px 10px"
+                            padding: "6px 8px"
                         }
                     }
                 },
@@ -501,15 +494,15 @@ function App() {
                 flexDirection="column"
                 width="100%"
                 maxWidth="1800px"
-                padding={smallScreen ? 1 : 2.5}
+                padding={smallScreen ? 1 : 2}
                 margin="0 auto auto"
             >
                 <NuqsAdapter>
                     <Outlet context={contextParams}/>
                 </NuqsAdapter>
             </Box>
-            <Box component="footer" mt={4}>
-                <Breadcrumbs separator="·" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "20px 16px 22px", "& ol": {"justifyContent": "center"}, "& a": {color: "text.secondary", fontSize: "0.875rem"}}}>
+            <Box component="footer">
+                <Breadcrumbs separator="·" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}, "& a": {color: "text.secondary", fontSize: "0.875rem"}}}>
                     <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
                         bhop
                         <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />

@@ -1,4 +1,4 @@
-import { queryOptions, QueryClient } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { getBotFileResponse, getMapFileResponse } from "./api";
 
 export interface ReplayAssetProgress {
@@ -61,7 +61,6 @@ async function readWithProgress(response: Response, key: string) {
     const chunks: Uint8Array[] = [];
     const preallocatedFile = expectedLength > 0 ? new Uint8Array(expectedLength) : null;
     let received = 0;
-    let lastProgressUpdate = performance.now();
 
     try {
         while (true) {
@@ -80,11 +79,7 @@ async function readWithProgress(response: Response, key: string) {
             }
             received += value.byteLength;
 
-            const now = performance.now();
-            if (now - lastProgressUpdate >= 100) {
-                updateProgress(key, { received, total: expectedLength, status: "loading" });
-                lastProgressUpdate = now;
-            }
+            updateProgress(key, { received, total: expectedLength, status: "loading" });
         }
     }
     catch (error) {
@@ -114,8 +109,7 @@ async function downloadReplayAsset(responsePromise: Promise<Response | null>, ke
 
 const replayAssetQueryDefaults = {
     staleTime: Infinity,
-    gcTime: 30 * 60 * 1000,
-    retry: false
+    gcTime: 30 * 60 * 1000
 } as const;
 
 export const replayAssetQueries = {
@@ -130,7 +124,3 @@ export const replayAssetQueries = {
         ...replayAssetQueryDefaults
     })
 };
-
-export function prefetchReplayMap(queryClient: QueryClient, mapId: number) {
-    return queryClient.prefetchQuery(replayAssetQueries.map(mapId));
-}

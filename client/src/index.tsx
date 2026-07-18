@@ -24,9 +24,7 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             staleTime: 10 * 60 * 1000, // Queries persist in memory for 10 minutes at a time by default
-            gcTime: 30 * 60 * 1000,
-            refetchOnWindowFocus: false,
-            retry: 1
+            refetchOnWindowFocus: false
         }
     }
 });

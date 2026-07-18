@@ -82,7 +82,6 @@ interface ITimesCardProps {
     onLoadTimes?: (times: Time[]) => void
     gridApiRef?: React.RefObject<GridApiCommunity | null>
     pageSize?: number
-    stabilizePageHeight?: boolean
 }
 
 function TimesCard(props: ITimesCardProps) {
@@ -114,7 +113,7 @@ function getGridKey(userId: string | undefined, mapId: string | undefined, game:
 function TimesGrid(props: ITimesCardProps) {
     const { userId, mapId, game, style, course, onlyWRs, hideUser, hideMap,
         showPlacement, defaultSort, allowOnlyWRs, showPlacementOrdinals, onLoadTimes,
-        gridApiRef, pageSize: propPageSize, stabilizePageHeight = true } = props;
+        gridApiRef, pageSize: propPageSize } = props;
 
     let apiRef = useGridApiRef();
     if (gridApiRef) {
@@ -271,18 +270,15 @@ function TimesGrid(props: ITimesCardProps) {
     let rowHeight: number | undefined = undefined;
     if (isCompact) rowHeight = 100;
     else if (!hideMap) rowHeight = Math.round(MAP_THUMB_SIZE * 1.6667);
-    const renderedRowHeight = Math.floor((rowHeight ?? 52) * 0.7);
-    const renderedHeaderHeight = Math.floor((isCompact ? 76 : 56) * 0.7);
-    const stableGridHeight = renderedHeaderHeight + (renderedRowHeight * pageSize) + 52;
 
     return (
-        <Box sx={{height: stabilizePageHeight ? `${stableGridHeight}px` : undefined}}>
         <DataGrid
             className="timesGrid"
             columns={gridCols}
             apiRef={apiRef}
             pagination
             dataSource={dataSource}
+            autoHeight
             pageSizeOptions={propPageSize !== undefined && propPageSize !== 10 ? [10, propPageSize] : [10]}
             rowCount={rowCount}
             rowHeight={rowHeight}
@@ -317,19 +313,17 @@ function TimesGrid(props: ITimesCardProps) {
                 }
             }}
             sx={{
-                "--DataGrid-overlayHeight": stabilizePageHeight ? `${renderedRowHeight * pageSize}px` : undefined,
                 ".MuiDataGrid-iconButtonContainer": {
                     display: isCompact ? "none !important" : undefined
                 },
                 [`& .${tablePaginationClasses.selectLabel}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none !important", // Hide select rows per page
                 },
                 [`& .${tablePaginationClasses.input}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none !important", // Hide select rows per page
                 },
             }}
         />
-        </Box>
     );
 }
 

@@ -158,12 +158,12 @@ function RanksCard(props: IRanksCardProps) {
                 Ranks
             </Typography>
         </Box>
-        <Box height={`${Math.floor(56 * 0.7) + (36 * 20) + 52}px`}>
         <DataGrid
             className="ranksGrid"
             columns={gridCols}
             apiRef={apiRef}
             pagination
+            autoHeight
             dataSource={dataSource}
             pageSizeOptions={[20]}
             initialState={{
@@ -175,6 +175,11 @@ function RanksCard(props: IRanksCardProps) {
                     sortModel: sort,
                 }
             }}
+            slotProps={{
+                loadingOverlay: {
+                    noRowsVariant: "linear-progress"
+                }
+            }}
             disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
@@ -184,7 +189,6 @@ function RanksCard(props: IRanksCardProps) {
                 "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
             }}
         />
-        </Box>
     </Paper>
     );
 }

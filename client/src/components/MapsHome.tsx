@@ -50,20 +50,18 @@ function MapListCard(props: MapCardProps) {
 
     return (
         <Paper
-            elevation={0}
+            elevation={2}
             component={RouterLink}
             to={`/maps/${map.id}`}
             sx={{
                 display: "flex",
-                borderRadius: "12px",
+                borderRadius: "6px",
                 height: "70px",
-                overflow: "hidden",
-                transition: "transform .18s ease, border-color .18s ease, box-shadow .18s ease",
+                transition: ".2s ease",
                 textDecoration: "none",
                 ":hover": {
                     transform: "translateY(-2px)",
-                    borderColor: "primary.main",
-                    boxShadow: isLightMode ? "0 10px 28px rgba(25, 20, 28, .09)" : "0 12px 30px rgba(0, 0, 0, .28)",
+                    boxShadow: 4,
                     bgcolor: isLightMode ? grey[100] : grey[900]
                 }
             }}
@@ -72,7 +70,7 @@ function MapListCard(props: MapCardProps) {
                 size={70}
                 map={map}
                 sx={{
-                    borderRadius: 0,
+                    borderRadius: "6px 0px 0px 6px",
                     border: 0
                 }}
             />
@@ -205,15 +203,11 @@ function MapSquareCard(props: MapCardProps) {
                 to={`/maps/${map.id}`}
                 sx={{
                     userSelect: "none",
-                    textDecoration: "none",
-                    transition: "transform .18s ease",
+                    transition: "transform .1s ease",
                     ":hover": {
-                        transform: "translateY(-3px)",
-                        "& .mapCard": {
-                            borderColor: "primary.main",
-                            boxShadow: isLightMode ? "0 16px 34px rgba(25, 20, 28, .12)" : "0 18px 38px rgba(0, 0, 0, .32)"
-                        },
-                        "& .mapImg": { transform: "scale(1.045)" },
+                        transform: "translateY(-2px)",
+                        "& .mapCard": { boxShadow: 6 },
+                        "& .mapImg": { transform: "scale(1.08)" },
                         "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
                     }
                 }}
@@ -221,14 +215,12 @@ function MapSquareCard(props: MapCardProps) {
                 <Box
                     className="mapCard"
                     position="relative"
-                    borderRadius="14px"
-                    border={1}
-                    borderColor="divider"
-                    boxShadow={0}
+                    borderRadius="6px"
+                    boxShadow={2}
                     bgcolor={isLightMode ? grey[300] : grey[800]}
                     overflow="hidden"
                     sx={{
-                        transition: "border-color .18s ease, box-shadow .18s ease",
+                        transition: ".4s ease",
                     }}
                 >
                     <MapThumb
@@ -238,9 +230,9 @@ function MapSquareCard(props: MapCardProps) {
                         useLargeThumb
                         disableUnreleasedColor
                         sx={{
-                            borderRadius: "13px",
+                            borderRadius: "6px 6px 8px 8px",
                             border: 0,
-                            transition: "transform .35s ease"
+                            transition: "transform .4s ease"
                         }}
                     />
                     <Box
@@ -381,7 +373,6 @@ function MapSquareCard(props: MapCardProps) {
                             bottom: "0px",
                             height: creatorHeight,
                             width: "100%",
-                            borderRadius: "0 0 13px 13px",
                             boxShadow: 0,
                             bgcolor: darken(tierColor, 0.25),
                             transition: ".4s ease"
@@ -530,7 +521,7 @@ function MapSearchBar(props: MapSearchBarProps) {
 
 function MapsHome() {
     const { sortedMaps } = useOutletContext() as ContextParams;
-
+    
     const useList = useListStyle();
     const [ filterGame, setFilterGame ] = useFilterGame();
     const [ filterTiers, setFilterTiers ] = useFilterTiers();
@@ -601,10 +592,17 @@ function MapsHome() {
                         Maps
                     </Typography>
                 </Breadcrumbs>
+                <Tooltip title="Download maps as .csv" placement="left" arrow>
+                    <Box display="flex" width="34px" height="34px">
+                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
+                            <DownloadIcon />
+                        </IconButton>
+                    </Box>
+                </Tooltip>
             </Box>
             <Box padding={useList ? 0.5 : 1} pb={1} display="flex">
                 <MapSearchBar inputValue={searchText} setInputValue={onChangeSearch} />
-                <Box ml={useList ? 0.5 : 1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+                <Box ml={useList ? 0.5 : 1} display="flex" alignItems="center">
                     <MapFilterSortOptions 
                         filterGame={filterGame} 
                         setFilterGame={onSetFilterGame} 
@@ -613,13 +611,6 @@ function MapsHome() {
                         sort={sort}
                         setSort={onSetSort}
                     />
-                    <Tooltip title="Download maps as .csv" placement="left" arrow>
-                        <Box display="flex" width="34px" height="34px" justifyContent="center">
-                            <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
-                                <DownloadIcon />
-                            </IconButton>
-                        </Box>
-                    </Tooltip>
                 </Box>
             </Box>
             <Box padding={useList ? 0.5 : 1}>

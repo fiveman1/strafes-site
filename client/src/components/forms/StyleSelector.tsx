@@ -31,7 +31,7 @@ function StyleSelector(props: IStyleSelectorProps) {
 
     return (
         <Box padding={1} pb={0.5}>
-            <FormControl sx={{ width: "160px" }}>
+            <FormControl sx={{ width: "150px" }}>
                 <InputLabel>{inputLabel}</InputLabel>
                 <Select
                     value={realStyle}
