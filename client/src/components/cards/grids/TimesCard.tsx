@@ -278,6 +278,7 @@ function TimesGrid(props: ITimesCardProps) {
             apiRef={apiRef}
             pagination
             dataSource={dataSource}
+            autoHeight
             pageSizeOptions={propPageSize !== undefined && propPageSize !== 10 ? [10, propPageSize] : [10]}
             rowCount={rowCount}
             rowHeight={rowHeight}
@@ -316,10 +317,10 @@ function TimesGrid(props: ITimesCardProps) {
                     display: isCompact ? "none !important" : undefined
                 },
                 [`& .${tablePaginationClasses.selectLabel}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none !important", // Hide select rows per page
                 },
                 [`& .${tablePaginationClasses.input}`]: {
-                    display: "none", // Hide select rows per page
+                    display: "none !important", // Hide select rows per page
                 },
             }}
         />

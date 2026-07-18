@@ -25,7 +25,7 @@ function StyleSelector(props: IStyleSelectorProps) {
     if (allowSelectAll) {
         styles.push(Style.all);
     }
-    
+
     const realStyle = styles.includes(style) ? style : styles[0];
     const inputLabel = label ?? "Style";
 

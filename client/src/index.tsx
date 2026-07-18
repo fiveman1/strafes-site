@@ -8,12 +8,13 @@ import Ranks from './components/Ranks';
 import Globals from './components/Globals';
 import MapsPage from './components/MapsPage';
 import Compare from './components/Compare';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import MapsHome from './components/MapsHome';
 import Replays from './components/Replays';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { NotFoundPage, RouteErrorPage } from './components/ErrorPage';
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -22,7 +23,8 @@ const root = ReactDOM.createRoot(
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: 5 * 60 * 1000 // Queries persist in memory for 5 minutes at a time by default
+            staleTime: 10 * 60 * 1000, // Queries persist in memory for 10 minutes at a time by default
+            refetchOnWindowFocus: false
         }
     }
 });
@@ -31,17 +33,18 @@ const router = createBrowserRouter([
     {
         path: "/",
         Component: App,
+        ErrorBoundary: RouteErrorPage,
         children: [
             { index: true, Component: Home },
-            { 
-                path: "users", 
+            {
+                path: "users",
                 children: [
                     { index: true, Component: Users },
                     { path: ":id", Component: Users }
                 ]
             },
-            { 
-                path: "maps", 
+            {
+                path: "maps",
                 children: [
                     { index: true, Component: MapsHome },
                     { path: ":id", Component: MapsPage }
@@ -53,7 +56,8 @@ const router = createBrowserRouter([
             { path: "terms", Component: Terms },
             { path: "privacy", Component: Privacy },
             { path: "settings", Component: Settings },
-            { path: "replays/:id", Component: Replays }
+            { path: "replays/:id", Component: Replays },
+            { path: "*", Component: NotFoundPage }
         ]
     }
 ]);

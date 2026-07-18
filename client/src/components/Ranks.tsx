@@ -163,6 +163,7 @@ function RanksCard(props: IRanksCardProps) {
             columns={gridCols}
             apiRef={apiRef}
             pagination
+            autoHeight
             dataSource={dataSource}
             pageSizeOptions={[20]}
             initialState={{
@@ -172,6 +173,11 @@ function RanksCard(props: IRanksCardProps) {
                 },
                 sorting: {
                     sortModel: sort,
+                }
+            }}
+            slotProps={{
+                loadingOverlay: {
+                    noRowsVariant: "linear-progress"
                 }
             }}
             disableColumnFilter

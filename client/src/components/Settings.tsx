@@ -1,4 +1,4 @@
-import { Box, Button, Link, PaletteMode, Typography } from "@mui/material";
+import { Box, Button, Link, PaletteMode, Paper, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, SettingsValues, Style } from "shared";
 import GameSelector from "./forms/GameSelector";
@@ -94,14 +94,14 @@ function Settings() {
     }, [handleExit, mockSettings, setSettings]);
 
     const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
-    
+
     if (!loginUser) {
         return <></>;
     }
-    
+
     return (
-    <Box display="flex" justifyContent="center" marginBottom={1} flexGrow={1}>
-        <Box display="flex" flexDirection="column" width="1024px">
+    <Box display="flex" justifyContent="center" marginBottom={1} flexGrow={1} pt={{xs: 0.5, sm: 2}}>
+        <Paper elevation={0} sx={{display: "flex", flexDirection: "column", width: "100%", maxWidth: "920px", p: {xs: 1, sm: 2.5}}}>
             <Box display="flex">
                 <Typography variant="h4" padding={1} flexGrow={1}>
                     Settings
@@ -111,10 +111,10 @@ function Settings() {
                 <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loginUser.username} userThumb={loginUser.thumbnailUrl} />
                 <Box display="flex" flexDirection="column">
                     <Typography>
-                        {loginUser.displayName} 
+                        {loginUser.displayName}
                     </Typography>
                     <Box>
-                        <Link 
+                        <Link
                             href={loginUser.profileUrl}
                             color="secondary"
                             display="inline-flex"
@@ -141,13 +141,13 @@ function Settings() {
                 These are the defaults used when loading a page for the first time (unless there was existing context).
             </Typography>
             <Box display="flex" flexWrap="wrap" alignItems="center">
-                <GameSelector 
-                    game={game} 
-                    setGame={setGame} 
+                <GameSelector
+                    game={game}
+                    setGame={setGame}
                 />
                 <StyleSelector
                     style={style}
-                    setStyle={setStyle} 
+                    setStyle={setStyle}
                     game={game}
                 />
             </Box>
@@ -158,9 +158,9 @@ function Settings() {
                 Switch between light and dark theme.
             </Typography>
             <Box padding={1.5}>
-                <ThemeSelector 
-                    themeMode={mockSettings.theme} 
-                    setThemeMode={setThemeMode} 
+                <ThemeSelector
+                    themeMode={mockSettings.theme}
+                    setThemeMode={setThemeMode}
                 />
             </Box>
             <Typography variant="h6" padding={1}>
@@ -173,7 +173,7 @@ function Settings() {
                 Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
             </Typography>
             <Box padding={1.5} marginTop={-1} maxWidth="340px">
-                <NumberSpinner 
+                <NumberSpinner
                     size="small"
                     label="Max relative days old"
                     min={0}
@@ -183,23 +183,23 @@ function Settings() {
                 />
             </Box>
             <Box display="flex" justifyContent="flex-end" padding={2}>
-                
-                <Button variant="contained" size="large" sx={{ width: "120px", marginRight: 2 }} 
-                    disabled={!isDirty} 
-                    startIcon={<SaveIcon />} 
+
+                <Button variant="contained" size="large" sx={{ width: "120px", marginRight: 2 }}
+                    disabled={!isDirty}
+                    startIcon={<SaveIcon />}
                     onClick={onSave}
                     loading={isSaving}
                 >
                     Save
                 </Button>
                 <Button variant="outlined" size="large" sx={{ width: "120px" }}
-                    startIcon={<CancelIcon />} 
+                    startIcon={<CancelIcon />}
                     onClick={() => handleExit()}
                 >
                     Cancel
                 </Button>
             </Box>
-        </Box>
+        </Paper>
     </Box>
     );
 }

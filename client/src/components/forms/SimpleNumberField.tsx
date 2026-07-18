@@ -42,7 +42,7 @@ export default function SimpleNumberField(allProps: NumberFieldProps) {
             setFieldValue(parsed);
         }
     };
-    
+
     const handleBlur = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         handleChange(event, true);
     };

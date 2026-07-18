@@ -18,15 +18,15 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
 
     const apiRef = useGridApiContext();
     const pageCount = useGridSelector(apiRef, gridPageCountSelector);
-    const screen390px = useMediaQuery(`@media screen and (max-width: 390px)`);
-    const screen410px = useMediaQuery(`@media screen and (max-width: 410px)`);
-    const screen430px = useMediaQuery(`@media screen and (max-width: 430px)`);
-    const smallScreen = useMediaQuery(`@media screen and (max-width: 530px)`);
+    const screen420px = useMediaQuery(`@media screen and (max-width: 420px)`);
+    const screen440px = useMediaQuery(`@media screen and (max-width: 440px)`);
+    const screen460px = useMediaQuery(`@media screen and (max-width: 460px)`);
+    const smallScreen = useMediaQuery(`@media screen and (max-width: 560px)`);
 
     const rowDigits = numDigits(rowCount);
-    let showPageInput = !screen390px;
-    if (rowDigits > 5) showPageInput = !screen430px;
-    else if (rowDigits > 4) showPageInput = !screen410px;
+    let showPageInput = !screen420px;
+    if (rowDigits > 5) showPageInput = !screen460px;
+    else if (rowDigits > 4) showPageInput = !screen440px;
 
     const renderItem = useCallback((item: PaginationRenderItemParams): JSX.Element | null => {
         // There is always exactly 0 or 1 selected page, use that to render our page selector

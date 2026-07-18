@@ -373,7 +373,6 @@ function MapSquareCard(props: MapCardProps) {
                             bottom: "0px",
                             height: creatorHeight,
                             width: "100%",
-                            borderRadius: "0 0 6px 6px",
                             boxShadow: 0,
                             bgcolor: darken(tierColor, 0.25),
                             transition: ".4s ease"

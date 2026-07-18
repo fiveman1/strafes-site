@@ -41,7 +41,6 @@ function UserSearch(props: IUserSearchProps) {
 
         const newSelectedUser = typeof search === "string" ? {username: search} : search;
         const userId = await queryClient.fetchQuery(queries.users.fromSearch(newSelectedUser));
-        setSelectedUser(newSelectedUser);
 
         if (userId !== null) {
             setUserId(userId.toString());
