@@ -29,8 +29,8 @@
   body {
     height: 100%;
     margin: 0;
-    overflow: hidden;
-    overscroll-behavior: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   #root {
@@ -40,12 +40,6 @@
     flex-direction: column;
     scrollbar-gutter: stable both-edges;
     overflow-y: auto;
-    overscroll-behavior-y: none;
-  }
-
-  body {
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
   }
 </style>
 

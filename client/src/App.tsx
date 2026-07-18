@@ -495,7 +495,7 @@ function App() {
                 width="100%"
                 maxWidth="1800px"
                 padding={smallScreen ? 1 : 2}
-                margin="0 auto auto"
+                marginBottom="auto"
             >
                 <NuqsAdapter>
                     <Outlet context={contextParams}/>
