@@ -247,24 +247,19 @@ function Replays() {
             : () => undefined;
 
         const promise = async () => {
-            if (!("gpu" in navigator)) {
+            if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
                 setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
                 return;
             }
+
+            await init();
 
             const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
             const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
-            const [adapter, , mapFile, botFile] = await Promise.all([
-                navigator.gpu.requestAdapter(),
-                init(),
+            const [mapFile, botFile] = await Promise.all([
                 mapFilePromise,
                 botFilePromise
             ]);
-
-            if (adapter === null) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
 
             if (!mapFile) {
                 setError("Couldn't load map file.");
