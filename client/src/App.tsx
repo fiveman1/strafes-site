@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { PaletteMode, ThemeProvider, createTheme } from '@mui/material/styles';
+import { PaletteMode, ThemeProvider, alpha, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from "@mui/material/Box";
 import { Outlet, useLocation } from "react-router";
@@ -111,7 +111,7 @@ function App() {
     const theme = useMemo(() => {
         const isLight = mode === "light";
         const surface = isLight ? "#ffffff" : "#141114";
-        //const border = isLight ? "rgba(45, 32, 55, 0.14)" : "rgba(255, 255, 255, 0.16)";
+        const border = isLight ? "rgba(45, 32, 55, 0.14)" : "rgba(255, 255, 255, 0.16)";
 
         return createTheme({
             palette: {
@@ -346,142 +346,142 @@ function App() {
                 //         }
                 //     }
                 // },
-                // MuiMenu: {
-                //     styleOverrides: {
-                //         paper: {
-                //             marginTop: 6,
-                //             borderRadius: 10,
-                //             boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
-                //         },
-                //         list: {
-                //             padding: 6
-                //         }
-                //     }
-                // },
-                // MuiMenuItem: {
-                //     styleOverrides: {
-                //         root: {
-                //             borderRadius: 6,
-                //             margin: "2px 0"
-                //         }
-                //     }
-                // },
-                // MuiDialog: {
-                //     styleOverrides: {
-                //         paper: {
-                //             borderRadius: 12,
-                //             boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
-                //         }
-                //     }
-                // },
-                // MuiChip: {
-                //     styleOverrides: {
-                //         root: {
-                //             borderRadius: 6,
-                //             backdropFilter: "blur(12px)",
-                //             fontWeight: 600
-                //         }
-                //     }
-                // },
-                // MuiTabs: {
-                //     styleOverrides: {
-                //         indicator: {
-                //             height: 3,
-                //             borderRadius: 3,
-                //             boxShadow: "0 0 14px rgba(255, 79, 154, 0.65)"
-                //         }
-                //     }
-                // },
-                // MuiLinearProgress: {
-                //     styleOverrides: {
-                //         root: {
-                //             backgroundColor: alpha("#ff4f9a", 0.10)
-                //         },
-                //         bar: {
-                //             boxShadow: "0 0 16px rgba(255, 79, 154, 0.8)"
-                //         }
-                //     }
-                // },
-                // MuiBreadcrumbs: {
-                //     styleOverrides: {
-                //         root: {
-                //             color: isLight ? "#73737f" : "#9595a1"
-                //         },
-                //         separator: {
-                //             color: alpha(isLight ? "#202027" : "#ffffff", 0.24)
-                //         }
-                //     }
-                // },
-                // MuiDataGrid: {
-                //     styleOverrides: {
-                //         root: {
-                //             border: `1px solid ${isLight ? "rgba(45, 32, 55, 0.18)" : "rgba(255, 255, 255, 0.20)"}`,
-                //             borderRadius: 8,
-                //             overflow: "hidden",
-                //             backgroundColor: isLight ? "#ffffff" : "#141114",
-                //             boxShadow: isLight
-                //                 ? "0 8px 26px rgba(35, 20, 38, 0.08)"
-                //                 : "0 12px 34px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
-                //         },
-                //         columnHeaders: {
-                //             backgroundColor: isLight ? "#f3eff3" : "#211b20",
-                //             borderBottom: `1px solid ${border}`
-                //         },
-                //         columnHeader: {
-                //             fontWeight: 600
-                //         },
-                //         cell: {
-                //             borderColor: border
-                //         },
-                //         virtualScroller: {
-                //             overflowY: "hidden"
-                //         },
-                //         row: {
-                //             "&:hover": {
-                //                 backgroundColor: alpha("#ec3b83", isLight ? 0.045 : 0.065)
-                //             }
-                //         },
-                //         footerContainer: {
-                //             borderColor: border
-                //         }
-                //     },
-                //     defaultProps: {
-                //         localeText: {paginationDisplayedRows: ({ from, to, count }) => count === -1 ? `${from}–${to} of more than ${to}` : `${from}–${to} of ${count}`},
-                //         dataSourceKeepPreviousData: true
-                //     }
-                // },
-                // MuiTooltip: {
-                //     styleOverrides: {
-                //         tooltip: {
-                //             borderRadius: 6,
-                //             fontSize: "0.75rem",
-                //             padding: "6px 8px"
-                //         }
-                //     }
-                // },
-                // MuiPaginationItem: {
-                //     styleOverrides: {
-                //         root: {
-                //             borderRadius: 8,
-                //             fontWeight: 500
-                //         }
-                //     }
-                // },
-                // MuiSwitch: {
-                //     styleOverrides: {
-                //         root: {
-                //             marginLeft: 2,
-                //             marginRight: 2
-                //         }
-                //     }
-                // },
-                // MuiSelect: {
-                //     defaultProps: {
-                //         MenuProps: {
-                //             transitionDuration: 0
-                //         }
-                //     }
-                // }
+                MuiMenu: {
+                    styleOverrides: {
+                        paper: {
+                            marginTop: 6,
+                            borderRadius: 10,
+                            boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
+                        },
+                        list: {
+                            padding: 6
+                        }
+                    }
+                },
+                MuiMenuItem: {
+                    styleOverrides: {
+                        root: {
+                            borderRadius: 6,
+                            margin: "2px 0"
+                        }
+                    }
+                },
+                MuiDialog: {
+                    styleOverrides: {
+                        paper: {
+                            borderRadius: 12,
+                            boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
+                        }
+                    }
+                },
+                MuiChip: {
+                    styleOverrides: {
+                        root: {
+                            borderRadius: 6,
+                            backdropFilter: "blur(12px)",
+                            fontWeight: 600
+                        }
+                    }
+                },
+                MuiTabs: {
+                    styleOverrides: {
+                        indicator: {
+                            height: 3,
+                            borderRadius: 3,
+                            boxShadow: "0 0 14px rgba(255, 79, 154, 0.65)"
+                        }
+                    }
+                },
+                MuiLinearProgress: {
+                    styleOverrides: {
+                        root: {
+                            backgroundColor: alpha("#ff4f9a", 0.10)
+                        },
+                        bar: {
+                            boxShadow: "0 0 16px rgba(255, 79, 154, 0.8)"
+                        }
+                    }
+                },
+                MuiBreadcrumbs: {
+                    styleOverrides: {
+                        root: {
+                            color: isLight ? "#73737f" : "#9595a1"
+                        },
+                        separator: {
+                            color: alpha(isLight ? "#202027" : "#ffffff", 0.24)
+                        }
+                    }
+                },
+                MuiDataGrid: {
+                    styleOverrides: {
+                        root: {
+                            border: `1px solid ${isLight ? "rgba(45, 32, 55, 0.18)" : "rgba(255, 255, 255, 0.20)"}`,
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            backgroundColor: isLight ? "#ffffff" : "#141114",
+                            boxShadow: isLight
+                                ? "0 8px 26px rgba(35, 20, 38, 0.08)"
+                                : "0 12px 34px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
+                        },
+                        columnHeaders: {
+                            backgroundColor: isLight ? "#f3eff3" : "#211b20",
+                            borderBottom: `1px solid ${border}`
+                        },
+                        columnHeader: {
+                            fontWeight: 600
+                        },
+                        cell: {
+                            borderColor: border
+                        },
+                        virtualScroller: {
+                            overflowY: "hidden"
+                        },
+                        row: {
+                            "&:hover": {
+                                backgroundColor: alpha("#ec3b83", isLight ? 0.045 : 0.065)
+                            }
+                        },
+                        footerContainer: {
+                            borderColor: border
+                        }
+                    },
+                    defaultProps: {
+                        localeText: {paginationDisplayedRows: ({ from, to, count }) => count === -1 ? `${from}–${to} of more than ${to}` : `${from}–${to} of ${count}`},
+                        dataSourceKeepPreviousData: true
+                    }
+                },
+                MuiTooltip: {
+                    styleOverrides: {
+                        tooltip: {
+                            borderRadius: 6,
+                            fontSize: "0.75rem",
+                            padding: "6px 8px"
+                        }
+                    }
+                },
+                MuiPaginationItem: {
+                    styleOverrides: {
+                        root: {
+                            borderRadius: 8,
+                            fontWeight: 500
+                        }
+                    }
+                },
+                MuiSwitch: {
+                    styleOverrides: {
+                        root: {
+                            marginLeft: 2,
+                            marginRight: 2
+                        }
+                    }
+                },
+                MuiSelect: {
+                    defaultProps: {
+                        MenuProps: {
+                            transitionDuration: 0
+                        }
+                    }
+                }
             },
         }
     )}, [mode]);
