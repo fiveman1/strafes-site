@@ -127,31 +127,31 @@ function App() {
                     dark: "#07677c"
                 },
                 mode: mode,
-                // background: {
-                //     default: isLight ? "#f8f6f8" : "#090809",
-                //     paper: surface
-                // },
-                // text: {
-                //     primary: isLight ? "#211d28" : "#faf7fa",
-                //     secondary: isLight ? "#625b69" : "#bbb3bb"
-                // },
-                // divider: border,
+                background: {
+                    default: isLight ? "#f8f6f8" : "#090809",
+                    paper: surface
+                },
+                text: {
+                    primary: isLight ? "#211d28" : "#faf7fa",
+                    secondary: isLight ? "#625b69" : "#bbb3bb"
+                },
+                divider: border,
                 DataGrid: {
                     bg: surface
                 }
             },
-            // shape: {
-            //     borderRadius: 6
-            // },
-            // typography: {
-            //     h1: { fontWeight: 700 },
-            //     h2: { fontWeight: 700 },
-            //     h3: { fontWeight: 700 },
-            //     h4: { fontWeight: 700 },
-            //     h5: { fontWeight: 600 },
-            //     h6: { fontWeight: 600 },
-            //     button: { fontWeight: 600 }
-            // },
+            shape: {
+                borderRadius: 6
+            },
+            typography: {
+                h1: { fontWeight: 700 },
+                h2: { fontWeight: 700 },
+                h3: { fontWeight: 700 },
+                h4: { fontWeight: 700 },
+                h5: { fontWeight: 600 },
+                h6: { fontWeight: 600 },
+                button: { fontWeight: 600 }
+            },
             components: {
             //     MuiCssBaseline: {
             //         styleOverrides: {
