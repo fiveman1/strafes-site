@@ -478,6 +478,13 @@ function App() {
                             marginRight: 2
                         }
                     }
+                },
+                MuiSelect: {
+                    defaultProps: {
+                        MenuProps: {
+                            transitionDuration: 0
+                        }
+                    }
                 }
             },
         }
