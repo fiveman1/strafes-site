@@ -41,9 +41,6 @@ function StyleSelector(props: IStyleSelectorProps) {
                     value={realStyle}
                     label={inputLabel}
                     onChange={handleChangeStyle}
-                    MenuProps={{
-                        disablePortal: true
-                    }}
                 >
                     {styles.map((style) => <MenuItem value={style}>{formatStyle(style)}</MenuItem>)}
                 </Select>
