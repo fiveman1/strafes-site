@@ -155,9 +155,8 @@ function App() {
             components: {
                 MuiCssBaseline: {
                     styleOverrides: {
-                        html: { backgroundColor: isLight ? "#f5f3f5" : "#090809" },
                         body: {
-                            backgroundColor: isLight ? "#f8f6f8" : "#090809"
+                            backgroundColor: isLight ? "#f8f6f8" : "#0c0a0c"
                         },
                         // "#root": {
                         //     isolation: "isolate",

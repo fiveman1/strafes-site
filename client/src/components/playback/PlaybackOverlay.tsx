@@ -592,9 +592,9 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 </IconButton>
                 <Typography
                     variant="subtitle2"
-                    color="white"
                     sx={{
                         bgcolor: "#00000080",
+                        color: "white",
                         fontFamily: "monospace",
                         display: "flex",
                         alignItems: "center",
