@@ -16,7 +16,6 @@ function ColorChip(props: ColorChipProps) {
         }}>
             <Typography
                 variant="body2"
-                color={"white"}
                 sx={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -24,6 +23,7 @@ function ColorChip(props: ColorChipProps) {
                     border: `1px solid ${color}`,
                     bgcolor: darken(color, 0.3),
                     borderRadius: "8px",
+                    color: "white",
                     px: 0.5,
                     py: 0.25,
                     my: 0.25,
