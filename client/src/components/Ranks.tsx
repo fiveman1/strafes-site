@@ -177,7 +177,7 @@ function RanksCard(props: IRanksCardProps) {
             }}
             slotProps={{
                 loadingOverlay: {
-                    noRowsVariant: "linear-progress"
+                    noRowsVariant: "circular-progress"
                 }
             }}
             disableColumnFilter

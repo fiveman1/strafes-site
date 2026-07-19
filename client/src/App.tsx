@@ -178,13 +178,13 @@ function App() {
                             top: "-22%",
                             left: "-13%",
                             background: alpha("#df2f78", 0.3),
-                            animation: "ambientDriftA 18s ease-in-out infinite alternate"
+                            //animation: "ambientDriftA 18s ease-in-out infinite alternate"
                         },
                         "#root::after": {
                             right: "-15%",
                             bottom: "-30%",
                             background: isLight ? alpha("#55bfd6", 0.3) : alpha("#278da3", 0.3),
-                            animation: "ambientDriftB 22s ease-in-out infinite alternate"
+                            //animation: "ambientDriftB 22s ease-in-out infinite alternate"
                         },
                         "@keyframes ambientDriftA": {
                             from: { transform: "translate3d(0, 0, 0) scale(0.9)" },
@@ -252,8 +252,8 @@ function App() {
                             borderRadius: 12,
                             overflow: "hidden",
                             boxShadow: isLight ? "0 14px 50px rgba(60, 32, 70, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)" : "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(255, 79, 154, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
-                            backdropFilter: "blur(30px) saturate(180%)",
-                            WebkitBackdropFilter: "blur(30px) saturate(180%)",
+                            // backdropFilter: "blur(30px) saturate(180%)",
+                            // WebkitBackdropFilter: "blur(30px) saturate(180%)",
                             "&::after": {
                                 content: '\"\"',
                                 position: "absolute",
@@ -283,12 +283,12 @@ function App() {
                             backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
                             backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.75), rgba(255,255,255,0.28))" : "linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.008))",
                             border: `1px solid ${border}`,
-                            backdropFilter: "blur(26px) saturate(165%)",
-                            WebkitBackdropFilter: "blur(26px) saturate(165%)",
-                            transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
-                            boxShadow: isLight
-                                ? "0 1px 2px rgba(20, 20, 30, 0.04), 0 14px 38px rgba(35, 20, 38, 0.055)"
-                                : "0 1px 2px rgba(0, 0, 0, 0.20), 0 18px 48px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+                            backdropFilter: "blur(12px) saturate(165%)",
+                            // WebkitBackdropFilter: "blur(26px) saturate(165%)",
+                            // transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
+                            // boxShadow: isLight
+                            //     ? "0 1px 2px rgba(20, 20, 30, 0.04), 0 14px 38px rgba(35, 20, 38, 0.055)"
+                            //     : "0 1px 2px rgba(0, 0, 0, 0.20), 0 18px 48px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
                         }
                     }
                 },
@@ -298,11 +298,11 @@ function App() {
                             backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
                             backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.3))" : "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.008))",
                             border: `1px solid ${border}`,
-                            backdropFilter: "blur(26px) saturate(170%)",
-                            WebkitBackdropFilter: "blur(26px) saturate(170%)",
-                            boxShadow: isLight
-                                ? "0 14px 38px rgba(35, 20, 38, 0.055)"
-                                : "0 16px 42px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035)"
+                            backdropFilter: "blur(12px) saturate(170%)",
+                            // WebkitBackdropFilter: "blur(26px) saturate(170%)",
+                            // boxShadow: isLight
+                            //     ? "0 14px 38px rgba(35, 20, 38, 0.055)"
+                            //     : "0 16px 42px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035)"
                         }
                     }
                 },
