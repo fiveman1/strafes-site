@@ -107,10 +107,9 @@ function AppLinks(props: IAppMenuProps) {
                 border: 1,
                 borderColor: "divider",
                 borderRadius: "14px",
-
-                // backdropFilter: "blur(18px) saturate(150%)",
-                // boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.08)"
-                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015))"
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015))",
+                backdropFilter: "blur(18px) saturate(150%)",
+                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.08)"
             }}>
             <Button href={userLink} disableRipple
                 color="inherit"
