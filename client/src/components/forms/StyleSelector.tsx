@@ -1,5 +1,7 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
+// import { Box, FormControl,  MenuItem, Select, SelectChangeEvent } from "@mui/material";
+import { Box, FormControl, InputLabel } from "@mui/material";
 import { bhop_styles, Style, formatStyle, getAllowedStyles, Game } from "shared";
+import PopperSelect from "./PopperSelect";
 
 interface IStyleSelectorProps {
     game: Game
@@ -12,10 +14,10 @@ interface IStyleSelectorProps {
 function StyleSelector(props: IStyleSelectorProps) {
     const { game, style, setStyle, allowSelectAll, label } = props;
 
-    const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
-        const style = event.target.value;
-        setStyle(style);
-    };
+    // const handleChangeStyle = (event: SelectChangeEvent<Style>) => {
+    //     const style = event.target.value;
+    //     setStyle(style);
+    // };
 
     let styles = game === undefined ? [...bhop_styles] : [...getAllowedStyles(game)];
     if (styles.length === 0) {
@@ -29,6 +31,7 @@ function StyleSelector(props: IStyleSelectorProps) {
     const realStyle = styles.includes(style) ? style : styles[0];
     const inputLabel = label ?? "Style";
 
+    const values = styles.map((style) => {return {value: style, label: formatStyle(style)}});
     return (
         <Box
             sx={{
@@ -37,7 +40,13 @@ function StyleSelector(props: IStyleSelectorProps) {
             }}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>{inputLabel}</InputLabel>
-                <Select
+                <PopperSelect
+                    value={realStyle}
+                    label={inputLabel}
+                    setValue={setStyle}
+                    options={values}
+                />
+                {/* <Select
                     value={realStyle}
                     label={inputLabel}
                     onChange={handleChangeStyle}
@@ -46,7 +55,7 @@ function StyleSelector(props: IStyleSelectorProps) {
                     }}
                 >
                     {styles.map((style) => <MenuItem value={style}>{formatStyle(style)}</MenuItem>)}
-                </Select>
+                </Select> */}
             </FormControl>
         </Box>
     );
