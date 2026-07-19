@@ -108,8 +108,8 @@ function AppLinks(props: IAppMenuProps) {
             borderRadius="14px"
             sx={{
                 background: "linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015))",
-                backdropFilter: "blur(18px) saturate(150%)",
-                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.08)"
+                // backdropFilter: "blur(18px) saturate(150%)",
+                // boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.08)"
             }}
         >
             <Button href={userLink} disableRipple

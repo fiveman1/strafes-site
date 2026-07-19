@@ -251,7 +251,7 @@ function App() {
                             border: `1px solid ${border}`,
                             borderRadius: 12,
                             overflow: "hidden",
-                            boxShadow: isLight ? "0 14px 50px rgba(60, 32, 70, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)" : "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(255, 79, 154, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+                            //boxShadow: isLight ? "0 14px 50px rgba(60, 32, 70, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)" : "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(255, 79, 154, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
                             // backdropFilter: "blur(30px) saturate(180%)",
                             // WebkitBackdropFilter: "blur(30px) saturate(180%)",
                             "&::after": {
@@ -283,7 +283,7 @@ function App() {
                             backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
                             backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.75), rgba(255,255,255,0.28))" : "linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.008))",
                             border: `1px solid ${border}`,
-                            backdropFilter: "blur(12px) saturate(165%)",
+                            // backdropFilter: "blur(12px) saturate(165%)",
                             // WebkitBackdropFilter: "blur(26px) saturate(165%)",
                             // transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
                             // boxShadow: isLight
@@ -298,7 +298,7 @@ function App() {
                             backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
                             backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.3))" : "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.008))",
                             border: `1px solid ${border}`,
-                            backdropFilter: "blur(12px) saturate(170%)",
+                            // backdropFilter: "blur(12px) saturate(170%)",
                             // WebkitBackdropFilter: "blur(26px) saturate(170%)",
                             // boxShadow: isLight
                             //     ? "0 14px 38px rgba(35, 20, 38, 0.055)"
