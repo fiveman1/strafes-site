@@ -355,7 +355,7 @@ function App() {
                         paper: {
                             marginTop: 6,
                             borderRadius: 10,
-                            boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
+                            //boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
                         },
                         list: {
                             padding: 6
@@ -374,7 +374,7 @@ function App() {
                     styleOverrides: {
                         paper: {
                             borderRadius: 12,
-                            boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
+                            //boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
                         }
                     }
                 },
