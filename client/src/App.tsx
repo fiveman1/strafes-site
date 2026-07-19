@@ -280,9 +280,9 @@ function App() {
                 MuiPaper: {
                     styleOverrides: {
                         root: {
-                            backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
-                            backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.75), rgba(255,255,255,0.28))" : "linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.008))",
-                            border: `1px solid ${border}`,
+                            // backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
+                            // backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.75), rgba(255,255,255,0.28))" : "linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.008))",
+                            // border: `1px solid ${border}`,
                             // backdropFilter: "blur(12px) saturate(165%)",
                             // WebkitBackdropFilter: "blur(26px) saturate(165%)",
                             // transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
@@ -295,9 +295,9 @@ function App() {
                 MuiCard: {
                     styleOverrides: {
                         root: {
-                            backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
-                            backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.3))" : "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.008))",
-                            border: `1px solid ${border}`,
+                            // backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
+                            // backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.3))" : "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.008))",
+                            // border: `1px solid ${border}`,
                             // backdropFilter: "blur(12px) saturate(170%)",
                             // WebkitBackdropFilter: "blur(26px) saturate(170%)",
                             // boxShadow: isLight
@@ -350,34 +350,34 @@ function App() {
                         }
                     }
                 },
-                MuiMenu: {
-                    styleOverrides: {
-                        paper: {
-                            marginTop: 6,
-                            borderRadius: 10,
-                            //boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
-                        },
-                        list: {
-                            padding: 6
-                        }
-                    }
-                },
-                MuiMenuItem: {
-                    styleOverrides: {
-                        root: {
-                            borderRadius: 6,
-                            margin: "2px 0"
-                        }
-                    }
-                },
-                MuiDialog: {
-                    styleOverrides: {
-                        paper: {
-                            borderRadius: 12,
-                            //boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
-                        }
-                    }
-                },
+                // MuiMenu: {
+                //     styleOverrides: {
+                //         paper: {
+                //             marginTop: 6,
+                //             borderRadius: 10,
+                //             //boxShadow: isLight ? "0 18px 45px rgba(45, 25, 55, 0.14)" : "0 20px 52px rgba(0, 0, 0, 0.46), 0 0 28px rgba(255, 79, 154, 0.06)"
+                //         },
+                //         list: {
+                //             padding: 6
+                //         }
+                //     }
+                // },
+                // MuiMenuItem: {
+                //     styleOverrides: {
+                //         root: {
+                //             borderRadius: 6,
+                //             margin: "2px 0"
+                //         }
+                //     }
+                // },
+                // MuiDialog: {
+                //     styleOverrides: {
+                //         paper: {
+                //             borderRadius: 12,
+                //             //boxShadow: isLight ? "0 28px 80px rgba(45, 25, 55, 0.18)" : "0 30px 90px rgba(0, 0, 0, 0.58), 0 0 44px rgba(255, 79, 154, 0.08)"
+                //         }
+                //     }
+                // },
                 MuiChip: {
                     styleOverrides: {
                         root: {
