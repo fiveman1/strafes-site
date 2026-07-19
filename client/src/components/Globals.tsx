@@ -28,35 +28,54 @@ function Globals() {
     }, []);
 
     return (
-    <Box flexGrow={1} display="flex" flexDirection="column">
-        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-            <Link underline="hover" color="inherit" href="/">
-                Home
-            </Link>
-            <Typography color="textPrimary">
-                Globals
-            </Typography>
-        </Breadcrumbs>
-        <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} setGame={setGame} allowSelectAll />
-            <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
-            <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
+        <Box
+            sx={{
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column"
+            }}>
+            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+                <Link underline="hover" color="inherit" href="/">
+                    Home
+                </Link>
+                <Typography color="textPrimary">
+                    Globals
+                </Typography>
+            </Breadcrumbs>
+            <Box
+                sx={{
+                    padding: 0.5,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
+                <GameSelector game={game} setGame={setGame} allowSelectAll />
+                <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
+                <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
+            </Box>
+            <Box
+                sx={{
+                    padding: 1,
+                    flexGrow: 1
+                }}>
+                <TimesCard
+                    title="World Records"
+                    defaultSort={TimeSortBy.DateDesc}
+                    game={game}
+                    style={style}
+                    course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
+                    onlyWRs
+                    allowOnlyWRs
+                />
+            </Box>
+            <Box
+                sx={{
+                    padding: 1,
+                    flexGrow: 1
+                }}>
+                <LeaderboardCard game={game} style={style} />
+            </Box>
         </Box>
-        <Box padding={1} flexGrow={1}>
-            <TimesCard
-                title="World Records"
-                defaultSort={TimeSortBy.DateDesc}
-                game={game}
-                style={style}
-                course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
-                onlyWRs
-                allowOnlyWRs
-            />
-        </Box>
-        <Box padding={1} flexGrow={1}>
-            <LeaderboardCard game={game} style={style} />
-        </Box>
-    </Box>
     );
 }
 
@@ -68,7 +87,9 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "count",
-        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Main</Typography></>,
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" sx={{
+            fontWeight: "bold"
+        }}>Main</Typography></>,
         flex: 20,
         minWidth: 110,
         sortingOrder: ["desc", "asc"],
@@ -78,7 +99,9 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "bonusCount",
-        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" fontWeight="bold">Bonus</Typography></>,
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" sx={{
+            fontWeight: "bold"
+        }}>Bonus</Typography></>,
         flex: 20,
         minWidth: 95,
         sortingOrder: ["desc", "asc"],
@@ -166,50 +189,59 @@ function LeaderboardCard(props: IRanksCardProps) {
     }), [updateRowData]);
 
     return (
-    <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
-        <Box marginBottom={1} display="flex">
-            <Typography variant="caption" flexGrow={1} marginRight={2}>
-                Leaderboards
-            </Typography>
-        </Box>
-        <DataGrid
-            columns={gridCols}
-            apiRef={apiRef}
-            pagination
-            autoHeight
-            dataSource={dataSource}
-            pageSizeOptions={[10]}
-            rowCount={rowCount}
-            onRowCountChange={setRowCount}
-            rowHeight={100}
-            initialState={{
-                pagination: { 
-                    paginationModel: { pageSize: 10 }
-                },
-                sorting: {
-                    sortModel: [{ field: "count", sort: "desc" }],
-                }
-            }}
-            onSortModelChange={onSortChange}
-            getRowId={(row) => row.userId}
-            disableColumnFilter
-            density="compact"
-            disableRowSelectionOnClick
-            sx={{
-                "--DataGrid-overlayHeight": `${70 * 10}px`
-            }}
-            slotProps={{
-                basePagination: {
-                    material: {
-                        ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
+        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
+            <Box
+                sx={{
+                    marginBottom: 1,
+                    display: "flex"
+                }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        flexGrow: 1,
+                        marginRight: 2
+                    }}>
+                    Leaderboards
+                </Typography>
+            </Box>
+            <DataGrid
+                columns={gridCols}
+                apiRef={apiRef}
+                pagination
+                autoHeight
+                dataSource={dataSource}
+                pageSizeOptions={[10]}
+                rowCount={rowCount}
+                onRowCountChange={setRowCount}
+                rowHeight={100}
+                initialState={{
+                    pagination: { 
+                        paginationModel: { pageSize: 10 }
+                    },
+                    sorting: {
+                        sortModel: [{ field: "count", sort: "desc" }],
                     }
-                },
-                loadingOverlay: {
-                    noRowsVariant: "linear-progress"
-                }
-            }}
-        />
-    </Paper>
+                }}
+                onSortModelChange={onSortChange}
+                getRowId={(row) => row.userId}
+                disableColumnFilter
+                density="compact"
+                disableRowSelectionOnClick
+                sx={{
+                    "--DataGrid-overlayHeight": `${70 * 10}px`
+                }}
+                slotProps={{
+                    basePagination: {
+                        material: {
+                            ActionsComponent: (props) => <NumberGridPagination rowCount={rowCount} {...props} />
+                        }
+                    },
+                    loadingOverlay: {
+                        noRowsVariant: "linear-progress"
+                    }
+                }}
+            />
+        </Paper>
     );
 }
 

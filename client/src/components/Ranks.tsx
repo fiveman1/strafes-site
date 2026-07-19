@@ -51,7 +51,9 @@ function makeColumns(placementWidth: number) {
         field: "rank",
         renderHeader: () => (
             <Tooltip arrow title={RANK_HELP_TEXT} placement="top-start">
-                <Typography variant="inherit" fontWeight={500}>
+                <Typography variant="inherit" sx={{
+                    fontWeight: 500
+                }}>
                     Rank
                     <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                 </Typography>
@@ -68,7 +70,9 @@ function makeColumns(placementWidth: number) {
         field: "skill",
         renderHeader: () => (
             <Tooltip arrow title={SKILL_HELP_TEXT} placement="top-start">
-                <Typography variant="inherit" fontWeight={500}>
+                <Typography variant="inherit" sx={{
+                    fontWeight: 500
+                }}>
                     Skill
                     <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
                 </Typography>
@@ -152,44 +156,49 @@ function RanksCard(props: IRanksCardProps) {
     }, [currentSortBy]);
 
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
-        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
-            <Typography variant="caption">
-                Ranks
-            </Typography>
-        </Box>
-        <DataGrid
-            className="ranksGrid"
-            columns={gridCols}
-            apiRef={apiRef}
-            pagination
-            autoHeight
-            dataSource={dataSource}
-            pageSizeOptions={[20]}
-            initialState={{
-                pagination: { 
-                    paginationModel: { pageSize: 20 },
-                    rowCount: -1
-                },
-                sorting: {
-                    sortModel: sort,
-                }
-            }}
-            slotProps={{
-                loadingOverlay: {
-                    noRowsVariant: "circular-progress"
-                }
-            }}
-            disableColumnFilter
-            density="compact"
-            disableRowSelectionOnClick
-            onPaginationModelChange={onPageChange}
-            onSortModelChange={onSortChanged}
-            sx={{
-                "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
-            }}
-        />
-    </Paper>
+        <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
+            <Box
+                sx={{
+                    marginBottom: smallScreen ? -0.25 : 1,
+                    padding: smallScreen ? 1 : 0,
+                    display: "flex"
+                }}>
+                <Typography variant="caption">
+                    Ranks
+                </Typography>
+            </Box>
+            <DataGrid
+                className="ranksGrid"
+                columns={gridCols}
+                apiRef={apiRef}
+                pagination
+                autoHeight
+                dataSource={dataSource}
+                pageSizeOptions={[20]}
+                initialState={{
+                    pagination: { 
+                        paginationModel: { pageSize: 20 },
+                        rowCount: -1
+                    },
+                    sorting: {
+                        sortModel: sort,
+                    }
+                }}
+                slotProps={{
+                    loadingOverlay: {
+                        noRowsVariant: "circular-progress"
+                    }
+                }}
+                disableColumnFilter
+                density="compact"
+                disableRowSelectionOnClick
+                onPaginationModelChange={onPageChange}
+                onSortModelChange={onSortChanged}
+                sx={{
+                    "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
+                }}
+            />
+        </Paper>
     );
 }
 
@@ -201,23 +210,38 @@ function Ranks() {
     }, []);
     
     return (
-    <Box display="flex" flexDirection="column" flexGrow={1}>
-        <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-            <Link underline="hover" color="inherit" href="/">
-                Home
-            </Link>
-            <Typography color="textPrimary">
-                Ranks
-            </Typography>
-        </Breadcrumbs>
-        <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} setGame={setGame} />
-            <StyleSelector game={game} style={style} setStyle={setStyle} />
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: 1
+            }}>
+            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
+                <Link underline="hover" color="inherit" href="/">
+                    Home
+                </Link>
+                <Typography color="textPrimary">
+                    Ranks
+                </Typography>
+            </Breadcrumbs>
+            <Box
+                sx={{
+                    padding: 0.5,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
+                <GameSelector game={game} setGame={setGame} />
+                <StyleSelector game={game} style={style} setStyle={setStyle} />
+            </Box>
+            <Box
+                sx={{
+                    padding: 1,
+                    flexGrow: 1
+                }}>
+                <RanksCard game={game} style={style} />
+            </Box>
         </Box>
-        <Box padding={1} flexGrow={1}>
-            <RanksCard game={game} style={style} />
-        </Box>
-    </Box>
     );
 }
 

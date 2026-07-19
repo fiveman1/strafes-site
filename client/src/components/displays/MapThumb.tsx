@@ -34,18 +34,19 @@ function MapThumb(props: MapThumbProps) {
         <Box
             component="img"
             className={className}
-            height={size}
-            width={size}
             src={thumb}
             alt={name}
-            border={isUnreleased ? 1 : 0}
-            borderColor={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
-            borderRadius={`${Math.min(10, Math.round(size / 12))}px`}
             sx={{
+                height: size,
+                width: size,
+                border: isUnreleased ? 1 : 0,
+                borderColor: isUnreleased ? UNRELEASED_MAP_COLOR : undefined,
+                borderRadius: `${Math.min(10, Math.round(size / 12))}px`,
                 ...sx,
-                aspectRatio: 1 // Makes sure browser reserves the right amount of space while image still loading
-            }}
-        />
+
+                // Makes sure browser reserves the right amount of space while image still loading
+                aspectRatio: 1
+            }} />
     );
 }
 

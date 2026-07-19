@@ -80,7 +80,12 @@ function CompareSortSelector(props: ICompareSortSelectorProps) {
     };
 
     return (
-        <Box padding={smallScreen ? 0.5 : 1.5} display="flex" alignItems="center">
+        <Box
+            sx={{
+                padding: smallScreen ? 0.5 : 1.5,
+                display: "flex",
+                alignItems: "center"
+            }}>
             <FormControl sx={{ width: "150px" }}>
                 <InputLabel>Sort</InputLabel>
                 <Select

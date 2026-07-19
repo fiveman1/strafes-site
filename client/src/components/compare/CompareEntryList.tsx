@@ -56,8 +56,14 @@ function CompareEntryList(props: ICompareEntryListProps) {
                 <Typography variant="caption">
                     Users ({entries.length}/{MAX_ENTRIES})
                 </Typography>
-                <Box display="flex" justifyContent="center">
-                    <Typography variant="body2" color="text.secondary">
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center"
+                    }}>
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Search for users above to start comparing
                     </Typography>
                 </Box>
@@ -71,12 +77,13 @@ function CompareEntryList(props: ICompareEntryListProps) {
                 Users ({entries.length}/{MAX_ENTRIES})
             </Typography>
             <Box
-                display="flex"
-                flexDirection={smallScreen ? "column" : "row"}
-                flexWrap="wrap"
-                gap={1}
-                mt={0.5}
-            >
+                sx={{
+                    display: "flex",
+                    flexDirection: smallScreen ? "column" : "row",
+                    flexWrap: "wrap",
+                    gap: 1,
+                    mt: 0.5
+                }}>
                 {entries.map((entry, index) => {
                     const userInfo = idToUser[entry.userId];
                     const user = userInfo?.user;
@@ -99,15 +106,18 @@ function CompareEntryList(props: ICompareEntryListProps) {
                             }}
                         >
                             {/* Avatar + username row */}
-                            <Box display="flex">
+                            <Box sx={{
+                                display: "flex"
+                            }}>
                                 <Link
-                                    to={{pathname: user ? `/users/${user.userId}` : "/users", search: `?style=${entry.style}&game=${game}`}} 
+                                    to={{pathname: user ? `/users/${user.userId}` : "/users", search: `?style=${entry.style}&game=${game}`}}
                                     component={RouterLink}
                                     color="textPrimary"
-                                    display="inline-flex"
-                                    alignItems="center"
-                                    gap={1}
-                                >
+                                    sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 1
+                                    }}>
                                     <UserAvatar
                                         sx={{ height: 32, width: 32 }}
                                         username={user?.username ?? "..."}
@@ -115,19 +125,22 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     />
                                     <Typography
                                         variant="body2"
-                                        fontWeight="bold"
                                         sx={{
+                                            fontWeight: "bold",
                                             overflow: "hidden",
                                             textOverflow: "ellipsis",
                                             whiteSpace: "nowrap",
-                                            maxWidth: smallScreen ? undefined : "150px",
-                                        }}
-                                    >
+                                            maxWidth: smallScreen ? undefined : "150px"
+                                        }}>
                                         {user?.username ?? "Loading..."}
                                     </Typography>
                                 </Link>
                             </Box>
-                            <Box display="flex" mt={smallScreen ? 0.5 : 0}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    mt: smallScreen ? 0.5 : 0
+                                }}>
                                 {/* Style selector */}
                                 <StyleSelector
                                     game={game}
@@ -136,7 +149,11 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     label="Style"
                                 />
                                 {/* Action buttons */}
-                                <Box display="flex" alignItems="center">
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center"
+                                    }}>
                                     <Tooltip title="Duplicate" disableInteractive>
                                         <Box component="span">
                                             <IconButton
@@ -158,7 +175,6 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     </IconButton>
                                 </Box>
                             </Box>
-                            
                         </Box>
                     );
                 })}

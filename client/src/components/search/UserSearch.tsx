@@ -90,7 +90,10 @@ function UserSearch(props: IUserSearchProps) {
             value={selectedUser}
             onInputChange={(e, v) => onInputChange(v ?? "")}
             onChange={(e, v) => onSearch(v ?? "")}
-            isOptionEqualToValue={(opt, val) => opt.username.toLowerCase() === val.username.toLowerCase() || prevUsernamesContains(opt, val.username.toLowerCase())}
+            isOptionEqualToValue={(opt, val) => {
+                const username = typeof val === "string" ? val : val.username.toLowerCase();
+                return opt.username.toLowerCase() === username || prevUsernamesContains(opt, username)
+            }}
             filterOptions={(x) => x}
             options={sortedOptions}
             loading={loadingOptions}
@@ -113,12 +116,15 @@ function UserSearch(props: IUserSearchProps) {
                     variant="outlined"
                     type="search"
                     slotProps={{
+                        ...params.slotProps,
+
                         htmlInput: {
-                            ...params.inputProps, 
+                            ...params.slotProps.htmlInput, 
                             maxLength: 50
-                        }, 
+                        },
+
                         input: {
-                            ...params.InputProps,
+                            ...params.slotProps.input,
                             startAdornment: (
                                 <InputAdornment position="start">
                                     <SearchIcon />

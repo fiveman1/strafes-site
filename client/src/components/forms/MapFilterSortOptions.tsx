@@ -57,23 +57,50 @@ function MapFilterSortOptions(props: MapFilterSortOptionsProps) {
                     horizontal: "right"
                 }}
             >
-                <Box display="flex" flexDirection="column" flexWrap="wrap" padding={2}>
-                    <Box display="flex" alignItems="center">
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        flexWrap: "wrap",
+                        padding: 2
+                    }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center"
+                        }}>
                         <FilterAltIcon sx={{ mr: 1 }} />
                         <GameSelector game={filterGame} setGame={setFilterGame} label="Filter game" allowSelectAll disablePadding />
                     </Box>
-                    <Box display="flex" alignItems="center" mt={2}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mt: 2
+                        }}>
                         <FilterAltIcon sx={{ mr: 1 }} />
-                        <Box width="140px">
-                            <Typography variant="caption" color="textSecondary" p={0.25}>
+                        <Box sx={{
+                            width: "140px"
+                        }}>
+                            <Typography variant="caption" color="textSecondary" sx={{
+                                p: 0.25
+                            }}>
                                 Filter tier
                             </Typography>
                             <MapTierListSelector selectedTiers={selectedTiers} onSelectTier={onSelectFilterTier} disableHoverHighlight showNone />
                         </Box>
-                        <Box flexGrow={1} />
+                        <Box sx={{
+                            flexGrow: 1
+                        }} />
                         {selectedTiers.length === 0 && <WarningIcon color="warning" />}
                     </Box>
-                    <Box display="flex" alignItems="center" mt={3} mr={-1}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mt: 3,
+                            mr: -1
+                        }}>
                         <SortIcon sx={{ mr: 1 }} />
                         <MapSortSelector sort={sort} setSort={setSort} />
                     </Box>

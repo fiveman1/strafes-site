@@ -34,57 +34,84 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
             style={style}
         >
             <MapThumb size={70} map={mapOption} />
-            <Box ml={1.75} overflow="hidden" display="inline-flex" flexDirection="column" whiteSpace="nowrap" width="100%">
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="32px">
-                    <Typography 
-                        variant="h6" 
-                        overflow="hidden" 
-                        color="textPrimary" 
-                        display="inline-block" 
-                        textOverflow="ellipsis" 
-                        flexGrow={1}
-                    >
+            <Box
+                sx={{
+                    ml: 1.75,
+                    overflow: "hidden",
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    whiteSpace: "nowrap",
+                    width: "100%"
+                }}>
+                <Box
+                    sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                        height: "32px"
+                    }}>
+                    <Typography
+                        variant="h6"
+                        color="textPrimary"
+                        sx={{
+                            overflow: "hidden",
+                            display: "inline-block",
+                            textOverflow: "ellipsis",
+                            flexGrow: 1
+                        }}>
                         {mapOption.name}
                     </Typography>
-                    <Typography 
+                    <Typography
                         variant="caption"
-                        fontWeight="bold" 
-                        lineHeight={1.2}
-                        ml={0.75}
                         sx={{
+                            fontWeight: "bold",
+                            lineHeight: 1.2,
+                            ml: 0.75,
                             backgroundColor: getGameColor(mapOption.game, theme),
-                            textAlign: "center", 
+                            textAlign: "center",
                             color: "white",
                             textShadow: "black 1px 1px 1px",
                             borderRadius: "6px",
                             padding: 0.4
-                        }}
-                    >
+                        }}>
                         {formatGame(mapOption.game)}
                     </Typography>
                 </Box>
-                <Box display="inline-flex" alignItems="center" justifyContent="center" width="100%" height="24px">
-                    <Typography 
-                        variant="body2" 
-                        overflow="hidden" 
-                        color="textSecondary" 
-                        display="inline-block" 
-                        textOverflow="ellipsis"
-                        flexGrow={1}
-                    >
+                <Box
+                    sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                        height: "24px"
+                    }}>
+                    <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{
+                            overflow: "hidden",
+                            display: "inline-block",
+                            textOverflow: "ellipsis",
+                            flexGrow: 1
+                        }}>
                         {mapOption.creator}
                     </Typography>
-                    <Typography variant="caption" fontWeight="bold" ml={0.75} sx={{
-                        padding: 0.4,
-                        lineHeight: 0.95,
-                        backgroundColor: darken(tierColor, 0.4),
-                        textAlign: "center",
-                        color: "white",
-                        textShadow: "black 1px 1px 1px",
-                        borderRadius: "6px",
-                        border: 1,
-                        borderColor: tierColor
-                    }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: "bold",
+                            ml: 0.75,
+                            padding: 0.4,
+                            lineHeight: 0.95,
+                            backgroundColor: darken(tierColor, 0.4),
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 1px 1px 1px",
+                            borderRadius: "6px",
+                            border: 1,
+                            borderColor: tierColor
+                        }}>
                         {formatTier(tier, true)}
                     </Typography>
                 </Box>
@@ -192,70 +219,73 @@ function MapSearch(props: MapSearchProps) {
     }, []);
 
     return (
-    <Autocomplete
-        sx={{
-            // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
-            "[type=\"search\"]::-webkit-search-decoration": { appearance: "none" },
-            "[type=\"search\"]::-webkit-search-cancel-button": { appearance: "none" }
-        }}
-        fullWidth
-        disableListWrap
-        inputMode="search"
-        value={selectedMap ?? null}
-        inputValue={inputValue}
-        filterOptions={onFilterOptionsChange}
-        onChange={(e, v) => onSelect(v ?? undefined)}
-        onInputChange={(e, v) => setIntputValue(v)}
-        onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}
-        isOptionEqualToValue={(opt, val) => opt.id === val.id}
-        options={maps}
-        autoComplete
-        autoHighlight
-        blurOnSelect
-        disableClearable={selectedMap !== undefined}
-        renderInput={(params) =>
-            <TextField {...params}
-                placeholder="Search by name or creator"
-                fullWidth
-                label=""
-                variant="outlined"
-                type="search"
-                slotProps={{
-                    htmlInput: {
-                        ...params.inputProps,
-                        maxLength: 50
-                    },
-                    input: { 
-                        ...params.InputProps,
-                        startAdornment: (
-                            <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${ADORNMENT_SIZE}px`}}>
-                                {selectedMap ?
-                                <MapThumb size={ADORNMENT_SIZE} map={selectedMap} />
-                                :  
-                                <SearchIcon />}
-                            </InputAdornment> 
-                        )
-                    }
-                }}
-            />
-        }
-        renderOption={(props, option) =>
-            [props, option] as React.ReactNode
-        }
-        slots={{
-            popper: StyledPopper,
-        }}
-        slotProps={{
-            listbox: {
-                component: ListboxComponent,
-                setListRef: setListRef,
-                selectedMapId: selectedMap?.id
-            // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any
-        }}
-        getOptionLabel={(option) => option.name}
-    />
+        <Autocomplete
+            sx={{
+                // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
+                "[type=\"search\"]::-webkit-search-decoration": { appearance: "none" },
+                "[type=\"search\"]::-webkit-search-cancel-button": { appearance: "none" }
+            }}
+            fullWidth
+            disableListWrap
+            inputMode="search"
+            value={selectedMap ?? null}
+            inputValue={inputValue}
+            filterOptions={onFilterOptionsChange}
+            onChange={(e, v) => onSelect(v ?? undefined)}
+            onInputChange={(e, v) => setIntputValue(v)}
+            onHighlightChange={(e, opt, reason) => onHighlightChange(opt, reason)}
+            isOptionEqualToValue={(opt, val) => opt.id === val.id}
+            options={maps}
+            autoComplete
+            autoHighlight
+            blurOnSelect
+            disableClearable={selectedMap !== undefined}
+            renderInput={(params) =>
+                <TextField {...params}
+                    placeholder="Search by name or creator"
+                    fullWidth
+                    label=""
+                    variant="outlined"
+                    type="search"
+                    slotProps={{
+                        ...params.slotProps,
+
+                        htmlInput: {
+                            ...params.slotProps.htmlInput,
+                            maxLength: 50
+                        },
+
+                        input: { 
+                            ...params.slotProps.input,
+                            startAdornment: (
+                                <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", mr: 0.75, width: `${ADORNMENT_SIZE}px`}}>
+                                    {selectedMap ?
+                                    <MapThumb size={ADORNMENT_SIZE} map={selectedMap} />
+                                    :  
+                                    <SearchIcon />}
+                                </InputAdornment> 
+                            )
+                        }
+                    }}
+                />
+            }
+            renderOption={(props, option) =>
+                [props, option] as React.ReactNode
+            }
+            slots={{
+                popper: StyledPopper,
+            }}
+            slotProps={{
+                listbox: {
+                    component: ListboxComponent,
+                    setListRef: setListRef,
+                    selectedMapId: selectedMap?.id
+                // It is pretty much impossible to get MUI to accept a type that includes listRef, so we're going to cheat.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any
+            }}
+            getOptionLabel={(option) => option.name}
+        />
     );
 }
 

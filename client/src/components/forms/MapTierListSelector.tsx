@@ -40,28 +40,28 @@ function MapTierListItem(props: MapTierListItemProps) {
     }, []);
 
     return (
-        <Box 
+        <Box
             component="button"
-            p={0.25}
             onClick={onClick}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             sx={{
+                p: 0.25,
                 bgcolor: "transparent",
                 border: 0,
                 transition: "scale 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 cursor: readOnly ? undefined : "pointer",
                 touchAction: "manipulation",
+
                 ":hover": {
                     scale: readOnly ? undefined : 1.15
                 }
-            }}
-        >
+            }}>
             {tier === NO_TIER ?
-            <Typography 
+            <Typography
                 variant="caption"
-                fontWeight="bold" 
                 sx={{
+                    fontWeight: "bold",
                     padding: 0.4,
                     lineHeight: 0.95,
                     overflow: "hidden",
@@ -74,16 +74,15 @@ function MapTierListItem(props: MapTierListItemProps) {
                     borderColor: color,
                     userSelect: "none",
                     opacity: emphasized ? undefined : 0.5
-                }}
-            >
+                }}>
                 {formatTier(undefined)}
             </Typography>    
             :
-            <Typography 
+            <Typography
                 variant="button"
-                display="flex"
-                justifyContent="center"
                 sx={{
+                    display: "flex",
+                    justifyContent: "center",
                     border: 1,
                     borderRadius: "4px",
                     width: 24,
@@ -93,8 +92,7 @@ function MapTierListItem(props: MapTierListItemProps) {
                     borderColor: color,
                     textShadow: emphasized ? "black 1px 1px 1px" : undefined,
                     userSelect: "none"
-                }}
-            >
+                }}>
                 {tier}
             </Typography>}
         </Box>
@@ -125,16 +123,15 @@ function MapTierListSelector(props: MapTierListSelectorProps) {
     }
 
     return (
-        <Box 
-            component="span" 
-            display="flex" 
-            alignItems="center"
-            flexWrap="wrap"
+        <Box
+            component="span"
             sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
                 opacity: disabled ? 0.38 : undefined,
                 pointerEvents: interactable ? undefined : "none"
-            }}
-        >
+            }}>
             {items}
         </Box>
     );

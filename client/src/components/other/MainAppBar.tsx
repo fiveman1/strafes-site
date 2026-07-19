@@ -97,21 +97,21 @@ function AppLinks(props: IAppMenuProps) {
 
     return (
         <Box
-            display="flex"
-            flexDirection="row"
-            justifyContent="center"
-            alignItems="center"
-            gap={0.375}
-            p={0.5}
-            border={1}
-            borderColor="divider"
-            borderRadius="14px"
             sx={{
-                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015))",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 0.375,
+                p: 0.5,
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "14px",
+
                 // backdropFilter: "blur(18px) saturate(150%)",
                 // boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.08)"
-            }}
-        >
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015))"
+            }}>
             <Button href={userLink} disableRipple
                 color="inherit"
                 sx={linkStyle(navPage === NavigatorPage.Users)}>
@@ -218,24 +218,37 @@ function MainAppBar(props: IMainAppBarProps) {
     return (
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: "space-between", width: "100%", maxWidth: "1450px", mx: "auto", px: {xs: 1.25, sm: 2} }}>
-                <Box minWidth={outerWidth} display="flex">
-                    <Link href="/" display="flex" alignItems="center" gap={1.25} color="inherit" underline="none" aria-label="strafes home">
+                <Box
+                    sx={{
+                        minWidth: outerWidth,
+                        display: "flex"
+                    }}>
+                    <Link
+                        href="/"
+                        color="inherit"
+                        underline="none"
+                        aria-label="strafes home"
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.25
+                        }}>
                         <Box
                             component="img"
                             src="/android-chrome-192x192.png"
-                            height="36px"
-                            width="36px"
                             sx={{
+                                height: "36px",
+                                width: "36px",
                                 borderRadius: "11px",
                                 filter: "drop-shadow(0 6px 14px rgba(255, 79, 154, 0.30))",
                                 boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.2)",
                                 transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms ease",
+
                                 "&:hover": {
                                     transform: "translateY(-2px) rotate(-3deg) scale(1.04)",
                                     filter: "drop-shadow(0 9px 18px rgba(255, 79, 154, 0.48))"
                                 }
-                            }}
-                        />
+                            }} />
                         <Typography
                             sx={{
                                 display: useAppMenu ? "none" : "block",
@@ -250,13 +263,26 @@ function MainAppBar(props: IMainAppBarProps) {
                     </Link>
                 </Box>
                 {useAppMenu ? <AppMenu loggedInUser={loggedInUser} /> : <AppLinks loggedInUser={loggedInUser} />}
-                <Box minWidth={outerWidth} display="flex" justifyContent="flex-end">
+                <Box
+                    sx={{
+                        minWidth: outerWidth,
+                        display: "flex",
+                        justifyContent: "flex-end"
+                    }}>
                     <ButtonGroup>
                         {loggedInUser ?
                         <AccountMenu user={loggedInUser} disableSettings={disableSettings} />
                         :
                         (isUserLoading ?
-                        <Box width="50px" height="50px" padding="5px" display="flex" justifyContent="center" alignItems="center">
+                        <Box
+                            sx={{
+                                width: "50px",
+                                height: "50px",
+                                padding: "5px",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center"
+                            }}>
                             <CircularProgress size={32} />
                         </Box>
                         :

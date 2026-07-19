@@ -100,107 +100,171 @@ function Settings() {
     }
 
     return (
-    <Box display="flex" justifyContent="center" marginBottom={1} flexGrow={1} pt={{xs: 0.5, sm: 2}}>
-        <Paper elevation={0} sx={{display: "flex", flexDirection: "column", width: "100%", maxWidth: "920px", p: {xs: 1, sm: 2.5}}}>
-            <Box display="flex">
-                <Typography variant="h4" padding={1} flexGrow={1}>
-                    Settings
-                </Typography>
-            </Box>
-            <Box display="flex" alignItems="center" padding={1.5}>
-                <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loginUser.username} userThumb={loginUser.thumbnailUrl} />
-                <Box display="flex" flexDirection="column">
-                    <Typography>
-                        {loginUser.displayName}
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 1,
+                flexGrow: 1,
+                pt: {xs: 0.5, sm: 2}
+            }}>
+            <Paper elevation={0} sx={{display: "flex", flexDirection: "column", width: "100%", maxWidth: "920px", p: {xs: 1, sm: 2.5}}}>
+                <Box sx={{
+                    display: "flex"
+                }}>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            padding: 1,
+                            flexGrow: 1
+                        }}>
+                        Settings
                     </Typography>
-                    <Box>
-                        <Link
-                            href={loginUser.profileUrl}
-                            color="secondary"
-                            display="inline-flex"
-                            sx={{verticalAlign: "top"}}
-                        >
-                            <Typography variant="subtitle2" overflow="hidden" whiteSpace="nowrap" >
-                                @{loginUser.username}
-                            </Typography>
-                        </Link>
+                </Box>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: 1.5
+                    }}>
+                    <UserAvatar sx={{ width: 48, height: 48, marginRight: 1.25 }} username={loginUser.username} userThumb={loginUser.thumbnailUrl} />
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column"
+                        }}>
+                        <Typography>
+                            {loginUser.displayName}
+                        </Typography>
+                        <Box>
+                            <Link
+                                href={loginUser.profileUrl}
+                                color="secondary"
+                                sx={{
+                                    display: "inline-flex",
+                                    verticalAlign: "top"
+                                }}>
+                                <Typography
+                                    variant="subtitle2"
+                                    sx={{
+                                        overflow: "hidden",
+                                        whiteSpace: "nowrap"
+                                    }}>
+                                    @{loginUser.username}
+                                </Typography>
+                            </Link>
+                        </Box>
                     </Box>
                 </Box>
-            </Box>
-            <Typography variant="h6" padding={1}>
-                User Profile
-            </Typography>
-            <Typography variant="body2" padding={1}>
-                These are settings about you that are displayed to other users across the site.
-            </Typography>
-            <CountrySelector country={mockSettings.country} setCountry={setCountry} />
-            <Typography variant="h6" padding={1}>
-                Defaults
-            </Typography>
-            <Typography variant="body2" padding={1}>
-                These are the defaults used when loading a page for the first time (unless there was existing context).
-            </Typography>
-            <Box display="flex" flexWrap="wrap" alignItems="center">
-                <GameSelector
-                    game={game}
-                    setGame={setGame}
-                />
-                <StyleSelector
-                    style={style}
-                    setStyle={setStyle}
-                    game={game}
-                />
-            </Box>
-            <Typography variant="h6" padding={1}>
-                Theme
-            </Typography>
-            <Typography variant="body2" padding={1}>
-                Switch between light and dark theme.
-            </Typography>
-            <Box padding={1.5}>
-                <ThemeSelector
-                    themeMode={mockSettings.theme}
-                    setThemeMode={setThemeMode}
-                />
-            </Box>
-            <Typography variant="h6" padding={1}>
-                Relative Dates
-            </Typography>
-            <Typography variant="body2" padding={1}>
-                Control when to use relative dates (i.e. "{relativeTimeFormat.format(-3, "days")}") instead of absolute dates (i.e. "{dateFormat.format(threeDaysAgo)}").
-            </Typography>
-            <Typography variant="body2" padding={1}>
-                Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
-            </Typography>
-            <Box padding={1.5} marginTop={-1} maxWidth="340px">
-                <NumberSpinner
-                    size="small"
-                    label="Max relative days old"
-                    min={0}
-                    max={9999}
-                    value={mockSettings.maxDaysRelativeDates}
-                    onValueChange={setMaxDays}
-                />
-            </Box>
-            <Box display="flex" justifyContent="flex-end" padding={2}>
+                <Typography variant="h6" sx={{
+                    padding: 1
+                }}>
+                    User Profile
+                </Typography>
+                <Typography variant="body2" sx={{
+                    padding: 1
+                }}>
+                    These are settings about you that are displayed to other users across the site.
+                </Typography>
+                <CountrySelector country={mockSettings.country} setCountry={setCountry} />
+                <Typography variant="h6" sx={{
+                    padding: 1
+                }}>
+                    Defaults
+                </Typography>
+                <Typography variant="body2" sx={{
+                    padding: 1
+                }}>
+                    These are the defaults used when loading a page for the first time (unless there was existing context).
+                </Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center"
+                    }}>
+                    <GameSelector
+                        game={game}
+                        setGame={setGame}
+                    />
+                    <StyleSelector
+                        style={style}
+                        setStyle={setStyle}
+                        game={game}
+                    />
+                </Box>
+                <Typography variant="h6" sx={{
+                    padding: 1
+                }}>
+                    Theme
+                </Typography>
+                <Typography variant="body2" sx={{
+                    padding: 1
+                }}>
+                    Switch between light and dark theme.
+                </Typography>
+                <Box sx={{
+                    padding: 1.5
+                }}>
+                    <ThemeSelector
+                        themeMode={mockSettings.theme}
+                        setThemeMode={setThemeMode}
+                    />
+                </Box>
+                <Typography variant="h6" sx={{
+                    padding: 1
+                }}>
+                    Relative Dates
+                </Typography>
+                <Typography variant="body2" sx={{
+                    padding: 1
+                }}>
+                    Control when to use relative dates (i.e. "{relativeTimeFormat.format(-3, "days")}") instead of absolute dates (i.e. "{dateFormat.format(threeDaysAgo)}").
+                </Typography>
+                <Typography variant="body2" sx={{
+                    padding: 1
+                }}>
+                    Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
+                </Typography>
+                <Box
+                    sx={{
+                        padding: 1.5,
+                        marginTop: -1,
+                        maxWidth: "340px"
+                    }}>
+                    <NumberSpinner
+                        size="small"
+                        label="Max relative days old"
+                        min={0}
+                        max={9999}
+                        value={mockSettings.maxDaysRelativeDates}
+                        onValueChange={setMaxDays}
+                    />
+                </Box>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        padding: 2
+                    }}>
 
-                <Button variant="contained" size="large" sx={{ width: "120px", marginRight: 2 }}
-                    disabled={!isDirty}
-                    startIcon={<SaveIcon />}
-                    onClick={onSave}
-                    loading={isSaving}
-                >
-                    Save
-                </Button>
-                <Button variant="outlined" size="large" sx={{ width: "120px" }}
-                    startIcon={<CancelIcon />}
-                    onClick={() => handleExit()}
-                >
-                    Cancel
-                </Button>
-            </Box>
-        </Paper>
-    </Box>
+                    <Button variant="contained" size="large" sx={{ width: "120px", marginRight: 2 }}
+                        disabled={!isDirty}
+                        startIcon={<SaveIcon />}
+                        onClick={onSave}
+                        loading={isSaving}
+                    >
+                        Save
+                    </Button>
+                    <Button variant="outlined" size="large" sx={{ width: "120px" }}
+                        startIcon={<CancelIcon />}
+                        onClick={() => handleExit()}
+                    >
+                        Cancel
+                    </Button>
+                </Box>
+            </Paper>
+        </Box>
     );
 }
 

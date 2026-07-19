@@ -72,7 +72,12 @@ function CompareTimesGrid(props: ICompareTimesGridProps) {
             <Typography variant="caption">
                 Times ({filteredAndSorted.length})
             </Typography>
-            <Box display="flex" flexWrap="wrap" alignItems="center">
+            <Box
+                sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
                 <CompareSortSelector sort={sort} setSort={setSort} />
             </Box>
             <Box
@@ -88,7 +93,12 @@ function CompareTimesGrid(props: ICompareTimesGridProps) {
                 ))}
             </Box>
             {totalPages > 1 && (
-                <Box display="flex" justifyContent="center" mt={2}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        mt: 2
+                    }}>
                     <Pagination
                         shape="rounded"
                         count={totalPages}

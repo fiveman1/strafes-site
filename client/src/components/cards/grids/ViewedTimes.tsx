@@ -11,14 +11,19 @@ interface IViewedTimesProps {
 function ViewedTimes(props: IViewedTimesProps) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-    <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
-        <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex">
-            <Typography variant="caption">
-                Viewed Times
-            </Typography>
-        </Box>
-        <ViewedTimesGrid {...props} />
-    </Paper>
+        <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
+            <Box
+                sx={{
+                    marginBottom: smallScreen ? -0.25 : 1,
+                    padding: smallScreen ? 1 : 0,
+                    display: "flex"
+                }}>
+                <Typography variant="caption">
+                    Viewed Times
+                </Typography>
+            </Box>
+            <ViewedTimesGrid {...props} />
+        </Paper>
     );
 }
 

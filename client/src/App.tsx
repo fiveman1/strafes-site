@@ -324,7 +324,7 @@ function App() {
                 MuiIconButton: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 8,
+                            borderRadius: 32,
                             transition: "transform 180ms ease, background-color 180ms ease, color 180ms ease",
                             "&:active": {
                                 transform: "scale(0.92)"
@@ -496,39 +496,52 @@ function App() {
             <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} />
             <Box
                 component="main"
-                display="flex"
-                flexGrow={1}
-                flexDirection="column"
-                width="100%"
-                maxWidth="1800px"
-                padding={smallScreen ? 1 : 2}
-                marginBottom="auto"
-                marginX="auto"
-            >
+                sx={{
+                    display: "flex",
+                    flexGrow: 1,
+                    flexDirection: "column",
+                    width: "100%",
+                    maxWidth: "1800px",
+                    padding: smallScreen ? 1 : 2,
+                    marginBottom: "auto",
+                    marginX: "auto"
+                }}>
                 <NuqsAdapter>
                     <Outlet context={contextParams}/>
                 </NuqsAdapter>
             </Box>
             <Box component="footer">
                 <Breadcrumbs separator="·" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}, "& a": {color: "text.secondary", fontSize: "0.875rem"}}}>
-                    <Link href="https://www.roblox.com/games/5315046213/bhop" display="flex" underline="hover">
+                    <Link href="https://www.roblox.com/games/5315046213/bhop" underline="hover" sx={{
+                        display: "flex"
+                    }}>
                         bhop
                         <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
                     </Link>
-                    <Link href="https://www.roblox.com/games/5315066937/surf" display="flex" underline="hover">
+                    <Link href="https://www.roblox.com/games/5315066937/surf" underline="hover" sx={{
+                        display: "flex"
+                    }}>
                         surf
                         <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
                     </Link>
-                    <Link href="https://discord.gg/Fw8E75X" display="flex">
+                    <Link href="https://discord.gg/Fw8E75X" sx={{
+                        display: "flex"
+                    }}>
                         <DiscordIcon size={24} color={theme.palette.primary.main} />
                     </Link>
-                    <Link href="https://github.com/fiveman1/strafes-site" display="flex">
+                    <Link href="https://github.com/fiveman1/strafes-site" sx={{
+                        display: "flex"
+                    }}>
                         <GithubIcon size={24} color={theme.palette.primary.main} />
                     </Link>
-                    <Link href="/terms" display="flex" underline="hover">
+                    <Link href="/terms" underline="hover" sx={{
+                        display: "flex"
+                    }}>
                         terms
                     </Link>
-                    <Link href="/privacy" display="flex" underline="hover">
+                    <Link href="/privacy" underline="hover" sx={{
+                        display: "flex"
+                    }}>
                         privacy
                     </Link>
                 </Breadcrumbs>

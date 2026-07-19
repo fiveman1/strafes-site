@@ -86,9 +86,16 @@ function Users() {
             <Link underline="hover" color="inherit" component="button" onClick={() => navigate({pathname: "/users", search: location.search})}>
                 Users
             </Link>,
-            <Box display="flex" flexDirection="row" alignItems="center">
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center"
+                }}>
                 <UserAvatar username={user.username} userThumb={user.userThumb} sx={{width: 32, height: 32, mr: 1.25}}/>
-                <Typography color="textPrimary" mr={1.25}>
+                <Typography color="textPrimary" sx={{
+                    mr: 1.25
+                }}>
                     @{user.username}
                 </Typography>
             </Box>
@@ -109,79 +116,136 @@ function Users() {
     }, [navigate]);
 
     return (
-    <Box flexGrow={1}>
-        <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={smallScreen ? 0 : 0.5}>
-            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex"}}>
-                <Link underline="hover" color="inherit" href="/">
-                    Home
-                </Link>
-                {breadcrumbs}
-            </Breadcrumbs>
-            <Box padding={smallScreen ? 1 : 0.25} pt={0.25} pb={0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
-                <UserSearch 
-                    setUserId={onSetUserId} 
-                    userSearch={userSearch}
+        <Box sx={{
+            flexGrow: 1
+        }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: smallScreen ? "column" : "row",
+                    height: smallScreen ? undefined : "48px",
+                    mb: smallScreen ? 0 : 0.5
+                }}>
+                <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex"}}>
+                    <Link underline="hover" color="inherit" href="/">
+                        Home
+                    </Link>
+                    {breadcrumbs}
+                </Breadcrumbs>
+                <Box
+                    sx={{
+                        padding: smallScreen ? 1 : 0.25,
+                        pt: 0.25,
+                        pb: 0.25,
+                        flexBasis: "40%",
+                        minWidth: "270px",
+                        maxWidth: smallScreen ? undefined : "500px",
+                        display: "flex",
+                        alignItems: "center"
+                    }}>
+                    <UserSearch 
+                        setUserId={onSetUserId} 
+                        userSearch={userSearch}
+                    />
+                </Box>
+            </Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: smallScreenProfile ? "column" : "row",
+                    alignItems: "center"
+                }}>
+                <Box
+                    sx={{
+                        padding: 1,
+                        flexBasis: "40%",
+                        minWidth: smallScreenProfile ? undefined : 360,
+                        maxWidth: smallScreenProfile ? undefined : 500,
+                        width: smallScreenProfile ? "100%" : undefined
+                    }}>
+                    <UserCard user={user} loading={userLoading} minHeight={160} center={smallScreenProfile} />
+                </Box>
+                <Box
+                    sx={{
+                        padding: 1,
+                        flexBasis: "60%",
+                        flexGrow: 1,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center"
+                    }}>
+                    <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} minHeight={160} />
+                </Box>
+            </Box>
+            <Box
+                sx={{
+                    padding: 0.5,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
+                <GameSelector game={game} setGame={setGame} allowSelectAll />
+                <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
+                <Box
+                    sx={{
+                        padding: 1,
+                        pt: 0.25,
+                        pb: 0.25
+                    }}>
+                    <FormGroup>
+                        <FormControlLabel label="Only WRs" control={
+                            <Checkbox checked={onlyWRs} onChange={(event, checked) => setOnlyWRs(checked)} />}  
+                        />
+                    </FormGroup>
+                    <FormHelperText sx={{mt: -0.5}}>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
+                </Box>
+                <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
+            </Box>
+            <Box sx={{
+                padding: 1
+            }}>
+                <TimesCard 
+                    defaultSort={TimeSortBy.DateDesc} 
+                    userId={userId} 
+                    game={game} 
+                    style={style} 
+                    course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
+                    onlyWRs={onlyWRs} 
+                    onLoadTimes={addTimes} 
+                    gridApiRef={apiRef} 
+                    hideUser 
+                    showPlacement 
+                    showPlacementOrdinals 
+                    pageSize={12}
                 />
             </Box>
-        </Box>
-        <Box display="flex" flexDirection={smallScreenProfile ? "column" : "row"} alignItems="center" >
-            <Box padding={1} flexBasis="40%" minWidth={smallScreenProfile ? undefined : 360} maxWidth={smallScreenProfile ? undefined : 500} width={smallScreenProfile ? "100%" : undefined} >
-                <UserCard user={user} loading={userLoading} minHeight={160} center={smallScreenProfile} />
+            <Box
+                sx={{
+                    padding: 1,
+                    ml: 1
+                }}>
+                <FormControlLabel 
+                    label="Advanced"
+                    control={
+                    <Switch 
+                        checked={advanced} 
+                        onChange={(e) => setAdvanced(e.target.checked)} 
+                    />}
+                />
+                {advanced ? 
+                <Button variant="outlined" startIcon={<CachedIcon />} onClick={onResetViewed}>
+                    Clear Viewed
+                </Button>
+                : <></>}
             </Box>
-            <Box padding={1} flexBasis="60%" flexGrow={1} display="flex" flexWrap="wrap" alignItems="center" >
-                <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} minHeight={160} />
-            </Box>
-        </Box>
-        <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
-            <GameSelector game={game} setGame={setGame} allowSelectAll />
-            <StyleSelector game={game} style={style} setStyle={setStyle} allowSelectAll />
-            <Box padding={1} pt={0.25} pb={0.25}>
-                <FormGroup>
-                    <FormControlLabel label="Only WRs" control={
-                        <Checkbox checked={onlyWRs} onChange={(event, checked) => setOnlyWRs(checked)} />}  
-                    />
-                </FormGroup>
-                <FormHelperText sx={{mt: -0.5}}>{onlyWRs ? "Showing world records" : "Showing all times"}</FormHelperText>
-            </Box>
-            <IncludeBonusCheckbox includeBonuses={includeBonuses} setIncludeBonuses={setIncludeBonuses} />
-        </Box>
-        <Box padding={1}>
-            <TimesCard 
-                defaultSort={TimeSortBy.DateDesc} 
-                userId={userId} 
-                game={game} 
-                style={style} 
-                course={includeBonuses ? ALL_COURSES : MAIN_COURSE}
-                onlyWRs={onlyWRs} 
-                onLoadTimes={addTimes} 
-                gridApiRef={apiRef} 
-                hideUser 
-                showPlacement 
-                showPlacementOrdinals 
-                pageSize={12}
-            />
-        </Box>
-        <Box padding={1} ml={1}>
-            <FormControlLabel 
-                label="Advanced"
-                control={
-                <Switch 
-                    checked={advanced} 
-                    onChange={(e) => setAdvanced(e.target.checked)} 
-                />}
-            />
             {advanced ? 
-            <Button variant="outlined" startIcon={<CachedIcon />} onClick={onResetViewed}>
-                Clear Viewed
-            </Button>
+            <Box sx={{
+                padding: 1
+            }}>
+                <ViewedTimes times={uniqueTimes} />
+            </Box>
             : <></>}
         </Box>
-        {advanced ? 
-        <Box padding={1}>
-            <ViewedTimes times={uniqueTimes} />
-        </Box>
-        : <></>}
-    </Box>
     );
 }
 

@@ -31,31 +31,53 @@ function RecordCard(props: RecordCardProps) {
 
     return (
         <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
-            <Box display="flex" alignItems="center">
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center"
+                }}>
                 <Typography variant="caption">
                     Your Time
                 </Typography>
-                <Box display="flex" title="You">
+                <Box title="You" sx={{
+                    display: "flex"
+                }}>
                     <AccountBoxIcon sx={{marginLeft: 0.75, mt: -0.5, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
                 </Box>
             </Box>
-            <Box display="flex" flexDirection="column" mt={1} gap={1} minHeight="20px">
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    mt: 1,
+                    gap: 1,
+                    minHeight: "20px"
+                }}>
                 {record ? 
                 <>
-                <Stack direction="row" useFlexGap divider={<Typography variant="body2" mx={1}>-</Typography>}>
-                    <Typography 
+                <Stack direction="row" useFlexGap divider={<Typography variant="body2" sx={{
+                    mx: 1
+                }}>-</Typography>}>
+                    <Typography
                         variant="body2"
-                        display="inline-block" 
-                        fontFamily="monospace"
                         color="textPrimary"
-                    >
+                        sx={{
+                            display: "inline-block",
+                            fontFamily: "monospace"
+                        }}>
                         {formatPlacement(record.placement)}
                     </Typography>
-                    <Box display="flex" gap={0.75}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 0.75
+                        }}>
                         <Typography 
                             variant="body2"
-                            display="inline-block"
                             color="textPrimary"
+                            sx={{
+                                display: "inline-block"
+                            }}
                         >
                             {formatTime(record.time)}
                         </Typography>

@@ -42,12 +42,15 @@ export default function CountrySelector(props: ICountrySelectProps) {
                 <TextField {...params}
                     label="Country"
                     slotProps={{
+                        ...params.slotProps,
+
                         htmlInput: {
-                            ...params.inputProps,
+                            ...params.slotProps.htmlInput,
                             autoComplete: "one-time-code", // disable autocomplete and autofill
-                        }, 
+                        },
+
                         input: {
-                            ...params.InputProps,
+                            ...params.slotProps.input,
                             startAdornment: (
                                 country ?
                                 <InputAdornment position="start" sx={{display: "flex", justifyContent: "center", margin: "auto", width: "32px"}}>

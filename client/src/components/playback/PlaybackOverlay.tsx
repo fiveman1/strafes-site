@@ -345,17 +345,19 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
 
     return (
-        <Box 
+        <Box
             ref={playerRef}
-            width="100%" 
-            height="100%" 
-            display="flex" 
-            flexDirection="column"
             onPointerMove={onPointerMove}
             onPointerLeave={onPointerLeave}
+            style={{ cursor: shouldShow ? "default" : "none" }}
             sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
                 userSelect: "none",
                 WebkitTapHighlightColor: "transparent",
+
                 "button": {
                     color: "white",
                     bgcolor: "#00000080",
@@ -363,46 +365,46 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         bgcolor: "#42424280"
                     }
                 }
-            }}
-            style={{ cursor: shouldShow ? "default" : "none" }}
-        >
+            }}>
             <Box
                 ref={playerMainRef}
-                position="relative"
-                flexGrow={1}
                 onDoubleClick={onSwapFullscreen}
                 onPointerUp={onClickPlayer}
-            >
+                sx={{
+                    position: "relative",
+                    flexGrow: 1
+                }}>
                 <Box
-                    display={smallScreen || loading || errorReplay ? "none" : "flex"}
-                    position="absolute"
-                    alignItems="center"
-                    height="150px"
-                    bottom="10%"
-                    left="50%"
-                    flexDirection="column"
-                    sx={{ transformOrigin: "50% 100%" }}
                     style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
-                >
+                    sx={{
+                        display: smallScreen || loading || errorReplay ? "none" : "flex",
+                        position: "absolute",
+                        alignItems: "center",
+                        height: "150px",
+                        bottom: "10%",
+                        left: "50%",
+                        flexDirection: "column",
+                        transformOrigin: "50% 100%"
+                    }}>
                     <Typography
                         ref={speedTextRef}
-                        display={showSpeed ? "flex" : "none"}
                         component="span"
-                        fontFamily="monospace"
-                        fontWeight="bold"
-                        fontSize="28px"
-                        lineHeight={1.2}
-                        sx={{ 
+                        sx={{
+                            display: showSpeed ? "flex" : "none",
+                            fontFamily: "monospace",
+                            fontWeight: "bold",
+                            fontSize: "28px",
+                            lineHeight: 1.2,
                             textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
                             userSelect: "none",
                             color: "white"
-                        }}
-                    />
-                    <Box 
-                        display={showDiffSetting && allowDiff ? "flex" : "none"} 
-                        flexDirection="column"
-                        alignItems="center"
+                        }} />
+                    <Box
                         sx={{
+                            display: showDiffSetting && allowDiff ? "flex" : "none",
+                            flexDirection: "column",
+                            alignItems: "center",
+
                             ".diffText": {
                                 fontSize: "18px",
                                 fontFamily: "monospace",
@@ -414,14 +416,15 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 py: 0.25,
                                 px: 0.75
                             },
+
                             ".better": {
                                 bgcolor: "#df0000a0"
                             },
+
                             ".worse": {
                                 bgcolor: "#00c500a0"
                             }
-                        }}
-                    >
+                        }}>
                         <Typography
                             ref={diffSpeedTextRef}
                             component="span"
@@ -429,17 +432,20 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         />
                         <Typography
                             ref={diffTimeTextRef}
-                            mt={0.25}
                             component="span"
                             className="diffText"
+                            sx={{
+                                mt: 0.25
+                            }}
                         />
                     </Box>
-                    <Box 
+                    <Box
                         ref={inputContainerRef}
-                        display={showInput ? "flex" : "none"}
-                        flexDirection="column"
-                        mt={0.5}
                         sx={{
+                            display: showInput ? "flex" : "none",
+                            flexDirection: "column",
+                            mt: 0.5,
+
                             ".inputDisplayButton": {
                                 display: "flex",
                                 alignItems: "center",
@@ -453,12 +459,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
                                 color: "#d8d8d8"
                             },
+
                             ".inputActive": {
                                 color: "white"
                             }
-                        }}
-                    >
-                        <Box display="flex">
+                        }}>
+                        <Box sx={{
+                            display: "flex"
+                        }}>
                             <Typography
                                 id={InputState.LookLeft}
                                 className="inputDisplayButton"
@@ -496,7 +504,9 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 R
                             </Typography>
                         </Box>
-                        <Box display="flex">
+                        <Box sx={{
+                            display: "flex"
+                        }}>
                             <Typography
                                 id={InputState.MoveLeft}
                                 className="inputDisplayButton"
@@ -534,37 +544,45 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 D
                             </Typography>
                         </Box>
-                        <Box display="flex" height="4px" mt={0.25}>
-                            <Box width="4px" />
-                            <Box 
+                        <Box
+                            sx={{
+                                display: "flex",
+                                height: "4px",
+                                mt: 0.25
+                            }}>
+                            <Box sx={{
+                                width: "4px"
+                            }} />
+                            <Box
                                 id={InputState.Jump}
-                                display="flex" 
-                                width="100%" 
                                 sx={{
+                                    display: "flex",
+                                    width: "100%",
+
                                     "&.inputActive": {
                                         bgcolor: "#bbff00bb" 
                                     }
-                                }}
-                            />
-                            <Box width="4px" />
+                                }} />
+                            <Box sx={{
+                                width: "4px"
+                            }} />
                         </Box>
                     </Box>
                 </Box>
             </Box>
             <Box
                 id={bottomDivId}
-                width="100%" 
-                height="40px" 
-                display="flex" 
-                alignItems="center" 
-                p={1}
                 onMouseOver={onBottomMouseOver}
                 onMouseLeave={onBottomMouseLeave}
                 sx={{
+                    width: "100%",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    p: 1,
                     transition: "opacity .4s ease",
-                    opacity: shouldShow ? 1 : 0,
-                }}
-            >
+                    opacity: shouldShow ? 1 : 0
+                }}>
                 <IconButton 
                     size="small" 
                     onClick={onPausePlay} 
@@ -572,20 +590,21 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 >
                     {paused ? <PlayArrowIcon /> : <PauseIcon />}
                 </IconButton>
-                <Typography 
+                <Typography
                     variant="subtitle2"
-                    bgcolor="#00000080"
                     color="white"
-                    fontFamily="monospace"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    borderRadius="4px"
-                    ml={1}
-                    mr={1.5}
-                    px={1.25}
-                    whiteSpace="nowrap"
-                >
+                    sx={{
+                        bgcolor: "#00000080",
+                        fontFamily: "monospace",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "4px",
+                        ml: 1,
+                        mr: 1.5,
+                        px: 1.25,
+                        whiteSpace: "nowrap"
+                    }}>
                     {timeText}
                 </Typography>
                 <ProgressSlider 
@@ -618,28 +637,42 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 >
                     {({ TransitionProps }) => (
                     <Fade {...TransitionProps} timeout={100}>
-                        <Box 
+                        <Box
                             ref={settingsMenuRef}
-                            display="flex" 
-                            flexDirection="column" 
-                            padding={1}
                             sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                padding: 1,
                                 bgcolor: "#00000080",
                                 color: "white",
                                 borderRadius: "8px"
-                            }}
-                        >
-                            <Box display="flex" flexDirection="column" padding={verySmallScreen ?  0.25 : 0.5} width={verySmallScreen ? "150px" : "200px"}>
-                                <Box display="flex">
+                            }}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    padding: verySmallScreen ?  0.25 : 0.5,
+                                    width: verySmallScreen ? "150px" : "200px"
+                                }}>
+                                <Box sx={{
+                                    display: "flex"
+                                }}>
                                     <Typography variant="subtitle2">
                                         Playback speed
                                     </Typography>
                                     <SpeedIcon fontSize="small" sx={{ ml: 0.75 }} />
                                 </Box>
-                                <Typography variant="subtitle1" textAlign="center">
+                                <Typography variant="subtitle1" sx={{
+                                    textAlign: "center"
+                                }}>
                                     {speed.toFixed(1)}x
                                 </Typography>
-                                <Box display="flex" pl={1} pr={1}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        pl: 1,
+                                        pr: 1
+                                    }}>
                                     <Slider 
                                         size="small"
                                         value={speed}
@@ -650,11 +683,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         onChangeCommitted={onFinishChangingSpeed}
                                     />
                                 </Box>
-                                <Box 
-                                    mt={verySmallScreen ? 0.5 : 1}
-                                    display="flex"
-                                    justifyContent="space-evenly"
+                                <Box
                                     sx={{
+                                        mt: verySmallScreen ? 0.5 : 1,
+                                        display: "flex",
+                                        justifyContent: "space-evenly",
+
                                         ".speedButton": {
                                             p: 0.5,
                                             py: 0.25,
@@ -669,48 +703,61 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                                 bgcolor: "#42424280"
                                             }
                                         }
-                                    }}
-                                >
+                                    }}>
                                     <Typography
                                         variant="subtitle2"
-                                        fontWeight="bold"
                                         className="speedButton"
                                         component="button"
                                         onClick={onClickHalfSpeedButton}
+                                        sx={{
+                                            fontWeight: "bold"
+                                        }}
                                     >
                                         0.5x
                                     </Typography>
                                     <Typography
                                         variant="subtitle2"
-                                        fontWeight="bold"
                                         className="speedButton"
                                         component="button"
                                         onClick={onClickNormalSpeedButton}
+                                        sx={{
+                                            fontWeight: "bold"
+                                        }}
                                     >
                                         1.0x
                                     </Typography>
                                     <Typography
                                         variant="subtitle2"
-                                        fontWeight="bold"
                                         className="speedButton"
                                         component="button"
                                         onClick={onClickDoubleSpeedButton}
+                                        sx={{
+                                            fontWeight: "bold"
+                                        }}
                                     >
                                         2.0x
                                     </Typography>
                                 </Box>
-                                <Box display={smallScreen ? "none" : "flex"} flexDirection="column" mt={1.5}>
-                                    <Box display="flex">
+                                <Box
+                                    sx={{
+                                        display: smallScreen ? "none" : "flex",
+                                        flexDirection: "column",
+                                        mt: 1.5
+                                    }}>
+                                    <Box sx={{
+                                        display: "flex"
+                                    }}>
                                         <Typography variant="subtitle2">
                                             HUD
                                         </Typography>
                                         <MonitorIcon fontSize="small" sx={{ ml: 0.75 }} />
                                     </Box>
-                                    <Box 
-                                        mt={1}
-                                        display="flex"
-                                        flexDirection="column"
+                                    <Box
                                         sx={{
+                                            mt: 1,
+                                            display: "flex",
+                                            flexDirection: "column",
+
                                             "button": {
                                                 py: 0.5,
                                                 pl: 0.75,
@@ -728,43 +775,51 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                                     }
                                                 }
                                             }
-                                        }}
-                                    >
-                                        <Box display="flex">
+                                        }}>
+                                        <Box sx={{
+                                            display: "flex"
+                                        }}>
                                             <Typography
                                                 variant="subtitle2"
-                                                display="flex"
-                                                fontWeight="bold"
                                                 className={showSpeed ? "speedButton active" : "speedButton"}
                                                 component="button"
                                                 onClick={onClickSpeedButton}
-                                            >
+                                                sx={{
+                                                    display: "flex",
+                                                    fontWeight: "bold"
+                                                }}>
                                                 {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                                 Speed
                                             </Typography>
                                             <Typography
                                                 variant="subtitle2"
-                                                display="flex"
-                                                fontWeight="bold"
                                                 className={showInput ? "speedButton active" : "speedButton"}
                                                 component="button"
-                                                ml={1}
                                                 onClick={onClickInputButton}
-                                            >
+                                                sx={{
+                                                    display: "flex",
+                                                    fontWeight: "bold",
+                                                    ml: 1
+                                                }}>
                                                 {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                                 Input
                                             </Typography>
                                         </Box>
                                         {allowDiff &&
-                                        <Box display="flex" mt={1}>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                mt: 1
+                                            }}>
                                             <Typography
                                                 variant="subtitle2"
-                                                display="flex"
-                                                fontWeight="bold"
                                                 className={showDiffSetting ? "speedButton active" : "speedButton"}
                                                 component="button"
                                                 onClick={onClickDiffButton}
-                                            >
+                                                sx={{
+                                                    display: "flex",
+                                                    fontWeight: "bold"
+                                                }}>
                                                 {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                                 Diff
                                             </Typography>

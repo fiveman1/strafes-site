@@ -48,7 +48,11 @@ function DiffDisplay(props: IDiffDisplayProps) {
     }
     
     return (
-        <Box display="inline-block" color={diffColor}>
+        <Box
+            sx={{
+                display: "inline-block",
+                color: diffColor
+            }}>
             {`(${diffText})`}
         </Box>
     );

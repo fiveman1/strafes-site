@@ -75,69 +75,73 @@ function MapListCard(props: MapCardProps) {
                 }}
             />
             <Box
-                ml={1.75}
-                mr={1}
-                overflow="hidden"
-                display="inline-flex"
-                flexDirection="column"
-                whiteSpace="nowrap"
-                width="100%"
-                justifyContent="center"
-            >
+                sx={{
+                    ml: 1.75,
+                    mr: 1,
+                    overflow: "hidden",
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    whiteSpace: "nowrap",
+                    width: "100%",
+                    justifyContent: "center"
+                }}>
                 <Box
-                    display="inline-flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    height="32px"
-                >
+                    sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "32px"
+                    }}>
                     <Typography
                         variant="h6"
-                        overflow="hidden"
                         color="textPrimary"
-                        display="inline-block"
-                        textOverflow="ellipsis"
-                        flexGrow={1}
-                    >
+                        sx={{
+                            overflow: "hidden",
+                            display: "inline-block",
+                            textOverflow: "ellipsis",
+                            flexGrow: 1
+                        }}>
                         {map.name}
                     </Typography>
                     <Typography
                         variant="caption"
-                        fontWeight="bold"
-                        lineHeight={1.2}
-                        ml={0.75}
                         sx={{
+                            fontWeight: "bold",
+                            lineHeight: 1.2,
+                            ml: 0.75,
                             backgroundColor: gameColor,
                             textAlign: "center",
                             color: "white",
                             textShadow: "black 1px 1px 1px",
                             borderRadius: "6px",
                             padding: 0.4
-                        }}
-                    >
+                        }}>
                         {formatGame(map.game)}
                     </Typography>
                 </Box>
                 <Box
-                    display="inline-flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    height="24px"
-                >
+                    sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "24px"
+                    }}>
                     <Typography
                         variant="body2"
-                        overflow="hidden"
                         color="textSecondary"
-                        display="inline-block"
-                        textOverflow="ellipsis"
-                        flexGrow={1}
-                    >
+                        sx={{
+                            overflow: "hidden",
+                            display: "inline-block",
+                            textOverflow: "ellipsis",
+                            flexGrow: 1
+                        }}>
                         {map.creator}
                     </Typography>
-                    <Typography 
-                        variant="caption" 
-                        fontWeight="bold" 
-                        ml={0.75} 
+                    <Typography
+                        variant="caption"
                         sx={{
+                            fontWeight: "bold",
+                            ml: 0.75,
                             padding: 0.4,
                             lineHeight: 0.95,
                             backgroundColor: darken(tierColor, 0.4),
@@ -147,8 +151,7 @@ function MapListCard(props: MapCardProps) {
                             borderRadius: "6px",
                             border: 1,
                             borderColor: tierColor
-                        }}
-                    >
+                        }}>
                         {formatTier(map.tier, true)}
                     </Typography>
                 </Box>
@@ -195,34 +198,33 @@ function MapSquareCard(props: MapCardProps) {
     return (
         <Fade in={show} timeout={200}>
             <Box
-                width={cardSize}
-                height={cardSize}
-                display="flex"
-                flexDirection="column"
                 component={RouterLink}
                 to={`/maps/${map.id}`}
                 sx={{
+                    width: cardSize,
+                    height: cardSize,
+                    display: "flex",
+                    flexDirection: "column",
                     userSelect: "none",
                     transition: "transform .1s ease",
+
                     ":hover": {
                         transform: "translateY(-2px)",
                         "& .mapCard": { boxShadow: 6 },
                         "& .mapImg": { transform: "scale(1.08)" },
                         "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
                     }
-                }}
-            >
+                }}>
                 <Box
                     className="mapCard"
-                    position="relative"
-                    borderRadius="6px"
-                    boxShadow={2}
-                    bgcolor={isLightMode ? grey[300] : grey[800]}
-                    overflow="hidden"
                     sx={{
-                        transition: ".4s ease",
-                    }}
-                >
+                        position: "relative",
+                        borderRadius: "6px",
+                        boxShadow: 2,
+                        bgcolor: isLightMode ? grey[300] : grey[800],
+                        overflow: "hidden",
+                        transition: ".4s ease"
+                    }}>
                     <MapThumb
                         className="mapImg"
                         size={cardSize}
@@ -236,17 +238,18 @@ function MapSquareCard(props: MapCardProps) {
                         }}
                     />
                     <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="flex-end"
-                        position="absolute"
-                        top="8px"
-                        right="8px"
-                    >
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px"
+                        }}>
                         <Typography
                             variant="body2"
-                            fontWeight="bold"
                             sx={{
+                                fontWeight: "bold",
                                 width: "fit-content",
                                 padding: 0.4,
                                 lineHeight: 1.1,
@@ -256,15 +259,14 @@ function MapSquareCard(props: MapCardProps) {
                                 color: "white",
                                 textShadow: "black 1px 1px 1px",
                                 borderRadius: "6px"
-                            }}
-                        >
+                            }}>
                             {cardSize < 230 ? formatGameShort(map.game) : formatGame(map.game)}
                         </Typography>
                         <Typography
                             variant="body2"
-                            fontWeight="bold"
-                            mt={0.4}
                             sx={{
+                                fontWeight: "bold",
+                                mt: 0.4,
                                 width: "fit-content",
                                 padding: 0.4,
                                 lineHeight: 1.0,
@@ -276,23 +278,23 @@ function MapSquareCard(props: MapCardProps) {
                                 borderRadius: "6px",
                                 border: 1,
                                 borderColor: tierColor
-                            }}
-                        >
+                            }}>
                             {formatTier(map.tier)}
                         </Typography>
                     </Box>
                     <Box
-                        display="flex"
-                        flexDirection="column"
-                        position="absolute"
-                        top="8px"
-                        left="8px"
-                    >
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            position: "absolute",
+                            top: "8px",
+                            left: "8px"
+                        }}>
                         <Typography
-                            display="inline-block"
                             variant="body2"
-                            fontWeight="bold"
                             sx={{
+                                display: "inline-block",
+                                fontWeight: "bold",
                                 width: "fit-content",
                                 padding: 0.4,
                                 lineHeight: 1.0,
@@ -304,16 +306,15 @@ function MapSquareCard(props: MapCardProps) {
                                 bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
                                 border: 1,
                                 borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
-                            }}
-                        >
+                            }}>
                             {shortDateFormat.format(mapDate)}
                         </Typography>
                         <Typography
-                            mt={0.4}
-                            display="inline-block"
                             variant="body2"
-                            fontWeight="bold"
                             sx={{
+                                mt: 0.4,
+                                display: "inline-block",
+                                fontWeight: "bold",
                                 width: "fit-content",
                                 padding: 0.4,
                                 lineHeight: 1.0,
@@ -325,8 +326,7 @@ function MapSquareCard(props: MapCardProps) {
                                 bgcolor: darken(popColor, 0.15),
                                 border: 1,
                                 borderColor: popColor
-                            }}
-                        >
+                            }}>
                             {map.loadCount} plays
                         </Typography>
                     </Box>
@@ -343,25 +343,25 @@ function MapSquareCard(props: MapCardProps) {
                         }}
                     >
                         <Box
-                            display="inline-flex"
-                            height={nameHeight}
-                            width={cardSize}
-                            pl={1.25}
-                            pr={1.25}
-                            alignItems="center"
-                        >
+                            sx={{
+                                display: "inline-flex",
+                                height: nameHeight,
+                                width: cardSize,
+                                pl: 1.25,
+                                pr: 1.25,
+                                alignItems: "center"
+                            }}>
                             <Typography
                                 variant={cardSize < 230 ? "h6" : "h5"}
                                 title={map.name}
-                                fontWeight="bold"
-                                color="white"
-                                overflow="hidden"
-                                textOverflow="ellipsis"
-                                whiteSpace="nowrap"
                                 sx={{
-                                    textShadow: "black 1px 1px 1px"
-                                }}
-                            >
+                                    fontWeight: "bold",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    textShadow: "black 1px 1px 1px",
+                                    color: "white"
+                                }}>
                                 {map.name}
                             </Typography>
                         </Box>
@@ -379,26 +379,28 @@ function MapSquareCard(props: MapCardProps) {
                         }}
                     >
                         <Box
-                            display="inline-flex"
-                            height={creatorHeight}
-                            width={cardSize}
-                            justifyContent="flex-end"
-                            alignItems="center"
-                            p={1}
-                        >
+                            sx={{
+                                display: "inline-flex",
+                                height: creatorHeight,
+                                width: cardSize,
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                                p: 1
+                            }}>
                             <PersonIcon
                                 fontSize="inherit"
                                 htmlColor="white"
                             />
                             <Typography
                                 variant="subtitle2"
-                                color="white"
                                 title={map.creator}
-                                ml={0.5}
-                                overflow="hidden"
-                                textOverflow="ellipsis"
-                                whiteSpace="nowrap"
-                            >
+                                sx={{
+                                    ml: 0.5,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    color: "white"
+                                }}>
                                 {map.creator}
                             </Typography>
                         </Box>
@@ -457,12 +459,31 @@ function MapBrowser(props: MapBrowserProps) {
     const endNum = Math.min(page * PAGE_SIZE, maps.length);
 
     return (
-        <Box display="flex" justifyContent="center">
-            <Box display="flex" flexDirection="column" width="100%" maxWidth={useList ? "100%" : "1100px"}>
-                <Grid container spacing={useList ? 0.75 : 2} justifyContent="center">
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "center"
+            }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                    maxWidth: useList ? "100%" : "1100px"
+                }}>
+                <Grid container spacing={useList ? 0.75 : 2} sx={{
+                    justifyContent: "center"
+                }}>
                     {items}
                 </Grid>
-                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt={2}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        mt: 2
+                    }}>
                     <Pagination
                         shape="rounded"
                         size={useList ? "small" : "medium"}
@@ -470,7 +491,9 @@ function MapBrowser(props: MapBrowserProps) {
                         page={page}
                         onChange={(e, p) => setPage(p)}
                     />
-                    <Typography variant="body2" p={1}>
+                    <Typography variant="body2" sx={{
+                        p: 1
+                    }}>
                         {`Showing ${startNum} - ${endNum} of ${maps.length} maps`}
                     </Typography>
                 </Box>
@@ -582,8 +605,14 @@ function MapsHome() {
     }, [filterGame, filterTiers, searchText, sort, sortedMaps]);
 
     return (
-        <Box flexGrow={1}>
-            <Box display="flex" alignItems="center">
+        <Box sx={{
+            flexGrow: 1
+        }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center"
+                }}>
                 <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1 }}>
                     <Link underline="hover" color="inherit" href="/">
                         Home
@@ -593,16 +622,31 @@ function MapsHome() {
                     </Typography>
                 </Breadcrumbs>
                 <Tooltip title="Download maps as .csv" placement="left" arrow>
-                    <Box display="flex" width="34px" height="34px">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            width: "34px",
+                            height: "34px"
+                        }}>
                         <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
                             <DownloadIcon />
                         </IconButton>
                     </Box>
                 </Tooltip>
             </Box>
-            <Box padding={useList ? 0.5 : 1} pb={1} display="flex">
+            <Box
+                sx={{
+                    padding: useList ? 0.5 : 1,
+                    pb: 1,
+                    display: "flex"
+                }}>
                 <MapSearchBar inputValue={searchText} setInputValue={onChangeSearch} />
-                <Box ml={useList ? 0.5 : 1} display="flex" alignItems="center">
+                <Box
+                    sx={{
+                        ml: useList ? 0.5 : 1,
+                        display: "flex",
+                        alignItems: "center"
+                    }}>
                     <MapFilterSortOptions 
                         filterGame={filterGame} 
                         setFilterGame={onSetFilterGame} 
@@ -613,7 +657,9 @@ function MapsHome() {
                     />
                 </Box>
             </Box>
-            <Box padding={useList ? 0.5 : 1}>
+            <Box sx={{
+                padding: useList ? 0.5 : 1
+            }}>
                 <MapBrowser maps={maps} page={page} setPage={setPage} />
             </Box>
         </Box>

@@ -54,7 +54,12 @@ function TimeDisplay(props: ITimeDisplayProps) {
                         }
                     }}
                 >
-                    <Box display="inline-flex" flexDirection="row" alignItems="center">
+                    <Box
+                        sx={{
+                            display: "inline-flex",
+                            flexDirection: "row",
+                            alignItems: "center"
+                        }}>
                         <Typography variant="inherit" color="textPrimary" className="timeValue">
                             {formatTime(ms)}
                         </Typography>
@@ -87,8 +92,15 @@ function TimeDisplay(props: ITimeDisplayProps) {
                     }
                 }}
             >
-                <Box display="inline-flex" flexDirection="row" alignItems="center">
-                    <Typography variant="inherit" width={diff !== undefined ? "72px" : undefined} color="textPrimary" className="timeValue">
+                <Box
+                    sx={{
+                        display: "inline-flex",
+                        flexDirection: "row",
+                        alignItems: "center"
+                    }}>
+                    <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{
+                        width: diff !== undefined ? "72px" : undefined
+                    }}>
                         {formatTime(ms)}
                     </Typography>
                     <DiffDisplay ms={ms} diff={diff} />
@@ -99,8 +111,15 @@ function TimeDisplay(props: ITimeDisplayProps) {
     }
 
     return (
-        <Box display="flex" flexDirection="row" alignItems="center">
-            <Typography variant="inherit" width="72px">
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center"
+            }}>
+            <Typography variant="inherit" sx={{
+                width: "72px"
+            }}>
                 {formatTime(ms)}
             </Typography>
             <DiffDisplay ms={ms} diff={diff} />

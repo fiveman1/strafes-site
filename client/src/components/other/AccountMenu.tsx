@@ -90,9 +90,17 @@ function AccountMenu(props: IAccountMenuProps) {
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
                 <MenuItem sx={{pointerEvents: "none"}}>
-                    <Box display="flex" alignItems="center">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center"
+                        }}>
                         <UserAvatar username={user.username} userThumb={user.thumbnailUrl} />
-                        <Box display="flex" flexDirection="column">
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column"
+                            }}>
                             <Typography>
                                 {user.displayName}
                             </Typography>

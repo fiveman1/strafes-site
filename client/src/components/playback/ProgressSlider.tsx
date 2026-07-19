@@ -98,62 +98,60 @@ function ProgressSlider(props: ProgressSliderProps) {
     return (
         <Box
             component="span"
-            position="relative"
-            width="100%"
-            height="40px"
-            sx={{ cursor: "pointer" }}
             ref={ref}
             onPointerDown={onPointerDown}
             onPointerOver={onPointerOver}
             onPointerLeave={onPointerLeave}
-        >
-            <Box 
-                component="span" 
-                position="absolute" 
-                width="100%"
-                height="6px"
-                top="50%" 
-                borderRadius="2px"
-                bgcolor="white"
+            sx={{
+                position: "relative",
+                width: "100%",
+                height: "40px",
+                cursor: "pointer"
+            }}>
+            <Box
+                component="span"
                 sx={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "6px",
+                    top: "50%",
+                    borderRadius: "2px",
+                    bgcolor: "white",
                     transform: "translateY(-50%)",
                     opacity: 0.3
-                }}
-            />
-            <Box 
-                component="span" 
-                position="absolute" 
-                width="100%"
-                height="8px"
-                top="50%" 
-                left="0%"
-                borderRadius="2px"
-                bgcolor={theme.palette.primary.main}
+                }} />
+            <Box
+                component="span"
                 style={{
                     width: offset
                 }}
                 sx={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "8px",
+                    top: "50%",
+                    left: "0%",
+                    borderRadius: "2px",
+                    bgcolor: theme.palette.primary.main,
                     transform: "translateY(-50%)",
                     transition: "opacity .15s ease",
                     opacity: isDragging || isHovering ? 1 : 0.7
-                }}
-            />
-            <Box 
-                component="span" 
-                position="absolute" 
-                width="12px"
-                height="12px"
-                top="50%"
-                borderRadius="50%"
-                bgcolor={theme.palette.primary.main}
+                }} />
+            <Box
+                component="span"
                 style={{
                     left: offset
                 }}
                 sx={{
+                    position: "absolute",
+                    width: "12px",
+                    height: "12px",
+                    top: "50%",
+                    borderRadius: "50%",
+                    bgcolor: theme.palette.primary.main,
                     transform: isDragging || isHovering ? "translate(-50%, -50%) scale(1.25)" : "translate(-50%, -50%)",
                     transition: "transform .15s ease"
-                }}
-            />
+                }} />
         </Box>
     );
 }

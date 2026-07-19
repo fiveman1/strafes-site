@@ -41,17 +41,16 @@ function ErrorScreen({ error, notFound = false }: ErrorScreenProps) {
 
     return (
         <Box
-            minHeight="100vh"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            px={2}
             sx={{
+                minHeight: "100vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                px: 2,
                 color: text,
                 backgroundColor: background,
                 backgroundImage: "radial-gradient(circle at 30% 10%, rgba(255, 79, 154, 0.22), transparent 34rem), radial-gradient(circle at 85% 80%, rgba(93, 217, 255, 0.12), transparent 30rem)"
-            }}
-        >
+            }}>
             <Paper
                 elevation={0}
                 sx={{
@@ -86,7 +85,13 @@ function ErrorScreen({ error, notFound = false }: ErrorScreenProps) {
                 <Typography sx={{ mb: 4, color: secondaryText, fontSize: "1.05rem", lineHeight: 1.65 }}>
                     {message}
                 </Typography>
-                <Box display="flex" justifyContent="center" flexWrap="wrap" gap={1.25}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        flexWrap: "wrap",
+                        gap: 1.25
+                    }}>
                     {!isMissing && (
                         <Button variant="contained" startIcon={<RefreshRounded />} onClick={() => window.location.reload()} sx={{ borderRadius: "12px", textTransform: "none", bgcolor: "#ff4f9a", "&:hover": { bgcolor: "#ce246d" } }}>
                             Refresh page

@@ -89,14 +89,35 @@ function TimesCard(props: ITimesCardProps) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
         <Paper elevation={2} sx={{ padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .timesGrid": { margin: smallScreen ? 0.25 : 0 } }}>
-            <Box marginBottom={smallScreen ? -0.25 : 1} padding={smallScreen ? 1 : 0} display="flex" alignItems="center">
-                <Typography variant="caption" flexGrow={1} marginRight={1}>
+            <Box
+                sx={{
+                    marginBottom: smallScreen ? -0.25 : 1,
+                    padding: smallScreen ? 1 : 0,
+                    display: "flex",
+                    alignItems: "center"
+                }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        flexGrow: 1,
+                        marginRight: 1
+                    }}>
                     {props.title ?? "Times"}
                 </Typography>
                 {hideMap ? <></> :
                     <>
-                        <Box bgcolor={UNRELEASED_MAP_COLOR} width="12px" height="12px" minWidth="12px" boxSizing="border-box" marginBottom="2px" />
-                        <Typography variant="caption" marginLeft={0.75}>
+                        <Box
+                            sx={{
+                                bgcolor: UNRELEASED_MAP_COLOR,
+                                width: "12px",
+                                height: "12px",
+                                minWidth: "12px",
+                                boxSizing: "border-box",
+                                marginBottom: "2px"
+                            }} />
+                        <Typography variant="caption" sx={{
+                            marginLeft: 0.75
+                        }}>
                             = unreleased
                         </Typography>
                     </>}

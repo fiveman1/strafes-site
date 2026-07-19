@@ -20,30 +20,45 @@ function UserLink(props: IUserLinkProps) {
     const userRole = userRoles ? userRoles[0] : undefined;
 
     return (
-    <Link {...linkProps}
-        to={{pathname: `/users/${userId}`, search: `?style=${strafesStyle}&game=${game}`}} 
-        component={RouterLink} 
-        color={userRole ? getUserRoleColor(userRole, theme) : undefined}
-        display="inline-block"
-        maxWidth="100%"
-    >
-        <Box display="flex" flexDirection="row" alignItems="center">
-            <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "28px", height: "28px"}} />
-            <Typography variant="inherit" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-                {username}
-            </Typography>
+        <Link
+            {...linkProps}
+            to={{pathname: `/users/${userId}`, search: `?style=${strafesStyle}&game=${game}`}}
+            component={RouterLink}
+            color={userRole ? getUserRoleColor(userRole, theme) : undefined}
+            sx={[{
+                display: "inline-block",
+                maxWidth: "100%"
+            }, ...(Array.isArray(linkProps.sx) ? linkProps.sx : [linkProps.sx])]}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center"
+                }}>
+                <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "28px", height: "28px"}} />
+                <Typography
+                    variant="inherit"
+                    sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                    }}>
+                    {username}
+                </Typography>
 
-            {userCountry ? 
-            <CountryFlag countryCode={userCountry} marginLeft={6} />
-            : undefined}
+                {userCountry ? 
+                <CountryFlag countryCode={userCountry} marginLeft={6} />
+                : undefined}
 
-            {isCurrentUser ? 
-            <Box display="flex" title="You">
-                <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                {isCurrentUser ? 
+                <Box title="You" sx={{
+                    display: "flex"
+                }}>
+                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                </Box>
+                : null}
             </Box>
-            : null}
-        </Box>
-    </Link>
+        </Link>
     );
 }
 

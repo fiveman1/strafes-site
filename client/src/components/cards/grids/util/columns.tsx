@@ -54,7 +54,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
                     userThumb={time.userThumb}
                     game={linkGame} 
                     strafesStyle={linkStyle} 
-                    fontWeight="bold" 
+                    sx={{ fontWeight: "bold" }}
                     underline="hover" 
                 />
             );
@@ -100,17 +100,31 @@ export function makePlacementColumn(sortable: boolean, isCompact?: boolean): Gri
                     break;
             }
             return (
-                <Box display="flex" flexDirection="row" alignItems="center">
-                    <Box flexGrow={1} display="flex" flexDirection="row" alignItems="center" justifyContent="left">
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center"
+                    }}>
+                    <Box
+                        sx={{
+                            flexGrow: 1,
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "left"
+                        }}>
                     {iconColor ? <EmojiEventsIcon htmlColor={iconColor} sx={{fontSize: "24px", marginLeft: "4px"}} /> : <></>}
                     </Box>
-                    <Typography variant="inherit" fontFamily="monospace">
+                    <Typography variant="inherit" sx={{
+                        fontFamily: "monospace"
+                    }}>
                         {formatPlacement(placement)}
                     </Typography>
                 </Box>
             );
         }
-    }
+    };
 }
 
 export function makeTimeColumn(): GridColDef {
@@ -137,12 +151,27 @@ export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
         headerAlign: "center",
         renderHeader: () => {
             return (
-                <Box display="flex" flexDirection="row" alignItems="center">
-                    <Box display="flex" flexDirection="column" alignItems="center" ml="5px">
-                        <Typography variant="inherit" fontWeight={500} color={!isTimeSort ? "textSecondary" : undefined}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center"
+                    }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            ml: "5px"
+                        }}>
+                        <Typography variant="inherit" color={!isTimeSort ? "textSecondary" : undefined} sx={{
+                            fontWeight: 500
+                        }}>
                             Time
                         </Typography>
-                        <Typography variant="inherit" fontWeight={500} color={isTimeSort ? "textSecondary" : undefined}>
+                        <Typography variant="inherit" color={isTimeSort ? "textSecondary" : undefined} sx={{
+                            fontWeight: 500
+                        }}>
                             Date
                         </Typography>
                     </Box>

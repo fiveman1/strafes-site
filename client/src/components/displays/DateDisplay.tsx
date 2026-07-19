@@ -33,7 +33,13 @@ function DateDisplay(props: IDateDisplayProps) {
     const tooltipText = lessThanMaxDaysAgo ? dateTimeFormat.format(dateValue) : timeFormat.format(dateValue);
 
     return (
-        <Typography variant={variant ?? "inherit"} display="inline-flex" fontWeight={fontWeight} color={color}>
+        <Typography
+            variant={variant ?? "inherit"}
+            color={color}
+            sx={{
+                display: "inline-flex",
+                fontWeight: fontWeight
+            }}>
             {(useDateTime && !lessThanMaxDaysAgo) ?
             <Box component="span">{dateTimeFormat.format(dateValue)}</Box>
             :

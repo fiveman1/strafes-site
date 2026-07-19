@@ -77,8 +77,14 @@ function MapInfoCard(props: MapDetailsProps) {
 
     return (
         <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column", overflowWrap: "break-word" }}>
-            <Box marginBottom={1} display="flex">
-                <Box flexGrow={1}>
+            <Box
+                sx={{
+                    marginBottom: 1,
+                    display: "flex"
+                }}>
+                <Box sx={{
+                    flexGrow: 1
+                }}>
                     <Typography variant="caption">
                         Map
                     </Typography>
@@ -100,7 +106,7 @@ function MapInfoCard(props: MapDetailsProps) {
                 <MapDetailSection selectedMap={selectedMap} />
                 : undefined}
         </Paper>
-    )
+    );
 }
 
 interface MapDetailSectionProps {
@@ -126,14 +132,42 @@ function MapDetailSection(props: MapDetailSectionProps) {
     const tierColor = getMapTierColor(tier);
 
     return (
-        <Box display="flex" flexDirection="column" marginTop={2}>
-            <Box display="flex" flexDirection={smallScreen ? "column" : "row"} alignItems="center" justifyContent="center">
-                <Box display="flex" flexDirection="column" paddingRight={smallScreen ? 0 : 8} paddingLeft={smallScreen ? 0 : 8} paddingBottom={smallScreen ? 1.5 : 0} >
-                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" marginBottom={1.5} flexGrow={1}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: 2
+            }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: smallScreen ? "column" : "row",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        paddingRight: smallScreen ? 0 : 8,
+                        paddingLeft: smallScreen ? 0 : 8,
+                        paddingBottom: smallScreen ? 1.5 : 0
+                    }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                            marginBottom: 1.5,
+                            flexGrow: 1
+                        }}>
                         <Typography
                             variant="h4"
-                            fontWeight="bold"
                             color={isLightMode ? "primary" : "textPrimary"}
+                            sx={{
+                                fontWeight: "bold"
+                            }}
                         >
                             {selectedMap.name}
                         </Typography>
@@ -141,7 +175,13 @@ function MapDetailSection(props: MapDetailSectionProps) {
                             by {selectedMap.creator}
                         </Typography>
                     </Box>
-                    <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center"
+                        }}>
                         {isUnreleased ?
                             <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />
                             :
@@ -153,60 +193,85 @@ function MapDetailSection(props: MapDetailSectionProps) {
                             Server load count: {selectedMap.loadCount}
                         </Typography>
                     </Box>
-                    <Box display="flex" flexDirection="column" alignItems="center">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center"
+                        }}>
                         {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
                         <MapTierVotingSection selectedMap={selectedMap} />}
                     </Box>
                 </Box>
                 <Box
-                    minWidth={imageSize}
-                    width={imageSize}
-                    height={imageSize}
-                    borderRadius="10px"
-                    bgcolor={imageBgColor}
-                    overflow="hidden"
-                    position="relative"
-                >
+                    sx={{
+                        minWidth: imageSize,
+                        width: imageSize,
+                        height: imageSize,
+                        borderRadius: "10px",
+                        bgcolor: imageBgColor,
+                        overflow: "hidden",
+                        position: "relative"
+                    }}>
                     <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
-                    <Box display="flex" position="absolute" top="8px" right="8px">
-                        <Typography variant="body2" fontWeight="bold" sx={{
-                            padding: 0.4,
-                            lineHeight: 1.1,
-                            overflow: "hidden",
-                            backgroundColor: gameColor,
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px"
+                    <Box
+                        sx={{
+                            display: "flex",
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px"
                         }}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: "bold",
+                                padding: 0.4,
+                                lineHeight: 1.1,
+                                overflow: "hidden",
+                                backgroundColor: gameColor,
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px"
+                            }}>
                             {formatGame(selectedMap.game)}
                         </Typography>
-                        <Typography variant="body2" fontWeight="bold" ml={0.5} sx={{
-                            padding: 0.4,
-                            lineHeight: 1.0,
-                            overflow: "hidden",
-                            backgroundColor: darken(tierColor, 0.4),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            border: 1,
-                            borderColor: tierColor
-                        }}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: "bold",
+                                ml: 0.5,
+                                padding: 0.4,
+                                lineHeight: 1.0,
+                                overflow: "hidden",
+                                backgroundColor: darken(tierColor, 0.4),
+                                textAlign: "center",
+                                color: "white",
+                                textShadow: "black 1px 1px 1px",
+                                borderRadius: "6px",
+                                border: 1,
+                                borderColor: tierColor
+                            }}>
                             {formatTier(tier)}
                         </Typography>
                     </Box>
-                    <Typography position="absolute" bottom="4px" right="4px" variant="body1" fontWeight="bold" sx={{
-                        padding: 0.7,
-                        lineHeight: 1.1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        backdropFilter: "blur(8px)",
-                        textAlign: "center",
-                        color: "white",
-                        textShadow: "black 3px 3px 3px",
-                        borderRadius: "8px"
-                    }}>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            position: "absolute",
+                            bottom: "4px",
+                            right: "4px",
+                            fontWeight: "bold",
+                            padding: 0.7,
+                            lineHeight: 1.1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            backdropFilter: "blur(8px)",
+                            textAlign: "center",
+                            color: "white",
+                            textShadow: "black 3px 3px 3px",
+                            borderRadius: "8px"
+                        }}>
                         {shortDateFormat.format(mapDate)}
                     </Typography>
                 </Box>
@@ -301,9 +366,22 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     }
 
     return (
-        <Box display="flex" flexDirection="column" marginTop={1.5}>
-            <Box display="flex" alignItems="center" justifyContent="center" mb={0.25}>
-                <Typography component="legend" variant="body2" mr={0.25}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: 1.5
+            }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mb: 0.25
+                }}>
+                <Typography component="legend" variant="body2" sx={{
+                    mr: 0.25
+                }}>
                     Tier voting
                 </Typography>
                 {isEligible ? 
@@ -315,7 +393,12 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     <BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" />
                 </Tooltip>}
             </Box>
-            <Box display="flex" alignItems="center" justifyContent="center">
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
                 {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
                 :
@@ -327,7 +410,13 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 />}
             </Box>
             {selectedMap.tier !== undefined &&
-            <Box display="flex" justifyContent="center" pt={0.5} pb={0.25}>
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    pt: 0.5,
+                    pb: 0.25
+                }}>
                 <ChartContainer 
                     width={28 * MAX_TIER} 
                     height={22}
@@ -363,7 +452,13 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
             </Box>}
             {voteData?.updatedAt &&
             <Tooltip title={dateTimeFormat.format(new Date(voteData.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >
-                <Typography variant="caption" color="textSecondary" mt={0.5} textAlign="center">
+                <Typography
+                    variant="caption"
+                    color="textSecondary"
+                    sx={{
+                        mt: 0.5,
+                        textAlign: "center"
+                    }}>
                     Submitted {<TimeAgo date={voteData.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
             </Tooltip>}
@@ -450,15 +545,20 @@ function MapsPage() {
             <Link underline="hover" color="inherit" component={RouterLink} to="/maps">
                 Maps
             </Link>,
-            <Box display="flex" flexDirection="row" alignItems="center">
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center"
+                }}>
                 <MapThumb size={30} map={selectedMap} sx={{ mr: 1.25 }} />
                 <Typography color="textPrimary">
                     {selectedMap.name}
                     <Typography
-                        ml={1}
-                        fontWeight="bold"
                         variant="caption"
                         sx={{
+                            ml: 1,
+                            fontWeight: "bold",
                             padding: 0.4,
                             overflow: "hidden",
                             backgroundColor: getGameColor(selectedMap.game, theme),
@@ -466,8 +566,7 @@ function MapsPage() {
                             color: "white",
                             textShadow: "black 1px 1px 1px",
                             borderRadius: "6px"
-                        }}
-                    >
+                        }}>
                         {formatGame(selectedMap.game)}
                     </Typography>
                 </Typography>
@@ -483,8 +582,14 @@ function MapsPage() {
     }
 
     return (
-        <Box flexGrow={1}>
-            <Box display="flex" alignItems="center">
+        <Box sx={{
+            flexGrow: 1
+        }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center"
+                }}>
                 <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1 }}>
                     <Link underline="hover" color="inherit" href="/">
                         Home
@@ -492,26 +597,43 @@ function MapsPage() {
                     {breadcrumbs}
                 </Breadcrumbs>
                 <Tooltip title="Download maps as .csv" placement="left" arrow>
-                    <Box display="flex" width="34px" height="34px">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            width: "34px",
+                            height: "34px"
+                        }}>
                         <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
                             <DownloadIcon />
                         </IconButton>
                     </Box>
                 </Tooltip>
             </Box>
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <MapInfoCard selectedMap={selectedMap} setSelectedMap={onSelectMap} />
             </Box>
-            <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
+            <Box
+                sx={{
+                    padding: 0.5,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
                 <GameSelector game={game} setGame={setGame} selectedMap={selectedMap} />
                 <StyleSelector game={game} style={style} setStyle={setStyle} />
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
             </Box>
             {loginUser &&
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <RecordCard mapId={+id} userId={loginUser.userId} game={game} style={style} course={course} />
             </Box>}
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <TimesCard defaultSort={TimeSortBy.TimeAsc} mapId={id} game={game} style={style} course={course} pageSize={20} hideMap showPlacement />
             </Box>
         </Box>

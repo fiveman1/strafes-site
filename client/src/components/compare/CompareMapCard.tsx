@@ -77,17 +77,15 @@ function CompareMapCard(props: ICompareMapCardProps) {
                 )}
                 <Typography
                     variant="subtitle1"
-                    fontWeight="bold"
                     sx={{
+                        fontWeight: "bold",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                    }}
-                >
+                        whiteSpace: "nowrap"
+                    }}>
                     {info.map}
                 </Typography>
             </Box>
-
             {/* Time rows */}
             <List disablePadding dense>
                 {times.map((time, i) => {
@@ -99,7 +97,12 @@ function CompareMapCard(props: ICompareMapCardProps) {
                         <Box key={time.id}>
                             {i > 0 && <Divider />}
                             <ListItem sx={{ px: 1.5, py: 0.75 }}>
-                                <Box display="flex" width="100%" gap={1}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        width: "100%",
+                                        gap: 1
+                                    }}>
                                     {/* Left: color indicator + avatar + username/style stacked */}
                                     <Box
                                         sx={{
@@ -117,7 +120,12 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                             username={time.username}
                                             userThumb={time.userThumb}
                                         />
-                                        <Box display="flex" flexDirection="column" minWidth={0}>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                minWidth: 0
+                                            }}>
                                             <Typography
                                                 variant="body2"
                                                 sx={{
@@ -130,11 +138,11 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                             </Typography>
                                             <Box>
                                                 <Typography
-                                                    lineHeight={1.0}
-                                                    fontWeight="bold" 
                                                     variant="caption"
-                                                    display="inline-flex"
                                                     sx={{
+                                                        lineHeight: 1.0,
+                                                        fontWeight: "bold",
+                                                        display: "inline-flex",
                                                         padding: 0.3,
                                                         backgroundColor: styleColor,
                                                         textAlign: "center",
@@ -146,8 +154,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                                         overflow: "hidden",
                                                         textOverflow: "ellipsis",
                                                         whiteSpace: "nowrap"
-                                                    }}
-                                                >
+                                                    }}>
                                                     {formatStyleShort(time.style)}
                                                 </Typography>
                                             </Box>
@@ -155,27 +162,36 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                     </Box>
 
                                     {/* Right: Time/diff/date */}
-                                    <Box display="flex" flexDirection="column" alignItems="flex-end" flexGrow={1} justifyContent="center" sx={{textAlign: "right"}}>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "flex-end",
+                                            flexGrow: 1,
+                                            justifyContent: "center",
+                                            textAlign: "right"
+                                        }}>
                                         <Typography
                                             variant="body2"
-                                            fontWeight="bold"
-                                            fontFamily="monospace"
-                                        >
+                                            sx={{
+                                                fontWeight: "bold",
+                                                fontFamily: "monospace"
+                                            }}>
                                             {formatTime(time.time)}
                                         </Typography>
                                         {diff > 0 && !isTie ? (
                                                 <Typography
                                                     variant="caption"
-                                                    fontFamily="monospace"
                                                     color={red["A400"]}
+                                                    sx={{
+                                                        fontFamily: "monospace"
+                                                    }}
                                                 >
                                                     +{formatDiff(diff)}
                                                 </Typography>
                                             ) : (
                                                 <Typography
                                                     variant="caption"
-                                                    fontFamily="monospace"
-                                                    fontWeight="bold"
                                                     color={
                                                         isTie
                                                             ? TIE_COLOR
@@ -183,7 +199,10 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                                                 ? green["A400"]
                                                                 : darken(green["A400"], 0.15)
                                                     }
-                                                >
+                                                    sx={{
+                                                        fontFamily: "monospace",
+                                                        fontWeight: "bold"
+                                                    }}>
                                                     {isTie ? "tie" : "best"}
                                                 </Typography>
                                             )}

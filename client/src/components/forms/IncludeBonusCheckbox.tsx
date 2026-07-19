@@ -13,15 +13,19 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
     };
     
     return (
-    <Box padding={1} pt={0.25} pb={0.25}>
-        <FormGroup>
-            <FormControlLabel label="Bonuses" control={
-                <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  
-            />
-            <FormHelperText sx={{mt: -0.5}}>{includeBonuses ? "Showing bonuses" : "Hiding bonuses"}</FormHelperText>
-        </FormGroup>
-        
-    </Box>
+        <Box
+            sx={{
+                padding: 1,
+                pt: 0.25,
+                pb: 0.25
+            }}>
+            <FormGroup>
+                <FormControlLabel label="Bonuses" control={
+                    <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  
+                />
+                <FormHelperText sx={{mt: -0.5}}>{includeBonuses ? "Showing bonuses" : "Hiding bonuses"}</FormHelperText>
+            </FormGroup>
+        </Box>
     );
 }
 

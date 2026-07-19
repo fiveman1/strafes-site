@@ -586,7 +586,15 @@ function Replays() {
     const allowDiff = Boolean(replay?.compareTimeId && diffReady);
 
     return (
-        <Box padding={smallScreen ? 0 : 0.5} flexGrow={1} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+        <Box
+            sx={{
+                padding: smallScreen ? 0 : 0.5,
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center"
+            }}>
             {error !== "" &&
             <Alert severity="error" sx={{ mb: 1 }}>
                 {error}
@@ -606,350 +614,374 @@ function Replays() {
                     const playerWidth = getPlayerWidth(width, height - footerHeight);
                     const playerHeight = getPlayerHeight(width, height - footerHeight);
                     return (
-                    <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        style={{
-                            width: width,
-                            height: height
-                        }}
-                    >
                         <Box
-                            position="relative"
-                            bgcolor="black"
                             style={{
-                                width: playerWidth,
-                                height: playerHeight
+                                width: width,
+                                height: height
                             }}
-                        >
-                            <canvas
-                                ref={canvasRef}
-                                style={{
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    width: playerWidth,
-                                    height: playerHeight
-                                }}
-                            />
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center"
+                            }}>
                             <Box
-                                position="absolute"
-                                top={0}
                                 style={{
                                     width: playerWidth,
                                     height: playerHeight
                                 }}
-                            >
-                                <PlaybackOverlay
-                                    time={playbackTime}
-                                    duration={duration}
-                                    paused={paused}
-                                    offset={botOffset}
-                                    fullscreen={fullscreen}
-                                    speed={playbackSpeed}
-                                    onDragPlayback={onDragPlayback}
-                                    onSetPlayback={onSetPlayback}
-                                    onSetPause={onSetPause}
-                                    onFullscreen={onFullscreen}
-                                    onSeek={onSeek}
-                                    onReset={onReset}
-                                    onSetSpeed={onChangePlaybackSpeed}
-                                    speedTextRef={speedTextRef}
-                                    playerHeight={playerHeight}
-                                    inputContainerRef={inputContainerRef}
-                                    loading={loading}
-                                    errorReplay={!!error}
-                                    diffSpeedTextRef={diffSpeedTextRef}
-                                    diffTimeTextRef={diffTimeTextRef}
-                                    allowDiff={allowDiff}
+                                sx={{
+                                    position: "relative",
+                                    bgcolor: "black"
+                                }}>
+                                <canvas
+                                    ref={canvasRef}
+                                    style={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        width: playerWidth,
+                                        height: playerHeight
+                                    }}
                                 />
-                            </Box>
-                            {(loading && !error) &&
-                            <Box
-                                position="absolute"
-                                top="50%"
-                                left="50%"
-                                display="flex"
-                                flexDirection="column"
-                                alignItems="center"
-                                justifyContent="center"
-                                sx={{
-                                    transform: "translate(-50%, -50%)",
-                                    userSelect: "none"
-                                }}
-                            >
-                                <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
                                 <Box
-                                    mt={1}
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    height="32px"
-                                >
-                                    {downloadProgress !== -1 &&
-                                    <Typography variant="body1">
-                                        {Math.round(downloadProgress * 100)}%
-                                    </Typography>}
+                                    style={{
+                                        width: playerWidth,
+                                        height: playerHeight
+                                    }}
+                                    sx={{
+                                        position: "absolute",
+                                        top: 0
+                                    }}>
+                                    <PlaybackOverlay
+                                        time={playbackTime}
+                                        duration={duration}
+                                        paused={paused}
+                                        offset={botOffset}
+                                        fullscreen={fullscreen}
+                                        speed={playbackSpeed}
+                                        onDragPlayback={onDragPlayback}
+                                        onSetPlayback={onSetPlayback}
+                                        onSetPause={onSetPause}
+                                        onFullscreen={onFullscreen}
+                                        onSeek={onSeek}
+                                        onReset={onReset}
+                                        onSetSpeed={onChangePlaybackSpeed}
+                                        speedTextRef={speedTextRef}
+                                        playerHeight={playerHeight}
+                                        inputContainerRef={inputContainerRef}
+                                        loading={loading}
+                                        errorReplay={!!error}
+                                        diffSpeedTextRef={diffSpeedTextRef}
+                                        diffTimeTextRef={diffTimeTextRef}
+                                        allowDiff={allowDiff}
+                                    />
                                 </Box>
-                            </Box>}
-                        </Box>
-                        <Box
-                            display={fullscreen ? "none" : "flex"}
-                            flexDirection="row"
-                            pt={1}
-                            pb={1}
-                            style={{ width: playerWidth }}
-                            minHeight={FOOTER_HEIGHT}
-                        >
-                            {replay &&
-                            <>
-                            {!smallScreen &&
-                            <Box
-                                display="flex"
-                                mr={1.5}
-                            >
-                                <Link
-                                    display="flex"
-                                    alignItems="center"
-                                    underline="none"
-                                    component={RouterLink}
-                                    to={mapLink}
-                                >
-                                    <Box
-                                        width={thumbSize}
-                                        height={thumbSize}
-                                        overflow="hidden"
-                                        sx={{
-                                            borderRadius: "4px",
-                                            ":hover": {
-                                                ".mapThumb": {
-                                                    transform: "scale(1.08)"
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        <MapThumb size={thumbSize} map={mapInfo} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
-                                    </Box>
-                                </Link>
-                            </Box>}
-                            <Box
-                                display="flex"
-                                flexDirection="column"
-                                flexGrow={1}
-                                overflow="hidden"
-                                sx={{
-                                    "p": {
-                                        overflowWrap: "break-word",
-                                        wordBreak: "break-word",
-                                        whiteSpace: "normal",
-                                        textWrap: "wrap"
-                                    }
-                                }}
-                            >
+                                {(loading && !error) &&
                                 <Box
-                                    display="inline-flex"
-                                    alignItems="center"
-                                >
-                                    {smallScreen &&
+                                    sx={{
+                                        position: "absolute",
+                                        top: "50%",
+                                        left: "50%",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        transform: "translate(-50%, -50%)",
+                                        userSelect: "none"
+                                    }}>
+                                    <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
+                                    <Box
+                                        sx={{
+                                            mt: 1,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            height: "32px"
+                                        }}>
+                                        {downloadProgress !== -1 &&
+                                        <Typography variant="body1">
+                                            {Math.round(downloadProgress * 100)}%
+                                        </Typography>}
+                                    </Box>
+                                </Box>}
+                            </Box>
+                            <Box
+                                style={{ width: playerWidth }}
+                                sx={{
+                                    display: fullscreen ? "none" : "flex",
+                                    flexDirection: "row",
+                                    pt: 1,
+                                    pb: 1,
+                                    minHeight: FOOTER_HEIGHT
+                                }}>
+                                {replay &&
+                                <>
+                                {!smallScreen &&
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        mr: 1.5
+                                    }}>
                                     <Link
                                         underline="none"
                                         component={RouterLink}
                                         to={mapLink}
-                                        mr={1.5}
-                                    >
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center"
+                                        }}>
                                         <Box
-                                            width={48}
-                                            height={48}
-                                            overflow="hidden"
                                             sx={{
+                                                width: thumbSize,
+                                                height: thumbSize,
+                                                overflow: "hidden",
                                                 borderRadius: "4px",
+
                                                 ":hover": {
-                                                    "img": {
+                                                    ".mapThumb": {
                                                         transform: "scale(1.08)"
                                                     }
                                                 }
+                                            }}>
+                                            <MapThumb size={thumbSize} map={mapInfo} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                        </Box>
+                                    </Link>
+                                </Box>}
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        flexGrow: 1,
+                                        overflow: "hidden",
+
+                                        "p": {
+                                            overflowWrap: "break-word",
+                                            wordBreak: "break-word",
+                                            whiteSpace: "normal",
+                                            textWrap: "wrap"
+                                        }
+                                    }}>
+                                    <Box
+                                        sx={{
+                                            display: "inline-flex",
+                                            alignItems: "center"
+                                        }}>
+                                        {smallScreen &&
+                                        <Link
+                                            underline="none"
+                                            component={RouterLink}
+                                            to={mapLink}
+                                            sx={{
+                                                mr: 1.5
                                             }}
                                         >
-                                            <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
-                                        </Box>
-                                    </Link>}
-                                    <Link
-                                        display="inline-flex"
-                                        alignItems="center"
-                                        underline="none"
-                                        component={RouterLink}
-                                        color="textPrimary"
-                                        to={mapLink}
-                                        sx={{
-                                            textDecoration: "none",
-                                            ":hover": {
-                                                "& .map-name": {
-                                                    textDecoration: "underline"
+                                            <Box
+                                                sx={{
+                                                    width: 48,
+                                                    height: 48,
+                                                    overflow: "hidden",
+                                                    borderRadius: "4px",
+
+                                                    ":hover": {
+                                                        "img": {
+                                                            transform: "scale(1.08)"
+                                                        }
+                                                    }
+                                                }}>
+                                                <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                            </Box>
+                                        </Link>}
+                                        <Link
+                                            underline="none"
+                                            component={RouterLink}
+                                            color="textPrimary"
+                                            to={mapLink}
+                                            sx={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                textDecoration: "none",
+
+                                                ":hover": {
+                                                    "& .map-name": {
+                                                        textDecoration: "underline"
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                    >
+                                            }}>
+                                            <Typography
+                                                variant="h5"
+                                                className="map-name"
+                                                sx={{
+                                                    display: "inline-block",
+                                                    lineHeight: 1.4
+                                                }}>
+                                                {getMapTitle(replay)}
+                                            </Typography>
+                                        </Link>
                                         <Typography
-                                            variant="h5"
-                                            display="inline-block"
-                                            className="map-name"
-                                            lineHeight={1.4}
-                                        >
-                                            {getMapTitle(replay)}
+                                            variant="caption"
+                                            className="tier"
+                                            sx={{
+                                                lineHeight: 1.0,
+                                                fontWeight: "bold",
+                                                ml: 0.75,
+                                                padding: 0.3,
+                                                backgroundColor: darken(tierColor, 0.4),
+                                                textAlign: "center",
+                                                color: "white",
+                                                textShadow: "black 1px 1px 1px",
+                                                borderRadius: "6px",
+                                                border: 1,
+                                                borderColor: tierColor,
+                                                overflowWrap: "normal",
+                                                wordBreak: "normal",
+                                                whiteSpace: "normal",
+                                                textWrap: "auto"
+                                            }}>
+                                            {formatTier(mapInfo?.tier, true)}
                                         </Typography>
-                                    </Link>
-                                    <Typography
-                                        lineHeight={1.0}
-                                        variant="caption"
-                                        fontWeight="bold"
-                                        className="tier"
-                                        ml={0.75}
+                                    </Box>
+                                    <Box
                                         sx={{
-                                            padding: 0.3,
-                                            backgroundColor: darken(tierColor, 0.4),
-                                            textAlign: "center",
-                                            color: "white",
-                                            textShadow: "black 1px 1px 1px",
-                                            borderRadius: "6px",
-                                            border: 1,
-                                            borderColor: tierColor,
-                                            overflowWrap: "normal",
-                                            wordBreak: "normal",
-                                            whiteSpace: "normal",
-                                            textWrap: "auto"
-                                        }}
-                                    >
-                                        {formatTier(mapInfo?.tier, true)}
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    display="inline-flex"
-                                    alignItems="center"
-                                    mt={smallScreen ? 1 : 0.25}
-                                >
-                                    <Typography
-                                        lineHeight={1.0}
-                                        fontWeight="bold"
-                                        variant="caption"
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            mt: smallScreen ? 1 : 0.25
+                                        }}>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                lineHeight: 1.0,
+                                                fontWeight: "bold",
+                                                padding: 0.3,
+                                                backgroundColor: gameColor,
+                                                textAlign: "center",
+                                                color: "white",
+                                                textShadow: "black 1px 1px 1px",
+                                                borderRadius: "6px",
+                                                border: 1,
+                                                borderColor: gameColor
+                                            }}>
+                                            {formatGame(replay.game)}
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                lineHeight: 1.0,
+                                                fontWeight: "bold",
+                                                ml: 0.5,
+                                                padding: 0.3,
+                                                backgroundColor: styleColor,
+                                                textAlign: "center",
+                                                color: "white",
+                                                textShadow: "black 1px 1px 1px",
+                                                borderRadius: "6px",
+                                                border: 1,
+                                                borderColor: styleColor
+                                            }}>
+                                            {formatStyle(replay.style)}
+                                        </Typography>
+                                    </Box>
+                                    <Box
                                         sx={{
-                                            padding: 0.3,
-                                            backgroundColor: gameColor,
-                                            textAlign: "center",
-                                            color: "white",
-                                            textShadow: "black 1px 1px 1px",
-                                            borderRadius: "6px",
-                                            border: 1,
-                                            borderColor: gameColor
-                                        }}
-                                    >
-                                        {formatGame(replay.game)}
-                                    </Typography>
-                                    <Typography
-                                        lineHeight={1.0}
-                                        fontWeight="bold"
-                                        variant="caption"
-                                        ml={0.5}
-                                        sx={{
-                                            padding: 0.3,
-                                            backgroundColor: styleColor,
-                                            textAlign: "center",
-                                            color: "white",
-                                            textShadow: "black 1px 1px 1px",
-                                            borderRadius: "6px",
-                                            border: 1,
-                                            borderColor: styleColor
-                                        }}
-                                    >
-                                        {formatStyle(replay.style)}
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    mt={1}
-                                    display="inline-flex"
-                                    alignItems="center"
-                                >
-                                    <Link
-                                        display="inline-flex"
-                                        alignItems="center"
-                                        underline="none"
-                                        component={RouterLink}
-                                        color="textPrimary"
-                                        to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
-                                        sx={{
-                                            textDecoration: "none",
-                                            ":hover": {
-                                                "p": {
-                                                    textDecoration: "underline"
+                                            mt: 1,
+                                            display: "inline-flex",
+                                            alignItems: "center"
+                                        }}>
+                                        <Link
+                                            underline="none"
+                                            component={RouterLink}
+                                            color="textPrimary"
+                                            to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
+                                            sx={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                textDecoration: "none",
+
+                                                ":hover": {
+                                                    "p": {
+                                                        textDecoration: "underline"
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                    >
-                                        <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
+                                            }}>
+                                            <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
+                                            <Typography
+                                                variant="body1"
+                                                sx={{
+                                                    ml: 0.75,
+                                                    display: "inline-block"
+                                                }}>
+                                                @{replay.username}
+                                            </Typography>
+
+                                        </Link>
+                                        {replay.userCountry &&
+                                        <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
+                                        {isCurrentUser &&
+                                        <Box title="You" sx={{
+                                            display: "flex"
+                                        }}>
+                                            <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
+                                        </Box>}
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            mt: 0.5
+                                        }}>
                                         <Typography
                                             variant="body1"
-                                            ml={0.75}
-                                            display="inline-block"
-                                        >
-                                            @{replay.username}
+                                            sx={{
+                                                display: "inline-block",
+                                                fontFamily: "monospace"
+                                            }}>
+                                            {formatPlacement(replay.placement)}
                                         </Typography>
-
-                                    </Link>
-                                    {replay.userCountry &&
-                                    <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
-                                    {isCurrentUser &&
-                                    <Box display="flex" title="You">
-                                        <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
-                                    </Box>}
-                                </Box>
-                                <Box display="flex" alignItems="center" mt={0.5}>
-                                    <Typography
-                                        variant="body1"
-                                        display="inline-block"
-                                        fontFamily="monospace"
-                                    >
-                                        {formatPlacement(replay.placement)}
-                                    </Typography>
-                                    <Typography
-                                        variant="body1"
-                                        display="inline-block"
-                                        ml={0.75}
-                                        mr={0.75}
-                                    >
-                                        -
-                                    </Typography>
-                                    <Typography
-                                        variant="body1"
-                                        display="inline-block"
-                                        mr={0.75}
-                                    >
-                                        {formatTime(replay.time)}
-                                    </Typography>
-                                    <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
-                                </Box>
-                                <Box
-                                    display="inline-flex"
-                                    flexDirection="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    mt={0.25}
-                                >
-                                    <Typography
-                                        variant="body2"
-                                        fontWeight="bold"
-                                        display="inline-block"
-                                    >
-                                        {replay.views === 1 ? "1 view" : `${replay.views} views`}
-                                    </Typography>
-                                    <Box display="inline-block">
-                                        <DateDisplay date={replay.date} useDateTime={!smallScreen} color={theme.palette.text.secondary} variant="body2" />
+                                        <Typography
+                                            variant="body1"
+                                            sx={{
+                                                display: "inline-block",
+                                                ml: 0.75,
+                                                mr: 0.75
+                                            }}>
+                                            -
+                                        </Typography>
+                                        <Typography
+                                            variant="body1"
+                                            sx={{
+                                                display: "inline-block",
+                                                mr: 0.75
+                                            }}>
+                                            {formatTime(replay.time)}
+                                        </Typography>
+                                        <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            display: "inline-flex",
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            mt: 0.25
+                                        }}>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                fontWeight: "bold",
+                                                display: "inline-block"
+                                            }}>
+                                            {replay.views === 1 ? "1 view" : `${replay.views} views`}
+                                        </Typography>
+                                        <Box sx={{
+                                            display: "inline-block"
+                                        }}>
+                                            <DateDisplay date={replay.date} useDateTime={!smallScreen} color={theme.palette.text.secondary} variant="body2" />
+                                        </Box>
                                     </Box>
                                 </Box>
+                                </>}
                             </Box>
-                            </>}
                         </Box>
-                    </Box>
                     );
                 }}
                 </AutoSizer>

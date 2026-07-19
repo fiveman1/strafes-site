@@ -168,7 +168,13 @@ function CompareChart(props: ICompareChartProps) {
         return (
             <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
                 <Typography variant="caption">Compare</Typography>
-                <Box display="flex" alignContent="center" justifyContent="center" padding={2}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignContent: "center",
+                        justifyContent: "center",
+                        padding: 2
+                    }}>
                     {duplicateWarning ? (
                         <Alert severity="warning" sx={{ width: "100%" }}>{message}</Alert>
                     ) : (
@@ -182,15 +188,20 @@ function CompareChart(props: ICompareChartProps) {
 
     return (
         <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
-            <Box display="flex" flexDirection="row">
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row"
+                }}>
                 <Typography variant="caption">Compare</Typography>
                 <Typography
-                    flexGrow={1}
                     variant="caption"
-                    fontStyle="italic"
                     color={theme.palette.text.secondary}
-                    textAlign="right"
-                >
+                    sx={{
+                        flexGrow: 1,
+                        fontStyle: "italic",
+                        textAlign: "right"
+                    }}>
                     Click on a slice to filter
                 </Typography>
             </Box>

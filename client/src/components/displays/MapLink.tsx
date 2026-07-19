@@ -33,55 +33,79 @@ function MapLink(props: IMapLinkProps) {
     const styleColor = getStyleColor(style, theme);
 
     return (
-        <Link to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}} 
-            component={RouterLink} 
-            underline="none" 
-            fontWeight="bold" 
-            display="inline-flex"
-            maxWidth="100%"
-            height="100%"
-            alignItems="center"
+        <Link
+            to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}}
+            component={RouterLink}
+            underline="none"
             sx={{
+                fontWeight: "bold",
+                display: "inline-flex",
+                maxWidth: "100%",
+                height: "100%",
+                alignItems: "center",
                 textDecoration: "none",
+
                 "&:hover .map-name": {
                     textDecoration: "underline !important"
                 }
-            }}
-        >
-            <Box display="inline-flex" flexDirection="row" alignItems="center" height="100%" maxWidth="100%">
+            }}>
+            <Box
+                sx={{
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    height: "100%",
+                    maxWidth: "100%"
+                }}>
                 <MapThumb size={MAP_THUMB_SIZE} map={mapInfo} />
-                <Box display="inline-flex" marginLeft="10px" flexDirection="column" maxWidth="100%" minWidth={0} height="calc(100% - 8px)" justifyContent="space-evenly">
-                    <Typography 
+                <Box
+                    sx={{
+                        display: "inline-flex",
+                        marginLeft: "10px",
+                        flexDirection: "column",
+                        maxWidth: "100%",
+                        minWidth: 0,
+                        height: "calc(100% - 8px)",
+                        justifyContent: "space-evenly"
+                    }}>
+                    <Typography
                         className="map-name"
-                        lineHeight="normal"
                         variant="inherit"
-                        fontWeight="bold"
-                        color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined} 
-                        overflow="hidden" 
-                        textOverflow="ellipsis" 
-                        whiteSpace="nowrap"
-                    >
+                        color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
+                        sx={{
+                            lineHeight: "normal",
+                            fontWeight: "bold",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                        }}>
                         {name}
                     </Typography>
                     {showCourse ? 
                     <Typography
-                        lineHeight="normal"
                         variant="caption"
-                        fontWeight="normal"
                         color="textPrimary"
-                        overflow="hidden" 
-                        textOverflow="ellipsis" 
-                        whiteSpace="nowrap"
-                    >
+                        sx={{
+                            lineHeight: "normal",
+                            fontWeight: "normal",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                        }}>
                         {formatCourse(course)}
                     </Typography>
                     : <></>}
-                    <Box lineHeight="normal" display="inline-flex" alignItems="center">
-                        <Typography 
-                            lineHeight={1.0}
-                            variant="caption" 
-                            fontWeight="bold" 
+                    <Box
+                        sx={{
+                            lineHeight: "normal",
+                            display: "inline-flex",
+                            alignItems: "center"
+                        }}>
+                        <Typography
+                            variant="caption"
                             sx={{
+                                lineHeight: 1.0,
+                                fontWeight: "bold",
                                 padding: 0.3,
                                 backgroundColor: darken(tierColor, 0.4),
                                 textAlign: "center",
@@ -90,17 +114,16 @@ function MapLink(props: IMapLinkProps) {
                                 borderRadius: "6px",
                                 border: 1,
                                 borderColor: tierColor
-                            }}
-                        >
+                            }}>
                             {formatTier(tier, showGame || showStyle)}
                         </Typography>
                         {showGame &&
                         <Typography
-                            lineHeight={1.0}
-                            fontWeight="bold" 
                             variant="caption"
-                            ml={0.5}
                             sx={{
+                                lineHeight: 1.0,
+                                fontWeight: "bold",
+                                ml: 0.5,
                                 padding: 0.3,
                                 overflow: "hidden",
                                 backgroundColor: gameColor,
@@ -110,17 +133,16 @@ function MapLink(props: IMapLinkProps) {
                                 borderRadius: "6px",
                                 border: 1,
                                 borderColor: gameColor
-                            }}
-                        >
+                            }}>
                             {formatGameShort(game)}
                         </Typography>}
                         {showStyle &&
                         <Typography
-                            lineHeight={1.0}
-                            fontWeight="bold" 
                             variant="caption"
-                            ml={0.5}
                             sx={{
+                                lineHeight: 1.0,
+                                fontWeight: "bold",
+                                ml: 0.5,
                                 padding: 0.3,
                                 overflow: "hidden",
                                 backgroundColor: styleColor,
@@ -130,8 +152,7 @@ function MapLink(props: IMapLinkProps) {
                                 borderRadius: "6px",
                                 border: 1,
                                 borderColor: styleColor
-                            }}
-                        >
+                            }}>
                             {formatStyleShort(style)}
                         </Typography>}
                     </Box>

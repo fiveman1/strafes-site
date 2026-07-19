@@ -257,9 +257,20 @@ function Compare() {
     }, [entries, idToUser]);
 
     return (
-        <Box display="flex" flexDirection="column" flexGrow={1}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: 1
+            }}>
             {/* Breadcrumbs + Search row */}
-            <Box display="flex" flexDirection={smallScreen ? "column" : "row"} height={smallScreen ? undefined : "48px"} mb={smallScreen ? 0 : 0.5}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: smallScreen ? "column" : "row",
+                    height: smallScreen ? undefined : "48px",
+                    mb: smallScreen ? 0 : 0.5
+                }}>
                 <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex" }}>
                     <Link underline="hover" color="inherit" href="/">
                         Home
@@ -268,7 +279,17 @@ function Compare() {
                         Compare
                     </Typography>
                 </Breadcrumbs>
-                <Box padding={smallScreen ? 1 : 0.25} pt={0.25} pb={0.25} flexBasis="40%" minWidth="270px" maxWidth={smallScreen ? undefined : "500px"} display="flex" alignItems="center">
+                <Box
+                    sx={{
+                        padding: smallScreen ? 1 : 0.25,
+                        pt: 0.25,
+                        pb: 0.25,
+                        flexBasis: "40%",
+                        minWidth: "270px",
+                        maxWidth: smallScreen ? undefined : "500px",
+                        display: "flex",
+                        alignItems: "center"
+                    }}>
                     <UserSearch
                         setUserId={onAddUser}
                         userSearch={userSearch}
@@ -276,13 +297,19 @@ function Compare() {
                     />
                 </Box>
             </Box>
-
-            <Box padding={0.5} display="flex" flexWrap="wrap" alignItems="center">
+            <Box
+                sx={{
+                    padding: 0.5,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center"
+                }}>
                 <GameSelector game={game} setGame={setGame} />
             </Box>
-
             {/* Compare users/entries */}
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <CompareEntryList
                     entries={entries}
                     setEntries={setEntries}
@@ -290,9 +317,10 @@ function Compare() {
                     game={game}
                 />
             </Box>
-
             {/* Pie chart */}
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <CompareChart
                     entries={entries}
                     idToUser={idToUser}
@@ -303,9 +331,10 @@ function Compare() {
                     duplicateWarning={duplicateWarning}
                 />
             </Box>
-
             {/* Paginated times grid */}
-            <Box padding={1}>
+            <Box sx={{
+                padding: 1
+            }}>
                 <CompareTimesGrid
                     allTimes={allComparedTimes}
                     numEntries={entries.length}
