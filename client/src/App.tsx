@@ -153,71 +153,71 @@ function App() {
                 button: { fontWeight: 600 }
             },
             components: {
-            //     MuiCssBaseline: {
-            //         styleOverrides: {
-            //             html: { backgroundColor: isLight ? "#f5f3f5" : "#090809" },
-            //             body: {
-            //                 backgroundColor: isLight ? "#f8f6f8" : "#090809"
-            //             },
-            //             "#root": {
-            //                 isolation: "isolate",
-            //             },
-            //             "#root::before, #root::after": {
-            //                 content: '\"\"',
-            //                 position: "fixed",
-            //                 zIndex: -1,
-            //                 width: "min(46vw, 680px)",
-            //                 aspectRatio: "1",
-            //                 borderRadius: "50%",
-            //                 pointerEvents: "none",
-            //                 filter: "blur(100px)",
-            //                 opacity: isLight ? 0.12 : 0.14,
-            //                 willChange: "transform"
-            //             },
-            //             "#root::before": {
-            //                 top: "-22%",
-            //                 left: "-13%",
-            //                 background: alpha("#df2f78", 0.3),
-            //                 animation: "ambientDriftA 18s ease-in-out infinite alternate"
-            //             },
-            //             "#root::after": {
-            //                 right: "-15%",
-            //                 bottom: "-30%",
-            //                 background: isLight ? alpha("#55bfd6", 0.3) : alpha("#278da3", 0.3),
-            //                 animation: "ambientDriftB 22s ease-in-out infinite alternate"
-            //             },
-            //             "@keyframes ambientDriftA": {
-            //                 from: { transform: "translate3d(0, 0, 0) scale(0.9)" },
-            //                 to: { transform: "translate3d(12vw, 10vh, 0) scale(1.12)" }
-            //             },
-            //             "@keyframes ambientDriftB": {
-            //                 from: { transform: "translate3d(0, 0, 0) scale(1)" },
-            //                 to: { transform: "translate3d(-10vw, -8vh, 0) scale(0.86)" }
-            //             },
-            //             "@keyframes cardEnter": {
-            //                 from: { opacity: 0, transform: "translate3d(0, 14px, 0) scale(0.985)" },
-            //                 to: { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" }
-            //             },
-            //             "@keyframes glowPulse": {
-            //                 "0%, 100%": { opacity: 0.55, transform: "scaleX(0.86)" },
-            //                 "50%": { opacity: 1, transform: "scaleX(1.08)" }
-            //             },
-            //             "::selection": {
-            //                 backgroundColor: alpha("#ec3b83", 0.32)
-            //             },
-            //             "h1, h2, h3": {
-            //                 letterSpacing: "-0.03em"
-            //             },
-            //             "@media (prefers-reduced-motion: reduce)": {
-            //                 "*, *::before, *::after": {
-            //                     animationDuration: "0.01ms !important",
-            //                     animationIterationCount: "1 !important",
-            //                     scrollBehavior: "auto !important",
-            //                     transitionDuration: "0.01ms !important"
-            //                 }
-            //             }
-            //         }
-            //     },
+                MuiCssBaseline: {
+                    styleOverrides: {
+                        html: { backgroundColor: isLight ? "#f5f3f5" : "#090809" },
+                        body: {
+                            backgroundColor: isLight ? "#f8f6f8" : "#090809"
+                        },
+                        "#root": {
+                            isolation: "isolate",
+                        },
+                        "#root::before, #root::after": {
+                            content: '\"\"',
+                            position: "fixed",
+                            zIndex: -1,
+                            width: "min(46vw, 680px)",
+                            aspectRatio: "1",
+                            borderRadius: "50%",
+                            pointerEvents: "none",
+                            filter: "blur(100px)",
+                            opacity: isLight ? 0.12 : 0.14,
+                            willChange: "transform"
+                        },
+                        "#root::before": {
+                            top: "-22%",
+                            left: "-13%",
+                            background: alpha("#df2f78", 0.3),
+                            animation: "ambientDriftA 18s ease-in-out infinite alternate"
+                        },
+                        "#root::after": {
+                            right: "-15%",
+                            bottom: "-30%",
+                            background: isLight ? alpha("#55bfd6", 0.3) : alpha("#278da3", 0.3),
+                            animation: "ambientDriftB 22s ease-in-out infinite alternate"
+                        },
+                        // "@keyframes ambientDriftA": {
+                        //     from: { transform: "translate3d(0, 0, 0) scale(0.9)" },
+                        //     to: { transform: "translate3d(12vw, 10vh, 0) scale(1.12)" }
+                        // },
+                        // "@keyframes ambientDriftB": {
+                        //     from: { transform: "translate3d(0, 0, 0) scale(1)" },
+                        //     to: { transform: "translate3d(-10vw, -8vh, 0) scale(0.86)" }
+                        // },
+                        // "@keyframes cardEnter": {
+                        //     from: { opacity: 0, transform: "translate3d(0, 14px, 0) scale(0.985)" },
+                        //     to: { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" }
+                        // },
+                        // "@keyframes glowPulse": {
+                        //     "0%, 100%": { opacity: 0.55, transform: "scaleX(0.86)" },
+                        //     "50%": { opacity: 1, transform: "scaleX(1.08)" }
+                        // },
+                        // "::selection": {
+                        //     backgroundColor: alpha("#ec3b83", 0.32)
+                        // },
+                        // "h1, h2, h3": {
+                        //     letterSpacing: "-0.03em"
+                        // },
+                        // "@media (prefers-reduced-motion: reduce)": {
+                        //     "*, *::before, *::after": {
+                        //         animationDuration: "0.01ms !important",
+                        //         animationIterationCount: "1 !important",
+                        //         scrollBehavior: "auto !important",
+                        //         transitionDuration: "0.01ms !important"
+                        //     }
+                        // }
+                    }
+                },
                 MuiLink: {
                     defaultProps: {
                         component: LinkBehavior,
