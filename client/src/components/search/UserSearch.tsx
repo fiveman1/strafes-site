@@ -44,9 +44,11 @@ function UserSearch(props: IUserSearchProps) {
 
         if (userId !== null) {
             setUserId(userId.toString());
+            setSelectedUser(newSelectedUser);
         }
         else {
             setHasError(true);
+            setSelectedUser({username: ""});
         }
     }, [queryClient, setSelectedUser, setUserId]);
 
@@ -88,10 +90,11 @@ function UserSearch(props: IUserSearchProps) {
             inputMode="search"
             inputValue={userText}
             value={selectedUser}
-            onInputChange={(e, v) => onInputChange(v ?? "")}
-            onChange={(e, v) => onSearch(v ?? "")}
+            onInputChange={(e, v) => onInputChange(v)}
+            onChange={(e, v) => onSearch(v)}
             isOptionEqualToValue={(opt, val) => {
                 const username = typeof val === "string" ? val : val.username.toLowerCase();
+                console.log(val);
                 return opt.username.toLowerCase() === username || prevUsernamesContains(opt, username)
             }}
             filterOptions={(x) => x}
