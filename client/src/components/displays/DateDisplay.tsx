@@ -35,10 +35,10 @@ function DateDisplay(props: IDateDisplayProps) {
     return (
         <Typography
             variant={variant ?? "inherit"}
-            color={color}
             sx={{
                 display: "inline-flex",
-                fontWeight: fontWeight
+                fontWeight: fontWeight,
+                color: color
             }}>
             {(useDateTime && !lessThanMaxDaysAgo) ?
             <Box component="span">{dateTimeFormat.format(dateValue)}</Box>

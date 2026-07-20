@@ -182,9 +182,9 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                         {diff > 0 && !isTie ? (
                                                 <Typography
                                                     variant="caption"
-                                                    color={red["A400"]}
                                                     sx={{
-                                                        fontFamily: "monospace"
+                                                        fontFamily: "monospace",
+                                                        color: red["A400"]
                                                     }}
                                                 >
                                                     +{formatDiff(diff)}
@@ -192,16 +192,14 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                             ) : (
                                                 <Typography
                                                     variant="caption"
-                                                    color={
-                                                        isTie
+                                                    sx={{
+                                                        fontFamily: "monospace",
+                                                        fontWeight: "bold",
+                                                        color: isTie
                                                             ? TIE_COLOR
                                                             : theme.palette.mode === "dark"
                                                                 ? green["A400"]
                                                                 : darken(green["A400"], 0.15)
-                                                    }
-                                                    sx={{
-                                                        fontFamily: "monospace",
-                                                        fontWeight: "bold"
                                                     }}>
                                                     {isTie ? "tie" : "best"}
                                                 </Typography>

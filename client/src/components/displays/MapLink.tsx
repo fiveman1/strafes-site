@@ -71,13 +71,13 @@ function MapLink(props: IMapLinkProps) {
                     <Typography
                         className="map-name"
                         variant="inherit"
-                        color={isUnreleased ? UNRELEASED_MAP_COLOR : undefined}
                         sx={{
                             lineHeight: "normal",
                             fontWeight: "bold",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
+                            whiteSpace: "nowrap",
+                            color: isUnreleased ? UNRELEASED_MAP_COLOR : undefined
                         }}>
                         {name}
                     </Typography>

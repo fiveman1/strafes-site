@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Alert, Box, LinearProgress, Paper, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Alert, Box, LinearProgress, Paper, Typography, useMediaQuery } from "@mui/material";
 import { lighten } from "@mui/material/styles";
 import { grey } from "@mui/material/colors";
 import { PieChart, PieSeriesType, PieValueType } from "@mui/x-charts";
@@ -35,7 +35,6 @@ function CompareChart(props: ICompareChartProps) {
     const { entries, idToUser, entryTimes, isLoading, selectedSlice, setSelectedSlice, duplicateWarning } = props;
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
-    const theme = useTheme();
 
     const series: PieSeriesType<PieValueType>[] = useMemo(() => {
         if (entries.length < 2) return [];
@@ -196,7 +195,7 @@ function CompareChart(props: ICompareChartProps) {
                 <Typography variant="caption">Compare</Typography>
                 <Typography
                     variant="caption"
-                    color={theme.palette.text.secondary}
+                    color="textSecondary"
                     sx={{
                         flexGrow: 1,
                         fontStyle: "italic",
