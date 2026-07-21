@@ -246,7 +246,6 @@ function App() {
                             border: `1px solid ${border}`,
                             borderRadius: 12,
                             overflow: "hidden",
-                            boxShadow: isLight ? "0 14px 50px rgba(60, 32, 70, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)" : "0 18px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(255, 79, 154, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
                             backdropFilter: "blur(30px) saturate(180%)",
                             WebkitBackdropFilter: "blur(30px) saturate(180%)",
                             "&::after": {
