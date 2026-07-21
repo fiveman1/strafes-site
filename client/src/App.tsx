@@ -201,9 +201,9 @@ function App() {
                             "0%, 100%": { opacity: 0.55, transform: "scaleX(0.86)" },
                             "50%": { opacity: 1, transform: "scaleX(1.08)" }
                         },
-                        "::selection": {
-                            backgroundColor: alpha("#ec3b83", 0.32)
-                        },
+                        // "::selection": {
+                        //     backgroundColor: alpha("#ec3b83", 0.32)
+                        // },
                         "h1, h2, h3": {
                             letterSpacing: "-0.03em"
                         },
@@ -355,6 +355,9 @@ function App() {
                         list: {
                             padding: 6
                         }
+                    },
+                    defaultProps: {
+                        transitionDuration: 0
                     }
                 },
                 MuiMenuItem: {
@@ -479,6 +482,11 @@ function App() {
                         MenuProps: {
                             transitionDuration: 0
                         }
+                    }
+                },
+                MuiPopover: {
+                    defaultProps: {
+                        transitionDuration: 0
                     }
                 }
             },
