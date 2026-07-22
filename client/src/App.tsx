@@ -281,8 +281,8 @@ function App() {
                             WebkitBackdropFilter: "blur(26px) saturate(165%)",
                             transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
                             boxShadow: isLight
-                                ? "0 1px 2px rgba(20, 20, 30, 0.04), 0 14px 38px rgba(35, 20, 38, 0.055)"
-                                : "0 1px 2px rgba(0, 0, 0, 0.20), 0 18px 48px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+                                ? "0 1px 2px rgba(20, 20, 30, 0.04), 0 6px 8px rgba(35, 20, 38, 0.055)"
+                                : "0 1px 2px rgba(0, 0, 0, 0.20), 0 6px 8px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
                         }
                     }
                 },
@@ -295,8 +295,8 @@ function App() {
                             backdropFilter: "blur(26px) saturate(170%)",
                             WebkitBackdropFilter: "blur(26px) saturate(170%)",
                             boxShadow: isLight
-                                ? "0 14px 38px rgba(35, 20, 38, 0.055)"
-                                : "0 16px 42px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035)"
+                                ? "0 6px 8px rgba(35, 20, 38, 0.055)"
+                                : "0 6px 8px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035)"
                         }
                     }
                 },
