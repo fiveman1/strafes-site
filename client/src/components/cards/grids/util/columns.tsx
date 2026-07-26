@@ -72,7 +72,8 @@ export function makeDateColumn(): GridColDef {
         sortingOrder: ["desc", "asc"],
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             return <DateDisplay date={params.row.date} />
-        }
+        },
+        filterable: false
     }
 }
 
@@ -123,7 +124,8 @@ export function makePlacementColumn(sortable: boolean, isCompact?: boolean): Gri
                     </Typography>
                 </Box>
             );
-        }
+        },
+        filterable: false
     };
 }
 
@@ -138,7 +140,8 @@ export function makeTimeColumn(): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDisplay time={time} />
-        }
+        },
+        filterable: false
     };
 }
 
@@ -190,7 +193,8 @@ export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
             return <TimeDateColumn time={time} />;
-        }
+        },
+        filterable: false
     };
 }
 
@@ -202,6 +206,7 @@ export function makeCourseColumn(): GridColDef {
         flex: 60,
         minWidth: 90,
         valueFormatter: (val) => formatCourse(val),
-        sortable: false
+        sortable: false,
+        filterable: false
     }
 }

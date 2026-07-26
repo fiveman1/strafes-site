@@ -189,7 +189,6 @@ function RanksCard(props: IRanksCardProps) {
                         noRowsVariant: "circular-progress"
                     }
                 }}
-                disableColumnFilter
                 density="compact"
                 disableRowSelectionOnClick
                 onPaginationModelChange={onPageChange}

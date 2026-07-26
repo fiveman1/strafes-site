@@ -316,7 +316,6 @@ function TimesGrid(props: ITimesCardProps) {
                     sortModel: sort,
                 }
             }}
-            disableColumnFilter
             density="compact"
             disableRowSelectionOnClick
             onRowCountChange={setRowCount}

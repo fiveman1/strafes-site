@@ -224,7 +224,6 @@ function LeaderboardCard(props: IRanksCardProps) {
                 }}
                 onSortModelChange={onSortChange}
                 getRowId={(row) => row.userId}
-                disableColumnFilter
                 density="compact"
                 disableRowSelectionOnClick
                 sx={{

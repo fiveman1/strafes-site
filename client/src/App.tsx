@@ -446,7 +446,8 @@ function App() {
                     },
                     defaultProps: {
                         localeText: {paginationDisplayedRows: ({ from, to, count }) => count === -1 ? `${from}–${to} of more than ${to}` : `${from}–${to} of ${count}`},
-                        dataSourceKeepPreviousData: true
+                        dataSourceKeepPreviousData: true,
+                        disableColumnMenu: true
                     }
                 },
                 MuiTooltip: {
