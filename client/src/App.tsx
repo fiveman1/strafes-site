@@ -347,7 +347,6 @@ function App() {
                 MuiMenu: {
                     styleOverrides: {
                         paper: {
-                            marginTop: 6,
                             borderRadius: 10
                         },
                         list: {

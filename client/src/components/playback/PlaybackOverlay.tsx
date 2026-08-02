@@ -12,7 +12,6 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Slider from "@mui/material/Slider";
 import Popper from "@mui/material/Popper";
-import Fade from "@mui/material/Fade";
 import SpeedIcon from '@mui/icons-material/Speed';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -616,220 +615,216 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     isDragging={isDragging}
                     setIsDragging={setIsDragging}
                 />
-                <IconButton 
-                    ref={settingsButtonRef}
-                    aria-describedby={curSettingsMenuId}
-                    size="small"
-                    onPointerUp={onClickSettings}
-                    sx={{
-                        ml: 1.5
-                    }}
-                >
-                    <SettingsIcon />
-                </IconButton>
+                <Box ref={settingsButtonRef}>
+                    <IconButton
+                        aria-describedby={curSettingsMenuId}
+                        size="small"
+                        onPointerUp={onClickSettings}
+                        sx={{
+                            ml: 1.5
+                        }}
+                    >
+                        <SettingsIcon />
+                    </IconButton>
+                </Box>
                 <Popper
                     id={curSettingsMenuId}
                     open={settingsOpen}
                     anchorEl={settingsEl}
                     container={getPlayerRef}
                     placement="top-end"
-                    transition
                 >
-                    {({ TransitionProps }) => (
-                    <Fade {...TransitionProps} timeout={100}>
+                    <Box
+                        ref={settingsMenuRef}
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            padding: 1,
+                            bgcolor: "#00000080",
+                            color: "white",
+                            borderRadius: "8px"
+                        }}>
                         <Box
-                            ref={settingsMenuRef}
                             sx={{
                                 display: "flex",
                                 flexDirection: "column",
-                                padding: 1,
-                                bgcolor: "#00000080",
-                                color: "white",
-                                borderRadius: "8px"
+                                padding: verySmallScreen ?  0.25 : 0.5,
+                                width: verySmallScreen ? "150px" : "200px"
                             }}>
+                            <Box sx={{
+                                display: "flex"
+                            }}>
+                                <Typography variant="subtitle2">
+                                    Playback speed
+                                </Typography>
+                                <SpeedIcon fontSize="small" sx={{ ml: 0.75 }} />
+                            </Box>
+                            <Typography variant="subtitle1" sx={{
+                                textAlign: "center"
+                            }}>
+                                {speed.toFixed(1)}x
+                            </Typography>
                             <Box
                                 sx={{
                                     display: "flex",
+                                    pl: 1,
+                                    pr: 1
+                                }}>
+                                <Slider 
+                                    size="small"
+                                    value={speed}
+                                    min={0.1}
+                                    max={2}
+                                    step={0.1}
+                                    onChange={onChangeSpeed}
+                                    onChangeCommitted={onFinishChangingSpeed}
+                                />
+                            </Box>
+                            <Box
+                                sx={{
+                                    mt: verySmallScreen ? 0.5 : 1,
+                                    display: "flex",
+                                    justifyContent: "space-evenly",
+
+                                    ".speedButton": {
+                                        p: 0.5,
+                                        py: 0.25,
+                                        borderRadius: "8px",
+                                        cursor: "pointer",
+                                        userSelect: "none",
+                                        color: "white",
+                                        bgcolor: "#00000080",
+                                        transition: "background .15s ease",
+                                        border: 0,
+                                        "&:hover": {
+                                            bgcolor: "#42424280"
+                                        }
+                                    }
+                                }}>
+                                <Typography
+                                    variant="subtitle2"
+                                    className="speedButton"
+                                    component="button"
+                                    onClick={onClickHalfSpeedButton}
+                                    sx={{
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    0.5x
+                                </Typography>
+                                <Typography
+                                    variant="subtitle2"
+                                    className="speedButton"
+                                    component="button"
+                                    onClick={onClickNormalSpeedButton}
+                                    sx={{
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    1.0x
+                                </Typography>
+                                <Typography
+                                    variant="subtitle2"
+                                    className="speedButton"
+                                    component="button"
+                                    onClick={onClickDoubleSpeedButton}
+                                    sx={{
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    2.0x
+                                </Typography>
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: smallScreen ? "none" : "flex",
                                     flexDirection: "column",
-                                    padding: verySmallScreen ?  0.25 : 0.5,
-                                    width: verySmallScreen ? "150px" : "200px"
+                                    mt: 1.5
                                 }}>
                                 <Box sx={{
                                     display: "flex"
                                 }}>
                                     <Typography variant="subtitle2">
-                                        Playback speed
+                                        HUD
                                     </Typography>
-                                    <SpeedIcon fontSize="small" sx={{ ml: 0.75 }} />
-                                </Box>
-                                <Typography variant="subtitle1" sx={{
-                                    textAlign: "center"
-                                }}>
-                                    {speed.toFixed(1)}x
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        pl: 1,
-                                        pr: 1
-                                    }}>
-                                    <Slider 
-                                        size="small"
-                                        value={speed}
-                                        min={0.1}
-                                        max={2}
-                                        step={0.1}
-                                        onChange={onChangeSpeed}
-                                        onChangeCommitted={onFinishChangingSpeed}
-                                    />
+                                    <MonitorIcon fontSize="small" sx={{ ml: 0.75 }} />
                                 </Box>
                                 <Box
                                     sx={{
-                                        mt: verySmallScreen ? 0.5 : 1,
+                                        mt: 1,
                                         display: "flex",
-                                        justifyContent: "space-evenly",
+                                        flexDirection: "column",
 
-                                        ".speedButton": {
-                                            p: 0.5,
-                                            py: 0.25,
+                                        "button": {
+                                            py: 0.5,
+                                            pl: 0.75,
+                                            pr: 0.75,
                                             borderRadius: "8px",
                                             cursor: "pointer",
                                             userSelect: "none",
                                             color: "white",
-                                            bgcolor: "#00000080",
                                             transition: "background .15s ease",
                                             border: 0,
-                                            "&:hover": {
-                                                bgcolor: "#42424280"
+                                            "&.active": {
+                                                bgcolor: `${alpha(theme.palette.primary.main, 0.7)}`,
+                                                "&:hover": {
+                                                    bgcolor: `${alpha(lighten(theme.palette.primary.main, 0.2), 0.7)}`
+                                                }
                                             }
                                         }
-                                    }}>
-                                    <Typography
-                                        variant="subtitle2"
-                                        className="speedButton"
-                                        component="button"
-                                        onClick={onClickHalfSpeedButton}
-                                        sx={{
-                                            fontWeight: "bold"
-                                        }}
-                                    >
-                                        0.5x
-                                    </Typography>
-                                    <Typography
-                                        variant="subtitle2"
-                                        className="speedButton"
-                                        component="button"
-                                        onClick={onClickNormalSpeedButton}
-                                        sx={{
-                                            fontWeight: "bold"
-                                        }}
-                                    >
-                                        1.0x
-                                    </Typography>
-                                    <Typography
-                                        variant="subtitle2"
-                                        className="speedButton"
-                                        component="button"
-                                        onClick={onClickDoubleSpeedButton}
-                                        sx={{
-                                            fontWeight: "bold"
-                                        }}
-                                    >
-                                        2.0x
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    sx={{
-                                        display: smallScreen ? "none" : "flex",
-                                        flexDirection: "column",
-                                        mt: 1.5
                                     }}>
                                     <Box sx={{
                                         display: "flex"
                                     }}>
-                                        <Typography variant="subtitle2">
-                                            HUD
-                                        </Typography>
-                                        <MonitorIcon fontSize="small" sx={{ ml: 0.75 }} />
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            mt: 1,
-                                            display: "flex",
-                                            flexDirection: "column",
-
-                                            "button": {
-                                                py: 0.5,
-                                                pl: 0.75,
-                                                pr: 0.75,
-                                                borderRadius: "8px",
-                                                cursor: "pointer",
-                                                userSelect: "none",
-                                                color: "white",
-                                                transition: "background .15s ease",
-                                                border: 0,
-                                                "&.active": {
-                                                    bgcolor: `${alpha(theme.palette.primary.main, 0.7)}`,
-                                                    "&:hover": {
-                                                        bgcolor: `${alpha(lighten(theme.palette.primary.main, 0.2), 0.7)}`
-                                                    }
-                                                }
-                                            }
-                                        }}>
-                                        <Box sx={{
-                                            display: "flex"
-                                        }}>
-                                            <Typography
-                                                variant="subtitle2"
-                                                className={showSpeed ? "speedButton active" : "speedButton"}
-                                                component="button"
-                                                onClick={onClickSpeedButton}
-                                                sx={{
-                                                    display: "flex",
-                                                    fontWeight: "bold"
-                                                }}>
-                                                {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                                Speed
-                                            </Typography>
-                                            <Typography
-                                                variant="subtitle2"
-                                                className={showInput ? "speedButton active" : "speedButton"}
-                                                component="button"
-                                                onClick={onClickInputButton}
-                                                sx={{
-                                                    display: "flex",
-                                                    fontWeight: "bold",
-                                                    ml: 1
-                                                }}>
-                                                {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                                Input
-                                            </Typography>
-                                        </Box>
-                                        {allowDiff &&
-                                        <Box
+                                        <Typography
+                                            variant="subtitle2"
+                                            className={showSpeed ? "speedButton active" : "speedButton"}
+                                            component="button"
+                                            onClick={onClickSpeedButton}
                                             sx={{
                                                 display: "flex",
-                                                mt: 1
+                                                fontWeight: "bold"
                                             }}>
-                                            <Typography
-                                                variant="subtitle2"
-                                                className={showDiffSetting ? "speedButton active" : "speedButton"}
-                                                component="button"
-                                                onClick={onClickDiffButton}
-                                                sx={{
-                                                    display: "flex",
-                                                    fontWeight: "bold"
-                                                }}>
-                                                {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                                Diff
-                                            </Typography>
-                                        </Box>}
+                                            {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                            Speed
+                                        </Typography>
+                                        <Typography
+                                            variant="subtitle2"
+                                            className={showInput ? "speedButton active" : "speedButton"}
+                                            component="button"
+                                            onClick={onClickInputButton}
+                                            sx={{
+                                                display: "flex",
+                                                fontWeight: "bold",
+                                                ml: 1
+                                            }}>
+                                            {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                            Input
+                                        </Typography>
                                     </Box>
+                                    {allowDiff &&
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            mt: 1
+                                        }}>
+                                        <Typography
+                                            variant="subtitle2"
+                                            className={showDiffSetting ? "speedButton active" : "speedButton"}
+                                            component="button"
+                                            onClick={onClickDiffButton}
+                                            sx={{
+                                                display: "flex",
+                                                fontWeight: "bold"
+                                            }}>
+                                            {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                            Diff
+                                        </Typography>
+                                    </Box>}
                                 </Box>
                             </Box>
                         </Box>
-                    </Fade>
-                    )}
+                    </Box>
                 </Popper>
                 <IconButton 
                     ref={fullscreenButtonRef}
