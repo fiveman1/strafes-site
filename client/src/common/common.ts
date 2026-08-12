@@ -185,3 +185,5 @@ export enum InputState {
     LookRight = "lookright",
     Jump = "jump"
 }
+
+export const REPLAY_END_PAUSE_TIME = 1;

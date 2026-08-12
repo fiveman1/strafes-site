@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, setup_graphics } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, PlaybackSession, setup_graphics } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -44,7 +44,7 @@ function getPlayerWidth(width: number, height: number) {
     }
 }
 
-function handleCanvasSize(width: number, height: number, playback: PlaybackHead, graphics: Graphics) {
+function handleCanvasSize(width: number, height: number, playback: PlaybackSession, graphics: Graphics) {
     const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
@@ -54,16 +54,6 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackHead,
 
 function getSafeTime(time: number, bot: CompleteBot) {
     return clamp(time, 0, bot.duration() - 0.0001);
-}
-
-function getReplayRunDuration(replay: Replay, bot: CompleteBot) {
-    try {
-        return bot.run_duration(replay.course);
-    }
-    catch (err) {
-        console.warn(err);
-        return replay.time / 1000;
-    }
 }
 
 function getMapTitle(replay: Replay) {
@@ -81,7 +71,7 @@ const controlToState = new Map([
     [GameControls.Jump, InputState.Jump]
 ]);
 
-function updateInputDisplay(input: HTMLDivElement, playback: PlaybackHead) {
+function updateInputDisplay(input: HTMLDivElement, playback: PlaybackSession) {
     const controls = playback.get_game_controls();
     controlToState.forEach((state, control) => {
         const isActive = (controls & control) > 0;
@@ -186,7 +176,7 @@ function Replays() {
     const botRef = useRef<CompleteBot>(null);
     const diffBotRef = useRef<CompleteBot>(null);
     const diffBvhRef = useRef<Bvh>(null);
-    const playbackRef = useRef<PlaybackHead>(null);
+    const playbackRef = useRef<PlaybackSession>(null);
     const diffPlaybackRef = useRef<PlaybackHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
@@ -256,6 +246,11 @@ function Replays() {
 
             const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
             const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
+
+            if (replay.compareTimeId) {
+                await queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+            }
+
             const [mapFile, botFile] = await Promise.all([
                 mapFilePromise,
                 botFilePromise
@@ -282,7 +277,7 @@ function Replays() {
             try {
                 const map = new CompleteMap(mapFile);
                 const bot = new CompleteBot(botFile);
-                const playback = new PlaybackHead(bot, 0);
+                const playback = new PlaybackSession(bot, 0);
                 const graphics = await setup_graphics(canvas);
 
                 playbackRef.current = playback;
@@ -294,36 +289,31 @@ function Replays() {
                 handleCanvasSize(width, height, playback, graphics);
 
                 playback.advance_time(bot, 0);
-                playback.set_head_time(bot, 0, 0);
+                playback.set_bot_time(bot, 0, 0);
                 graphics.change_map(map);
 
                 const botDuration = bot.duration();
-                const runDuration = getReplayRunDuration(replay, bot);
+                const runDuration = bot.run_duration(replay.course);
                 setDuration(runDuration);
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
                 setPlaybackTime(-offset);
                 setLoading(false);
 
-
-
-
                 if (replay.compareTimeId) {
-                    void (async () => {
-                        const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!)).catch(() => null);
+                    try {
+                        const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
                         if (!diffBotFile || isCanceled) return;
-
-                        try {
-                            const diffBot = new CompleteBot(diffBotFile);
-                            diffBotRef.current = diffBot;
-                            diffBvhRef.current = new Bvh(diffBot);
-                            diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
-                            setDiffReady(true);
-                        }
-                        catch (error) {
-                            console.warn("Couldn't initialize comparison replay", error);
-                        }
-                    })().catch((error) => console.warn("Couldn't load comparison replay", error));
+                        
+                        const diffBot = new CompleteBot(diffBotFile);
+                        diffBotRef.current = diffBot;
+                        diffBvhRef.current = new Bvh(diffBot);
+                        diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
+                        setDiffReady(true);
+                    }
+                    catch (error) {
+                        console.warn("Couldn't initialize comparison replay", error);
+                    }
                 }
             }
             catch (err) {
@@ -331,6 +321,7 @@ function Replays() {
                 setError(err instanceof Error ? err.message : "Something went wrong trying to initialize the playback engine.");
             }
         };
+
         promise().catch((err) => {
             if (!isCanceled) {
                 console.error(err);
@@ -392,7 +383,7 @@ function Replays() {
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
                     playback.advance_time(bot, newSessionTime);
-                    graphics.render(bot, playback, newSessionTime);
+                    graphics.render_session(bot, playback, newSessionTime);
                     const speed = playback.get_speed(bot, newSessionTime);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
@@ -410,11 +401,11 @@ function Replays() {
                         const pos = playback.get_position(bot, newSessionTime);
                         const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
                         if (diffPlaybackTime !== undefined) {
-                            diffPlayback.set_head_time(diffBot, newSessionTime, getSafeTime(diffPlaybackTime, diffBot));
+                            diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
                             const botTime = playback.get_run_time(bot, newSessionTime, replay.course) ?? 0;
-                            const diffBotTime = diffPlayback.get_run_time(diffBot, newSessionTime, replay.course) ?? 0;
+                            const diffBotTime = diffPlayback.get_run_time(diffBot, diffPlaybackTime, replay.course) ?? 0;
                             const timeDiff = botTime - diffBotTime;
-                            const diffBotSpeed = diffPlayback.get_speed(diffBot, newSessionTime);
+                            const diffBotSpeed = diffPlayback.get_speed(diffBot, diffPlaybackTime);
                             const speedDiff = speed - diffBotSpeed;
 
                             updateDiffDisplay(diffTimeElement, diffSpeedElement, timeDiff, speedDiff);
@@ -442,8 +433,8 @@ function Replays() {
         const interval = setInterval(() => {
             const playback = playbackRef.current;
             if (playback) {
-                const headTime = playback.get_head_time(sessionTimer.current);
-                const curPlayerTime = Math.min(headTime - botOffset, duration);
+                const botTime = playback.get_bot_time(sessionTimer.current);
+                const curPlayerTime = Math.min(botTime - botOffset, duration);
                 setPlaybackTime(curPlayerTime);
             }
         }, 17);
@@ -464,9 +455,9 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
+            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
-                playback.set_paused(sessionTimer.current, false);
+                playback.set_paused(bot, sessionTimer.current, false);
             }
         }
     }, [botOffset, paused]);
@@ -476,8 +467,8 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
-            playback.set_paused(sessionTimer.current, true);
+            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
+            playback.set_paused(bot, sessionTimer.current, true);
         }
     }, [botOffset]);
 
@@ -485,9 +476,9 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            const curTime = playback.get_head_time(sessionTimer.current);
+            const curTime = playback.get_bot_time(sessionTimer.current);
             const newTime = curTime + offset;
-            playback.set_head_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
+            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
         }
     }, []);
 
@@ -495,15 +486,16 @@ function Replays() {
         const playback = playbackRef.current;
         const bot = botRef.current;
         if (playback && bot) {
-            playback.set_head_time(bot, sessionTimer.current, 0.0001);
+            playback.set_bot_time(bot, sessionTimer.current, 0.0001);
         }
     }, []);
 
     const onSetPause = useCallback((paused: boolean) => {
         setPaused(paused);
         const playback = playbackRef.current;
-        if (playback) {
-            playback.set_paused(sessionTimer.current, paused);
+        const bot = botRef.current;
+        if (playback && bot) {
+            playback.set_paused(bot, sessionTimer.current, paused);
         }
     }, []);
 
@@ -520,8 +512,9 @@ function Replays() {
     const onChangePlaybackSpeed = useCallback((speed: number) => {
         setPlaybackSpeed(speed);
         const playback = playbackRef.current;
-        if (playback) {
-            playback.set_scale(sessionTimer.current, speed);
+        const bot = botRef.current;
+        if (playback && bot) {
+            playback.set_scale(bot, sessionTimer.current, speed);
         }
     }, []);
 
