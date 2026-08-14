@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clamp, normalize } from "../../common/utils";
 
 interface ProgressSliderProps {
@@ -11,12 +11,19 @@ interface ProgressSliderProps {
     onSetPlayback: (time: number) => void
     isDragging: boolean
     setIsDragging: (drag: boolean) => void
+    canvasRef: React.Ref<HTMLCanvasElement>
+    setThumbTime: (time: number) => void
 }
 
+const ASPECT_RATIO = 16 / 9;
+const HEIGHT = 90;
+
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging } = props;
+    const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime } = props;
     const theme = useTheme();
-    const [ isHovering, setIsHovering ] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+    const [showThumb, setShowThumb] = useState(false);
+    const [coords, setCoords] = useState({ x: 0, y: 0 });
     const ref = useRef<HTMLSpanElement>(null);
 
     const diff = max - min;
@@ -87,73 +94,118 @@ function ProgressSlider(props: ProgressSliderProps) {
         setIsDragging(true);
     }, [setIsDragging]);
 
-    const onPointerOver = useCallback(() => {
+    const onPointerEnter = useCallback((e: React.PointerEvent) => {
         setIsHovering(true);
+        if (e.pointerType === "mouse") {
+            setShowThumb(true);
+        }
     }, []);
 
-    const onPointerLeave = useCallback(() => {
+    const onPointerLeave = useCallback((e: React.PointerEvent) => {
         setIsHovering(false);
+        if (e.pointerType === "mouse") {
+            setShowThumb(false);
+        }
     }, []);
 
+    const onMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!ref.current) return;
+        const rect = ref.current.getBoundingClientRect();
+        setCoords({
+            x: e.clientX,
+            y: rect.y
+        });
+        const x = clamp(e.clientX, rect.left, rect.right);
+        const time = normalize(x, rect.left, rect.right, min,max);
+        setThumbTime(time);
+    }, [max, min, setThumbTime]);
+
+    const thumbHeight = HEIGHT;
+    const thumbWidth = HEIGHT * ASPECT_RATIO;
     return (
-        <Box
-            component="span"
-            ref={ref}
-            onPointerDown={onPointerDown}
-            onPointerOver={onPointerOver}
-            onPointerLeave={onPointerLeave}
-            sx={{
-                position: "relative",
-                width: "100%",
-                height: "40px",
-                cursor: "pointer"
-            }}>
+        <>
             <Box
-                component="span"
                 sx={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "6px",
-                    top: "50%",
-                    borderRadius: "2px",
-                    bgcolor: "white",
-                    transform: "translateY(-50%)",
-                    opacity: 0.3
-                }} />
-            <Box
-                component="span"
-                style={{
-                    width: offset
+                    position: "fixed",
+                    width: `${thumbWidth}px`,
+                    height: `${thumbHeight}px`,
+                    display: showThumb ? "block" : "none",
+                    borderRadius: "4px",
+                    border: "1px solid #ffffff49"
                 }}
-                sx={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "8px",
-                    top: "50%",
-                    left: "0%",
-                    borderRadius: "2px",
-                    bgcolor: theme.palette.primary.main,
-                    transform: "translateY(-50%)",
-                    transition: "opacity .15s ease",
-                    opacity: isDragging || isHovering ? 1 : 0.7
-                }} />
+                style={{
+                    left: `${coords.x - (thumbWidth / 2)}px`,
+                    top: `${coords.y - thumbHeight}px`,
+                }}
+            >
+                <canvas 
+                    ref={canvasRef}
+                    style={{
+                        borderRadius: "4px",
+                        width: "100%",
+                        height: "100%"
+                    }}
+                />
+            </Box>
             <Box
                 component="span"
-                style={{
-                    left: offset
-                }}
+                ref={ref}
+                onPointerDown={onPointerDown}
+                onPointerEnter={onPointerEnter}
+                onPointerLeave={onPointerLeave}
+                onMouseMove={onMouseMove}
                 sx={{
-                    position: "absolute",
-                    width: "12px",
-                    height: "12px",
-                    top: "50%",
-                    borderRadius: "50%",
-                    bgcolor: theme.palette.primary.main,
-                    transform: isDragging || isHovering ? "translate(-50%, -50%) scale(1.25)" : "translate(-50%, -50%)",
-                    transition: "transform .15s ease"
-                }} />
-        </Box>
-    );
+                    position: "relative",
+                    width: "100%",
+                    height: "40px",
+                    cursor: "pointer"
+                }}>
+                <Box
+                    component="span"
+                    sx={{
+                        position: "absolute",
+                        width: "100%",
+                        height: "6px",
+                        top: "50%",
+                        borderRadius: "2px",
+                        bgcolor: "white",
+                        transform: "translateY(-50%)",
+                        opacity: 0.3
+                    }} />
+                <Box
+                    component="span"
+                    style={{
+                        width: offset
+                    }}
+                    sx={{
+                        position: "absolute",
+                        width: "100%",
+                        height: "8px",
+                        top: "50%",
+                        left: "0%",
+                        borderRadius: "2px",
+                        bgcolor: theme.palette.primary.main,
+                        transform: "translateY(-50%)",
+                        transition: "opacity .15s ease",
+                        opacity: isDragging || isHovering ? 1 : 0.7
+                    }} />
+                <Box
+                    component="span"
+                    style={{
+                        left: offset
+                    }}
+                    sx={{
+                        position: "absolute",
+                        width: "12px",
+                        height: "12px",
+                        top: "50%",
+                        borderRadius: "50%",
+                        bgcolor: theme.palette.primary.main,
+                        transform: isDragging || isHovering ? "translate(-50%, -50%) scale(1.25)" : "translate(-50%, -50%)",
+                        transition: "transform .15s ease"
+                    }} />
+            </Box>
+        </>);
 }
 
 export default ProgressSlider;

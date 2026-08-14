@@ -47,6 +47,8 @@ interface PlaybackOverlayProps {
     diffTimeTextRef: React.Ref<HTMLElement>
     diffSpeedTextRef: React.Ref<HTMLElement>
     allowDiff: boolean
+    thumbCanvasRef: React.Ref<HTMLCanvasElement>
+    setThumbTime: (time: number) => void
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
@@ -56,7 +58,7 @@ const SHOW_DIFF_SETTING = "player_showDiff";
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
-        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff } = props;
+        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff, thumbCanvasRef, setThumbTime } = props;
 
     const theme = useTheme();
     
@@ -614,6 +616,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     onSetPlayback={onSetPlaybackHandler}
                     isDragging={isDragging}
                     setIsDragging={setIsDragging}
+                    canvasRef={thumbCanvasRef}
+                    setThumbTime={setThumbTime}
                 />
                 <Box ref={settingsButtonRef}>
                     <IconButton
