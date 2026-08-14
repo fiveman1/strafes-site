@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, PlaybackSession, setup_graphics } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, PlaybackSession, setup_graphics, Surface } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -44,12 +44,13 @@ function getPlayerWidth(width: number, height: number) {
     }
 }
 
-function handleCanvasSize(width: number, height: number, playback: PlaybackSession, graphics: Graphics) {
+function handleCanvasSize(width: number, height: number, playback: PlaybackSession, graphics: Graphics, surface: Surface) {
     const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
     const fov_x = (fov_y * screenWidth) / screenHeight;
     graphics.resize(screenWidth, screenHeight, fov_x, fov_y);
+    surface.resize(graphics, screenWidth, screenHeight);
 }
 
 function getSafeTime(time: number, bot: CompleteBot) {
@@ -173,6 +174,7 @@ function Replays() {
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
     const graphicsRef = useRef<Graphics>(null);
+    const surfaceRef = useRef<Surface>(null);
     const botRef = useRef<CompleteBot>(null);
     const diffBotRef = useRef<CompleteBot>(null);
     const diffBvhRef = useRef<Bvh>(null);
@@ -278,15 +280,18 @@ function Replays() {
                 const map = new CompleteMap(mapFile);
                 const bot = new CompleteBot(botFile);
                 const playback = new PlaybackSession(bot, 0);
-                const graphics = await setup_graphics(canvas);
+                const graphics_and_surface = await setup_graphics(canvas);
+                const graphics = graphics_and_surface.graphics()!;
+                const surface = graphics_and_surface.surface()!;
 
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
+                surfaceRef.current = surface;
                 botRef.current = bot;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
-                handleCanvasSize(width, height, playback, graphics);
+                handleCanvasSize(width, height, playback, graphics, surface);
 
                 playback.advance_time(bot, 0);
                 playback.set_bot_time(bot, 0, 0);
@@ -375,15 +380,16 @@ function Replays() {
             const playback = playbackRef.current;
             const bot = botRef.current;
             const graphics = graphicsRef.current;
+            const surface = surfaceRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && bot && graphics && speedText && input) {
+            if (playback && bot && graphics && surface && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
                     playback.advance_time(bot, newSessionTime);
-                    graphics.render_session(bot, playback, newSessionTime);
+                    graphics.render_session(surface, bot, playback, newSessionTime);
                     const speed = playback.get_speed(bot, newSessionTime);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
@@ -445,8 +451,9 @@ function Replays() {
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
         const graphics = graphicsRef.current;
-        if (playback && graphics) {
-            handleCanvasSize(width, height, playback, graphics);
+        const surface = surfaceRef.current;
+        if (playback && graphics && surface) {
+            handleCanvasSize(width, height, playback, graphics, surface);
         }
     }, []);
 
