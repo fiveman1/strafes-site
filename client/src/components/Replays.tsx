@@ -165,8 +165,6 @@ function Replays() {
     const [ mapFileReceived, setMapFileReceived ] = useState(0);
     const [ botFileLength, setBotFileLength ] = useState(0);
     const [ botFileReceived, setBotFileReceived ] = useState(0);
-    const [ diffBotFileLength, setDiffBotFileLength ] = useState(0);
-    const [ diffBotFileReceived, setDiffBotFileReceived ] = useState(0);
     const [ diffReady, setDiffReady ] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -224,7 +222,6 @@ function Replays() {
         let isCanceled = false;
         setMapFileReceived(0);
         setBotFileReceived(0);
-        setDiffBotFileReceived(0);
         setDiffReady(false);
         setLoading(true);
 
@@ -236,12 +233,6 @@ function Replays() {
             setBotFileLength(progress.total);
             setBotFileReceived(progress.received);
         });
-        const unsubscribeDiffBotProgress = replay.compareTimeId
-            ? subscribeToReplayAssetProgress(botAssetProgressKey(replay.compareTimeId), (progress) => {
-                setDiffBotFileLength(progress.total);
-                setDiffBotFileReceived(progress.received);
-            })
-            : () => undefined;
 
         const promise = async () => {
             if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
@@ -349,7 +340,6 @@ function Replays() {
             isCanceled = true;
             unsubscribeMapProgress();
             unsubscribeBotProgress();
-            unsubscribeDiffBotProgress();
             if (playbackRef.current) {
                 playbackRef.current.free();
                 playbackRef.current = null;
@@ -578,7 +568,6 @@ function Replays() {
     if (loading) {
         let mapProgress = -1;
         let botProgress = -1;
-        let diffBotProgress = -1;
 
         if (mapFileLength !== 0) {
             mapProgress = mapFileReceived / mapFileLength;
@@ -588,16 +577,9 @@ function Replays() {
             botProgress = botFileReceived / botFileLength;
         }
 
-        if (diffBotFileLength !== 0) {
-            diffBotProgress = diffBotFileReceived / diffBotFileLength;
-        }
+        const progress = Math.min(mapProgress, botProgress);
 
-        let progress = Math.min(mapProgress, botProgress);
-        if (diffBotProgress !== -1) {
-            progress = Math.min(progress, diffBotProgress);
-        }
-
-        if (progress !== -1) {
+        if (progress !== -1 && mapProgress !== -1 && botProgress !== -1) {
             downloadProgress = progress;
         }
     }
