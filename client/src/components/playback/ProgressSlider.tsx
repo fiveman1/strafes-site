@@ -2,6 +2,8 @@ import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clamp, normalize } from "../../common/utils";
+import Typography from "@mui/material/Typography";
+import { formatTime } from "shared";
 
 interface ProgressSliderProps {
     min: number
@@ -23,6 +25,7 @@ function ProgressSlider(props: ProgressSliderProps) {
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
+    const [thumbTime, setThumbTimeFormatted] = useState("");
     const [coords, setCoords] = useState({ x: 0, y: 0 });
     const ref = useRef<HTMLSpanElement>(null);
 
@@ -118,6 +121,7 @@ function ProgressSlider(props: ProgressSliderProps) {
         const x = clamp(e.clientX, rect.left, rect.right);
         const time = normalize(x, rect.left, rect.right, min,max);
         setThumbTime(time);
+        setThumbTimeFormatted(formatTime(Math.round(Math.max(0, time * 1000)), true))
     }, [max, min, setThumbTime]);
 
     const thumbHeight = HEIGHT;
@@ -135,7 +139,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                 }}
                 style={{
                     left: `${coords.x - (thumbWidth / 2)}px`,
-                    top: `${coords.y - thumbHeight}px`,
+                    top: `${coords.y - thumbHeight - 28}px`,
                 }}
             >
                 <canvas 
@@ -146,6 +150,33 @@ function ProgressSlider(props: ProgressSliderProps) {
                         height: "100%"
                     }}
                 />
+            </Box>
+            <Box
+                sx={{
+                    position: "fixed",
+                    width: `${thumbWidth}px`,
+                    display: showThumb ? "flex" : "none",
+                    justifyContent: "center"
+                }}
+                style={{
+                    left: `${coords.x - (thumbWidth / 2)}px`,
+                    top: `${coords.y - 24}px`,
+                }}
+            >
+                <Typography
+                    variant="subtitle2"
+                    sx={{
+                        display: "inline-flex",
+                        bgcolor: "#00000080",
+                        color: "white",
+                        fontFamily: "monospace",
+                        borderRadius: "4px",
+                        whiteSpace: "nowrap",
+                        px: 0.75
+                    }}
+                >
+                    {thumbTime}
+                </Typography>
             </Box>
             <Box
                 component="span"

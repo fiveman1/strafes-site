@@ -542,7 +542,7 @@ function Replays() {
         }
     }, []);
 
-    const setThumbTIme = useCallback((reqTime: number) => {
+    const setThumbTime = useCallback((reqTime: number) => {
         const time = reqTime + botOffset;
         const bot = botRef.current;
         const playback = thumbPlaybackRef.current;
@@ -694,7 +694,7 @@ function Replays() {
                                         diffTimeTextRef={diffTimeTextRef}
                                         allowDiff={allowDiff}
                                         thumbCanvasRef={thumbCanvasRef}
-                                        setThumbTime={setThumbTIme}
+                                        setThumbTime={setThumbTime}
                                     />
                                 </Box>
                                 {(loading && !error) &&
