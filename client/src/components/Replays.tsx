@@ -49,7 +49,7 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackSessi
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
     const fov_x = (fov_y * screenWidth) / screenHeight;
-    graphics.resize(screenWidth, screenHeight, fov_x, fov_y);
+    graphics.set_fov(fov_x, fov_y);
     for (const surface of surfaces) {
         surface.resize(graphics, screenWidth, screenHeight);
     }
