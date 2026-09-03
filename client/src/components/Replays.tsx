@@ -233,6 +233,11 @@ function Replays() {
         });
 
         const promise = async () => {
+            if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
+                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
+                return;
+            }
+
             await init();
 
             const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
