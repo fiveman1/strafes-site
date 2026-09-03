@@ -8,7 +8,7 @@ import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
-import { ContextParams, getGameColor, getStyleColor, InputState } from "../common/common";
+import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
 import { darken, useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -24,20 +24,18 @@ import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import { botAssetProgressKey, mapAssetProgressKey, replayAssetQueries, subscribeToReplayAssetProgress } from "../api/replayAssets";
 
-const ASPECT_RATIO = 16 / 9;
-
 function getPlayerHeight(width: number, height: number) {
-    if (width / height > ASPECT_RATIO) {
+    if (width / height > PLAYER_ASPECT_RATIO) {
         return height;
     }
     else {
-        return width / ASPECT_RATIO;
+        return width / PLAYER_ASPECT_RATIO;
     }
 }
 
 function getPlayerWidth(width: number, height: number) {
-    if (width / height > ASPECT_RATIO) {
-        return height * ASPECT_RATIO;
+    if (width / height > PLAYER_ASPECT_RATIO) {
+        return height * PLAYER_ASPECT_RATIO;
     }
     else {
         return width;
@@ -49,7 +47,7 @@ function handleCanvasSize(width: number, height: number, playback: PlaybackSessi
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
     const fov_x = (fov_y * screenWidth) / screenHeight;
-    graphics.resize(screenWidth, screenHeight, fov_x, fov_y);
+    graphics.set_fov(fov_x, fov_y);
     for (const surface of surfaces) {
         surface.resize(graphics, screenWidth, screenHeight);
     }
@@ -235,11 +233,6 @@ function Replays() {
         });
 
         const promise = async () => {
-            if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
-
             await init();
 
             const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
@@ -292,7 +285,8 @@ function Replays() {
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
-                handleCanvasSize(width, height, playback, graphics, [surface, thumbSurface]);
+                handleCanvasSize(width, height, playback, graphics, [surface]);
+                handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
 
                 playback.advance_time(bot, 0);
                 playback.set_bot_time(bot, 0, 0);
@@ -470,7 +464,8 @@ function Replays() {
         const surface = surfaceRef.current;
         const thumbSurface = thumbSurfaceRef.current;
         if (playback && graphics && surface && thumbSurface) {
-            handleCanvasSize(width, height, playback, graphics, [surface, thumbSurface]);
+            handleCanvasSize(width, height, playback, graphics, [surface]);
+            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
         }
     }, []);
 

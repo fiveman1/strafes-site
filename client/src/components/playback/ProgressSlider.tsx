@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clamp, normalize } from "../../common/utils";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
+import { PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../../common/common";
 
 interface ProgressSliderProps {
     min: number
@@ -16,9 +17,6 @@ interface ProgressSliderProps {
     canvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
 }
-
-const ASPECT_RATIO = 16 / 9;
-const HEIGHT = 90;
 
 function ProgressSlider(props: ProgressSliderProps) {
     const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime } = props;
@@ -93,9 +91,14 @@ function ProgressSlider(props: ProgressSliderProps) {
         }
     }, [isDragging, max, min, onSetPlayback, setIsDragging]);
 
-    const onPointerDown = useCallback(() => {
+    const onPointerDown = useCallback((e: React.PointerEvent) => {
         setIsDragging(true);
-    }, [setIsDragging]);
+        if (!ref.current) return;
+        const rect = ref.current.getBoundingClientRect();
+        const x = clamp(e.clientX, rect.left, rect.right);
+        const newPlayback = normalize(x, rect.left, rect.right, min, max);
+        onDragPlayback(newPlayback);
+    }, [max, min, onDragPlayback, setIsDragging]);
 
     const onPointerEnter = useCallback((e: React.PointerEvent) => {
         setIsHovering(true);
@@ -124,8 +127,8 @@ function ProgressSlider(props: ProgressSliderProps) {
         setThumbTimeFormatted(formatTime(Math.round(Math.max(0, time * 1000)), true))
     }, [max, min, setThumbTime]);
 
-    const thumbHeight = HEIGHT;
-    const thumbWidth = HEIGHT * ASPECT_RATIO;
+    const thumbHeight = PLAYER_THUMB_HEIGHT;
+    const thumbWidth = PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO;
     return (
         <>
             <Box

@@ -185,3 +185,6 @@ export enum InputState {
     LookRight = "lookright",
     Jump = "jump"
 }
+
+export const PLAYER_ASPECT_RATIO = 16 / 9;
+export const PLAYER_THUMB_HEIGHT = 90;
