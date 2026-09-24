@@ -268,6 +268,14 @@ export async function getBotFileResponse(timeId: string) {
     return fileRes;
 }
 
+export async function getBotFileURL(timeId: string) {
+    const res = await tryGetRequest("replays/bots/" + timeId);
+    
+    if (!res) return null;
+
+    return res.data.url as string;
+}
+
 export async function getMapFileResponse(mapId: number) {
     const res = await tryGetRequest("replays/maps/" + mapId);
     

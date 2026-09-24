@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, PlaybackSession, setup_graphics, Surface } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, CompleteMap, Graphics, CompleteHead, StreamableSession, new_streamable_bot, setup_graphics, Surface, StreamableBot, BotDownloader } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -18,11 +18,12 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp } from "../common/utils";
+import { clamp, sleep } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import { botAssetProgressKey, mapAssetProgressKey, replayAssetQueries, subscribeToReplayAssetProgress } from "../api/replayAssets";
+import { getBotFileURL } from "../api/api";
 
 function getPlayerHeight(width: number, height: number) {
     if (width / height > PLAYER_ASPECT_RATIO) {
@@ -42,7 +43,7 @@ function getPlayerWidth(width: number, height: number) {
     }
 }
 
-function handleCanvasSize(width: number, height: number, playback: PlaybackSession, graphics: Graphics, surfaces: Surface[]) {
+function handleCanvasSize(width: number, height: number, playback: StreamableSession, graphics: Graphics, surfaces: Surface[]) {
     const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     const fov_y = playback.get_fov_slope_y();
@@ -72,7 +73,7 @@ const controlToState = new Map([
     [GameControls.Jump, InputState.Jump]
 ]);
 
-function updateInputDisplay(input: HTMLDivElement, playback: PlaybackSession) {
+function updateInputDisplay(input: HTMLDivElement, playback: StreamableSession) {
     const controls = playback.get_game_controls();
     controlToState.forEach((state, control) => {
         const isActive = (controls & control) > 0;
@@ -176,11 +177,13 @@ function Replays() {
     const surfaceRef = useRef<Surface>(null);
     const thumbSurfaceRef = useRef<Surface>(null);
     const botRef = useRef<CompleteBot>(null);
+    const streamBotRef = useRef<StreamableBot>(null);
+    const botDownloaderRef = useRef<BotDownloader>(null);
     const diffBotRef = useRef<CompleteBot>(null);
     const diffBvhRef = useRef<Bvh>(null);
-    const playbackRef = useRef<PlaybackSession>(null);
-    const thumbPlaybackRef = useRef<PlaybackHead>(null);
-    const diffPlaybackRef = useRef<PlaybackHead>(null);
+    const playbackRef = useRef<StreamableSession>(null);
+    const thumbPlaybackRef = useRef<CompleteHead>(null);
+    const diffPlaybackRef = useRef<CompleteHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
@@ -241,26 +244,30 @@ function Replays() {
             await init();
 
             const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
-            const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
+           // const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
+
+            //await queryClient.prefetchQuery(replayAssetQueries.bot(replay.id));
 
             if (replay.compareTimeId) {
                 await queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
             }
 
-            const [mapFile, botFile] = await Promise.all([
-                mapFilePromise,
-                botFilePromise
-            ]);
+            // const [mapFile, botFile] = await Promise.all([
+            //     mapFilePromise,
+            //     botFilePromise
+            // ]);
+
+            const mapFile = await mapFilePromise;
 
             if (!mapFile) {
                 setError("Couldn't load map file.");
                 return;
             }
 
-            if (!botFile) {
-                setError("Couldn't load bot file.");
-                return;
-            }
+            // if (!botFile) {
+            //     setError("Couldn't load bot file.");
+            //     return;
+            // }
 
             if (isCanceled) return;
 
@@ -273,38 +280,61 @@ function Replays() {
 
             try {
                 const map = new CompleteMap(mapFile);
-                const bot = new CompleteBot(botFile);
-                const playback = new PlaybackSession(bot, 0);
-                const thumbPlayback = new PlaybackHead(bot, 0);
+                // const bot = new CompleteBot(botFile);
+                const botDownloader = new BotDownloader(await getBotFileURL(replay.id) ?? "");
+                console.log("BEFORE STREAM BOT")
+                const streamBot = await new_streamable_bot(botDownloader, replay.time);
+                console.log("AFTER STREAM BOT")
+                const playback = new StreamableSession(streamBot, 0);
+                // const thumbPlayback = new CompleteHead(bot, 0);
                 const graphics_and_surface = await setup_graphics(canvas);
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
                 const thumbSurface = graphics.new_surface(thumbCanvas);
 
                 playbackRef.current = playback;
-                thumbPlaybackRef.current = thumbPlayback;
+                // thumbPlaybackRef.current = thumbPlayback;
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
                 thumbSurfaceRef.current = thumbSurface;
-                botRef.current = bot;
+                // botRef.current = bot;
+                streamBotRef.current = streamBot;
+                botDownloaderRef.current = botDownloader;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, playback, graphics, [surface]);
                 handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
 
-                playback.advance_time(bot, 0);
-                playback.set_bot_time(bot, 0, 0);
-                thumbPlayback.set_time(bot, 0);
+                playback.advance_time(streamBot, 0);
+                playback.set_bot_time(streamBot, 0, 0);
+                // thumbPlayback.set_time(bot, 0);
                 graphics.change_map(map);
 
-                const botDuration = bot.duration();
-                const runDuration = bot.run_duration(replay.course);
-                setDuration(runDuration);
-                const offset = botDuration - runDuration;
-                setBotOffset(offset);
-                setPlaybackTime(-offset);
+                // const botDuration = bot.duration();
+                // const runDuration = bot.run_duration(replay.course);
+                // setDuration(runDuration);
+                // const offset = botDuration - runDuration;
+                // setBotOffset(offset);
+                // setPlaybackTime(-offset);
                 setLoading(false);
+
+                // const botFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
+                // if (!botFile) {
+                //     setError("Couldn't load bot file.");
+                //     return;
+                // }
+                // const bot = new CompleteBot(botFile);
+                // const thumbPlayback = new CompleteHead(bot, 0);
+                // thumbPlaybackRef.current = thumbPlayback;
+                // botRef.current = bot;
+                // thumbPlayback.set_time(bot, 0);
+                // const botDuration = bot.duration();
+                // const runDuration = bot.run_duration(replay.course);
+                // setDuration(runDuration);
+                // const offset = botDuration - runDuration;
+                // setBotOffset(offset);
+                // setPlaybackTime(-offset);
 
                 if (replay.compareTimeId) {
                     try {
@@ -314,7 +344,7 @@ function Replays() {
                         const diffBot = new CompleteBot(diffBotFile);
                         diffBotRef.current = diffBot;
                         diffBvhRef.current = new Bvh(diffBot);
-                        diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
+                        diffPlaybackRef.current = new CompleteHead(diffBot, 0);
                         setDiffReady(true);
                     }
                     catch (error) {
@@ -363,6 +393,14 @@ function Replays() {
                 botRef.current.free();
                 botRef.current = null;
             }
+            if (streamBotRef.current) {
+                streamBotRef.current.free();
+                streamBotRef.current = null;
+            }
+            if (botDownloaderRef.current) {
+                botDownloaderRef.current.free();
+                botDownloaderRef.current = null;
+            }
             if (diffPlaybackRef.current) {
                 diffPlaybackRef.current.free();
                 diffPlaybackRef.current = null;
@@ -390,27 +428,32 @@ function Replays() {
             animationId = requestAnimationFrame(animate);
 
             const playback = playbackRef.current;
-            const thumbPlayback = thumbPlaybackRef.current;
-            const bot = botRef.current;
+            const streamBot = streamBotRef.current;
             const graphics = graphicsRef.current;
             const surface = surfaceRef.current;
-            const thumbSurface = thumbSurfaceRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && thumbPlayback && bot && graphics && surface && thumbSurface && speedText && input) {
+            if (playback && streamBot && graphics && surface && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
-                    playback.advance_time(bot, newSessionTime);
-                    graphics.render_session(surface, bot, playback);
-                    graphics.render_head(thumbSurface, bot, thumbPlayback)
-                    const speed = playback.get_speed(bot);
+                    playback.advance_time(streamBot, newSessionTime);
+                    graphics.render_session(surface, streamBot, playback);
+                    const speed = playback.get_speed(streamBot);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
                     updateInputDisplay(input, playback);
+
+                    const thumbPlayback = thumbPlaybackRef.current;
+                    const thumbSurface = thumbSurfaceRef.current;
+                    const bot = botRef.current;
+
+                    if (thumbPlayback && thumbSurface && bot) {
+                        graphics.render_complete_head(thumbSurface, bot, thumbPlayback);
+                    }
 
                     const diffBot = diffBotRef.current;
                     const bvh = diffBvhRef.current;
@@ -419,11 +462,11 @@ function Replays() {
                     const diffSpeedElement = diffSpeedTextRef.current;
 
                     if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
-                        const pos = playback.get_position(bot);
+                        const pos = playback.get_position(streamBot);
                         const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
                         if (diffPlaybackTime !== undefined) {
                             diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
-                            const botTime = playback.get_run_time(bot, replay.course) ?? 0;
+                            const botTime = playback.get_run_time(streamBot, replay.course) ?? 0;
                             const diffBotTime = diffPlayback.get_run_time(diffBot, replay.course) ?? 0;
                             const timeDiff = botTime - diffBotTime;
                             const diffBotSpeed = diffPlayback.get_speed(diffBot);
@@ -463,6 +506,36 @@ function Replays() {
         return () => clearInterval(interval);
     }, [botOffset, duration]);
 
+    useEffect(() => {
+        let isActive = true;
+
+        const promise = async () => {
+            while (isActive) {
+                const bot = streamBotRef.current;
+                const downloader = botDownloaderRef.current;
+                const playback = playbackRef.current;
+                console.log("HI");
+                if (bot && downloader && playback) {
+                    const range = bot.next_block_throttled(playback, 2) || bot.next_block_eager(playback, 2);
+                    if (!range) {
+                        break;
+                    }
+                    console.log(range.size);
+                    const data = await downloader.download_bot_block_range(range);
+                    bot.ingest(data);
+                }
+                else {
+                    await sleep(50);
+                }
+            }
+        };
+        promise();
+        
+        return () => {
+            isActive = false;
+        }
+    }, []);
+
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
         const graphics = graphicsRef.current;
@@ -477,7 +550,7 @@ function Replays() {
     const onSetPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
@@ -489,7 +562,7 @@ function Replays() {
     const onDragPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             playback.set_paused(bot, sessionTimer.current, true);
@@ -498,7 +571,7 @@ function Replays() {
 
     const onSeek = useCallback((offset: number) => {
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             const curTime = playback.get_bot_time();
             const newTime = curTime + offset;
@@ -508,7 +581,7 @@ function Replays() {
 
     const onReset = useCallback(() => {
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, 0.0001);
         }
@@ -517,7 +590,7 @@ function Replays() {
     const onSetPause = useCallback((paused: boolean) => {
         setPaused(paused);
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             playback.set_paused(bot, sessionTimer.current, paused);
         }
@@ -536,7 +609,7 @@ function Replays() {
     const onChangePlaybackSpeed = useCallback((speed: number) => {
         setPlaybackSpeed(speed);
         const playback = playbackRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         if (playback && bot) {
             playback.set_scale(bot, sessionTimer.current, speed);
         }
