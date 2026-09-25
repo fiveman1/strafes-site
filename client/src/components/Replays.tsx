@@ -177,7 +177,7 @@ function Replays() {
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
     const thumbSurfaceRef = useRef<Surface>(null);
-    const botRef = useRef<CompleteBot>(null);
+    // const botRef = useRef<CompleteBot>(null);
     const streamBotRef = useRef<StreamableBot>(null);
     const streamMapRef = useRef<StreamableMap>(null);
     const botDownloaderRef = useRef<BotDownloader>(null);
@@ -185,9 +185,9 @@ function Replays() {
     const diffBotRef = useRef<CompleteBot>(null);
     const diffBvhRef = useRef<Bvh>(null);
     const playbackRef = useRef<StreamableSession>(null);
-    const thumbPlaybackRef = useRef<CompleteHead>(null);
-    // const thumbPlaybackRef = useRef<StreamableHead>(null);
+    const thumbPlaybackRef = useRef<StreamableHead>(null);
     const diffPlaybackRef = useRef<CompleteHead>(null);
+    const courseRef = useRef(0);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
@@ -196,7 +196,7 @@ function Replays() {
         setLoading(false);
         playbackRef.current = null;
         graphicsRef.current = null;
-        botRef.current = null;
+        // botRef.current = null;
     }, []);
 
     useEffect(() => {
@@ -229,6 +229,7 @@ function Replays() {
         setBotFileReceived(0);
         setDiffReady(false);
         setLoading(true);
+        courseRef.current = replay.course;
 
         const unsubscribeMapProgress = subscribeToReplayAssetProgress(mapAssetProgressKey(replay.mapId), (progress) => {
             setMapFileLength(progress.total);
@@ -311,11 +312,11 @@ function Replays() {
                 const playback = new StreamableSession(streamBot, 0);
                 // const thumbPlayback = new CompleteHead(bot, 0);
                 
-                // const thumbPlayback = new StreamableHead(streamBot, 0);
+                const thumbPlayback = new StreamableHead(streamBot, 0);
                 const thumbSurface = graphics.new_surface(thumbCanvas);
 
                 playbackRef.current = playback;
-                // thumbPlaybackRef.current = thumbPlayback;
+                thumbPlaybackRef.current = thumbPlayback;
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
                 thumbSurfaceRef.current = thumbSurface;
@@ -331,7 +332,7 @@ function Replays() {
 
                 playback.advance_time(streamBot, 0);
                 playback.set_bot_time(streamBot, 0, 0);
-                // thumbPlayback.set_time(streamBot, 0);
+                thumbPlayback.set_time(streamBot, 0);
                 // graphics.change_map(map);
 
                 const botDuration = streamBot.duration();
@@ -377,17 +378,17 @@ function Replays() {
                     }
                 };
 
-                const completeBotPromise = async () => {
-                    if (!botDownloader) return;
-                    const bot = await botDownloader.get_complete_bot();
-                    const thumbPlayback = new CompleteHead(bot, 0);
-                    botRef.current = bot;
-                    thumbPlaybackRef.current = thumbPlayback;
-                    thumbPlayback.set_time(bot, 0);
-                };
+                // const completeBotPromise = async () => {
+                //     if (!botDownloader) return;
+                //     const bot = await botDownloader.get_complete_bot();
+                //     const thumbPlayback = new CompleteHead(bot, 0);
+                //     botRef.current = bot;
+                //     thumbPlaybackRef.current = thumbPlayback;
+                //     thumbPlayback.set_time(bot, 0);
+                // };
 
                 diffBotPromise();
-                completeBotPromise();
+                // completeBotPromise();
                 
             }
             catch (err) {
@@ -427,10 +428,10 @@ function Replays() {
                 thumbSurfaceRef.current.free();
                 thumbSurfaceRef.current = null;
             }
-            if (botRef.current) {
-                botRef.current.free();
-                botRef.current = null;
-            }
+            // if (botRef.current) {
+            //     botRef.current.free();
+            //     botRef.current = null;
+            // }
             if (streamBotRef.current) {
                 streamBotRef.current.free();
                 streamBotRef.current = null;
@@ -497,10 +498,11 @@ function Replays() {
 
                     const thumbPlayback = thumbPlaybackRef.current;
                     const thumbSurface = thumbSurfaceRef.current;
-                    const bot = botRef.current;
+                    // const bot = botRef.current;
 
-                    if (thumbPlayback && thumbSurface && bot) {
-                        graphics.render_complete_head(thumbSurface, streamMap, bot, thumbPlayback);
+                    if (thumbPlayback && thumbSurface) {
+                        graphics.render_head(thumbSurface, streamMap, streamBot, thumbPlayback);
+                        //graphics.render_complete_head(thumbSurface, streamMap, bot, thumbPlayback);
                     }
 
                     const diffBot = diffBotRef.current;
@@ -566,8 +568,10 @@ function Replays() {
                 const bot = streamBotRef.current;
                 const botDownloader = botDownloaderRef.current;
                 const playback = playbackRef.current;
-                if (bot && botDownloader && playback) {
-                    const botRange = bot.next_block_throttled(playback, 30) || bot.next_block_eager(playback, 30);
+                const thumbPlayback = thumbPlaybackRef.current;
+                if (bot && botDownloader && playback && thumbPlayback) {
+                    const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
+                    const botRange = bot.next_block_throttled(playback, 30) || (thumbTime !== undefined && bot.next_block_at_time(thumbTime)) ||  bot.next_block_eager(playback, 30);
                     if (botRange) {
                         console.log("downloading bot");
                         const data = await botDownloader.download_bot_block_range(botRange);
@@ -690,8 +694,7 @@ function Replays() {
 
     const setThumbTime = useCallback((reqTime: number) => {
         const time = reqTime + botOffset;
-        // const bot = streamBotRef.current;
-        const bot = botRef.current;
+        const bot = streamBotRef.current;
         const playback = thumbPlaybackRef.current;
         if (playback && bot) {
             playback.set_time(bot, time);
