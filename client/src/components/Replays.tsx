@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -18,7 +18,7 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp, sleep } from "../common/utils";
+import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
@@ -186,6 +186,7 @@ function Replays() {
     const diffBvhRef = useRef<Bvh>(null);
     const playbackRef = useRef<StreamableSession>(null);
     const thumbPlaybackRef = useRef<CompleteHead>(null);
+    // const thumbPlaybackRef = useRef<StreamableHead>(null);
     const diffPlaybackRef = useRef<CompleteHead>(null);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
@@ -310,6 +311,7 @@ function Replays() {
                 const playback = new StreamableSession(streamBot, 0);
                 // const thumbPlayback = new CompleteHead(bot, 0);
                 
+                // const thumbPlayback = new StreamableHead(streamBot, 0);
                 const thumbSurface = graphics.new_surface(thumbCanvas);
 
                 playbackRef.current = playback;
@@ -319,6 +321,7 @@ function Replays() {
                 thumbSurfaceRef.current = thumbSurface;
                 // botRef.current = bot;
                 streamBotRef.current = streamBot;
+                
                 streamMapRef.current = streamMap;
 
                 const width = canvas.clientWidth;
@@ -328,7 +331,7 @@ function Replays() {
 
                 playback.advance_time(streamBot, 0);
                 playback.set_bot_time(streamBot, 0, 0);
-                // thumbPlayback.set_time(bot, 0);
+                // thumbPlayback.set_time(streamBot, 0);
                 // graphics.change_map(map);
 
                 const botDuration = streamBot.duration();
@@ -687,6 +690,7 @@ function Replays() {
 
     const setThumbTime = useCallback((reqTime: number) => {
         const time = reqTime + botOffset;
+        // const bot = streamBotRef.current;
         const bot = botRef.current;
         const playback = thumbPlaybackRef.current;
         if (playback && bot) {
