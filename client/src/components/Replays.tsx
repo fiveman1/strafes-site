@@ -286,14 +286,25 @@ function Replays() {
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
 
-                const [mapURL, botURL] = await Promise.all([getMapFileURL(replay.mapId), getBotFileURL(replay.id)]);
-                
-                const mapDownloader = new MapDownloader(mapURL ?? "");
-                const streamMap = await new_streamable_map(mapDownloader, graphics);
+                const mapPromise = async () => {
+                    const url = await getMapFileURL(replay.mapId);
+                    const mapDownloader = new MapDownloader(url ?? "");
+                    const streamMap = await new_streamable_map(mapDownloader, graphics);
+                    mapDownloaderRef.current = mapDownloader;
+                    return streamMap;
+                };
+
+                const botPromise = async () => {
+                    const url = await getBotFileURL(replay.id);
+                    const botDownloader = new BotDownloader(url ?? "");
+                    const streamBot = await new_streamable_bot(botDownloader, replay.time / 1000);
+                    botDownloaderRef.current = botDownloader;
+                    return streamBot;
+                };
+                const [streamMap, streamBot] = await Promise.all([mapPromise(), botPromise()]);
+
                 // const map = new CompleteMap(mapFile);
                 // const bot = new CompleteBot(botFile);
-                const botDownloader = new BotDownloader(botURL ?? "");
-                const streamBot = await new_streamable_bot(botDownloader, replay.time / 1000);
                 
                 const playback = new StreamableSession(streamBot, 0);
                 // const thumbPlayback = new CompleteHead(bot, 0);
@@ -308,8 +319,6 @@ function Replays() {
                 // botRef.current = bot;
                 streamBotRef.current = streamBot;
                 streamMapRef.current = streamMap;
-                botDownloaderRef.current = botDownloader;
-                mapDownloaderRef.current = mapDownloader;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -534,7 +543,7 @@ function Replays() {
 
         let isActive = true;
 
-        const promise = async () => {
+        const botPromise = async () => {
             while (isActive) {
                 const bot = streamBotRef.current;
                 const botDownloader = botDownloaderRef.current;
@@ -552,7 +561,6 @@ function Replays() {
                 }
             }
         };
-        promise();
 
         const mapPromise = async () => {
             while (isActive) {
@@ -574,6 +582,8 @@ function Replays() {
                 }
             }
         };
+
+        botPromise();
         mapPromise();
         
         return () => {
