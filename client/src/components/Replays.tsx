@@ -286,17 +286,18 @@ function Replays() {
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
 
+                let botDownloader: BotDownloader;
                 const mapPromise = async () => {
-                    const url = await getMapFileURL(replay.mapId);
-                    const mapDownloader = new MapDownloader(url ?? "");
+                    const url = await getMapFileURL(replay.mapId) ?? "";
+                    const mapDownloader = new MapDownloader(url);
                     const streamMap = await new_streamable_map(mapDownloader, graphics);
                     mapDownloaderRef.current = mapDownloader;
                     return streamMap;
                 };
 
                 const botPromise = async () => {
-                    const url = await getBotFileURL(replay.id);
-                    const botDownloader = new BotDownloader(url ?? "");
+                    const botUrl = await getBotFileURL(replay.id) ?? "";
+                    botDownloader = new BotDownloader(botUrl);
                     const streamBot = await new_streamable_bot(botDownloader, replay.time / 1000);
                     botDownloaderRef.current = botDownloader;
                     return streamBot;
@@ -355,22 +356,36 @@ function Replays() {
                 // const offset = botDuration - runDuration;
                 // setBotOffset(offset);
                 // setPlaybackTime(-offset);
+                const diffBotPromise = async () => {
+                    if (replay.compareTimeId) {
+                        try {
+                            const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
+                            if (!diffBotFile || isCanceled) return;
+                            
+                            const diffBot = new CompleteBot(diffBotFile);
+                            diffBotRef.current = diffBot;
+                            diffBvhRef.current = new Bvh(diffBot);
+                            diffPlaybackRef.current = new CompleteHead(diffBot, 0);
+                            setDiffReady(true);
+                        }
+                        catch (error) {
+                            console.warn("Couldn't initialize comparison replay", error);
+                        }
+                    }
+                };
 
-                if (replay.compareTimeId) {
-                    try {
-                        const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
-                        if (!diffBotFile || isCanceled) return;
-                        
-                        const diffBot = new CompleteBot(diffBotFile);
-                        diffBotRef.current = diffBot;
-                        diffBvhRef.current = new Bvh(diffBot);
-                        diffPlaybackRef.current = new CompleteHead(diffBot, 0);
-                        setDiffReady(true);
-                    }
-                    catch (error) {
-                        console.warn("Couldn't initialize comparison replay", error);
-                    }
-                }
+                const completeBotPromise = async () => {
+                    if (!botDownloader) return;
+                    const bot = await botDownloader.get_complete_bot();
+                    const thumbPlayback = new CompleteHead(bot, 0);
+                    botRef.current = bot;
+                    thumbPlaybackRef.current = thumbPlayback;
+                    thumbPlayback.set_time(bot, 0);
+                };
+
+                diffBotPromise();
+                completeBotPromise();
+                
             }
             catch (err) {
                 console.error(err);
