@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getBotFileResponse, getMapFileResponse } from "./api";
+import { getBotFileResponse } from "./api";
 
 export interface ReplayAssetProgress {
     received: number
@@ -113,11 +113,6 @@ const replayAssetQueryDefaults = {
 } as const;
 
 export const replayAssetQueries = {
-    map: (mapId: number) => queryOptions({
-        queryKey: ["replayAssets", "map", mapId] as const,
-        queryFn: () => downloadReplayAsset(getMapFileResponse(mapId), mapAssetProgressKey(mapId)),
-        ...replayAssetQueryDefaults
-    }),
     bot: (timeId: string) => queryOptions({
         queryKey: ["replayAssets", "bot", timeId] as const,
         queryFn: () => downloadReplayAsset(getBotFileResponse(timeId), botAssetProgressKey(timeId)),

@@ -276,16 +276,10 @@ export async function getBotFileURL(timeId: string) {
     return res.data.url as string;
 }
 
-export async function getMapFileResponse(mapId: number) {
-    const res = await tryGetRequest("replays/maps/" + mapId);
+export async function getMapFileURL(mapId: number) {
+     const res = await tryGetRequest("replays/maps/" + mapId);
     
     if (!res) return null;
 
-    const url = res.data.url as string;
-
-    const fileRes = await fetch(url);
-    
-    if (!fileRes.ok) return null;
-
-    return fileRes;
+    return res.data.url as string;
 }

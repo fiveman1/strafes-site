@@ -33,7 +33,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
         await sleep(500);
         if (isHovering.current) {
             // Must hover for half a second before pre-fetching
-            queryClient.prefetchQuery(replayAssetQueries.map(time.mapId));
+            // queryClient.prefetchQuery(replayAssetQueries.map(time.mapId));
         }
     }, [queryClient, time.mapId]);
 
