@@ -524,30 +524,54 @@ function Replays() {
 
             let botBlock = bot.next_block_throttled(playback, 4);
             if (botBlock) {
-                const data = await botDownloader.download_bot_block_range(botBlock);
-                bot.ingest(data);
+                try {
+                    const data = await botDownloader.download_bot_block_range(botBlock);
+                    bot.ingest(data);
+                }
+                catch (err) {
+                    console.warn(err);
+                    bot.cancel(botBlock);
+                }
                 return true;
             }
 
             const mapBlock = map.next_block(bot, playback);
             if (mapBlock) {
-                const data = await mapDownloader.download_map_block_range(mapBlock);
-                map.ingest(graphics, data);
+                try {
+                    const data = await mapDownloader.download_map_block_range(mapBlock);
+                    map.ingest(graphics, data);
+                }
+                catch (err) {
+                    console.warn(err);
+                    map.cancel(mapBlock);
+                }
                 return true;
             }
 
             const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
             if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
             if (botBlock) {
-                const data = await botDownloader.download_bot_block_range(botBlock);
-                bot.ingest(data);
+                try {
+                    const data = await botDownloader.download_bot_block_range(botBlock);
+                    bot.ingest(data);
+                }
+                catch (err) {
+                    console.warn(err);
+                    bot.cancel(botBlock);
+                }
                 return true;
             }
 
             botBlock = bot.next_block_eager(playback, 4);
             if (botBlock) {
-                const data = await botDownloader.download_bot_block_range(botBlock);
-                bot.ingest(data);
+                try {
+                    const data = await botDownloader.download_bot_block_range(botBlock);
+                    bot.ingest(data);
+                }
+                catch (err) {
+                    console.warn(err);
+                    bot.cancel(botBlock);
+                }
                 return true;
             }
 
