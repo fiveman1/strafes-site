@@ -153,7 +153,7 @@ function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
     }
 }
 
-const MAX_CONCURRENT_DOWNLOADS = 10;
+const MAX_CONCURRENT_DOWNLOADS = 16;
 
 function Replays() {
     const { id } = useParams() as { id: string };
