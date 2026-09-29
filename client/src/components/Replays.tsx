@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -153,7 +153,8 @@ function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
     }
 }
 
-const MAX_CONCURRENT_DOWNLOADS = 4;
+// Browsers typically support 6 concurrent connections over HTTP/1.1
+const MAX_CONCURRENT_DOWNLOADS = 6;
 
 function Replays() {
     const { id } = useParams() as { id: string };
@@ -531,8 +532,14 @@ function Replays() {
                     bot.ingest(data);
                 }
                 catch (err) {
-                    console.warn(err);
-                    bot.cancel(botBlock);
+                    if (err instanceof DownloadBotBlockRangeError) {
+                        console.warn(err.error());
+                        const request = err.request();
+                        if (request) map.cancel(request);
+                    }
+                    else {
+                        throw err;
+                    }
                 }
                 return true;
             }
@@ -544,8 +551,14 @@ function Replays() {
                     bot.ingest(data);
                 }
                 catch (err) {
-                    console.warn(err);
-                    bot.cancel(botBlock);
+                    if (err instanceof DownloadBotBlockRangeError) {
+                        console.warn(err.error());
+                        const request = err.request();
+                        if (request) map.cancel(request);
+                    }
+                    else {
+                        throw err;
+                    }
                 }
                 return true;
             }
@@ -557,13 +570,17 @@ function Replays() {
                     map.ingest(graphics, data);
                 }
                 catch (err) {
-                    console.warn(err);
-                    map.cancel(mapBlock);
+                    if (err instanceof DownloadMapBlockRangeError) {
+                        console.warn(err.error());
+                        const request = err.request();
+                        if (request) map.cancel(request);
+                    }
+                    else {
+                        throw err;
+                    }
                 }
                 return true;
             }
-
-            
 
             botBlock = bot.next_block_eager(playback, 4);
             if (botBlock) {
@@ -572,8 +589,14 @@ function Replays() {
                     bot.ingest(data);
                 }
                 catch (err) {
-                    console.warn(err);
-                    bot.cancel(botBlock);
+                    if (err instanceof DownloadBotBlockRangeError) {
+                        console.warn(err.error());
+                        const request = err.request();
+                        if (request) map.cancel(request);
+                    }
+                    else {
+                        throw err;
+                    }
                 }
                 return true;
             }
