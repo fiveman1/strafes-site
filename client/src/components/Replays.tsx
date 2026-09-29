@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -522,7 +522,22 @@ function Replays() {
                 return false;
             }
 
-            let botBlock = bot.next_block_throttled(playback, 4);
+            const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
+            let botBlock: BotBlockRange | undefined = undefined;
+            if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+            if (botBlock) {
+                try {
+                    const data = await botDownloader.download_bot_block_range(botBlock);
+                    bot.ingest(data);
+                }
+                catch (err) {
+                    console.warn(err);
+                    bot.cancel(botBlock);
+                }
+                return true;
+            }
+
+            botBlock = bot.next_block_throttled(playback, 4);
             if (botBlock) {
                 try {
                     const data = await botDownloader.download_bot_block_range(botBlock);
@@ -548,19 +563,7 @@ function Replays() {
                 return true;
             }
 
-            const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
-            if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
-            if (botBlock) {
-                try {
-                    const data = await botDownloader.download_bot_block_range(botBlock);
-                    bot.ingest(data);
-                }
-                catch (err) {
-                    console.warn(err);
-                    bot.cancel(botBlock);
-                }
-                return true;
-            }
+            
 
             botBlock = bot.next_block_eager(playback, 4);
             if (botBlock) {
@@ -678,7 +681,10 @@ function Replays() {
         const bot = streamBotRef.current;
         const playback = thumbPlaybackRef.current;
         if (playback && bot) {
-            playback.set_time(bot, time);
+            try {
+                playback.set_time(bot, time);
+            }
+            catch {}
         }
     }, [botOffset]);
 
