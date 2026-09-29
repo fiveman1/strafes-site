@@ -1,5 +1,5 @@
 import Box from "@mui/material/Box";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
@@ -18,7 +18,7 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp } from "../common/utils";
+import { clamp, sleep } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
@@ -141,6 +141,20 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
     }
 }
 
+interface Freeable {
+    free(): void
+}
+
+function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
+    for (const ref of refs) {
+        if (!ref.current) continue;
+        ref.current.free();
+        ref.current = null;
+    }
+}
+
+const MAX_CONCURRENT_DOWNLOADS = 10;
+
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps, loginUser } = useOutletContext() as ContextParams;
@@ -160,10 +174,6 @@ function Replays() {
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
-    const [ mapFileLength, setMapFileLength ] = useState(0);
-    const [ mapFileReceived, setMapFileReceived ] = useState(0);
-    const [ botFileLength, setBotFileLength ] = useState(0);
-    const [ botFileReceived, setBotFileReceived ] = useState(0);
     const [ diffReady, setDiffReady ] = useState(false);
     const [ downloadReady, setDownloadReady ] = useState(false);
 
@@ -174,6 +184,7 @@ function Replays() {
     const inputContainerRef = useRef<HTMLDivElement>(null);
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
+
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
     const thumbSurfaceRef = useRef<Surface>(null);
@@ -187,6 +198,7 @@ function Replays() {
     const playbackRef = useRef<StreamableSession>(null);
     const thumbPlaybackRef = useRef<StreamableHead>(null);
     const diffPlaybackRef = useRef<CompleteHead>(null);
+
     const courseRef = useRef(0);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
@@ -194,9 +206,6 @@ function Replays() {
     const setError = useCallback((error: string) => {
         setErrorState(error);
         setLoading(false);
-        playbackRef.current = null;
-        graphicsRef.current = null;
-        // botRef.current = null;
     }, []);
 
     useEffect(() => {
@@ -225,20 +234,9 @@ function Replays() {
         }
 
         let isCanceled = false;
-        setMapFileReceived(0);
-        setBotFileReceived(0);
         setDiffReady(false);
         setLoading(true);
         courseRef.current = replay.course;
-
-        const unsubscribeMapProgress = subscribeToReplayAssetProgress(mapAssetProgressKey(replay.mapId), (progress) => {
-            setMapFileLength(progress.total);
-            setMapFileReceived(progress.received);
-        });
-        const unsubscribeBotProgress = subscribeToReplayAssetProgress(botAssetProgressKey(replay.id), (progress) => {
-            setBotFileLength(progress.total);
-            setBotFileReceived(progress.received);
-        });
 
         const promise = async () => {
             if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
@@ -305,6 +303,7 @@ function Replays() {
                     return streamBot;
                 };
                 const [streamMap, streamBot] = await Promise.all([mapPromise(), botPromise()]);
+                if (isCanceled) return;
 
                 // const map = new CompleteMap(mapFile);
                 // const bot = new CompleteBot(botFile);
@@ -406,60 +405,7 @@ function Replays() {
 
         return () => {
             isCanceled = true;
-            unsubscribeMapProgress();
-            unsubscribeBotProgress();
-            if (playbackRef.current) {
-                playbackRef.current.free();
-                playbackRef.current = null;
-            }
-            if (thumbPlaybackRef.current) {
-                thumbPlaybackRef.current.free();
-                thumbPlaybackRef.current = null;
-            }
-            if (graphicsRef.current) {
-                graphicsRef.current.free();
-                graphicsRef.current = null;
-            }
-            if (surfaceRef.current) {
-                surfaceRef.current.free();
-                surfaceRef.current = null;
-            }
-            if (thumbSurfaceRef.current) {
-                thumbSurfaceRef.current.free();
-                thumbSurfaceRef.current = null;
-            }
-            // if (botRef.current) {
-            //     botRef.current.free();
-            //     botRef.current = null;
-            // }
-            if (streamBotRef.current) {
-                streamBotRef.current.free();
-                streamBotRef.current = null;
-            }
-            if (streamMapRef.current) {
-                streamMapRef.current.free();
-                streamMapRef.current = null;
-            }
-            if (botDownloaderRef.current) {
-                botDownloaderRef.current.free();
-                botDownloaderRef.current = null;
-            }
-            if (mapDownloaderRef.current) {
-                mapDownloaderRef.current.free();
-                mapDownloaderRef.current = null;
-            }
-            if (diffPlaybackRef.current) {
-                diffPlaybackRef.current.free();
-                diffPlaybackRef.current = null;
-            }
-            if (diffBvhRef.current) {
-                diffBvhRef.current.free();
-                diffBvhRef.current = null;
-            }
-            if (diffBotRef.current) {
-                diffBotRef.current.free();
-                diffBotRef.current = null;
-            }
+            releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, streamBotRef, streamMapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
@@ -562,51 +508,79 @@ function Replays() {
         }
 
         let isActive = true;
+        let numActive = 0;
 
-        const botPromise = async () => {
+        const downloadPromise = async () => {
             while (isActive) {
+                if (numActive >= MAX_CONCURRENT_DOWNLOADS) {
+                    await sleep(50);
+                    continue;
+                }
+
                 const bot = streamBotRef.current;
                 const botDownloader = botDownloaderRef.current;
-                const playback = playbackRef.current;
-                const thumbPlayback = thumbPlaybackRef.current;
-                if (bot && botDownloader && playback && thumbPlayback) {
-                    const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
-                    const botRange = bot.next_block_throttled(playback, 30) || (thumbTime !== undefined && bot.next_block_at_time(thumbTime)) ||  bot.next_block_eager(playback, 30);
-                    if (botRange) {
-                        console.log("downloading bot");
-                        const data = await botDownloader.download_bot_block_range(botRange);
-                        bot.ingest(data);
-                        continue;
-                    }
-
-                    break;
-                }
-            }
-        };
-
-        const mapPromise = async () => {
-            while (isActive) {
-                const bot = streamBotRef.current;
                 const map = streamMapRef.current;
                 const mapDownloader = mapDownloaderRef.current;
                 const playback = playbackRef.current;
+                const thumbPlayback = thumbPlaybackRef.current;
                 const graphics = graphicsRef.current;
-                if (bot && map && mapDownloader && playback && graphics) {
-                    const mapRange = map.next_block(bot, playback);
-                    if (mapRange) {
-                        console.log("downloading map");
-                        const data = await mapDownloader.download_map_block_range(mapRange);
-                        map.ingest(graphics, data);
-                        continue;
+                if (bot && botDownloader && map && mapDownloader && playback && thumbPlayback && graphics) {
+                    const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
+                    
+                    let botBlock = bot.next_block_throttled(playback, 2);
+                    while (botBlock) {
+                        numActive += 1;
+                        botDownloader.download_bot_block_range(botBlock).then((data) => {
+                            bot.ingest(data);
+                            numActive -= 1;
+                        });
+                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
+                        botBlock = bot.next_block_throttled(playback, 2);
                     }
+                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
+
+                    let mapBlock = map.next_block(bot, playback);
+                    while (mapBlock) {
+                        numActive += 1;
+                        mapDownloader.download_map_block_range(mapBlock).then((data) => {
+                            map.ingest(graphics, data);
+                            numActive -= 1;
+                        });
+                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
+                        mapBlock = map.next_block(bot, playback);
+                    }
+                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
+
+                    if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+                    while (botBlock) {
+                        numActive += 1;
+                        botDownloader.download_bot_block_range(botBlock).then((data) => {
+                            bot.ingest(data);
+                            numActive -= 1;
+                        });
+                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
+                        if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+                    }
+                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
+
+                    botBlock = bot.next_block_eager(playback, 2);
+                    while (botBlock) {
+                        numActive += 1;
+                        botDownloader.download_bot_block_range(botBlock).then((data) => {
+                            bot.ingest(data);
+                            numActive -= 1;
+                        });
+                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
+                        botBlock = bot.next_block_eager(playback, 2);
+                    }
+                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
 
                     break;
                 }
             }
         };
 
-        botPromise();
-        mapPromise();
+        downloadPromise();
         
         return () => {
             isActive = false;
@@ -714,25 +688,25 @@ function Replays() {
         };
     }, [onFullscreen]);
 
-    let downloadProgress = -1;
-    if (loading) {
-        let mapProgress = -1;
-        let botProgress = -1;
+    // let downloadProgress = -1;
+    // if (loading) {
+    //     let mapProgress = -1;
+    //     let botProgress = -1;
 
-        if (mapFileLength !== 0) {
-            mapProgress = mapFileReceived / mapFileLength;
-        }
+    //     if (mapFileLength !== 0) {
+    //         mapProgress = mapFileReceived / mapFileLength;
+    //     }
 
-        if (botFileLength !== 0) {
-            botProgress = botFileReceived / botFileLength;
-        }
+    //     if (botFileLength !== 0) {
+    //         botProgress = botFileReceived / botFileLength;
+    //     }
 
-        const progress = Math.min(mapProgress, botProgress);
+    //     const progress = Math.min(mapProgress, botProgress);
 
-        if (progress !== -1 && mapProgress !== -1 && botProgress !== -1) {
-            downloadProgress = progress;
-        }
-    }
+    //     if (progress !== -1 && mapProgress !== -1 && botProgress !== -1) {
+    //         downloadProgress = progress;
+    //     }
+    // }
 
     let gameColor = "";
     let styleColor = "";
@@ -869,10 +843,10 @@ function Replays() {
                                             justifyContent: "center",
                                             height: "32px"
                                         }}>
-                                        {downloadProgress !== -1 &&
+                                        {/* {downloadProgress !== -1 &&
                                         <Typography variant="body1">
                                             {Math.round(downloadProgress * 100)}%
-                                        </Typography>}
+                                        </Typography>} */}
                                     </Box>
                                 </Box>}
                             </Box>
