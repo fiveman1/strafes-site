@@ -519,7 +519,7 @@ function Replays() {
             const graphics = graphicsRef.current;
 
             if (!(bot && botDownloader && map && mapDownloader && playback && thumbPlayback && graphics)) {
-                return true;
+                return false;
             }
 
             let botBlock = bot.next_block_throttled(playback, 4);
