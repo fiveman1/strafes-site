@@ -457,20 +457,20 @@ function Replays() {
                     const diffTimeElement = diffTimeTextRef.current;
                     const diffSpeedElement = diffSpeedTextRef.current;
 
-                    // if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
-                    //     const pos = playback.get_position(streamBot);
-                    //     const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
-                    //     if (diffPlaybackTime !== undefined) {
-                    //         diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
-                    //         const botTime = playback.get_run_time(streamBot, replay.course) ?? 0;
-                    //         const diffBotTime = diffPlayback.get_run_time(diffBot, replay.course) ?? 0;
-                    //         const timeDiff = botTime - diffBotTime;
-                    //         const diffBotSpeed = diffPlayback.get_speed(diffBot);
-                    //         const speedDiff = speed - diffBotSpeed;
+                    if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
+                        const pos = playback.get_position(streamBot);
+                        const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
+                        if (diffPlaybackTime !== undefined) {
+                            diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
+                            const botTime = playback.get_run_time(streamBot, replay.course) ?? 0;
+                            const diffBotTime = diffPlayback.get_run_time(diffBot, replay.course) ?? 0;
+                            const timeDiff = botTime - diffBotTime;
+                            const diffBotSpeed = diffPlayback.get_speed(diffBot);
+                            const speedDiff = speed - diffBotSpeed;
 
-                    //         updateDiffDisplay(diffTimeElement, diffSpeedElement, timeDiff, speedDiff);
-                    //     }
-                    // }
+                            updateDiffDisplay(diffTimeElement, diffSpeedElement, timeDiff, speedDiff);
+                        }
+                    }
                 }
                 catch (err) {
                     console.error(err);
