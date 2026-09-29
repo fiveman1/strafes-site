@@ -153,7 +153,7 @@ function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
     }
 }
 
-const MAX_CONCURRENT_DOWNLOADS = 16;
+const MAX_CONCURRENT_DOWNLOADS = 4;
 
 function Replays() {
     const { id } = useParams() as { id: string };
@@ -405,7 +405,7 @@ function Replays() {
 
         return () => {
             isCanceled = true;
-            releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, streamBotRef, streamMapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
+            //releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, streamBotRef, streamMapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
@@ -508,79 +508,62 @@ function Replays() {
         }
 
         let isActive = true;
-        let numActive = 0;
 
-        const downloadPromise = async () => {
+        const downloadNextBlock = async () => {
+            const bot = streamBotRef.current;
+            const botDownloader = botDownloaderRef.current;
+            const map = streamMapRef.current;
+            const mapDownloader = mapDownloaderRef.current;
+            const playback = playbackRef.current;
+            const thumbPlayback = thumbPlaybackRef.current;
+            const graphics = graphicsRef.current;
+
+            if (!(bot && botDownloader && map && mapDownloader && playback && thumbPlayback && graphics)) {
+                return true;
+            }
+
+            let botBlock = bot.next_block_throttled(playback, 4);
+            if (botBlock) {
+                const data = await botDownloader.download_bot_block_range(botBlock);
+                bot.ingest(data);
+                return true;
+            }
+
+            const mapBlock = map.next_block(bot, playback);
+            if (mapBlock) {
+                const data = await mapDownloader.download_map_block_range(mapBlock);
+                map.ingest(graphics, data);
+                return true;
+            }
+
+            const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
+            if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+            if (botBlock) {
+                const data = await botDownloader.download_bot_block_range(botBlock);
+                bot.ingest(data);
+                return true;
+            }
+
+            botBlock = bot.next_block_eager(playback, 4);
+            if (botBlock) {
+                const data = await botDownloader.download_bot_block_range(botBlock);
+                bot.ingest(data);
+                return true;
+            }
+
+            return false;
+        };
+
+        const startDownloader = async () => {
             while (isActive) {
-                if (numActive >= MAX_CONCURRENT_DOWNLOADS) {
-                    await sleep(50);
-                    continue;
-                }
-
-                const bot = streamBotRef.current;
-                const botDownloader = botDownloaderRef.current;
-                const map = streamMapRef.current;
-                const mapDownloader = mapDownloaderRef.current;
-                const playback = playbackRef.current;
-                const thumbPlayback = thumbPlaybackRef.current;
-                const graphics = graphicsRef.current;
-                if (bot && botDownloader && map && mapDownloader && playback && thumbPlayback && graphics) {
-                    const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
-                    
-                    let botBlock = bot.next_block_throttled(playback, 2);
-                    while (botBlock) {
-                        numActive += 1;
-                        botDownloader.download_bot_block_range(botBlock).then((data) => {
-                            bot.ingest(data);
-                            numActive -= 1;
-                        });
-                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
-                        botBlock = bot.next_block_throttled(playback, 2);
-                    }
-                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
-
-                    let mapBlock = map.next_block(bot, playback);
-                    while (mapBlock) {
-                        numActive += 1;
-                        mapDownloader.download_map_block_range(mapBlock).then((data) => {
-                            map.ingest(graphics, data);
-                            numActive -= 1;
-                        });
-                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
-                        mapBlock = map.next_block(bot, playback);
-                    }
-                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
-
-                    if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
-                    while (botBlock) {
-                        numActive += 1;
-                        botDownloader.download_bot_block_range(botBlock).then((data) => {
-                            bot.ingest(data);
-                            numActive -= 1;
-                        });
-                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
-                        if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
-                    }
-                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
-
-                    botBlock = bot.next_block_eager(playback, 2);
-                    while (botBlock) {
-                        numActive += 1;
-                        botDownloader.download_bot_block_range(botBlock).then((data) => {
-                            bot.ingest(data);
-                            numActive -= 1;
-                        });
-                        if (numActive >= MAX_CONCURRENT_DOWNLOADS) break;
-                        botBlock = bot.next_block_eager(playback, 2);
-                    }
-                    if (numActive >= MAX_CONCURRENT_DOWNLOADS) continue;
-
-                    break;
-                }
+                const hasBlock = await downloadNextBlock();
+                if (!hasBlock) break;
             }
         };
 
-        downloadPromise();
+        for (let i = 0; i < MAX_CONCURRENT_DOWNLOADS; ++i) {
+            startDownloader();
+        }
         
         return () => {
             isActive = false;
