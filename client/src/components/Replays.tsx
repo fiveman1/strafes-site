@@ -253,7 +253,7 @@ function Replays() {
             //await queryClient.prefetchQuery(replayAssetQueries.bot(replay.id));
 
             if (replay.compareTimeId) {
-                await queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+                queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
             }
 
             // const [mapFile, botFile] = await Promise.all([
