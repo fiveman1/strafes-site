@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -150,6 +150,52 @@ function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
         if (!ref.current) continue;
         ref.current.free();
         ref.current = null;
+    }
+}
+
+async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, bot: StreamableBot) {
+    try {
+        const data = await downloader.download_bot_block_range(block);
+        bot.ingest(data);
+    }
+    catch (err) {
+        if (err instanceof DownloadBotBlockRangeError) {
+            console.error(err.error());
+            const request = err.request();
+            if (request) {
+                bot.cancel(request);
+            }
+            else {
+                bot.clear_downloading();
+            }
+        }
+        else {
+            console.error(err);
+            bot.clear_downloading();
+        }
+    }
+}
+
+async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics) {
+    try {
+        const data = await downloader.download_map_block_range(block);
+        map.ingest(graphics, data);
+    }
+    catch (err) {
+        if (err instanceof DownloadMapBlockRangeError) {
+            console.error(err.error());
+            const request = err.request();
+            if (request) {
+                map.cancel(request);
+            }
+            else {
+                map.clear_downloading();
+            }
+        }
+        else {
+            console.error(err);
+            map.clear_downloading();
+        }
     }
 }
 
@@ -527,77 +573,25 @@ function Replays() {
             let botBlock: BotBlockRange | undefined = undefined;
             if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
             if (botBlock) {
-                try {
-                    const data = await botDownloader.download_bot_block_range(botBlock);
-                    bot.ingest(data);
-                }
-                catch (err) {
-                    if (err instanceof DownloadBotBlockRangeError) {
-                        console.warn(err.error());
-                        const request = err.request();
-                        if (request) map.cancel(request);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
+                await ingestBotBlock(botBlock, botDownloader, bot);
                 return true;
             }
 
             botBlock = bot.next_block_throttled(playback, 4);
             if (botBlock) {
-                try {
-                    const data = await botDownloader.download_bot_block_range(botBlock);
-                    bot.ingest(data);
-                }
-                catch (err) {
-                    if (err instanceof DownloadBotBlockRangeError) {
-                        console.warn(err.error());
-                        const request = err.request();
-                        if (request) map.cancel(request);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
+                await ingestBotBlock(botBlock, botDownloader, bot);
                 return true;
             }
 
             const mapBlock = map.next_block(bot, playback);
             if (mapBlock) {
-                try {
-                    const data = await mapDownloader.download_map_block_range(mapBlock);
-                    map.ingest(graphics, data);
-                }
-                catch (err) {
-                    if (err instanceof DownloadMapBlockRangeError) {
-                        console.warn(err.error());
-                        const request = err.request();
-                        if (request) map.cancel(request);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
+                await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                 return true;
             }
 
             botBlock = bot.next_block_eager(playback, 4);
             if (botBlock) {
-                try {
-                    const data = await botDownloader.download_bot_block_range(botBlock);
-                    bot.ingest(data);
-                }
-                catch (err) {
-                    if (err instanceof DownloadBotBlockRangeError) {
-                        console.warn(err.error());
-                        const request = err.request();
-                        if (request) map.cancel(request);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
+                await ingestBotBlock(botBlock, botDownloader, bot);
                 return true;
             }
 
