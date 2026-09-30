@@ -43,7 +43,7 @@ function getPlayerWidth(width: number, height: number) {
     }
 }
 
-function handleCanvasSize(width: number, height: number, playback: StreamableSession, graphics: Graphics, surfaces: Surface[]) {
+function handleCanvasSize(width: number, height: number, graphics: Graphics, surfaces: Surface[]) {
     const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
     const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
     for (const surface of surfaces) {
@@ -370,8 +370,8 @@ function Replays() {
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
-                handleCanvasSize(width, height, playback, graphics, [surface]);
-                handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
+                handleCanvasSize(width, height, graphics, [surface]);
+                handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
 
                 playback.advance_time(streamBot, 0);
                 playback.set_bot_time(streamBot, 0, 0);
@@ -612,13 +612,12 @@ function Replays() {
     }, [downloadReady]);
 
     const onResize = useCallback((width: number, height: number) => {
-        const playback = playbackRef.current;
         const graphics = graphicsRef.current;
         const surface = surfaceRef.current;
         const thumbSurface = thumbSurfaceRef.current;
-        if (playback && graphics && surface && thumbSurface) {
-            handleCanvasSize(width, height, playback, graphics, [surface]);
-            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
+        if (graphics && surface && thumbSurface) {
+            handleCanvasSize(width, height, graphics, [surface]);
+            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
         }
     }, []);
 
