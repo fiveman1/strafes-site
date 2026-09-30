@@ -310,7 +310,7 @@ function Replays() {
                     try {
                         const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
                         if (!diffBotFile || isCanceled) return;
-                        
+
                         const diffBot = new CompleteBot(diffBotFile);
                         diffBotRef.current = diffBot;
                         diffBvhRef.current = new Bvh(diffBot);
