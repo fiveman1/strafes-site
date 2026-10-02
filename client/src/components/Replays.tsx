@@ -316,7 +316,7 @@ function Replays() {
                     }
                     const mapDownloader = new MapDownloader(url);
                     try {
-                        const map = await new_streamable_map(mapDownloader, graphics, 256000);
+                        const map = await new_streamable_map(mapDownloader, graphics, 512000);
                         mapDownloaderRef.current = mapDownloader;
                         return map;
                     }
