@@ -488,6 +488,9 @@ function Replays() {
                     playback.advance_time(bot, newSessionTime);
                     map.promote_ready_assets(graphics);
                     graphics.render_session(surface, map, bot, playback);
+                    
+                    setLoading(playback.is_buffering());
+                    
                     const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
@@ -791,10 +794,6 @@ function Replays() {
                                             justifyContent: "center",
                                             height: "32px"
                                         }}>
-                                        {/* {downloadProgress !== -1 &&
-                                        <Typography variant="body1">
-                                            {Math.round(downloadProgress * 100)}%
-                                        </Typography>} */}
                                     </Box>
                                 </Box>}
                             </Box>
