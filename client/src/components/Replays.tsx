@@ -23,7 +23,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import { replayAssetQueries } from "../api/replayAssets";
-import { getBotFileURL, getMapFileURL } from "../api/api";
 
 function getPlayerHeight(width: number, height: number) {
     if (width / height > PLAYER_ASPECT_RATIO) {
@@ -248,6 +247,12 @@ function Replays() {
     }, []);
 
     useEffect(() => {
+        if (id) {
+            queryClient.prefetchQuery(queries.replays.botURL(id));
+        }
+    }, [id, queryClient]);
+
+    useEffect(() => {
         if (replay) {
             const placementText = replay.placement === 1 ? "WR" : `${formatPlacement(replay.placement)} place`;
             document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} (${placementText}) - replays - strafes`;
@@ -272,6 +277,11 @@ function Replays() {
             return;
         }
 
+        queryClient.prefetchQuery(queries.replays.mapURL(replay.mapId));
+        if (replay.compareTimeId) {
+            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+        }
+
         let isCanceled = false;
         setDiffReady(false);
         setLoading(true);
@@ -286,10 +296,6 @@ function Replays() {
 
             if (isCanceled) return;
 
-            if (replay.compareTimeId) {
-                queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
-            }
-
             const canvas = canvasRef.current;
             const thumbCanvas = thumbCanvasRef.current;
             if (!canvas || !thumbCanvas) {
@@ -303,7 +309,7 @@ function Replays() {
                 const surface = graphics_and_surface.surface()!;
 
                 const mapPromise = async () => {
-                    const url = await getMapFileURL(replay.mapId) ?? "";
+                    const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
                     if (!url) {
                         setError("Couldn't load map file.");
                         return null;
@@ -322,7 +328,7 @@ function Replays() {
                 };
 
                 const botPromise = async () => {
-                    const url = await getBotFileURL(replay.id) ?? "";
+                    const url = await queryClient.fetchQuery(queries.replays.botURL(replay.id));
                     if (!url) {
                         setError("Couldn't load bot file.");
                         return null;

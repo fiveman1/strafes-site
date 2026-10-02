@@ -6,6 +6,9 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import Link from "@mui/material/Link";
 import { Link as RouterLink } from "react-router";
 import { lighten, useTheme } from "@mui/material/styles";
+import { useQueryClient } from "@tanstack/react-query";
+import { queries } from "../../api/queries";
+import { useCallback } from "react";
 
 interface ITimeDisplayProps {
     time: Time
@@ -15,12 +18,20 @@ interface ITimeDisplayProps {
 function TimeDisplay(props: ITimeDisplayProps) {
     const { time, hideDiff } = props;
     const theme = useTheme();
+    const queryClient = useQueryClient();
 
     const isLight = theme.palette.mode === "light";
 
     const ms = time.time;
     const diff = time.wrDiff;
     const hasBot = time.hasBot;
+    const timeId = time.id;
+    const mapId = time.mapId;
+
+    const prefetchURLs = useCallback(() => {
+        queryClient.prefetchQuery(queries.replays.botURL(timeId));
+        queryClient.prefetchQuery(queries.replays.mapURL(mapId));
+    }, [mapId, queryClient, timeId]);
 
     if (hideDiff) {
         if (hasBot) {
@@ -28,6 +39,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                 <Link
                     component={RouterLink}
                     to={`/replays/${time.id}`}
+                    onClick={prefetchURLs}
                     underline="none"
                     sx={{
                         textDecoration: "none",
@@ -64,6 +76,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
             <Link
                 component={RouterLink} 
                 to={`/replays/${time.id}`}
+                onClick={prefetchURLs}
                 underline="none"
                 sx={{
                     textDecoration: "none",
