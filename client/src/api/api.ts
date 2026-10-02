@@ -255,11 +255,9 @@ export async function getReplayById(id: string) {
 }
 
 export async function getBotFileResponse(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId, {cache: "no-store"});
-    
-    if (!res) return null;
+    const url = await getBotFileURL(timeId);
 
-    const url = res.data.url as string;
+    if (!url) return null;
 
     const fileRes = await fetch(url);
 
@@ -269,17 +267,27 @@ export async function getBotFileResponse(timeId: string) {
 }
 
 export async function getBotFileURL(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId, {cache: "no-store"});
-    
-    if (!res) return null;
-
-    return res.data.url as string;
+    try {
+        const res = await fetch("/api/replays/bots/"  + timeId, {
+            cache: "no-store"
+        });
+        const data = await res.json();
+        return data.url as string;
+    }
+    catch {
+        return null;
+    }
 }
 
 export async function getMapFileURL(mapId: number) {
-     const res = await tryGetRequest("replays/maps/" + mapId, {cache: "no-store"});
-    
-    if (!res) return null;
-
-    return res.data.url as string;
+    try {
+        const res = await fetch("/api/replays/maps/" + mapId, {
+            cache: "no-store"
+        });
+        const data = await res.json();
+        return data.url as string;
+    }
+    catch {
+        return null;
+    }
 }
