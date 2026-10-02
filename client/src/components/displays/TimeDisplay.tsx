@@ -6,10 +6,6 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import Link from "@mui/material/Link";
 import { Link as RouterLink } from "react-router";
 import { lighten, useTheme } from "@mui/material/styles";
-import { useQueryClient } from "@tanstack/react-query";
-import { replayAssetQueries } from "../../api/replayAssets";
-import { useCallback, useRef } from "react";
-import { sleep } from "../../common/utils";
 
 interface ITimeDisplayProps {
     time: Time
@@ -19,8 +15,6 @@ interface ITimeDisplayProps {
 function TimeDisplay(props: ITimeDisplayProps) {
     const { time, hideDiff } = props;
     const theme = useTheme();
-    const queryClient = useQueryClient();
-    const isHovering = useRef(false);
 
     const isLight = theme.palette.mode === "light";
 
@@ -28,23 +22,12 @@ function TimeDisplay(props: ITimeDisplayProps) {
     const diff = time.wrDiff;
     const hasBot = time.hasBot;
 
-    const preloadReplay = useCallback(async () => {
-        isHovering.current = true;
-        await sleep(500);
-        if (isHovering.current) {
-            // Must hover for half a second before pre-fetching
-            // queryClient.prefetchQuery(replayAssetQueries.map(time.mapId));
-        }
-    }, [queryClient, time.mapId]);
-
     if (hideDiff) {
         if (hasBot) {
             return (
                 <Link
                     component={RouterLink}
                     to={`/replays/${time.id}`}
-                    onMouseEnter={preloadReplay}
-                    onMouseLeave={() => isHovering.current = false}
                     underline="none"
                     sx={{
                         textDecoration: "none",
@@ -81,8 +64,6 @@ function TimeDisplay(props: ITimeDisplayProps) {
             <Link
                 component={RouterLink} 
                 to={`/replays/${time.id}`}
-                onMouseEnter={preloadReplay}
-                onMouseLeave={() => isHovering.current = false}
                 underline="none"
                 sx={{
                     textDecoration: "none",

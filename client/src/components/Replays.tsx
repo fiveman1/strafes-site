@@ -18,11 +18,11 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp, sleep } from "../common/utils";
+import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
-import { botAssetProgressKey, mapAssetProgressKey, replayAssetQueries, subscribeToReplayAssetProgress } from "../api/replayAssets";
+import { replayAssetQueries } from "../api/replayAssets";
 import { getBotFileURL, getMapFileURL } from "../api/api";
 
 function getPlayerHeight(width: number, height: number) {
@@ -147,8 +147,6 @@ interface Freeable {
 
 function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
     for (const ref of refs) {
-        if (!ref.current) continue;
-        ref.current.free();
         ref.current = null;
     }
 }
@@ -222,7 +220,6 @@ function Replays() {
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
-    const [ downloadReady, setDownloadReady ] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const thumbCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -235,9 +232,8 @@ function Replays() {
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
     const thumbSurfaceRef = useRef<Surface>(null);
-    // const botRef = useRef<CompleteBot>(null);
-    const streamBotRef = useRef<StreamableBot>(null);
-    const streamMapRef = useRef<StreamableMap>(null);
+    const botRef = useRef<StreamableBot>(null);
+    const mapRef = useRef<StreamableMap>(null);
     const botDownloaderRef = useRef<BotDownloader>(null);
     const mapDownloaderRef = useRef<MapDownloader>(null);
     const diffBotRef = useRef<CompleteBot>(null);
@@ -246,7 +242,6 @@ function Replays() {
     const thumbPlaybackRef = useRef<StreamableHead>(null);
     const diffPlaybackRef = useRef<CompleteHead>(null);
 
-    const courseRef = useRef(0);
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
@@ -283,7 +278,6 @@ function Replays() {
         let isCanceled = false;
         setDiffReady(false);
         setLoading(true);
-        courseRef.current = replay.course;
 
         const promise = async () => {
             if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
@@ -293,33 +287,11 @@ function Replays() {
 
             await init();
 
-            //const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
-           // const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
-
-            //await queryClient.prefetchQuery(replayAssetQueries.bot(replay.id));
+            if (isCanceled) return;
 
             if (replay.compareTimeId) {
                 queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
             }
-
-            // const [mapFile, botFile] = await Promise.all([
-            //     mapFilePromise,
-            //     botFilePromise
-            // ]);
-
-            // const mapFile = await mapFilePromise;
-
-            // if (!mapFile) {
-            //     setError("Couldn't load map file.");
-            //     return;
-            // }
-
-            // if (!botFile) {
-            //     setError("Couldn't load bot file.");
-            //     return;
-            // }
-
-            if (isCanceled) return;
 
             const canvas = canvasRef.current;
             const thumbCanvas = thumbCanvasRef.current;
@@ -333,32 +305,52 @@ function Replays() {
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
 
-                let botDownloader: BotDownloader;
                 const mapPromise = async () => {
                     const url = await getMapFileURL(replay.mapId) ?? "";
+                    if (!url) {
+                        setError("Couldn't load map file.");
+                        return null;
+                    }
                     const mapDownloader = new MapDownloader(url);
-                    const streamMap = await new_streamable_map(mapDownloader, graphics);
-                    mapDownloaderRef.current = mapDownloader;
-                    return streamMap;
+                    try {
+                        const map = await new_streamable_map(mapDownloader, graphics);
+                        mapDownloaderRef.current = mapDownloader;
+                        return map;
+                    }
+                    catch (err) {
+                        console.error(err);
+                        setError("Couldn't load map file.");
+                        return null;
+                    }
                 };
 
                 const botPromise = async () => {
-                    const botUrl = await getBotFileURL(replay.id) ?? "";
-                    botDownloader = new BotDownloader(botUrl);
-                    const streamBot = await new_streamable_bot(botDownloader, replay.time / 1000);
-                    botDownloaderRef.current = botDownloader;
-                    return streamBot;
+                    const url = await getBotFileURL(replay.id) ?? "";
+                    if (!url) {
+                        setError("Couldn't load bot file.");
+                        return null;
+                    }
+                    const botDownloader = new BotDownloader(url);
+                    try {
+                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000);
+                        botDownloaderRef.current = botDownloader;
+                        return bot;
+                    }
+                    catch (err) {
+                        console.error(err);
+                        setError("Couldn't load bot file.");
+                        return null;
+                    }
                 };
-                const [streamMap, streamBot] = await Promise.all([mapPromise(), botPromise()]);
-                if (isCanceled) return;
 
-                // const map = new CompleteMap(mapFile);
-                // const bot = new CompleteBot(botFile);
+                const [map, bot] = await Promise.all([mapPromise(), botPromise()]);
+
+                const mapDownloader = mapDownloaderRef.current;
+                const botDownloader = botDownloaderRef.current;
+                if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) return;
                 
-                const playback = new StreamableSession(streamBot, 0);
-                // const thumbPlayback = new CompleteHead(bot, 0);
-                
-                const thumbPlayback = new StreamableHead(streamBot, 0);
+                const playback = new StreamableSession(bot, 0);
+                const thumbPlayback = new StreamableHead(bot, 0);
                 const thumbSurface = graphics.new_surface(thumbCanvas);
 
                 playbackRef.current = playback;
@@ -366,46 +358,26 @@ function Replays() {
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
                 thumbSurfaceRef.current = thumbSurface;
-                // botRef.current = bot;
-                streamBotRef.current = streamBot;
-                
-                streamMapRef.current = streamMap;
+                botRef.current = bot;
+                mapRef.current = map;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, playback, graphics, [surface]);
                 handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, playback, graphics, [thumbSurface]);
 
-                playback.advance_time(streamBot, 0);
-                playback.set_bot_time(streamBot, 0, 0);
-                thumbPlayback.set_time(streamBot, 0);
-                // graphics.change_map(map);
+                playback.advance_time(bot, 0);
+                playback.set_bot_time(bot, 0, 0);
+                thumbPlayback.set_time(bot, 0);
 
-                const botDuration = streamBot.duration();
-                const runDuration = streamBot.run_duration(replay.course);
+                const botDuration = bot.duration();
+                const runDuration = bot.run_duration(replay.course);
                 setDuration(runDuration);
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
                 setPlaybackTime(-offset);
                 setLoading(false);
-                setDownloadReady(true);
 
-                // const botFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
-                // if (!botFile) {
-                //     setError("Couldn't load bot file.");
-                //     return;
-                // }
-                // const bot = new CompleteBot(botFile);
-                // const thumbPlayback = new CompleteHead(bot, 0);
-                // thumbPlaybackRef.current = thumbPlayback;
-                // botRef.current = bot;
-                // thumbPlayback.set_time(bot, 0);
-                // const botDuration = bot.duration();
-                // const runDuration = bot.run_duration(replay.course);
-                // setDuration(runDuration);
-                // const offset = botDuration - runDuration;
-                // setBotOffset(offset);
-                // setPlaybackTime(-offset);
                 const diffBotPromise = async () => {
                     if (replay.compareTimeId) {
                         try {
@@ -419,22 +391,53 @@ function Replays() {
                             setDiffReady(true);
                         }
                         catch (error) {
-                            console.warn("Couldn't initialize comparison replay", error);
+                            console.error("Couldn't initialize comparison replay", error);
                         }
                     }
                 };
 
-                // const completeBotPromise = async () => {
-                //     if (!botDownloader) return;
-                //     const bot = await botDownloader.get_complete_bot();
-                //     const thumbPlayback = new CompleteHead(bot, 0);
-                //     botRef.current = bot;
-                //     thumbPlaybackRef.current = thumbPlayback;
-                //     thumbPlayback.set_time(bot, 0);
-                // };
-
                 diffBotPromise();
-                // completeBotPromise();
+
+                const downloadNextBlock = async () => {
+                    const thumbTime = thumbPlayback.get_run_time(bot, replay.course);
+                    let botBlock: BotBlockRange | undefined = undefined;
+                    if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    botBlock = bot.next_block_throttled(playback, 2);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    const mapBlock = map.next_block(bot, playback);
+                    if (mapBlock) {
+                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
+                        return true;
+                    }
+
+                    botBlock = bot.next_block_eager(playback, 2);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                const startDownloader = async () => {
+                    while (!isCanceled) {
+                        const hasBlock = await downloadNextBlock();
+                        if (!hasBlock) break;
+                    }
+                };
+
+                for (let i = 0; i < MAX_CONCURRENT_DOWNLOADS; ++i) {
+                    startDownloader();
+                }
                 
             }
             catch (err) {
@@ -452,7 +455,7 @@ function Replays() {
 
         return () => {
             isCanceled = true;
-            //releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, streamBotRef, streamMapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
+            releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
@@ -468,21 +471,21 @@ function Replays() {
             animationId = requestAnimationFrame(animate);
 
             const playback = playbackRef.current;
-            const streamBot = streamBotRef.current;
-            const streamMap = streamMapRef.current;
+            const bot = botRef.current;
+            const map = mapRef.current;
             const graphics = graphicsRef.current;
             const surface = surfaceRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && streamBot && streamMap && graphics && surface && speedText && input) {
+            if (playback && bot && map && graphics && surface && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
-                    playback.advance_time(streamBot, newSessionTime);
-                    streamMap.promote_ready_assets(graphics);
-                    graphics.render_session(surface, streamMap, streamBot, playback);
-                    const speed = playback.get_speed(streamBot);
+                    playback.advance_time(bot, newSessionTime);
+                    map.promote_ready_assets(graphics);
+                    graphics.render_session(surface, map, bot, playback);
+                    const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
@@ -491,11 +494,9 @@ function Replays() {
 
                     const thumbPlayback = thumbPlaybackRef.current;
                     const thumbSurface = thumbSurfaceRef.current;
-                    // const bot = botRef.current;
 
                     if (thumbPlayback && thumbSurface) {
-                        graphics.render_head(thumbSurface, streamMap, streamBot, thumbPlayback);
-                        //graphics.render_complete_head(thumbSurface, streamMap, bot, thumbPlayback);
+                        graphics.render_head(thumbSurface, map, bot, thumbPlayback);
                     }
 
                     const diffBot = diffBotRef.current;
@@ -505,11 +506,11 @@ function Replays() {
                     const diffSpeedElement = diffSpeedTextRef.current;
 
                     if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
-                        const pos = playback.get_position(streamBot);
+                        const pos = playback.get_position(bot);
                         const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
                         if (diffPlaybackTime !== undefined) {
                             diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
-                            const botTime = playback.get_run_time(streamBot, replay.course) ?? 0;
+                            const botTime = playback.get_run_time(bot, replay.course) ?? 0;
                             const diffBotTime = diffPlayback.get_run_time(diffBot, replay.course) ?? 0;
                             const timeDiff = botTime - diffBotTime;
                             const diffBotSpeed = diffPlayback.get_speed(diffBot);
@@ -549,71 +550,6 @@ function Replays() {
         return () => clearInterval(interval);
     }, [botOffset, duration]);
 
-    useEffect(() => {
-        if (!downloadReady) {
-            return;
-        }
-
-        let isActive = true;
-
-        const downloadNextBlock = async () => {
-            const bot = streamBotRef.current;
-            const botDownloader = botDownloaderRef.current;
-            const map = streamMapRef.current;
-            const mapDownloader = mapDownloaderRef.current;
-            const playback = playbackRef.current;
-            const thumbPlayback = thumbPlaybackRef.current;
-            const graphics = graphicsRef.current;
-
-            if (!(bot && botDownloader && map && mapDownloader && playback && thumbPlayback && graphics)) {
-                return false;
-            }
-
-            const thumbTime = thumbPlayback.get_run_time(bot, courseRef.current);
-            let botBlock: BotBlockRange | undefined = undefined;
-            if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
-            if (botBlock) {
-                await ingestBotBlock(botBlock, botDownloader, bot);
-                return true;
-            }
-
-            botBlock = bot.next_block_throttled(playback, 4);
-            if (botBlock) {
-                await ingestBotBlock(botBlock, botDownloader, bot);
-                return true;
-            }
-
-            const mapBlock = map.next_block(bot, playback);
-            if (mapBlock) {
-                await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
-                return true;
-            }
-
-            botBlock = bot.next_block_eager(playback, 4);
-            if (botBlock) {
-                await ingestBotBlock(botBlock, botDownloader, bot);
-                return true;
-            }
-
-            return false;
-        };
-
-        const startDownloader = async () => {
-            while (isActive) {
-                const hasBlock = await downloadNextBlock();
-                if (!hasBlock) break;
-            }
-        };
-
-        for (let i = 0; i < MAX_CONCURRENT_DOWNLOADS; ++i) {
-            startDownloader();
-        }
-        
-        return () => {
-            isActive = false;
-        }
-    }, [downloadReady]);
-
     const onResize = useCallback((width: number, height: number) => {
         const playback = playbackRef.current;
         const graphics = graphicsRef.current;
@@ -628,7 +564,7 @@ function Replays() {
     const onSetPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
@@ -640,7 +576,7 @@ function Replays() {
     const onDragPlayback = useCallback((time: number) => {
         setPlaybackTime(time);
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
             playback.set_paused(bot, sessionTimer.current, true);
@@ -649,7 +585,7 @@ function Replays() {
 
     const onSeek = useCallback((offset: number) => {
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             const curTime = playback.get_bot_time();
             const newTime = curTime + offset;
@@ -659,7 +595,7 @@ function Replays() {
 
     const onReset = useCallback(() => {
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_bot_time(bot, sessionTimer.current, 0.0001);
         }
@@ -668,7 +604,7 @@ function Replays() {
     const onSetPause = useCallback((paused: boolean) => {
         setPaused(paused);
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_paused(bot, sessionTimer.current, paused);
         }
@@ -687,7 +623,7 @@ function Replays() {
     const onChangePlaybackSpeed = useCallback((speed: number) => {
         setPlaybackSpeed(speed);
         const playback = playbackRef.current;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         if (playback && bot) {
             playback.set_scale(bot, sessionTimer.current, speed);
         }
@@ -695,7 +631,7 @@ function Replays() {
 
     const setThumbTime = useCallback((reqTime: number) => {
         const time = reqTime + botOffset;
-        const bot = streamBotRef.current;
+        const bot = botRef.current;
         const playback = thumbPlaybackRef.current;
         if (playback && bot) {
             try {
@@ -717,26 +653,6 @@ function Replays() {
             document.removeEventListener("fullscreenchange", handler);
         };
     }, [onFullscreen]);
-
-    // let downloadProgress = -1;
-    // if (loading) {
-    //     let mapProgress = -1;
-    //     let botProgress = -1;
-
-    //     if (mapFileLength !== 0) {
-    //         mapProgress = mapFileReceived / mapFileLength;
-    //     }
-
-    //     if (botFileLength !== 0) {
-    //         botProgress = botFileReceived / botFileLength;
-    //     }
-
-    //     const progress = Math.min(mapProgress, botProgress);
-
-    //     if (progress !== -1 && mapProgress !== -1 && botProgress !== -1) {
-    //         downloadProgress = progress;
-    //     }
-    // }
 
     let gameColor = "";
     let styleColor = "";
