@@ -255,11 +255,9 @@ export async function getReplayById(id: string) {
 }
 
 export async function getBotFileResponse(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId);
-    
-    if (!res) return null;
+    const url = await getBotFileURL(timeId);
 
-    const url = res.data.url as string;
+    if (!url) return null;
 
     const fileRes = await fetch(url);
 
@@ -268,16 +266,28 @@ export async function getBotFileResponse(timeId: string) {
     return fileRes;
 }
 
-export async function getMapFileResponse(mapId: number) {
-    const res = await tryGetRequest("replays/maps/" + mapId);
-    
-    if (!res) return null;
+export async function getBotFileURL(timeId: string) {
+    try {
+        const res = await fetch("/api/replays/bots/"  + timeId, {
+            cache: "no-store"
+        });
+        const data = await res.json();
+        return data.url as string;
+    }
+    catch {
+        return null;
+    }
+}
 
-    const url = res.data.url as string;
-
-    const fileRes = await fetch(url);
-    
-    if (!fileRes.ok) return null;
-
-    return fileRes;
+export async function getMapFileURL(mapId: number) {
+    try {
+        const res = await fetch("/api/replays/maps/" + mapId, {
+            cache: "no-store"
+        });
+        const data = await res.json();
+        return data.url as string;
+    }
+    catch {
+        return null;
+    }
 }

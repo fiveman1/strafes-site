@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, CompleteMap, Graphics, PlaybackHead, PlaybackSession, setup_graphics, Surface } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -22,7 +22,7 @@ import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
-import { botAssetProgressKey, mapAssetProgressKey, replayAssetQueries, subscribeToReplayAssetProgress } from "../api/replayAssets";
+import { replayAssetQueries } from "../api/replayAssets";
 
 function getPlayerHeight(width: number, height: number) {
     if (width / height > PLAYER_ASPECT_RATIO) {
@@ -69,7 +69,7 @@ const controlToState = new Map([
     [GameControls.Jump, InputState.Jump]
 ]);
 
-function updateInputDisplay(input: HTMLDivElement, playback: PlaybackSession) {
+function updateInputDisplay(input: HTMLDivElement, playback: StreamableSession) {
     const controls = playback.get_game_controls();
     controlToState.forEach((state, control) => {
         const isActive = (controls & control) > 0;
@@ -137,6 +137,65 @@ function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLE
     }
 }
 
+interface Freeable {
+    free(): void
+}
+
+function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
+    for (const ref of refs) {
+        ref.current = null;
+    }
+}
+
+async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, bot: StreamableBot) {
+    try {
+        const data = await downloader.download_bot_block_range(block);
+        bot.ingest(data);
+    }
+    catch (err) {
+        if (err instanceof DownloadBotBlockRangeError) {
+            console.error(err.error());
+            const request = err.request();
+            if (request) {
+                bot.cancel(request);
+            }
+            else {
+                bot.clear_downloading();
+            }
+        }
+        else {
+            console.error(err);
+            bot.clear_downloading();
+        }
+    }
+}
+
+async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics) {
+    try {
+        const data = await downloader.download_map_block_range(block);
+        map.ingest(graphics, data);
+    }
+    catch (err) {
+        if (err instanceof DownloadMapBlockRangeError) {
+            console.error(err.error());
+            const request = err.request();
+            if (request) {
+                map.cancel(request);
+            }
+            else {
+                map.clear_downloading();
+            }
+        }
+        else {
+            console.error(err);
+            map.clear_downloading();
+        }
+    }
+}
+
+// Browsers typically support 6 concurrent connections over HTTP/1.1
+const MAX_CONCURRENT_DOWNLOADS = 6;
+
 function Replays() {
     const { id } = useParams() as { id: string };
     const { maps, loginUser } = useOutletContext() as ContextParams;
@@ -156,10 +215,6 @@ function Replays() {
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
-    const [ mapFileLength, setMapFileLength ] = useState(0);
-    const [ mapFileReceived, setMapFileReceived ] = useState(0);
-    const [ botFileLength, setBotFileLength ] = useState(0);
-    const [ botFileReceived, setBotFileReceived ] = useState(0);
     const [ diffReady, setDiffReady ] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -169,25 +224,33 @@ function Replays() {
     const inputContainerRef = useRef<HTMLDivElement>(null);
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
+
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
     const thumbSurfaceRef = useRef<Surface>(null);
-    const botRef = useRef<CompleteBot>(null);
+    const botRef = useRef<StreamableBot>(null);
+    const mapRef = useRef<StreamableMap>(null);
+    const botDownloaderRef = useRef<BotDownloader>(null);
+    const mapDownloaderRef = useRef<MapDownloader>(null);
     const diffBotRef = useRef<CompleteBot>(null);
     const diffBvhRef = useRef<Bvh>(null);
-    const playbackRef = useRef<PlaybackSession>(null);
-    const thumbPlaybackRef = useRef<PlaybackHead>(null);
-    const diffPlaybackRef = useRef<PlaybackHead>(null);
+    const playbackRef = useRef<StreamableSession>(null);
+    const thumbPlaybackRef = useRef<StreamableHead>(null);
+    const diffPlaybackRef = useRef<CompleteHead>(null);
+
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
         setLoading(false);
-        playbackRef.current = null;
-        graphicsRef.current = null;
-        botRef.current = null;
     }, []);
+
+    useEffect(() => {
+        if (id) {
+            queryClient.prefetchQuery(queries.replays.botURL(id));
+        }
+    }, [id, queryClient]);
 
     useEffect(() => {
         if (replay) {
@@ -214,20 +277,14 @@ function Replays() {
             return;
         }
 
+        queryClient.prefetchQuery(queries.replays.mapURL(replay.mapId));
+        if (replay.compareTimeId) {
+            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+        }
+
         let isCanceled = false;
-        setMapFileReceived(0);
-        setBotFileReceived(0);
         setDiffReady(false);
         setLoading(true);
-
-        const unsubscribeMapProgress = subscribeToReplayAssetProgress(mapAssetProgressKey(replay.mapId), (progress) => {
-            setMapFileLength(progress.total);
-            setMapFileReceived(progress.received);
-        });
-        const unsubscribeBotProgress = subscribeToReplayAssetProgress(botAssetProgressKey(replay.id), (progress) => {
-            setBotFileLength(progress.total);
-            setBotFileReceived(progress.received);
-        });
 
         const promise = async () => {
             if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
@@ -236,28 +293,6 @@ function Replays() {
             }
 
             await init();
-
-            const mapFilePromise = queryClient.fetchQuery(replayAssetQueries.map(replay.mapId)).catch(() => null);
-            const botFilePromise = queryClient.fetchQuery(replayAssetQueries.bot(replay.id)).catch(() => null);
-
-            if (replay.compareTimeId) {
-                await queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
-            }
-
-            const [mapFile, botFile] = await Promise.all([
-                mapFilePromise,
-                botFilePromise
-            ]);
-
-            if (!mapFile) {
-                setError("Couldn't load map file.");
-                return;
-            }
-
-            if (!botFile) {
-                setError("Couldn't load bot file.");
-                return;
-            }
 
             if (isCanceled) return;
 
@@ -269,13 +304,56 @@ function Replays() {
             }
 
             try {
-                const map = new CompleteMap(mapFile);
-                const bot = new CompleteBot(botFile);
-                const playback = new PlaybackSession(bot, 0);
-                const thumbPlayback = new PlaybackHead(bot, 0);
                 const graphics_and_surface = await setup_graphics(canvas);
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
+
+                const mapPromise = async () => {
+                    const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
+                    if (!url) {
+                        setError("Couldn't load map file.");
+                        return null;
+                    }
+                    const mapDownloader = new MapDownloader(url);
+                    try {
+                        const map = await new_streamable_map(mapDownloader, graphics, 512000);
+                        mapDownloaderRef.current = mapDownloader;
+                        return map;
+                    }
+                    catch (err) {
+                        console.error(err);
+                        setError("Couldn't load map file.");
+                        return null;
+                    }
+                };
+
+                const botPromise = async () => {
+                    const url = await queryClient.fetchQuery(queries.replays.botURL(replay.id));
+                    if (!url) {
+                        setError("Couldn't load bot file.");
+                        return null;
+                    }
+                    const botDownloader = new BotDownloader(url);
+                    try {
+                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000);
+                        botDownloaderRef.current = botDownloader;
+                        return bot;
+                    }
+                    catch (err) {
+                        console.error(err);
+                        setError("Couldn't load bot file.");
+                        return null;
+                    }
+                };
+
+                const [map, bot] = await Promise.all([mapPromise(), botPromise()]);
+
+                const mapDownloader = mapDownloaderRef.current;
+                const botDownloader = botDownloaderRef.current;
+                if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) return;
+                
+                const playback = new StreamableSession(bot, 0);
+                const thumbPlayback = new StreamableHead(bot, 0);
                 const thumbSurface = graphics.new_surface(thumbCanvas);
 
                 playbackRef.current = playback;
@@ -284,6 +362,7 @@ function Replays() {
                 surfaceRef.current = surface;
                 thumbSurfaceRef.current = thumbSurface;
                 botRef.current = bot;
+                mapRef.current = map;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
@@ -293,7 +372,6 @@ function Replays() {
                 playback.advance_time(bot, 0);
                 playback.set_bot_time(bot, 0, 0);
                 thumbPlayback.set_time(bot, 0);
-                graphics.change_map(map);
 
                 const botDuration = bot.duration();
                 const runDuration = bot.run_duration(replay.course);
@@ -303,21 +381,67 @@ function Replays() {
                 setPlaybackTime(-offset);
                 setLoading(false);
 
-                if (replay.compareTimeId) {
-                    try {
-                        const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
-                        if (!diffBotFile || isCanceled) return;
+                const diffBotPromise = async () => {
+                    if (replay.compareTimeId) {
+                        try {
+                            const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
+                            if (!diffBotFile || isCanceled) return;
+                            
+                            const diffBot = new CompleteBot(diffBotFile);
+                            diffBotRef.current = diffBot;
+                            diffBvhRef.current = new Bvh(diffBot);
+                            diffPlaybackRef.current = new CompleteHead(diffBot, 0);
+                            setDiffReady(true);
+                        }
+                        catch (error) {
+                            console.error("Couldn't initialize comparison replay", error);
+                        }
+                    }
+                };
 
-                        const diffBot = new CompleteBot(diffBotFile);
-                        diffBotRef.current = diffBot;
-                        diffBvhRef.current = new Bvh(diffBot);
-                        diffPlaybackRef.current = new PlaybackHead(diffBot, 0);
-                        setDiffReady(true);
+                diffBotPromise();
+
+                const downloadNextBlock = async () => {
+                    const thumbTime = thumbPlayback.get_run_time(bot, replay.course);
+                    let botBlock: BotBlockRange | undefined = undefined;
+                    if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
                     }
-                    catch (error) {
-                        console.warn("Couldn't initialize comparison replay", error);
+
+                    botBlock = bot.next_block_throttled(playback, 2);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
                     }
+
+                    const mapBlock = map.next_block_session(bot, playback);
+                    if (mapBlock) {
+                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
+                        return true;
+                    }
+
+                    botBlock = bot.next_block_eager(playback, 2);
+                    if (botBlock) {
+                        await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                const startDownloader = async () => {
+                    while (!isCanceled) {
+                        const hasBlock = await downloadNextBlock();
+                        if (!hasBlock) break;
+                    }
+                };
+
+                for (let i = 0; i < MAX_CONCURRENT_DOWNLOADS; ++i) {
+                    startDownloader();
                 }
+                
             }
             catch (err) {
                 console.error(err);
@@ -334,44 +458,7 @@ function Replays() {
 
         return () => {
             isCanceled = true;
-            unsubscribeMapProgress();
-            unsubscribeBotProgress();
-            if (playbackRef.current) {
-                playbackRef.current.free();
-                playbackRef.current = null;
-            }
-            if (thumbPlaybackRef.current) {
-                thumbPlaybackRef.current.free();
-                thumbPlaybackRef.current = null;
-            }
-            if (graphicsRef.current) {
-                graphicsRef.current.free();
-                graphicsRef.current = null;
-            }
-            if (surfaceRef.current) {
-                surfaceRef.current.free();
-                surfaceRef.current = null;
-            }
-            if (thumbSurfaceRef.current) {
-                thumbSurfaceRef.current.free();
-                thumbSurfaceRef.current = null;
-            }
-            if (botRef.current) {
-                botRef.current.free();
-                botRef.current = null;
-            }
-            if (diffPlaybackRef.current) {
-                diffPlaybackRef.current.free();
-                diffPlaybackRef.current = null;
-            }
-            if (diffBvhRef.current) {
-                diffBvhRef.current.free();
-                diffBvhRef.current = null;
-            }
-            if (diffBotRef.current) {
-                diffBotRef.current.free();
-                diffBotRef.current = null;
-            }
+            releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
@@ -387,27 +474,36 @@ function Replays() {
             animationId = requestAnimationFrame(animate);
 
             const playback = playbackRef.current;
-            const thumbPlayback = thumbPlaybackRef.current;
             const bot = botRef.current;
+            const map = mapRef.current;
             const graphics = graphicsRef.current;
             const surface = surfaceRef.current;
-            const thumbSurface = thumbSurfaceRef.current;
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && thumbPlayback && bot && graphics && surface && thumbSurface && speedText && input) {
+            if (playback && bot && map && graphics && surface && speedText && input) {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
                     playback.advance_time(bot, newSessionTime);
-                    graphics.render_session(surface, bot, playback);
-                    graphics.render_head(thumbSurface, bot, thumbPlayback)
+                    map.promote_ready_assets(graphics);
+                    graphics.render_session(surface, map, bot, playback);
+                    
+                    setLoading(playback.is_buffering());
+                    
                     const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
                     if (speedText.innerText !== newText) {
                         speedText.innerText = newText;
                     }
                     updateInputDisplay(input, playback);
+
+                    const thumbPlayback = thumbPlaybackRef.current;
+                    const thumbSurface = thumbSurfaceRef.current;
+
+                    if (thumbPlayback && thumbSurface) {
+                        graphics.render_head(thumbSurface, map, bot, thumbPlayback);
+                    }
 
                     const diffBot = diffBotRef.current;
                     const bvh = diffBvhRef.current;
@@ -543,7 +639,10 @@ function Replays() {
         const bot = botRef.current;
         const playback = thumbPlaybackRef.current;
         if (playback && bot) {
-            playback.set_time(bot, time);
+            try {
+                playback.set_time(bot, time);
+            }
+            catch {}
         }
     }, [botOffset]);
 
@@ -559,26 +658,6 @@ function Replays() {
             document.removeEventListener("fullscreenchange", handler);
         };
     }, [onFullscreen]);
-
-    let downloadProgress = -1;
-    if (loading) {
-        let mapProgress = -1;
-        let botProgress = -1;
-
-        if (mapFileLength !== 0) {
-            mapProgress = mapFileReceived / mapFileLength;
-        }
-
-        if (botFileLength !== 0) {
-            botProgress = botFileReceived / botFileLength;
-        }
-
-        const progress = Math.min(mapProgress, botProgress);
-
-        if (progress !== -1 && mapProgress !== -1 && botProgress !== -1) {
-            downloadProgress = progress;
-        }
-    }
 
     let gameColor = "";
     let styleColor = "";
@@ -715,10 +794,6 @@ function Replays() {
                                             justifyContent: "center",
                                             height: "32px"
                                         }}>
-                                        {downloadProgress !== -1 &&
-                                        <Typography variant="body1">
-                                            {Math.round(downloadProgress * 100)}%
-                                        </Typography>}
                                     </Box>
                                 </Box>}
                             </Box>

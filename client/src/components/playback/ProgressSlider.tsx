@@ -138,7 +138,9 @@ function ProgressSlider(props: ProgressSliderProps) {
                     height: `${thumbHeight}px`,
                     display: showThumb ? "block" : "none",
                     borderRadius: "4px",
-                    border: "1px solid #ffffff49"
+                    border: "1px solid #ffffff49",
+                    background: "rgba(255, 255, 255, 0.3)",
+                    backdropFilter: "blur(6px)"
                 }}
                 style={{
                     left: `${coords.x - (thumbWidth / 2)}px`,

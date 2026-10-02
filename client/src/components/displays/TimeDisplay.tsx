@@ -7,9 +7,8 @@ import Link from "@mui/material/Link";
 import { Link as RouterLink } from "react-router";
 import { lighten, useTheme } from "@mui/material/styles";
 import { useQueryClient } from "@tanstack/react-query";
-import { replayAssetQueries } from "../../api/replayAssets";
-import { useCallback, useRef } from "react";
-import { sleep } from "../../common/utils";
+import { queries } from "../../api/queries";
+import { useCallback } from "react";
 
 interface ITimeDisplayProps {
     time: Time
@@ -20,22 +19,19 @@ function TimeDisplay(props: ITimeDisplayProps) {
     const { time, hideDiff } = props;
     const theme = useTheme();
     const queryClient = useQueryClient();
-    const isHovering = useRef(false);
 
     const isLight = theme.palette.mode === "light";
 
     const ms = time.time;
     const diff = time.wrDiff;
     const hasBot = time.hasBot;
+    const timeId = time.id;
+    const mapId = time.mapId;
 
-    const preloadReplay = useCallback(async () => {
-        isHovering.current = true;
-        await sleep(500);
-        if (isHovering.current) {
-            // Must hover for half a second before pre-fetching
-            queryClient.prefetchQuery(replayAssetQueries.map(time.mapId));
-        }
-    }, [queryClient, time.mapId]);
+    const prefetchURLs = useCallback(() => {
+        queryClient.prefetchQuery(queries.replays.botURL(timeId));
+        queryClient.prefetchQuery(queries.replays.mapURL(mapId));
+    }, [mapId, queryClient, timeId]);
 
     if (hideDiff) {
         if (hasBot) {
@@ -43,8 +39,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                 <Link
                     component={RouterLink}
                     to={`/replays/${time.id}`}
-                    onMouseEnter={preloadReplay}
-                    onMouseLeave={() => isHovering.current = false}
+                    onClick={prefetchURLs}
                     underline="none"
                     sx={{
                         textDecoration: "none",
@@ -81,8 +76,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
             <Link
                 component={RouterLink} 
                 to={`/replays/${time.id}`}
-                onMouseEnter={preloadReplay}
-                onMouseLeave={() => isHovering.current = false}
+                onClick={prefetchURLs}
                 underline="none"
                 sx={{
                     textDecoration: "none",
