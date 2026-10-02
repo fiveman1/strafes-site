@@ -255,7 +255,7 @@ export async function getReplayById(id: string) {
 }
 
 export async function getBotFileResponse(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId);
+    const res = await tryGetRequest("replays/bots/" + timeId, {cache: "no-store"});
     
     if (!res) return null;
 
@@ -269,7 +269,7 @@ export async function getBotFileResponse(timeId: string) {
 }
 
 export async function getBotFileURL(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId);
+    const res = await tryGetRequest("replays/bots/" + timeId, {cache: "no-store"});
     
     if (!res) return null;
 
@@ -277,7 +277,7 @@ export async function getBotFileURL(timeId: string) {
 }
 
 export async function getMapFileURL(mapId: number) {
-     const res = await tryGetRequest("replays/maps/" + mapId);
+     const res = await tryGetRequest("replays/maps/" + mapId, {cache: "no-store"});
     
     if (!res) return null;
 

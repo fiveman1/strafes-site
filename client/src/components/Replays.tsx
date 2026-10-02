@@ -316,7 +316,7 @@ function Replays() {
                     }
                     const mapDownloader = new MapDownloader(url);
                     try {
-                        const map = await new_streamable_map(mapDownloader, graphics);
+                        const map = await new_streamable_map(mapDownloader, graphics, 256000);
                         mapDownloaderRef.current = mapDownloader;
                         return map;
                     }
@@ -416,7 +416,7 @@ function Replays() {
                         return true;
                     }
 
-                    const mapBlock = map.next_block(bot, playback);
+                    const mapBlock = map.next_block_session(bot, playback);
                     if (mapBlock) {
                         await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
