@@ -18,7 +18,7 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp } from "../common/utils";
+import { clamp, sleep } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
@@ -425,6 +425,11 @@ function Replays() {
                     botBlock = bot.next_block_eager(playback, 2);
                     if (botBlock) {
                         await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    if (bot.count_downloading() > 0 || map.count_downloading() > 0) {
+                        await sleep(50);
                         return true;
                     }
 
