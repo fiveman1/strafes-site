@@ -54,8 +54,8 @@ const PORT = process.env.PORT ?? "8080";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
 const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
-const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 25, validate: { xForwardedForHeader: !IS_DEV_MODE } });
-const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 80, validate: { xForwardedForHeader: !IS_DEV_MODE } });
+const rateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 12, validate: { xForwardedForHeader: !IS_DEV_MODE } });
+const pagedRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: IS_DEV_MODE ? 250 : 40, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));

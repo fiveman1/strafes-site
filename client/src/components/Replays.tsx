@@ -247,12 +247,6 @@ function Replays() {
     }, []);
 
     useEffect(() => {
-        if (id) {
-            queryClient.prefetchQuery(queries.replays.botURL(id));
-        }
-    }, [id, queryClient]);
-
-    useEffect(() => {
         if (replay) {
             const placementText = replay.placement === 1 ? "WR" : `${formatPlacement(replay.placement)} place`;
             document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} (${placementText}) - replays - strafes`;
@@ -277,11 +271,6 @@ function Replays() {
             return;
         }
 
-        queryClient.prefetchQuery(queries.replays.mapURL(replay.mapId));
-        if (replay.compareTimeId) {
-            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
-        }
-
         let isCanceled = false;
         setDiffReady(false);
         setLoading(true);
@@ -290,6 +279,10 @@ function Replays() {
             if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
                 setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
                 return;
+            }
+
+            if (replay.compareTimeId) {
+                queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
             }
 
             await init();
