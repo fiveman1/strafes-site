@@ -259,7 +259,7 @@ function Replays() {
     useEffect(() => {
         if (replayQuery.isSuccess || replayQuery.isError) {
             if (!replay) {
-                setError(`Invalid replay (ID: ${id}).`);
+                setError("Something went wrong trying to load the replay.");
                 return;
             }
             if (!replay.hasBot) {

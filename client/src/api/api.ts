@@ -271,6 +271,7 @@ export async function getBotFileURL(timeId: string) {
         const res = await fetch("/api/replays/bots/"  + timeId, {
             cache: "no-store"
         });
+        if (!res.ok) return null;
         const data = await res.json();
         return data.url as string;
     }
@@ -284,6 +285,7 @@ export async function getMapFileURL(mapId: number) {
         const res = await fetch("/api/replays/maps/" + mapId, {
             cache: "no-store"
         });
+        if (!res.ok) return null;
         const data = await res.json();
         return data.url as string;
     }

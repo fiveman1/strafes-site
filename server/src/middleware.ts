@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 
-const BURST_LIMIT = 60;
+const BURST_LIMIT = 100;
 const shortLimiter = new RateLimiterMemory({
     points: BURST_LIMIT,
     duration: 60

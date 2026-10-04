@@ -119,7 +119,7 @@ const submitTierVoteValidator = vine.create({
     mapId: vine.number().withoutDecimals().nonNegative()
 });
 
-app.post("/api/auth/tiers", rateLimiterMiddleware(4), async (req, res) => {
+app.post("/api/auth/tiers", rateLimiterMiddleware(2), async (req, res) => {
     const [error, result] = await submitTierVoteValidator.tryValidate(req.body);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -147,7 +147,7 @@ app.post("/api/auth/settings", async (req, res) => {
     await authClient.updateSettings(req, res);
 });
 
-app.get("/api/username", cache("5 minutes"), async (req, res) => {
+app.get("/api/username", rateLimiterMiddleware(1), cache("5 minutes"), async (req, res) => {
     const [error, result] = await validators.usernameValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -165,7 +165,7 @@ app.get("/api/username", cache("5 minutes"), async (req, res) => {
 });
 
 const searchGUID = crypto.randomUUID();
-app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
+app.get("/api/usersearch", rateLimiterMiddleware(1), cache("5 minutes"), async (req, res) => {
     const [error, result] = await validators.usernameValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -198,7 +198,7 @@ app.get("/api/usersearch", cache("5 minutes"), async (req, res) => {
     res.status(200).json({ usernames: usernames });
 });
 
-app.get("/api/user/:id", rateLimiterMiddleware(3), cache("5 minutes"), async (req, res) => {
+app.get("/api/user/:id", rateLimiterMiddleware(4), cache("5 minutes"), async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -221,7 +221,7 @@ const userRankValidator = vine.create({
     style: validators.style()
 });
 
-app.get("/api/user/rank/:id", rateLimiterMiddleware(2), cache("15 minutes"), async (req, res) => {
+app.get("/api/user/rank/:id", rateLimiterMiddleware(4), cache("15 minutes"), async (req, res) => {
     const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
     if (paramsError) {
         res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
@@ -488,7 +488,7 @@ const userCompletionsValidator = vine.create({
     style: validators.style()
 });
 
-app.get("/api/user/times/completions/:id", rateLimiterMiddleware(2), cache("5 minutes"), async (req, res) => {
+app.get("/api/user/times/completions/:id", rateLimiterMiddleware(4), cache("5 minutes"), async (req, res) => {
     const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
     if (paramsError) {
         res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
@@ -568,7 +568,7 @@ const userAllTimesValidator = vine.create({
     style: validators.style()
 });
 
-app.get("/api/user/times/all/:id", rateLimiterMiddleware(5), cache("5 minutes"), async (req, res) => {
+app.get("/api/user/times/all/:id", rateLimiterMiddleware(8), cache("5 minutes"), async (req, res) => {
     const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
     if (paramsError) {
         res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
@@ -895,7 +895,7 @@ app.get("/api/maps", rateLimiterMiddleware(1), cache("30 minutes"), async (req, 
     });
 });
 
-app.get("/api/replays/bots/:id", rateLimiterMiddleware(3), async (req, res) => {
+app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -913,7 +913,7 @@ app.get("/api/replays/bots/:id", rateLimiterMiddleware(3), async (req, res) => {
     return res.status(200).json({ url: url });
 });
 
-app.get("/api/replays/maps/:id", rateLimiterMiddleware(3), async (req, res) => {
+app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -930,7 +930,7 @@ app.get("/api/replays/maps/:id", rateLimiterMiddleware(3), async (req, res) => {
     return res.status(200).json({ url: url });
 });
 
-app.get("/api/replays/times/:id", rateLimiterMiddleware(1), async (req, res) => {
+app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
