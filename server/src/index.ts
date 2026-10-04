@@ -418,7 +418,7 @@ const timesValidator = vine.create({
     sort: validators.timesSort()
 });
 
-app.get("/api/times", rateLimiterMiddleware(2), cache("5 minutes"), async (req, res) => {
+app.get("/api/times", rateLimiterMiddleware(1), cache("5 minutes"), async (req, res) => {
     const [error, result] = await timesValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -568,7 +568,7 @@ const userAllTimesValidator = vine.create({
     style: validators.style()
 });
 
-app.get("/api/user/times/all/:id", rateLimiterMiddleware(8), cache("5 minutes"), async (req, res) => {
+app.get("/api/user/times/all/:id", rateLimiterMiddleware(6), cache("5 minutes"), async (req, res) => {
     const [paramsError, paramsResult] = await validators.idValidator.tryValidate(req.params);
     if (paramsError) {
         res.status(400).json({ error: paramsError instanceof errors.E_VALIDATION_ERROR ? paramsError.messages : "Invalid input" });
