@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
+import { isBot } from "isbot";
 
 const BURST_LIMIT = 100;
 const shortLimiter = new RateLimiterMemory({
@@ -49,6 +50,10 @@ export function rateLimiterMiddleware(points: number) {
         if (!req.ip) {
             res.status(400);
             return;
+        }
+
+        if (isBot(req.get("user-agent"))) {
+            points *= 5;
         }
 
         const [valid, headers] = await tryConsumeRequest(req.ip, points);

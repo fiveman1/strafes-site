@@ -21,6 +21,7 @@
         "escape-html": "^1.0.3",
         "express": "^5.1.0",
         "express-rate-limit": "^7.5.1",
+        "isbot": "^5.2.2",
         "memoize": "^10.1.0",
         "memory-cache": "^0.2.0",
         "mysql2": "^3.16.0",

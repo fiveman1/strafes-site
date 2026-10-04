@@ -20,6 +20,7 @@ import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setU
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { readFile } from "fs/promises";
 import { rateLimiterMiddleware } from "./middleware.js";
+import { isBot } from "isbot";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -980,7 +981,7 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     await Promise.all(promises);
 
     const replay = await convertTimeToReplay(globalsClient, time, compareTimeId);
-    if (replay.hasBot && req.ip) {
+    if (replay.hasBot && req.ip && !isBot(req.get("user-agent"))) {
         const user = await authClient.getAuthenticatedUser(req, res);
         await logViewForReplay(globalsClient, replay, req.ip, user?.userId);
     }
