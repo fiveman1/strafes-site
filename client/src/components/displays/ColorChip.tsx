@@ -1,36 +1,35 @@
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { darken } from "@mui/system";
+import { alpha, darken, lighten, SxProps, Theme, useTheme } from "@mui/material/styles";
 
 interface ColorChipProps {
     color: string
     label: string
+    sx?: SxProps<Theme>
 }
 
 function ColorChip(props: ColorChipProps) {
-    const { color, label } = props;
+    const { color, label, sx } = props;
+    const isLight = useTheme().palette.mode === "light";
 
     return (
-        <Box sx={{
-            display: "inline-flex"
-        }}>
-            <Typography
-                variant="body2"
-                sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    fontWeight: "bold",
-                    border: `1px solid ${color}`,
-                    bgcolor: darken(color, 0.3),
-                    borderRadius: "8px",
-                    color: "white",
-                    px: 0.5,
-                    py: 0.25,
-                    my: 0.25,
-                    textShadow: "black 1px 1px 1px"
-                }}>
-                {label}
-            </Typography>
+        <Box
+            component="span"
+            sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                flexShrink: 0,
+                height: 20,
+                px: 0.75,
+                borderRadius: "5px",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                color: isLight ? darken(color, 0.55) : lighten(color, 0.35),
+                bgcolor: alpha(color, isLight ? 0.2 : 0.16),
+                ...sx
+            }}>
+            {label}
         </Box>
     );
 }
