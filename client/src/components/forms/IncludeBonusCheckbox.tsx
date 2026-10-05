@@ -1,4 +1,4 @@
-import { Box, Checkbox, FormControlLabel, FormGroup, FormHelperText } from "@mui/material";
+import { Box, Checkbox, FormControlLabel, FormGroup } from "@mui/material";
 
 interface IIncludeCheckboxParams {
     includeBonuses: boolean
@@ -23,7 +23,6 @@ function IncludeBonusCheckbox(params: IIncludeCheckboxParams) {
                 <FormControlLabel label="Bonuses" control={
                     <Checkbox checked={includeBonuses} onChange={(event, checked) => handleChangeIncludeBonuses(checked)} />}  
                 />
-                <FormHelperText sx={{mt: -0.5}}>{includeBonuses ? "Showing bonuses" : "Hiding bonuses"}</FormHelperText>
             </FormGroup>
         </Box>
     );

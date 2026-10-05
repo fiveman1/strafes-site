@@ -1,7 +1,6 @@
-import { Box, Link, Paper, Tooltip, Typography, useTheme } from "@mui/material";
+import { Box, Link, Skeleton, Tooltip, Typography, useTheme } from "@mui/material";
 import { User, formatUserRole } from "shared";
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
-import CircularProgress from '@mui/material/CircularProgress';
 import { ContextParams, getUserRoleColor } from "../../common/common";
 import { useOutletContext } from "react-router";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
@@ -16,10 +15,8 @@ interface IUserDisplayProps {
 }
 
 interface IUserCardProps {
-    minHeight?: number
     loading?: boolean
     user?: User
-    center?: boolean
 }
 
 function UserCardAvatar(props: IUserDisplayProps) {
@@ -31,14 +28,14 @@ function UserCardAvatar(props: IUserDisplayProps) {
 
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <UserAvatar sx={{height: 100, width: 100}} username={user.username} userThumb={user.userThumb} />
+            <UserAvatar sx={{height: 72, width: 72}} username={user.username} userThumb={user.userThumb} />
             {isCurrentUser ?
             <Box
                 title="You"
                 sx={{
                     position: "absolute",
-                    bottom: 5,
-                    right: 5,
+                    bottom: 0,
+                    right: 0,
                     backgroundColor: theme.palette.common.white,
                     display: "flex",
                     alignItems: "center",
@@ -65,139 +62,70 @@ function UserDisplay(props: IUserDisplayProps) {
     const country = (loginUser && user.userId === loginUser.userId) ? settings.country : user.userCountry; // To get around caching
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                flexDirection: "row"
-            }}>
-            <Box
-                sx={{
-                    minWidth: "108px",
-                    display: "flex",
-                    alignItems: "center",
-                    mr: 1
-                }}>
-                <UserCardAvatar user={user} />
-            </Box>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: "0",
-                    overflowWrap: "break-word"
-                }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 0 }}>
+            <UserCardAvatar user={user} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, minWidth: 0, overflowWrap: "anywhere" }}>
+                <Typography component="h1" variant="h5" sx={{ lineHeight: 1.2 }}>
+                    {user.displayName}
+                    {country ? <CountryFlag countryCode={country} marginLeft={8} /> : undefined}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                    <Link href={`https://www.roblox.com/users/${user.userId}/profile`} color="inherit" underline="hover">
+                        @{user.username}
+                    </Link>
+                    {" · "}{user.userId}{" · "}
+                    <Tooltip title={tooltipText} disableInteractive>
+                        <span>Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} /></span>
+                    </Tooltip>
+                </Typography>
+                {user.userRoles && user.userRoles.length > 0 &&
                 <Box
+                    component="ul"
                     sx={{
                         display: "flex",
-                        flexDirection: "column",
-                        flexGrow: 1,
-                        justifyContent: "flex-start"
+                        flexWrap: "wrap",
+                        gap: 0.5,
+                        m: 0,
+                        mt: 0.25,
+                        pl: 0,
+                        listStyle: "none"
                     }}>
-                    <Box sx={{
-                        display: "inline-block"
-                    }}>
-                        <Box
-                            sx={{
-                                lineHeight: 1,
-                                display: "flex",
-                                alignItems: "center",
-                                wordBreak: "break-word"
-                            }}>
-                            <Typography variant="h5" >
-                                {user.displayName}
-                                {country ? <CountryFlag countryCode={country} marginLeft={8} /> : undefined}
-                            </Typography>
-
+                    {user.userRoles.map((role) => (
+                        <Box key={role} component="li" sx={{ display: "flex" }}>
+                            <ColorChip color={getUserRoleColor(role, theme)} label={formatUserRole(role)} />
                         </Box>
-                    </Box>
-                    <Box sx={{
-                        display: "inline-flex"
-                    }}>
-                        <Link
-                            href={`https://www.roblox.com/users/${user.userId}/profile`}
-                            color="secondary"
-                            sx={{
-                                display: "inline-flex",
-                                verticalAlign: "top",
-                                wordBreak: "break-word"
-                            }}>
-                            <Typography variant="subtitle2" >
-                                @{user.username}
-                            </Typography>
-                        </Link>
-                    </Box>
-                    <Typography variant="body2" color="textSecondary">
-                        {user.userId}
-                    </Typography>
-                </Box>
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column"
-                    }}>
-                    {user.userRoles === undefined ? undefined :
-                    <Box
-                        component="ul"
-                        sx={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            m: 0,
-                            pl: 0,
-                            listStyle: "none"
-                        }}>
-                        {user.userRoles.map((role) => {
-                        return (
-                            <Box key={role} component="li" sx={{
-                                px: 0.375
-                            }}>
-                                <ColorChip color={getUserRoleColor(role, theme)} label={formatUserRole(role)} />
-                            </Box>
-                        );})}
-                    </Box>}
-                    <Box sx={{
-                        display: "inline-flex"
-                    }}>
-                        <Tooltip title={tooltipText} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -6]}}]}}}>
-                            <Typography variant="body2">
-                                Joined <TimeAgo date={dateValue} title="" formatter={relativeTimeFormatter} />
-                            </Typography>
-                        </Tooltip>
-                    </Box>
-                </Box>
+                    ))}
+                </Box>}
             </Box>
         </Box>
     );
 }
 
 function UserCard(props: IUserCardProps) {
-    const { minHeight, loading, user, center } = props;
+    const { loading, user } = props;
+
+    if (user && !loading) {
+        return <UserDisplay user={user} />;
+    }
 
     return (
-        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "row", minHeight: minHeight}}>
-            <Box
-                sx={{
-                    display: "flex",
-                    width: "100%",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: center ? "center" : undefined
-                }}>
-            {user && !loading ?
-                <UserDisplay user={user} />
-            :
-            loading ?
-                <Box
-                    sx={{
-                        flexGrow: 1,
-                        display: "flex",
-                        justifyContent: "center"
-                    }}>
-                    <CircularProgress size="72px" />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, height: 72, color: "text.secondary" }}>
+            {loading ?
+            <>
+                <Skeleton variant="circular" width={72} height={72} />
+                <Box>
+                    <Skeleton width={160} height={32} />
+                    <Skeleton width={220} />
                 </Box>
+            </>
             :
-                <PermIdentityIcon sx={{ fontSize: 72, flexGrow: 1 }} />}
-            </Box>
-        </Paper>
+            <>
+                <PermIdentityIcon sx={{ fontSize: 40 }} />
+                <Typography variant="body2">
+                    Search for a user to see their profile
+                </Typography>
+            </>}
+        </Box>
     );
 }
 
