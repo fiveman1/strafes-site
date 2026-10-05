@@ -113,7 +113,8 @@ function Settings() {
                     display: "flex"
                 }}>
                     <Typography
-                        variant="h4"
+                        component="h1"
+                        variant="h5"
                         sx={{
                             padding: 1,
                             flexGrow: 1
@@ -133,13 +134,14 @@ function Settings() {
                             display: "flex",
                             flexDirection: "column"
                         }}>
-                        <Typography>
+                        <Typography sx={{ fontWeight: 500 }}>
                             {loginUser.displayName}
                         </Typography>
                         <Box>
                             <Link
                                 href={loginUser.profileUrl}
-                                color="secondary"
+                                color="textSecondary"
+                                underline="hover"
                                 sx={{
                                     display: "inline-flex",
                                     verticalAlign: "top"
@@ -156,24 +158,30 @@ function Settings() {
                         </Box>
                     </Box>
                 </Box>
-                <Typography variant="h6" sx={{
-                    padding: 1
+                <Typography component="h2" variant="subtitle1" sx={{
+                    fontWeight: 600,
+                    padding: 1,
+                    paddingTop: 2.5
                 }}>
                     User Profile
                 </Typography>
-                <Typography variant="body2" sx={{
-                    padding: 1
+                <Typography variant="body2" color="textSecondary" sx={{
+                    padding: 1,
+                    paddingTop: 0
                 }}>
                     These are settings about you that are displayed to other users across the site.
                 </Typography>
                 <CountrySelector country={mockSettings.country} setCountry={setCountry} />
-                <Typography variant="h6" sx={{
-                    padding: 1
+                <Typography component="h2" variant="subtitle1" sx={{
+                    fontWeight: 600,
+                    padding: 1,
+                    paddingTop: 2.5
                 }}>
                     Defaults
                 </Typography>
-                <Typography variant="body2" sx={{
-                    padding: 1
+                <Typography variant="body2" color="textSecondary" sx={{
+                    padding: 1,
+                    paddingTop: 0
                 }}>
                     These are the defaults used when loading a page for the first time (unless there was existing context).
                 </Typography>
@@ -193,13 +201,16 @@ function Settings() {
                         game={game}
                     />
                 </Box>
-                <Typography variant="h6" sx={{
-                    padding: 1
+                <Typography component="h2" variant="subtitle1" sx={{
+                    fontWeight: 600,
+                    padding: 1,
+                    paddingTop: 2.5
                 }}>
                     Theme
                 </Typography>
-                <Typography variant="body2" sx={{
-                    padding: 1
+                <Typography variant="body2" color="textSecondary" sx={{
+                    padding: 1,
+                    paddingTop: 0
                 }}>
                     Switch between light and dark theme.
                 </Typography>
@@ -211,18 +222,22 @@ function Settings() {
                         setThemeMode={setThemeMode}
                     />
                 </Box>
-                <Typography variant="h6" sx={{
-                    padding: 1
+                <Typography component="h2" variant="subtitle1" sx={{
+                    fontWeight: 600,
+                    padding: 1,
+                    paddingTop: 2.5
                 }}>
                     Relative Dates
                 </Typography>
-                <Typography variant="body2" sx={{
-                    padding: 1
+                <Typography variant="body2" color="textSecondary" sx={{
+                    padding: 1,
+                    paddingTop: 0
                 }}>
                     Control when to use relative dates (i.e. "{relativeTimeFormat.format(-3, "days")}") instead of absolute dates (i.e. "{dateFormat.format(threeDaysAgo)}").
                 </Typography>
-                <Typography variant="body2" sx={{
-                    padding: 1
+                <Typography variant="body2" color="textSecondary" sx={{
+                    padding: 1,
+                    paddingTop: 0
                 }}>
                     Recent dates are displayed using the relative format. You can configure how many days old dates are allowed to be displayed in relative format.
                 </Typography>
@@ -248,7 +263,7 @@ function Settings() {
                         padding: 2
                     }}>
 
-                    <Button variant="contained" size="large" sx={{ width: "120px", marginRight: 2 }}
+                    <Button variant="contained" sx={{ width: "110px", marginRight: 1 }}
                         disabled={!isDirty}
                         startIcon={<SaveIcon />}
                         onClick={onSave}
@@ -256,7 +271,7 @@ function Settings() {
                     >
                         Save
                     </Button>
-                    <Button variant="outlined" size="large" sx={{ width: "120px" }}
+                    <Button variant="outlined" color="inherit" sx={{ width: "110px" }}
                         startIcon={<CancelIcon />}
                         onClick={() => handleExit()}
                     >

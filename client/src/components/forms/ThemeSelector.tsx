@@ -12,10 +12,11 @@ interface IThemeSelectorProps {
 export default function ThemeSelector(props: IThemeSelectorProps) {
     const { themeMode, setThemeMode } = props;
     return (
-        <ButtonGroup variant={themeMode === "light" ? "outlined" : "contained"}>
+        <ButtonGroup variant="outlined">
             <Button 
                 startIcon={<Sunny/>}
-                color={themeMode === "light" ? "primary" : "inherit"} 
+                color={themeMode === "light" ? "primary" : "inherit"}
+                aria-pressed={themeMode === "light"}
                 onClick={() => {
                     setThemeMode("light");
                 }}
@@ -25,6 +26,7 @@ export default function ThemeSelector(props: IThemeSelectorProps) {
             <Button 
                 startIcon={<NightsStay/>}
                 color={themeMode === "dark" ? "primary" : "inherit"}
+                aria-pressed={themeMode === "dark"}
                 onClick={() => {
                     setThemeMode("dark");
                 }}
