@@ -4,7 +4,6 @@ import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowe
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsNumberLiteral, parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
-import { useMediaQuery, useTheme } from '@mui/material';
 import { queries } from "../api/queries";
 import { useQuery } from "@tanstack/react-query";
 
@@ -169,25 +168,6 @@ export function useUserSearch(): UserSearchInfo {
         options: optionsQuery.data ?? [],
         loadingOptions: optionsQuery.isLoading || userText !== debounced
     };
-}
-
-// https://github.com/mui/material-ui/issues/10739#issuecomment-1484828925
-export function useAppBarHeight(): number {
-    const {
-        mixins: { toolbar },
-        breakpoints,
-    } = useTheme();
-
-    const queryDesktop = breakpoints.up("sm");
-    const queryLandscape = `${breakpoints.up("xs")} and (orientation: landscape)`;
-
-    const isDesktop = useMediaQuery(queryDesktop);
-    const isLandscape = useMediaQuery(queryLandscape);
-
-    const cssToolbar =
-        toolbar[isDesktop ? queryDesktop : isLandscape ? queryLandscape : ""];
-
-    return ((cssToolbar ?? toolbar) as { minHeight: number })?.minHeight ?? 0;
 }
 
 export function useFilterGame() {
