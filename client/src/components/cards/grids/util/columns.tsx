@@ -18,7 +18,7 @@ export function makeMapColumn(showGame: boolean, showStyle: boolean, isCompact?:
         field: "map",
         headerName: "Map",
         flex: 330,
-        minWidth: 185,
+        minWidth: isCompact ? 150 : 185,
         sortable: false,
         renderCell: (params: GridRenderCellParams<Time, string>) => {
             const time = params.row;
@@ -54,7 +54,7 @@ export function makeUserColumn<T extends UserRowInfo>(flex: number, noLink?: boo
                     userThumb={time.userThumb}
                     game={linkGame} 
                     strafesStyle={linkStyle} 
-                    sx={{ fontWeight: "bold" }}
+                    sx={{ fontWeight: 500 }}
                     underline="hover" 
                 />
             );
@@ -115,10 +115,10 @@ export function makePlacementColumn(sortable: boolean, isCompact?: boolean): Gri
                             alignItems: "center",
                             justifyContent: "left"
                         }}>
-                    {iconColor ? <EmojiEventsIcon htmlColor={iconColor} sx={{fontSize: "24px", marginLeft: "4px"}} /> : <></>}
+                    {iconColor ? <EmojiEventsIcon htmlColor={iconColor} sx={{fontSize: "18px", marginLeft: "4px"}} /> : <></>}
                     </Box>
                     <Typography variant="inherit" sx={{
-                        fontFamily: "monospace"
+                        fontFamily: '"Geist Mono", monospace'
                     }}>
                         {formatPlacement(placement)}
                     </Typography>

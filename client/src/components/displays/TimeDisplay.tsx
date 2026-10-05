@@ -10,6 +10,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
 import { useCallback } from "react";
 
+const MONO = '"Geist Mono", monospace';
+
 interface ITimeDisplayProps {
     time: Time
     hideDiff?: boolean
@@ -45,7 +47,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                         textDecoration: "none",
                         ":hover": {
                             ".timeValue": { textDecoration: "underline", color: isLight ? theme.palette.primary.main : lighten(theme.palette.primary.main, 0.1) },
-                            ".videoIcon": { color: lighten(theme.palette.secondary.main, 0.3) }
+                            ".videoIcon": { color: theme.palette.primary.main }
                         }
                     }}
                 >
@@ -55,17 +57,17 @@ function TimeDisplay(props: ITimeDisplayProps) {
                             flexDirection: "row",
                             alignItems: "center"
                         }}>
-                        <Typography variant="inherit" color="textPrimary" className="timeValue">
+                        <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{ fontFamily: MONO }}>
                             {formatTime(ms)}
                         </Typography>
-                        <SmartDisplayIcon className="videoIcon" color="secondary" sx={{ ml: 0.75, mb: "1px", transition: "color .15s ease", fontSize: "17px" }} />
+                        <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />
                     </Box>
                 </Link>
             );
         }
 
         return (
-            <Typography variant="inherit">
+            <Typography variant="inherit" sx={{ fontFamily: MONO }}>
                 {formatTime(ms)}
             </Typography>
         );
@@ -82,7 +84,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                     textDecoration: "none",
                     ":hover": {
                         ".timeValue": { textDecoration: "underline", color: theme.palette.mode === "dark" ? lighten(theme.palette.primary.main, 0.1) : theme.palette.primary.main },
-                        ".videoIcon": { color: lighten(theme.palette.secondary.main, 0.3) }
+                        ".videoIcon": { color: theme.palette.primary.main }
                     }
                 }}
             >
@@ -93,12 +95,13 @@ function TimeDisplay(props: ITimeDisplayProps) {
                         alignItems: "center"
                     }}>
                     <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{
-                        width: diff !== undefined ? "72px" : undefined
+                        fontFamily: MONO,
+                        width: diff !== undefined ? "80px" : undefined
                     }}>
                         {formatTime(ms)}
                     </Typography>
                     <DiffDisplay ms={ms} diff={diff} />
-                    <SmartDisplayIcon className="videoIcon" color="secondary" fontSize="small" sx={{ ml: 0.75, mb: "1px", transition: "color .15s ease", fontSize: "17px",  }} />
+                    <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />
                 </Box>
             </Link>
         );
@@ -112,7 +115,8 @@ function TimeDisplay(props: ITimeDisplayProps) {
                 alignItems: "center"
             }}>
             <Typography variant="inherit" sx={{
-                width: "72px"
+                fontFamily: MONO,
+                width: "80px"
             }}>
                 {formatTime(ms)}
             </Typography>

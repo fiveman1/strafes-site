@@ -174,7 +174,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                         display: "inline-flex",
                         bgcolor: "#00000080",
                         color: "white",
-                        fontFamily: "monospace",
+                        fontFamily: '"Geist Mono", monospace',
                         borderRadius: "4px",
                         whiteSpace: "nowrap",
                         px: 0.75
