@@ -1,434 +1,24 @@
 import Box from "@mui/material/Box";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
-import Link from "@mui/material/Link";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import DownloadIcon from '@mui/icons-material/Download';
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import IconButton from "@mui/material/IconButton";
-import { ReactElement, useCallback, useEffect, useMemo, useState } from "react";
-import { ContextParams, getGameColor, mapsToCsv } from "../common/common";
-import { darken, lighten, useTheme } from "@mui/material/styles";
-import { Link as RouterLink, useOutletContext } from "react-router";
+import { useCallback, useEffect, useMemo } from "react";
+import { ContextParams, mapsToCsv } from "../common/common";
+import { useOutletContext } from "react-router";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from '@mui/icons-material/Search';
-import Grid from "@mui/material/Grid";
 import Pagination from "@mui/material/Pagination";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
-import { formatGame, formatGameShort, formatTier, Game, Map as StrafesMap } from "shared";
+import { Game, Map as StrafesMap } from "shared";
 import { filterMapsBySearch, sortAndFilterMaps } from "../common/sort";
-import MapThumb from "./displays/MapThumb";
-import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import PersonIcon from '@mui/icons-material/Person';
-import { grey } from "@mui/material/colors";
-import { shortDateFormat } from "../common/datetime";
-import Paper from "@mui/material/Paper";
 import { MapTimesSort, useFilterGame, useFilterTiers, useMapSort } from "../common/states";
-import MapFilterSortOptions from "./forms/MapFilterSortOptions";
-import Fade from "@mui/material/Fade";
-
-function getColorForPopularity(map: StrafesMap, ninetyPercentile: number) {
-    const plays = Math.min(map.loadCount, ninetyPercentile);
-    const lerp = plays / ninetyPercentile;
-    const low = 200;
-    const hi = 360;
-    const hue = Math.round(low + lerp * (hi - low));
-    return `hsl(${hue}, 50%, 50%)`;
-}
-
-function MapListCard(props: MapCardProps) {
-    const { map } = props;
-
-    const theme = useTheme();
-
-    const isLightMode = theme.palette.mode === "light";
-
-    const gameColor = getGameColor(map.game, theme);
-    const tierColor = getMapTierColor(map.tier);
-
-    return (
-        <Paper
-            elevation={2}
-            component={RouterLink}
-            to={`/maps/${map.id}`}
-            sx={{
-                display: "flex",
-                borderRadius: "6px",
-                height: "70px",
-                transition: ".2s ease",
-                textDecoration: "none",
-                ":hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: 4,
-                    bgcolor: isLightMode ? grey[100] : grey[900]
-                }
-            }}
-        >
-            <MapThumb
-                size={70}
-                map={map}
-                sx={{
-                    borderRadius: "6px 0px 0px 6px",
-                    border: 0
-                }}
-            />
-            <Box
-                sx={{
-                    ml: 1.75,
-                    mr: 1,
-                    overflow: "hidden",
-                    display: "inline-flex",
-                    flexDirection: "column",
-                    whiteSpace: "nowrap",
-                    width: "100%",
-                    justifyContent: "center"
-                }}>
-                <Box
-                    sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "32px"
-                    }}>
-                    <Typography
-                        variant="h6"
-                        color="textPrimary"
-                        sx={{
-                            overflow: "hidden",
-                            display: "inline-block",
-                            textOverflow: "ellipsis",
-                            flexGrow: 1
-                        }}>
-                        {map.name}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            fontWeight: "bold",
-                            lineHeight: 1.2,
-                            ml: 0.75,
-                            backgroundColor: gameColor,
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            padding: 0.4
-                        }}>
-                        {formatGame(map.game)}
-                    </Typography>
-                </Box>
-                <Box
-                    sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "24px"
-                    }}>
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{
-                            overflow: "hidden",
-                            display: "inline-block",
-                            textOverflow: "ellipsis",
-                            flexGrow: 1
-                        }}>
-                        {map.creator}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            fontWeight: "bold",
-                            ml: 0.75,
-                            padding: 0.4,
-                            lineHeight: 0.95,
-                            backgroundColor: darken(tierColor, 0.4),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            border: 1,
-                            borderColor: tierColor
-                        }}>
-                        {formatTier(map.tier, true)}
-                    </Typography>
-                </Box>
-            </Box>
-        </Paper>
-    );
-}
-
-function useCardSize() {
-    const small = useMediaQuery("(max-width: 800px)");
-    const medium = useMediaQuery("(max-width: 1225px)");
-    if (small) return 190;
-    if (medium) return 230;
-    return 250;
-}
-
-function MapSquareCard(props: MapCardProps) {
-    const { map } = props;
-    const { highPercentileLoadCount } = useOutletContext() as ContextParams;
-    const theme = useTheme();
-    const [ show, setShow ] = useState(false);
-
-    useEffect(() => {
-        setShow(true);
-    }, []);
-
-    const isLightMode = theme.palette.mode === "light";
-
-    const cardSize = useCardSize();
-
-    const mapDate = new Date(map.date);
-    const isUnreleased = new Date() < mapDate;
-
-    const nameSpace = cardSize < 230 ? 36 : 48;
-    const nameHeight = nameSpace + "px";
-
-    const creatorSpace = 32;
-    const creatorHeight = creatorSpace + "px";
-
-    const gameColor = getGameColor(map.game, theme);
-    const tierColor = getMapTierColor(map.tier);
-    const popColor = getColorForPopularity(map, highPercentileLoadCount);
-
-    return (
-        <Fade in={show} timeout={200}>
-            <Box
-                component={RouterLink}
-                to={`/maps/${map.id}`}
-                sx={{
-                    width: cardSize,
-                    height: cardSize,
-                    display: "flex",
-                    flexDirection: "column",
-                    userSelect: "none",
-                    transition: "transform .1s ease",
-
-                    ":hover": {
-                        transform: "translateY(-2px)",
-                        "& .mapCard": { boxShadow: 6 },
-                        "& .mapImg": { transform: "scale(1.08)" },
-                        "& .mapCreator": { bgcolor: darken(tierColor, 0.15) }
-                    }
-                }}>
-                <Box
-                    className="mapCard"
-                    sx={{
-                        position: "relative",
-                        borderRadius: "6px",
-                        boxShadow: 2,
-                        bgcolor: isLightMode ? grey[300] : grey[800],
-                        overflow: "hidden",
-                        transition: ".4s ease"
-                    }}>
-                    <MapThumb
-                        className="mapImg"
-                        size={cardSize}
-                        map={map}
-                        useLargeThumb
-                        disableUnreleasedColor
-                        sx={{
-                            borderRadius: "6px 6px 8px 8px",
-                            border: 0,
-                            transition: "transform .4s ease"
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            position: "absolute",
-                            top: "8px",
-                            right: "8px"
-                        }}>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: "bold",
-                                width: "fit-content",
-                                padding: 0.4,
-                                lineHeight: 1.1,
-                                overflow: "hidden",
-                                backgroundColor: gameColor,
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px"
-                            }}>
-                            {cardSize < 230 ? formatGameShort(map.game) : formatGame(map.game)}
-                        </Typography>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: "bold",
-                                mt: 0.4,
-                                width: "fit-content",
-                                padding: 0.4,
-                                lineHeight: 1.0,
-                                overflow: "hidden",
-                                backgroundColor: darken(tierColor, 0.4),
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                border: 1,
-                                borderColor: tierColor
-                            }}>
-                            {formatTier(map.tier)}
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            position: "absolute",
-                            top: "8px",
-                            left: "8px"
-                        }}>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                display: "inline-block",
-                                fontWeight: "bold",
-                                width: "fit-content",
-                                padding: 0.4,
-                                lineHeight: 1.0,
-                                overflow: "hidden",
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                bgcolor: isUnreleased ? UNRELEASED_MAP_COLOR : grey[700],
-                                border: 1,
-                                borderColor: isUnreleased ? lighten(UNRELEASED_MAP_COLOR, 0.3) : grey[500]
-                            }}>
-                            {shortDateFormat.format(mapDate)}
-                        </Typography>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mt: 0.4,
-                                display: "inline-block",
-                                fontWeight: "bold",
-                                width: "fit-content",
-                                padding: 0.4,
-                                lineHeight: 1.0,
-                                overflow: "hidden",
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                bgcolor: darken(popColor, 0.15),
-                                border: 1,
-                                borderColor: popColor
-                            }}>
-                            {map.loadCount} plays
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            position: "absolute",
-                            bottom: creatorHeight,
-                            height: nameHeight,
-                            width: "100%",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            bgcolor: "#80808050",
-                            backdropFilter: "blur(16px)",
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "inline-flex",
-                                height: nameHeight,
-                                width: cardSize,
-                                pl: 1.25,
-                                pr: 1.25,
-                                alignItems: "center"
-                            }}>
-                            <Typography
-                                variant={cardSize < 230 ? "h6" : "h5"}
-                                title={map.name}
-                                sx={{
-                                    fontWeight: "bold",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    textShadow: "black 1px 1px 1px",
-                                    color: "white"
-                                }}>
-                                {map.name}
-                            </Typography>
-                        </Box>
-                    </Box>
-                    <Box
-                        className="mapCreator"
-                        sx={{
-                            position: "absolute",
-                            bottom: "0px",
-                            height: creatorHeight,
-                            width: "100%",
-                            boxShadow: 0,
-                            bgcolor: darken(tierColor, 0.25),
-                            transition: ".4s ease"
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "inline-flex",
-                                height: creatorHeight,
-                                width: cardSize,
-                                justifyContent: "flex-end",
-                                alignItems: "center",
-                                p: 1
-                            }}>
-                            <PersonIcon
-                                fontSize="inherit"
-                                htmlColor="white"
-                            />
-                            <Typography
-                                variant="subtitle2"
-                                title={map.creator}
-                                sx={{
-                                    ml: 0.5,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    color: "white"
-                                }}>
-                                {map.creator}
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Box>
-            </Box>
-        </Fade>
-    );
-}
-
-interface MapCardProps {
-    map: StrafesMap
-}
-
-function useListStyle() {
-    return useMediaQuery("(max-width: 700px)");
-}
-
-function MapCard(props: MapCardProps) {
-    const { map } = props;
-    const useList = useListStyle();
-
-    return (
-        <Grid size={useList ? 12 : undefined}>
-            {useList ? <MapListCard map={map} /> : <MapSquareCard map={map} />}
-        </Grid>
-    )
-}
+import GameSelector from "./forms/GameSelector";
+import MapSortSelector from "./forms/MapSortSelector";
+import MapTierListSelector from "./forms/MapTierListSelector";
+import MapCard from "./cards/MapCard";
 
 interface MapBrowserProps {
     maps: StrafesMap[]
@@ -436,24 +26,15 @@ interface MapBrowserProps {
     setPage: (page: number) => void
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 function MapBrowser(props: MapBrowserProps) {
     const { maps, page, setPage } = props;
-    const useList = useListStyle();
 
     const count = Math.ceil(maps.length / PAGE_SIZE);
 
     const start = (page - 1) * PAGE_SIZE;
     const pagedMaps = maps.slice(start, start + PAGE_SIZE);
-
-    const items = useMemo(() => {
-        const items: ReactElement[] = [];
-        for (const map of pagedMaps) {
-            items.push(<MapCard map={map} key={map.id} />);
-        }
-        return items;
-    }, [pagedMaps]);
 
     const startNum = Math.min((page - 1) * PAGE_SIZE + 1, maps.length);
     const endNum = Math.min(page * PAGE_SIZE, maps.length);
@@ -462,41 +43,35 @@ function MapBrowser(props: MapBrowserProps) {
         <Box
             sx={{
                 display: "flex",
-                justifyContent: "center"
+                flexDirection: "column"
             }}>
             <Box
                 sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(auto-fill, minmax(200px, 1fr))" },
+                    gap: { xs: 1.5, sm: 2 }
+                }}>
+                {pagedMaps.map((map) => <MapCard map={map} key={map.id} />)}
+            </Box>
+            <Box
+                sx={{
                     display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    maxWidth: useList ? "100%" : "1100px"
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 2.5
                 }}>
-                <Grid container spacing={useList ? 0.75 : 2} sx={{
-                    justifyContent: "center"
-                }}>
-                    {items}
-                </Grid>
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        mt: 2
-                    }}>
-                    <Pagination
-                        shape="rounded"
-                        size={useList ? "small" : "medium"}
-                        count={count}
-                        page={page}
-                        onChange={(e, p) => setPage(p)}
-                    />
-                    <Typography variant="body2" sx={{
-                        p: 1
-                    }}>
-                        {`Showing ${startNum} - ${endNum} of ${maps.length} maps`}
-                    </Typography>
-                </Box>
+                <Typography variant="body2" color="textSecondary">
+                    {`${startNum}–${endNum} of ${maps.length} maps`}
+                </Typography>
+                <Pagination
+                    shape="rounded"
+                    size="small"
+                    count={count}
+                    page={page}
+                    onChange={(e, p) => setPage(p)}
+                />
             </Box>
         </Box>
     );
@@ -509,8 +84,7 @@ interface MapSearchBarProps {
 
 function MapSearchBar(props: MapSearchBarProps) {
     const { inputValue, setInputValue } = props;
-    const useList = useListStyle();
-    const reallySmall = useMediaQuery("(max-width: 360px)");;
+    const reallySmall = useMediaQuery("(max-width: 360px)");
 
     return (
         <TextField
@@ -521,7 +95,6 @@ function MapSearchBar(props: MapSearchBarProps) {
             label=""
             variant="outlined"
             type="search"
-            size={useList ? "small" : "medium"}
             autoFocus
             autoCapitalize="off"
             autoComplete="off"
@@ -532,8 +105,8 @@ function MapSearchBar(props: MapSearchBarProps) {
                 },
                 input: {
                     startAdornment: (
-                        <InputAdornment position="start" sx={{ display: "flex", justifyContent: "center", mr: 0.75, width: useList ? undefined : "40px" }}>
-                            <SearchIcon />
+                        <InputAdornment position="start">
+                            <SearchIcon sx={{ fontSize: 18 }} />
                         </InputAdornment>
                     )
                 }
@@ -545,7 +118,6 @@ function MapSearchBar(props: MapSearchBarProps) {
 function MapsHome() {
     const { sortedMaps } = useOutletContext() as ContextParams;
     
-    const useList = useListStyle();
     const [ filterGame, setFilterGame ] = useFilterGame();
     const [ filterTiers, setFilterTiers ] = useFilterTiers();
     const [ sort, setSort ] = useMapSort();
@@ -606,62 +178,55 @@ function MapsHome() {
 
     return (
         <Box sx={{
-            flexGrow: 1
+            flexGrow: 1,
+            padding: 1
         }}>
             <Box
                 sx={{
                     display: "flex",
-                    alignItems: "center"
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 2
                 }}>
-                <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1 }}>
-                    <Link underline="hover" color="inherit" href="/">
-                        Home
-                    </Link>
-                    <Typography color="textPrimary">
-                        Maps
-                    </Typography>
-                </Breadcrumbs>
-                <Tooltip title="Download maps as .csv" placement="left" arrow>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            width: "34px",
-                            height: "34px"
-                        }}>
-                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
-                            <DownloadIcon />
+                <Typography component="h1" variant="h5">
+                    Maps
+                </Typography>
+                <Tooltip title="Download maps as .csv" placement="left">
+                    <span>
+                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv} aria-label="Download maps as .csv">
+                            <DownloadIcon fontSize="small" />
                         </IconButton>
-                    </Box>
+                    </span>
                 </Tooltip>
             </Box>
             <Box
                 sx={{
-                    padding: useList ? 0.5 : 1,
-                    pb: 1,
-                    display: "flex"
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: 2
                 }}>
                 <MapSearchBar inputValue={searchText} setInputValue={onChangeSearch} />
-                <Box
-                    sx={{
-                        ml: useList ? 0.5 : 1,
-                        display: "flex",
-                        alignItems: "center"
-                    }}>
-                    <MapFilterSortOptions 
-                        filterGame={filterGame} 
-                        setFilterGame={onSetFilterGame} 
-                        selectedTiers={filterTiers} 
-                        onSelectFilterTier={onSelectFilterTier}
-                        sort={sort}
-                        setSort={onSetSort}
-                    />
+            </Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    columnGap: { xs: 1, sm: 2 },
+                    rowGap: 1.5,
+                    mb: 2.5
+                }}>
+                <GameSelector game={filterGame} setGame={onSetFilterGame} allowSelectAll disablePadding />
+                <MapSortSelector sort={sort} setSort={onSetSort} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Typography variant="body2" color="textSecondary">
+                        Tier
+                    </Typography>
+                    <MapTierListSelector selectedTiers={filterTiers} onSelectTier={onSelectFilterTier} disableHoverHighlight showNone />
                 </Box>
             </Box>
-            <Box sx={{
-                padding: useList ? 0.5 : 1
-            }}>
-                <MapBrowser maps={maps} page={page} setPage={setPage} />
-            </Box>
+            <MapBrowser maps={maps} page={page} setPage={setPage} />
         </Box>
     );
 }
