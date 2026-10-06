@@ -52,11 +52,12 @@ export function rateLimiterMiddleware(points: number) {
             return;
         }
 
+        let calcPoints = points;
         if (isBot(req.get("user-agent"))) {
-            points *= 5;
+            calcPoints *= 5;
         }
 
-        const [valid, headers] = await tryConsumeRequest(req.ip, points);
+        const [valid, headers] = await tryConsumeRequest(req.ip, calcPoints);
 
         if (headers) {
             res.setHeader("Retry-After", headers.retryAfter);
