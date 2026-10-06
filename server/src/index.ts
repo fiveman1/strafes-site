@@ -18,7 +18,7 @@ import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
-import { readFile } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 import { rateLimiterMiddleware } from "./middleware.js";
 import { isBot } from "isbot";
 
@@ -60,6 +60,7 @@ const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, v
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
+const mapDir = path.join(dirName, "../maps/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
@@ -922,6 +923,16 @@ app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     }
 
     const id = result.id;
+
+    const files = await readdir(mapDir);
+    for (const file of files) {
+        if (!file.endsWith(".snfm")) continue;
+        const name = file.split(".", 2)[0];
+        if (name === id.toString(10)) {
+            return res.status(200).json({ url: "/api/files/maps/" + file });
+        }
+    }
+
     const url = await getMapDownloadURL(id);
     if (!url) {
         res.status(400).json({ error: "Map not found" });
@@ -989,6 +1000,7 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     res.status(200).send(replay);
 });
 
+app.use("/api/files/maps", express.static(mapDir, { index: false }));
 app.use(express.static(buildDir, { index: false }));
 app.get("*splat", async (req, res): Promise<any> => {
     try {
