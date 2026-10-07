@@ -364,6 +364,15 @@ function MapsPage() {
 
     const [initalLoadComplete, setInitalLoadComplete] = useState(false);
     const [selectedMap, setSelectedMap] = useState<Map>();
+    const [loadedId, setLoadedId] = useState(id);
+
+    if (id !== loadedId) {
+        setLoadedId(id);
+        if (selectedMap && selectedMap.id !== +id) {
+            setSelectedMap(undefined);
+            setInitalLoadComplete(false);
+        }
+    }
     const { game, setGame, style, setStyle } = useGameStyle();
     const [course, setCourse] = useCourse();
     const navigate = useNavigate();
