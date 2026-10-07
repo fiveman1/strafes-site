@@ -1,5 +1,6 @@
 import { alpha, darken, lighten, useTheme } from "@mui/material/styles";
 import { getMapTierColor } from "../../common/colors";
+import { EASE_OUT } from "../../common/common";
 import Box from "@mui/material/Box";
 import { formatTier, MAX_TIER, NO_TIER } from "shared";
 import React, { useCallback, useState } from "react";
@@ -61,9 +62,15 @@ function MapTierListItem(props: MapTierListItemProps) {
                 userSelect: "none",
                 color: emphasized ? (isLightMode ? darken(color, 0.55) : lighten(color, 0.35)) : "text.secondary",
                 bgcolor: emphasized ? alpha(color, isLightMode ? 0.25 : 0.2) : "action.hover",
-                transition: "background-color 150ms ease, color 150ms ease",
+                transition: `transform 150ms ${EASE_OUT}, background-color 150ms ease, color 150ms ease`,
                 cursor: readOnly ? undefined : "pointer",
                 touchAction: "manipulation",
+
+                "@media (hover: hover) and (pointer: fine)": {
+                    "&:hover": {
+                        transform: readOnly ? undefined : "scale(1.1)"
+                    }
+                },
 
                 "&:focus-visible": {
                     outline: 2,
