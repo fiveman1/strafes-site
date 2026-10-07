@@ -110,7 +110,7 @@ function Home() {
                     Bhop and surf leaderboards
                 </Typography>
                 <Typography color="textSecondary" sx={{ mt: 0.5 }}>
-                    Times, ranks and world records from the StrafesNET Roblox games.
+                    Times, ranks, and world records from the StrafesNET Roblox games.
                 </Typography>
             </Box>
             <Box
