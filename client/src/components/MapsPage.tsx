@@ -160,7 +160,7 @@ function MapDetailSection(props: MapDetailSectionProps) {
                     <ColorChip label={formatTier(selectedMap.tier)} color={getMapTierColor(selectedMap.tier)} />
                     {isUnreleased && <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />}
                 </Box>
-                <Typography variant="body2" color="textSecondary">
+                <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>
                     by {selectedMap.creator}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
