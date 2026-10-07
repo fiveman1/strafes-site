@@ -40,11 +40,11 @@ function UserCardAvatar(props: IUserDisplayProps) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "22px",
-                    height: "22px"
+                    width: "16px",
+                    height: "16px"
                 }}
             >
-                <AccountBoxIcon sx={{fontSize: "36px"}} htmlColor={theme.palette.secondary.main} />
+                <AccountBoxIcon sx={{fontSize: "26px"}} htmlColor={theme.palette.secondary.main} />
             </Box>
             : null}
         </Box>
