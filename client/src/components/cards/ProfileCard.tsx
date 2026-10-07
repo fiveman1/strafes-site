@@ -102,8 +102,11 @@ function ProfileCard(props: IProfileCardProps) {
                     <EmojiEventsIcon htmlColor={yellow[800]} sx={{ fontSize: 18, mr: 0.75, verticalAlign: "-3px" }} />
                     {wrs.mainWrs + wrs.bonusWrs}
                     {wrs.mainWrs + wrs.bonusWrs > 0 &&
-                    <Typography component="span" variant="caption" color="textSecondary" sx={{ ml: 1, fontWeight: 400 }}>
-                        {`${wrs.mainWrs} main · ${wrs.bonusWrs} bonus`}
+                    <Typography component="span" variant="caption" sx={{ ml: 1, fontWeight: 400 }}>
+                        {`${wrs.mainWrs} main`}
+                        <Typography component="span" variant="inherit" color="textSecondary">
+                            {` · ${wrs.bonusWrs} bonus`}
+                        </Typography>
                     </Typography>}
                 </>}
             </Stat>
