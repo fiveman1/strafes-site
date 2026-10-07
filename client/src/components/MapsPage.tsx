@@ -348,7 +348,8 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     variant="caption"
                     color="textSecondary"
                     sx={{
-                        mt: 0.5
+                        mt: 0.5,
+                        alignSelf: "flex-start"
                     }}>
                     Submitted {<TimeAgo date={voteData.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
