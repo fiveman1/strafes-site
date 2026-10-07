@@ -18,6 +18,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
+import { isTyping } from "../../common/utils";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
@@ -205,6 +206,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const onKeyDown = useCallback((event: KeyboardEvent) => {
         if (event.repeat) {
             // If you held the key down for a bit then don't repeat the same action
+            return;
+        }
+
+        if (isTyping(event.target)) {
             return;
         }
 

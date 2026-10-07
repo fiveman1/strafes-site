@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Map as StrafesMap, UserSearchData, formatGame } from "shared";
 import { useUserSearch } from "../../common/states";
 import { filterMapsBySearch } from "../../common/sort";
+import { isTyping } from "../../common/utils";
 import { queries } from "../../api/queries";
 import MapThumb from "../displays/MapThumb";
 import UserAvatar from "../displays/UserAvatar";
@@ -18,10 +19,6 @@ const MAX_OPTIONS_PER_GROUP = 6;
 
 interface IGlobalSearchProps {
     maps: StrafesMap[]
-}
-
-function isTyping(target: EventTarget | null) {
-    return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
 
 function GlobalSearch(props: IGlobalSearchProps) {
