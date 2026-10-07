@@ -328,6 +328,9 @@ function TimesGrid(props: ITimesCardProps) {
                     material: {
                         ActionsComponent: (props) =>  <NumberGridPagination rowCount={rowCount} {...props} />
                     }
+                },
+                loadingOverlay: {
+                    noRowsVariant: "linear-progress"
                 }
             }}
             sx={{
