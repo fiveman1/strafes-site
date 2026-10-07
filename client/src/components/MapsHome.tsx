@@ -26,7 +26,7 @@ interface MapBrowserProps {
     setPage: (page: number) => void
 }
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 18;
 
 function MapBrowser(props: MapBrowserProps) {
     const { maps, page, setPage } = props;
