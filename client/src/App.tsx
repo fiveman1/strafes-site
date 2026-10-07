@@ -518,7 +518,7 @@ function App() {
                     flexGrow: 1,
                     flexDirection: "column",
                     width: "100%",
-                    maxWidth: "1440px",
+                    maxWidth: location.pathname.startsWith("/replays") ? "1800px" : "1440px",
                     padding: smallScreen ? 1 : 2,
                     marginBottom: "auto",
                     marginX: "auto"
