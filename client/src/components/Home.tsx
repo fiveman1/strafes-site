@@ -1,13 +1,14 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import Box from "@mui/material/Box";
-import { Link, Paper, Skeleton, Typography } from "@mui/material";
+import { Link, Paper, Skeleton, Typography, useTheme } from "@mui/material";
 import { useOutletContext } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ALL_COURSES, Game, RankSortBy, Style, TimeSortBy, formatGame, formatRank, formatSkill, formatStyle } from "shared";
-import { ContextParams } from "../common/common";
+import { ContextParams, getGameColor, getStyleColor } from "../common/common";
 import { queries } from "../api/queries";
 import { useNow } from "../common/states";
 import MapCard from "./cards/MapCard";
+import ColorChip from "./displays/ColorChip";
 import MapLink from "./displays/MapLink";
 import UserLink from "./displays/UserLink";
 import TimeDisplay from "./displays/TimeDisplay";
@@ -18,7 +19,7 @@ const RANK_COUNT = 10;
 const MAP_COUNT = 6;
 
 interface ISectionProps {
-    title: string
+    title: ReactNode
     href: string
     linkLabel: string
     children: ReactNode
@@ -36,7 +37,7 @@ function Section(props: ISectionProps) {
                     gap: 2,
                     mb: 1.25
                 }}>
-                <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 600 }}>
+                <Typography component="h2" variant="subtitle1" sx={{ display: "flex", alignItems: "center", gap: 0.75, fontWeight: 600 }}>
                     {title}
                 </Typography>
                 <Link href={href} underline="hover" color="textSecondary" variant="body2" sx={{ whiteSpace: "nowrap" }}>
@@ -76,6 +77,7 @@ function SkeletonRows(props: { count: number, height: number }) {
 
 function Home() {
     const { settings, sortedMaps } = useOutletContext() as ContextParams;
+    const theme = useTheme();
     const game = settings.defaultGame;
     const style = settings.defaultStyle;
 
@@ -163,7 +165,15 @@ function Home() {
                         ))}
                     </Paper>
                 </Section>
-                <Section title={`Top ranked · ${formatGame(game)} ${formatStyle(style)}`} href={`/ranks?game=${game}&style=${style}`} linkLabel="All ranks">
+                <Section
+                    title={
+                        <>
+                            Top ranked
+                            <ColorChip color={getGameColor(game, theme)} label={formatGame(game)} />
+                            <ColorChip color={getStyleColor(style, theme)} label={formatStyle(style)} />
+                        </>
+                    }
+                    href={`/ranks?game=${game}&style=${style}`} linkLabel="All ranks">
                     <Paper>
                         {ranksLoading ? <SkeletonRows count={RANK_COUNT} height={48} /> :
                         !ranks?.length ?
