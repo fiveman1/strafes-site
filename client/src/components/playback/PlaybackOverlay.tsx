@@ -361,6 +361,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
                 "button": {
                     color: "white",
+                    borderRadius: "50%",
                     bgcolor: "#00000080",
                     "&:hover": {
                         bgcolor: "#42424280"
