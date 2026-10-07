@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, darken, FilterOptionsState, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Autocomplete, autocompleteClasses, AutocompleteHighlightChangeReason, Box, FilterOptionsState, InputAdornment, Popper, styled, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { formatGame, formatTier, Map as StrafesMap } from "shared";
 import { List as VirtualizedList, RowComponentProps, ListImperativeAPI, useListCallbackRef } from "react-window";
 import { getGameColor, MapDetailsProps } from "../../common/common";
 import SearchIcon from '@mui/icons-material/Search';
 import MapThumb from "../displays/MapThumb";
 import { getMapTierColor } from "../../common/colors";
+import ColorChip from "../displays/ColorChip";
 import { filterMapsBySearch } from "../../common/sort";
 
 // Virtualization magic adapted from https://mui.com/material-ui/react-autocomplete/
@@ -62,21 +63,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         }}>
                         {mapOption.name}
                     </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            fontWeight: "bold",
-                            lineHeight: 1.2,
-                            ml: 0.75,
-                            backgroundColor: getGameColor(mapOption.game, theme),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            padding: 0.4
-                        }}>
-                        {formatGame(mapOption.game)}
-                    </Typography>
+                    <ColorChip color={getGameColor(mapOption.game, theme)} label={formatGame(mapOption.game)} sx={{ ml: 0.75 }} />
                 </Box>
                 <Box
                     sx={{
@@ -97,23 +84,7 @@ function MapRowComponent(props: RowComponentProps & MyRowComponentProps) {
                         }}>
                         {mapOption.creator}
                     </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            fontWeight: "bold",
-                            ml: 0.75,
-                            padding: 0.4,
-                            lineHeight: 0.95,
-                            backgroundColor: darken(tierColor, 0.4),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px",
-                            border: 1,
-                            borderColor: tierColor
-                        }}>
-                        {formatTier(tier, true)}
-                    </Typography>
+                    <ColorChip color={tierColor} label={formatTier(tier, true)} sx={{ ml: 0.75 }} />
                 </Box>
             </Box>
         </Typography>

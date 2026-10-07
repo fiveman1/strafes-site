@@ -10,7 +10,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
 import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
-import { darken, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
 import Link from "@mui/material/Link";
@@ -22,6 +22,7 @@ import { clamp, sleep } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
+import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
 
 function getPlayerHeight(width: number, height: number) {
@@ -907,28 +908,7 @@ function Replays() {
                                                 {getMapTitle(replay)}
                                             </Typography>
                                         </Link>
-                                        <Typography
-                                            variant="caption"
-                                            className="tier"
-                                            sx={{
-                                                lineHeight: 1.0,
-                                                fontWeight: "bold",
-                                                ml: 0.75,
-                                                padding: 0.3,
-                                                backgroundColor: darken(tierColor, 0.4),
-                                                textAlign: "center",
-                                                color: "white",
-                                                textShadow: "black 1px 1px 1px",
-                                                borderRadius: "6px",
-                                                border: 1,
-                                                borderColor: tierColor,
-                                                overflowWrap: "normal",
-                                                wordBreak: "normal",
-                                                whiteSpace: "normal",
-                                                textWrap: "auto"
-                                            }}>
-                                            {formatTier(mapInfo?.tier, true)}
-                                        </Typography>
+                                        <ColorChip color={tierColor} label={formatTier(mapInfo?.tier, true)} sx={{ ml: 0.75 }} />
                                     </Box>
                                     <Box
                                         sx={{
@@ -936,39 +916,8 @@ function Replays() {
                                             alignItems: "center",
                                             mt: smallScreen ? 1 : 0.25
                                         }}>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                lineHeight: 1.0,
-                                                fontWeight: "bold",
-                                                padding: 0.3,
-                                                backgroundColor: gameColor,
-                                                textAlign: "center",
-                                                color: "white",
-                                                textShadow: "black 1px 1px 1px",
-                                                borderRadius: "6px",
-                                                border: 1,
-                                                borderColor: gameColor
-                                            }}>
-                                            {formatGame(replay.game)}
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                lineHeight: 1.0,
-                                                fontWeight: "bold",
-                                                ml: 0.5,
-                                                padding: 0.3,
-                                                backgroundColor: styleColor,
-                                                textAlign: "center",
-                                                color: "white",
-                                                textShadow: "black 1px 1px 1px",
-                                                borderRadius: "6px",
-                                                border: 1,
-                                                borderColor: styleColor
-                                            }}>
-                                            {formatStyle(replay.style)}
-                                        </Typography>
+                                        <ColorChip color={gameColor} label={formatGame(replay.game)} />
+                                        <ColorChip color={styleColor} label={formatStyle(replay.style)} sx={{ ml: 0.5 }} />
                                     </Box>
                                     <Box
                                         sx={{
@@ -1022,7 +971,7 @@ function Replays() {
                                             variant="body1"
                                             sx={{
                                                 display: "inline-block",
-                                                fontFamily: "monospace"
+                                                fontFamily: '"Geist Mono", monospace'
                                             }}>
                                             {formatPlacement(replay.placement)}
                                         </Typography>

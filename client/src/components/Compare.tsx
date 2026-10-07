@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, Link, Typography, useMediaQuery } from "@mui/material";
+import { Typography, useMediaQuery } from "@mui/material";
 import GameSelector from "./forms/GameSelector";
 import UserSearch from "./search/UserSearch";
 import { Game, Style, Time, User, formatStyle, getAllowedStyles } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "../common/common";
 import { useCompareEntries, useComparePage, useGame, useUserSearch } from "../common/states";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { parseAsString, useQueryState } from "nuqs";
 import {
     CompareEntry,
@@ -263,33 +262,19 @@ function Compare() {
                 flexDirection: "column",
                 flexGrow: 1
             }}>
-            {/* Breadcrumbs + Search row */}
             <Box
                 sx={{
                     display: "flex",
                     flexDirection: smallScreen ? "column" : "row",
-                    height: smallScreen ? undefined : "48px",
-                    mb: smallScreen ? 0 : 0.5
+                    alignItems: smallScreen ? "stretch" : "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                    padding: 1
                 }}>
-                <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1, flexBasis: "60%", alignItems: "center", display: "flex" }}>
-                    <Link underline="hover" color="inherit" href="/">
-                        Home
-                    </Link>
-                    <Typography color="textPrimary">
-                        Compare
-                    </Typography>
-                </Breadcrumbs>
-                <Box
-                    sx={{
-                        padding: smallScreen ? 1 : 0.25,
-                        pt: 0.25,
-                        pb: 0.25,
-                        flexBasis: "40%",
-                        minWidth: "270px",
-                        maxWidth: smallScreen ? undefined : "500px",
-                        display: "flex",
-                        alignItems: "center"
-                    }}>
+                <Typography component="h1" variant="h5">
+                    Compare
+                </Typography>
+                <Box sx={{ width: "100%", maxWidth: smallScreen ? undefined : 360 }}>
                     <UserSearch
                         setUserId={onAddUser}
                         userSearch={userSearch}

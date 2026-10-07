@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, useMediaQuery } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Time } from "shared";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { makeCourseColumn, makeDateColumn, makeMapColumn, makePlacementColumn, makeTimeColumn, makeUserColumn } from "./util/columns";
@@ -9,21 +9,13 @@ interface IViewedTimesProps {
 }
 
 function ViewedTimes(props: IViewedTimesProps) {
-    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-        <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .viewedTimesGrid": {margin: smallScreen ? 0.25 : 0}}}>
-            <Box
-                sx={{
-                    marginBottom: smallScreen ? -0.25 : 1,
-                    padding: smallScreen ? 1 : 0,
-                    display: "flex"
-                }}>
-                <Typography variant="caption">
-                    Viewed Times
-                </Typography>
-            </Box>
+        <Box sx={{display: "flex", flexDirection: "column"}}>
+            <Typography component="h2" variant="subtitle2" sx={{marginBottom: 1}}>
+                Viewed Times
+            </Typography>
             <ViewedTimesGrid {...props} />
-        </Paper>
+        </Box>
     );
 }
 

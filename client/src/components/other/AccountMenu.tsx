@@ -48,7 +48,7 @@ function AccountMenu(props: IAccountMenuProps) {
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
                     >
-                        <Avatar sx={{ width: 40, height: 40, bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800] }} alt={user.displayName} src={user.thumbnailUrl} />
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800] }} alt={user.displayName} src={user.thumbnailUrl} />
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -62,27 +62,13 @@ function AccountMenu(props: IAccountMenuProps) {
                     paper: {
                         elevation: 0,
                         sx: {
-                            overflow: 'visible',
-                            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                            mt: 1.5,
+                            mt: 1,
+                            minWidth: 220,
                             '& .MuiAvatar-root': {
-                                width: 48,
-                                height: 48,
-                                ml: -0.5,
+                                width: 36,
+                                height: 36,
                                 mr: 1.25,
-                            },
-                            '&::before': {
-                                content: '""',
-                                display: 'block',
-                                position: 'absolute',
-                                top: 0,
-                                right: 14,
-                                width: 10,
-                                height: 10,
-                                bgcolor: 'background.paper',
-                                transform: 'translateY(-50%) rotate(45deg)',
-                                zIndex: 0,
-                            },
+                            }
                         },
                     },
                 }}
@@ -101,10 +87,10 @@ function AccountMenu(props: IAccountMenuProps) {
                                 display: "flex",
                                 flexDirection: "column"
                             }}>
-                            <Typography>
+                            <Typography variant="body2" sx={{fontWeight: 500}}>
                                 {user.displayName}
                             </Typography>
-                            <Typography color="textSecondary">
+                            <Typography variant="caption" color="textSecondary">
                                 @{user.username}
                             </Typography>
                         </Box>

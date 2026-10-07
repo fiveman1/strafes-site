@@ -165,8 +165,8 @@ function CompareChart(props: ICompareChartProps) {
     if (duplicateWarning || entries.length < 2) {
         const message = duplicateWarning ?? "Add at least 2 users to compare";
         return (
-            <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
-                <Typography variant="caption">Compare</Typography>
+            <Paper sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
+                <Typography component="h2" variant="subtitle2">Compare</Typography>
                 <Box
                     sx={{
                         display: "flex",
@@ -186,13 +186,13 @@ function CompareChart(props: ICompareChartProps) {
     }
 
     return (
-        <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
+        <Paper sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
             <Box
                 sx={{
                     display: "flex",
                     flexDirection: "row"
                 }}>
-                <Typography variant="caption">Compare</Typography>
+                <Typography component="h2" variant="subtitle2">Compare</Typography>
                 <Typography
                     variant="caption"
                     color="textSecondary"

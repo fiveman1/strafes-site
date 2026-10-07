@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, Link, Paper, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import TimesCard from "./cards/grids/TimesCard";
 import { LeaderboardCount, LeaderboardSortBy, TimeSortBy, ALL_COURSES, MAIN_COURSE } from "shared";
 import GameSelector from "./forms/GameSelector";
@@ -12,7 +12,6 @@ import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "./cards/grids/util/columns";
 import { useGameStyle, useIncludeBonuses } from "../common/states";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NumberGridPagination from "./cards/grids/NumberGridPagination";
 import MapLink from "./displays/MapLink";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,14 +33,9 @@ function Globals() {
                 display: "flex",
                 flexDirection: "column"
             }}>
-            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-                <Link underline="hover" color="inherit" href="/">
-                    Home
-                </Link>
-                <Typography color="textPrimary">
-                    Globals
-                </Typography>
-            </Breadcrumbs>
+            <Typography component="h1" variant="h5" sx={{p: 1}}>
+                Globals
+            </Typography>
             <Box
                 sx={{
                     padding: 0.5,
@@ -87,8 +81,8 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "count",
-        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" sx={{
-            fontWeight: "bold"
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px", fontSize: 18}} /><Typography variant="inherit" sx={{
+            fontWeight: 500
         }}>Main</Typography></>,
         flex: 20,
         minWidth: 110,
@@ -99,8 +93,8 @@ function makeColumns(game: Game, style: Style) {
     cols.push({
         type: "number",
         field: "bonusCount",
-        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px"}} /><Typography variant="inherit" sx={{
-            fontWeight: "bold"
+        renderHeader: () => <><EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "6px", fontSize: 18}} /><Typography variant="inherit" sx={{
+            fontWeight: 500
         }}>Bonus</Typography></>,
         flex: 20,
         minWidth: 95,
@@ -189,21 +183,10 @@ function LeaderboardCard(props: IRanksCardProps) {
     }), [updateRowData]);
 
     return (
-        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column" }}>
-            <Box
-                sx={{
-                    marginBottom: 1,
-                    display: "flex"
-                }}>
-                <Typography
-                    variant="caption"
-                    sx={{
-                        flexGrow: 1,
-                        marginRight: 2
-                    }}>
-                    Leaderboards
-                </Typography>
-            </Box>
+        <Box sx={{display: "flex", flexDirection: "column" }}>
+            <Typography component="h2" variant="subtitle2" sx={{marginBottom: 1}}>
+                Leaderboards
+            </Typography>
             <DataGrid
                 columns={gridCols}
                 apiRef={apiRef}
@@ -240,7 +223,7 @@ function LeaderboardCard(props: IRanksCardProps) {
                     }
                 }}
             />
-        </Paper>
+        </Box>
     );
 }
 

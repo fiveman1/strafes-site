@@ -1,7 +1,7 @@
-import { darken, useTheme } from "@mui/material/styles";
+import { alpha, darken, lighten, useTheme } from "@mui/material/styles";
 import { getMapTierColor } from "../../common/colors";
+import { EASE_OUT } from "../../common/common";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import { formatTier, MAX_TIER, NO_TIER } from "shared";
 import React, { useCallback, useState } from "react";
 
@@ -21,7 +21,7 @@ function MapTierListItem(props: MapTierListItemProps) {
 
     const isLightMode = theme.palette.mode === "light";
     const emphasized = selected || (!disableHoverHighlight && isHovered)
-    const color = tier === NO_TIER ? getMapTierColor(tier) : getMapTierColor(tier, emphasized ? 100 : (isLightMode ? 50 : 30));
+    const color = getMapTierColor(tier);
 
     const onClick = useCallback(() => {
         if (readOnly) {
@@ -46,55 +46,39 @@ function MapTierListItem(props: MapTierListItemProps) {
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             sx={{
-                p: 0.25,
-                bgcolor: "transparent",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 24,
+                height: 24,
+                m: 0.25,
+                px: tier === NO_TIER ? 0.75 : 0,
                 border: 0,
-                transition: "scale 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+                borderRadius: "6px",
+                fontFamily: "inherit",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                userSelect: "none",
+                color: emphasized ? (isLightMode ? darken(color, 0.55) : lighten(color, 0.35)) : "text.secondary",
+                bgcolor: emphasized ? alpha(color, isLightMode ? 0.25 : 0.2) : "action.hover",
+                transition: `transform 150ms ${EASE_OUT}, background-color 150ms ease, color 150ms ease`,
                 cursor: readOnly ? undefined : "pointer",
                 touchAction: "manipulation",
 
-                ":hover": {
-                    scale: readOnly ? undefined : 1.15
+                "@media (hover: hover) and (pointer: fine)": {
+                    "&:hover": {
+                        transform: readOnly ? undefined : "scale(1.1)"
+                    }
+                },
+
+                "&:focus-visible": {
+                    outline: 2,
+                    outlineColor: "primary.main",
+                    outlineOffset: 1
                 }
             }}>
-            {tier === NO_TIER ?
-            <Typography
-                variant="caption"
-                sx={{
-                    fontWeight: "bold",
-                    padding: 0.4,
-                    lineHeight: 0.95,
-                    overflow: "hidden",
-                    backgroundColor: darken(color, 0.4),
-                    textAlign: "center",
-                    color: "white",
-                    textShadow: "black 1px 1px 1px",
-                    borderRadius: "6px",
-                    border: 1,
-                    borderColor: color,
-                    userSelect: "none",
-                    opacity: emphasized ? undefined : 0.5
-                }}>
-                {formatTier(undefined)}
-            </Typography>    
-            :
-            <Typography
-                variant="button"
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    border: 1,
-                    borderRadius: "4px",
-                    width: 24,
-                    height: 24,
-                    color: emphasized ? "white" : darken(color, 0.1),
-                    bgcolor: emphasized ? darken(color, 0.4) : undefined,
-                    borderColor: color,
-                    textShadow: emphasized ? "black 1px 1px 1px" : undefined,
-                    userSelect: "none"
-                }}>
-                {tier}
-            </Typography>}
+            {tier === NO_TIER ? formatTier(undefined) : tier}
         </Box>
     );
 }

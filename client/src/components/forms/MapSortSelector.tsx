@@ -103,8 +103,8 @@ function MapSortSelector(props: IMapSortSelectorProps) {
                     {(["name", "creator", "date", "count", "tier"] as MapTimesSortRaw[]).map((sort) => <MenuItem value={sort}>{translateSort(sort)}</MenuItem>)}
                 </Select>
             </FormControl>
-            <IconButton color="inherit" onClick={onSwitchAsc} sx={{marginLeft: 1}}> 
-                {isAsc ? <ArrowDownwardIcon/> : <ArrowUpwardIcon/>}
+            <IconButton color="inherit" size="small" onClick={onSwitchAsc} aria-label={isAsc ? "Sort descending" : "Sort ascending"} sx={{marginLeft: 0.5}}> 
+                {isAsc ? <ArrowDownwardIcon fontSize="small" /> : <ArrowUpwardIcon fontSize="small" />}
             </IconButton>
         </Box>
     );

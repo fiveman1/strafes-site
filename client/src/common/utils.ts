@@ -23,3 +23,10 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 export function clamp(x: number, lo: number, hi: number) {
     return Math.min(hi, Math.max(x, lo));
 }
+
+export function isTyping(target: EventTarget | null) {
+    if (target instanceof HTMLInputElement) {
+        return !["range", "checkbox", "radio", "button"].includes(target.type);
+    }
+    return target instanceof HTMLElement && (target.isContentEditable || ["TEXTAREA", "SELECT"].includes(target.tagName));
+}
