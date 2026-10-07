@@ -16,7 +16,7 @@ function dateCompareFunc(a: Map, b: Map, isAsc: boolean) {
     if (dateA === dateB) {
         return sortMapsByName(a, b);
     }
-    return isAsc ? dateB - dateA : dateA - dateB;
+    return isAsc ?  dateA - dateB : dateB - dateA;
 }
 
 export function sortAndFilterMaps(maps: Map[], filterGame: Game, filterTiers: Set<number>, sort: MapTimesSort) {
@@ -47,10 +47,10 @@ export function sortAndFilterMaps(maps: Map[], filterGame: Game, filterTiers: Se
             compareFunc = (a, b) => dateCompareFunc(a, b, false);
             break;
         case "countAsc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : b.loadCount - a.loadCount;
+            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : a.loadCount - b.loadCount;
             break;
         case "countDesc":
-            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : a.loadCount - b.loadCount;
+            compareFunc = (a, b) => a.loadCount === b.loadCount ? sortMapsByName(a, b) : b.loadCount - a.loadCount;
             break;
         case "tierAsc":
             compareFunc = (a, b) => a.tier === b.tier ? sortMapsByName(a, b) : (a.tier ?? 99) - (b.tier ?? 99);
