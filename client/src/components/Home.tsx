@@ -137,7 +137,9 @@ function Home() {
                                     rowGap: 0.5,
                                     alignContent: "center"
                                 }}>
-                                <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} showGame showStyle />
+                                <Box sx={{ minWidth: 0 }}>
+                                    <MapLink id={time.mapId} name={time.map} style={time.style} game={time.game} course={time.course} showGame showStyle />
+                                </Box>
                                 <Box sx={{ minWidth: 0, order: { xs: 3, sm: 0 } }}>
                                     <UserLink
                                         userId={time.userId}
