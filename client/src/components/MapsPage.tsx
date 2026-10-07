@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, darken, IconButton, Link, Paper, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, IconButton, Link, Paper, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, Link as RouterLink } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps, mapsToCsv } from "../common/common";
 import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVoteEligibility, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
@@ -12,7 +12,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../common/colors";
 import { useCourse, useFilterGame, useFilterTiers, useGameStyle, useMapSort, useMapTierVote, useVoteEligibility } from "../common/states";
 import MapSearch from "./search/MapSearch";
-import { grey } from "@mui/material/colors";
 import { sortAndFilterMaps } from "../common/sort";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -22,7 +21,7 @@ import MapThumb from "./displays/MapThumb";
 import { voteForMapTier } from "../api/api";
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import BlockIcon from '@mui/icons-material/Block';
-import { dateTimeFormat, relativeTimeFormatter, shortDateFormat } from "../common/datetime";
+import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
 import TimeAgo from "react-timeago";
 import MapTierListSelector from "./forms/MapTierListSelector";
 import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
@@ -76,19 +75,14 @@ function MapInfoCard(props: MapDetailsProps) {
     }, [filterGame, filterTiers, sort, sortedMaps]);
 
     return (
-        <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column", overflowWrap: "break-word" }}>
+        <Paper sx={{ padding: 2, display: "flex", flexDirection: "column", overflowWrap: "break-word" }}>
             <Box
                 sx={{
-                    marginBottom: 1,
-                    display: "flex"
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5
                 }}>
-                <Box sx={{
-                    flexGrow: 1
-                }}>
-                    <Typography variant="caption">
-                        Map
-                    </Typography>
-                </Box>
+                <MapSearch {...props} maps={maps} />
                 <MapFilterSortOptions 
                     filterGame={filterGame} 
                     setFilterGame={setFilterGame} 
@@ -97,11 +91,10 @@ function MapInfoCard(props: MapDetailsProps) {
                     sort={sort}
                     setSort={setSort}
                 />
-                <IconButton size="small" sx={{ ml: 0.5 }} onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined}>
+                <IconButton size="small" onClick={() => handleExpand(!expanded)} disabled={selectedMap === undefined} aria-label={expanded ? "Hide map details" : "Show map details"}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
             </Box>
-            <MapSearch {...props} maps={maps} />
             {selectedMap && expanded ?
                 <MapDetailSection selectedMap={selectedMap} />
                 : undefined}
@@ -119,162 +112,62 @@ function MapDetailSection(props: MapDetailSectionProps) {
     const smallScreen = useMediaQuery("@media screen and (max-width: 720px)");
     const theme = useTheme();
 
-    const isLightMode = theme.palette.mode === "light";
-    const imageBgColor = isLightMode ? grey[400] : grey[800];
-
-    const imageSize = smallScreen ? 175 : 230;
+    const imageSize = smallScreen ? 175 : 200;
     const mapDate = new Date(selectedMap.date);
     const isUnreleased = new Date() < mapDate;
     let releasedText = isUnreleased ? "Releases on " : "Released on ";
     releasedText += longDateFormat.format(mapDate);
-    const gameColor = getGameColor(selectedMap.game, theme);
-    const tier = selectedMap.tier;
-    const tierColor = getMapTierColor(tier);
 
     return (
         <Box
             sx={{
                 display: "flex",
-                flexDirection: "column",
-                marginTop: 2
+                flexDirection: smallScreen ? "column" : "row",
+                gap: smallScreen ? 2 : 3,
+                marginTop: 2.5
             }}>
             <Box
                 sx={{
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    width: imageSize,
+                    height: imageSize,
+                    borderRadius: "10px",
+                    bgcolor: "action.hover"
+                }}>
+                <MapThumb size={imageSize} map={selectedMap} useLargeThumb sx={{ borderRadius: "10px" }} />
+            </Box>
+            <Box
+                sx={{
                     display: "flex",
-                    flexDirection: smallScreen ? "column" : "row",
-                    alignItems: "center",
-                    justifyContent: "center"
+                    flexDirection: "column",
+                    gap: 0.75,
+                    minWidth: 0
                 }}>
                 <Box
                     sx={{
                         display: "flex",
-                        flexDirection: "column",
-                        paddingRight: smallScreen ? 0 : 8,
-                        paddingLeft: smallScreen ? 0 : 8,
-                        paddingBottom: smallScreen ? 1.5 : 0
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        columnGap: 1.25,
+                        rowGap: 0.5
                     }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            textAlign: "center",
-                            marginBottom: 1.5,
-                            flexGrow: 1
-                        }}>
-                        <Typography
-                            variant="h4"
-                            color={isLightMode ? "primary" : "textPrimary"}
-                            sx={{
-                                fontWeight: "bold"
-                            }}
-                        >
-                            {selectedMap.name}
-                        </Typography>
-                        <Typography variant="subtitle2" color="textSecondary">
-                            by {selectedMap.creator}
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            textAlign: "center"
-                        }}>
-                        {isUnreleased ?
-                            <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />
-                            :
-                            <></>}
-                        <Typography variant="body2">
-                            {releasedText}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                            Server load count: {selectedMap.loadCount}
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center"
-                        }}>
-                        {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
-                        <MapTierVotingSection selectedMap={selectedMap} />}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        minWidth: imageSize,
-                        width: imageSize,
-                        height: imageSize,
-                        borderRadius: "10px",
-                        bgcolor: imageBgColor,
-                        overflow: "hidden",
-                        position: "relative"
-                    }}>
-                    <MapThumb size={imageSize} map={selectedMap} useLargeThumb />
-                    <Box
-                        sx={{
-                            display: "flex",
-                            position: "absolute",
-                            top: "8px",
-                            right: "8px"
-                        }}>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: "bold",
-                                padding: 0.4,
-                                lineHeight: 1.1,
-                                overflow: "hidden",
-                                backgroundColor: gameColor,
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px"
-                            }}>
-                            {formatGame(selectedMap.game)}
-                        </Typography>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: "bold",
-                                ml: 0.5,
-                                padding: 0.4,
-                                lineHeight: 1.0,
-                                overflow: "hidden",
-                                backgroundColor: darken(tierColor, 0.4),
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                border: 1,
-                                borderColor: tierColor
-                            }}>
-                            {formatTier(tier)}
-                        </Typography>
-                    </Box>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            position: "absolute",
-                            bottom: "4px",
-                            right: "4px",
-                            fontWeight: "bold",
-                            padding: 0.7,
-                            lineHeight: 1.1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            backdropFilter: "blur(8px)",
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 3px 3px 3px",
-                            borderRadius: "8px"
-                        }}>
-                        {shortDateFormat.format(mapDate)}
+                    <Typography component="h1" variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "1.75rem" }, mr: 0.25 }}>
+                        {selectedMap.name}
                     </Typography>
+                    <ColorChip label={formatGame(selectedMap.game)} color={getGameColor(selectedMap.game, theme)} />
+                    <ColorChip label={formatTier(selectedMap.tier)} color={getMapTierColor(selectedMap.tier)} />
+                    {isUnreleased && <ColorChip label="Unreleased" color={UNRELEASED_MAP_COLOR} />}
                 </Box>
+                <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>
+                    by {selectedMap.creator}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                    {releasedText} · {selectedMap.loadCount.toLocaleString()} plays
+                </Typography>
+                {(selectedMap.game === Game.bhop || selectedMap.game === Game.surf) && 
+                <MapTierVotingSection selectedMap={selectedMap} />}
             </Box>
         </Box>
     );
@@ -376,28 +269,28 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
                     mb: 0.25
                 }}>
                 <Typography component="legend" variant="body2" sx={{
-                    mr: 0.25
+                    mr: 0.5,
+                    fontWeight: 500
                 }}>
                     Tier voting
                 </Typography>
                 {isEligible ? 
                 <Tooltip title={reason} placement="right" arrow>
-                    <HowToRegIcon sx={{fontSize: 20}} htmlColor={isLightMode ? "#00d800" : "#00ff00"} /> 
+                    <HowToRegIcon sx={{fontSize: 18}} color="success" /> 
                 </Tooltip>
                 : 
                 <Tooltip title={reason} placement="right" arrow>
-                    <BlockIcon sx={{fontSize: 20}} htmlColor="#ff0000" />
+                    <BlockIcon sx={{fontSize: 18, color: "text.secondary"}} />
                 </Tooltip>}
             </Box>
             <Box
                 sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center"
+                    ml: -0.25
                 }}>
                 {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
@@ -413,7 +306,6 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
             <Box
                 sx={{
                     display: "flex",
-                    justifyContent: "center",
                     pt: 0.5,
                     pb: 0.25
                 }}>
@@ -457,7 +349,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     color="textSecondary"
                     sx={{
                         mt: 0.5,
-                        textAlign: "center"
+                        alignSelf: "flex-start"
                     }}>
                     Submitted {<TimeAgo date={voteData.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
@@ -475,7 +367,6 @@ function MapsPage() {
     const { game, setGame, style, setStyle } = useGameStyle();
     const [course, setCourse] = useCourse();
     const navigate = useNavigate();
-    const theme = useTheme();
 
     useEffect(() => {
         document.title = "maps - strafes";
@@ -539,48 +430,6 @@ function MapsPage() {
         mapsToCsv(sortedMaps);
     }, [sortedMaps]);
 
-    const breadcrumbs: React.ReactElement[] = [];
-    if (selectedMap) {
-        breadcrumbs.push(
-            <Link underline="hover" color="inherit" component={RouterLink} to="/maps">
-                Maps
-            </Link>,
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center"
-                }}>
-                <MapThumb size={30} map={selectedMap} sx={{ mr: 1.25 }} />
-                <Typography color="textPrimary">
-                    {selectedMap.name}
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            ml: 1,
-                            fontWeight: "bold",
-                            padding: 0.4,
-                            overflow: "hidden",
-                            backgroundColor: getGameColor(selectedMap.game, theme),
-                            textAlign: "center",
-                            color: "white",
-                            textShadow: "black 1px 1px 1px",
-                            borderRadius: "6px"
-                        }}>
-                        {formatGame(selectedMap.game)}
-                    </Typography>
-                </Typography>
-            </Box>
-        );
-    }
-    else {
-        breadcrumbs.push(
-            <Typography color="textPrimary">
-                Maps
-            </Typography>
-        );
-    }
-
     return (
         <Box sx={{
             flexGrow: 1
@@ -591,22 +440,20 @@ function MapsPage() {
                     alignItems: "center"
                 }}>
                 <Breadcrumbs separator={<NavigateNextIcon />} sx={{ p: 1, flexGrow: 1 }}>
-                    <Link underline="hover" color="inherit" href="/">
-                        Home
+                    <Link underline="hover" color="inherit" component={RouterLink} to="/maps">
+                        Maps
                     </Link>
-                    {breadcrumbs}
+                    {selectedMap &&
+                    <Typography color="textPrimary">
+                        {selectedMap.name}
+                    </Typography>}
                 </Breadcrumbs>
-                <Tooltip title="Download maps as .csv" placement="left" arrow>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            width: "34px",
-                            height: "34px"
-                        }}>
-                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv}>
-                            <DownloadIcon />
+                <Tooltip title="Download maps as .csv" placement="left">
+                    <span>
+                        <IconButton size="small" disabled={sortedMaps.length < 1} onClick={onDownloadMapCsv} aria-label="Download maps as .csv">
+                            <DownloadIcon fontSize="small" />
                         </IconButton>
-                    </Box>
+                    </span>
                 </Tooltip>
             </Box>
             <Box sx={{

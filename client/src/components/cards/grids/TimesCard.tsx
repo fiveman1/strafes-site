@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Paper, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
+import { Box, tablePaginationClasses, Typography, useMediaQuery } from "@mui/material";
 import { Game, TimeSortBy, Style, Time, ALL_COURSES } from "shared";
 import { DataGrid, GridColDef, GridColumnHeaderParams, GridDataSource, GridGetRowsParams, GridGetRowsResponse, GridPaginationModel, GridSortDirection, GridSortModel, MuiEvent, useGridApiRef } from "@mui/x-data-grid";
 import { MAP_THUMB_SIZE } from "../../displays/MapLink";
@@ -86,18 +86,17 @@ interface ITimesCardProps {
 
 function TimesCard(props: ITimesCardProps) {
     const { hideMap } = props;
-    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     return (
-        <Paper elevation={2} sx={{ padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .timesGrid": { margin: smallScreen ? 0.25 : 0 } }}>
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
             <Box
                 sx={{
-                    marginBottom: smallScreen ? -0.25 : 1,
-                    padding: smallScreen ? 1 : 0,
+                    marginBottom: 1,
                     display: "flex",
                     alignItems: "center"
                 }}>
                 <Typography
-                    variant="caption"
+                    component="h2"
+                    variant="subtitle2"
                     sx={{
                         flexGrow: 1,
                         marginRight: 1
@@ -109,21 +108,19 @@ function TimesCard(props: ITimesCardProps) {
                         <Box
                             sx={{
                                 bgcolor: UNRELEASED_MAP_COLOR,
-                                width: "12px",
-                                height: "12px",
-                                minWidth: "12px",
-                                boxSizing: "border-box",
-                                marginBottom: "2px"
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%"
                             }} />
-                        <Typography variant="caption" sx={{
+                        <Typography variant="caption" color="textSecondary" sx={{
                             marginLeft: 0.75
                         }}>
-                            = unreleased
+                            Unreleased
                         </Typography>
                     </>}
             </Box>
             <TimesGrid {...props} />
-        </Paper>
+        </Box>
     );
 }
 
@@ -181,7 +178,8 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [userId, mapId, game, style, course, onlyWRs, currentSortBy, apiRef, gridKey]);
 
-    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
+    const placementDigits = numDigits(currentSortBy === TimeSortBy.TimeAsc ? maxVisisbleRow : rowCount);
+    const placementWidth = Math.max(50, placementDigits * 8 + 24);
 
     const getSort = useCallback((model: GridSortModel) => {
         const sort = model[0];
@@ -290,7 +288,7 @@ function TimesGrid(props: ITimesCardProps) {
 
     let rowHeight: number | undefined = undefined;
     if (isCompact) rowHeight = 100;
-    else if (!hideMap) rowHeight = Math.round(MAP_THUMB_SIZE * 1.6667);
+    else if (!hideMap) rowHeight = MAP_THUMB_SIZE * 2;
 
     return (
         <DataGrid
@@ -330,9 +328,13 @@ function TimesGrid(props: ITimesCardProps) {
                     material: {
                         ActionsComponent: (props) =>  <NumberGridPagination rowCount={rowCount} {...props} />
                     }
+                },
+                loadingOverlay: {
+                    noRowsVariant: "linear-progress"
                 }
             }}
             sx={{
+                "--DataGrid-overlayHeight": `${Math.floor((rowHeight ?? 52) * 0.7) * pageSize}px`,
                 ".MuiDataGrid-iconButtonContainer": {
                     display: isCompact ? "none !important" : undefined
                 },

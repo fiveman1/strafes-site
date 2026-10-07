@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, Link, Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import { Tooltip, Typography } from "@mui/material";
 import { Game, Rank, RankSortBy, Style, formatRank, formatSkill } from "shared";
 import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
@@ -12,7 +12,6 @@ import { makeUserColumn } from "./cards/grids/util/columns";
 import { numDigits } from "../common/utils";
 import { useGameStyle } from "../common/states";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import { parseAsNumberLiteral, useQueryState } from "nuqs";
@@ -36,7 +35,7 @@ function makeColumns(placementWidth: number) {
         field: "mainWrs",
         renderHeader: () => (
             <Tooltip title="World Records" >
-                <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px"}} />
+                <EmojiEventsIcon htmlColor={yellow[800]} sx={{marginRight: "4px", fontSize: 18}} />
             </Tooltip>
         ),
         align: "center",
@@ -96,7 +95,6 @@ function RanksCard(props: IRanksCardProps) {
     const { game, style } = props;
 
     const [maxPage, setMaxPage] = useState(0);
-    const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
 
@@ -106,7 +104,7 @@ function RanksCard(props: IRanksCardProps) {
         .withOptions({ history: "replace" })
     );
 
-    const placementWidth = numDigits(maxPage) > 3 ? 62 : 50;
+    const placementWidth = Math.max(50, numDigits(maxPage) * 8 + 24);
     const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
 
     useEffect(() => {
@@ -156,48 +154,36 @@ function RanksCard(props: IRanksCardProps) {
     }, [currentSortBy]);
 
     return (
-        <Paper elevation={2} sx={{padding: smallScreen ? 1 : 2, display: "flex", flexDirection: "column", "& .ranksGrid": {margin: smallScreen ? 0.25 : 0}}}>
-            <Box
-                sx={{
-                    marginBottom: smallScreen ? -0.25 : 1,
-                    padding: smallScreen ? 1 : 0,
-                    display: "flex"
-                }}>
-                <Typography variant="caption">
-                    Ranks
-                </Typography>
-            </Box>
-            <DataGrid
-                className="ranksGrid"
-                columns={gridCols}
-                apiRef={apiRef}
-                pagination
-                autoHeight
-                dataSource={dataSource}
-                pageSizeOptions={[20]}
-                initialState={{
-                    pagination: { 
-                        paginationModel: { pageSize: 20 },
-                        rowCount: -1
-                    },
-                    sorting: {
-                        sortModel: sort,
-                    }
-                }}
-                slotProps={{
-                    loadingOverlay: {
-                        noRowsVariant: "circular-progress"
-                    }
-                }}
-                density="compact"
-                disableRowSelectionOnClick
-                onPaginationModelChange={onPageChange}
-                onSortModelChange={onSortChanged}
-                sx={{
-                    "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
-                }}
-            />
-        </Paper>
+        <DataGrid
+            className="ranksGrid"
+            columns={gridCols}
+            apiRef={apiRef}
+            pagination
+            autoHeight
+            dataSource={dataSource}
+            pageSizeOptions={[20]}
+            initialState={{
+                pagination: { 
+                    paginationModel: { pageSize: 20 },
+                    rowCount: -1
+                },
+                sorting: {
+                    sortModel: sort,
+                }
+            }}
+            slotProps={{
+                loadingOverlay: {
+                    noRowsVariant: "circular-progress"
+                }
+            }}
+            density="compact"
+            disableRowSelectionOnClick
+            onPaginationModelChange={onPageChange}
+            onSortModelChange={onSortChanged}
+            sx={{
+                "--DataGrid-overlayHeight": `${36 * 20}px` // Height of grid while loading for first time: row height * row count
+            }}
+        />
     );
 }
 
@@ -215,14 +201,9 @@ function Ranks() {
                 flexDirection: "column",
                 flexGrow: 1
             }}>
-            <Breadcrumbs separator={<NavigateNextIcon />} sx={{p: 1}}>
-                <Link underline="hover" color="inherit" href="/">
-                    Home
-                </Link>
-                <Typography color="textPrimary">
-                    Ranks
-                </Typography>
-            </Breadcrumbs>
+            <Typography component="h1" variant="h5" sx={{p: 1}}>
+                Ranks
+            </Typography>
             <Box
                 sx={{
                     padding: 0.5,

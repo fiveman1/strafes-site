@@ -24,7 +24,7 @@ function UserLink(props: IUserLinkProps) {
             {...linkProps}
             to={{pathname: `/users/${userId}`, search: `?style=${strafesStyle}&game=${game}`}}
             component={RouterLink}
-            color={userRole ? getUserRoleColor(userRole, theme) : undefined}
+            color={userRole ? getUserRoleColor(userRole, theme) : "textPrimary"}
             sx={[{
                 display: "inline-block",
                 maxWidth: "100%"
@@ -35,7 +35,7 @@ function UserLink(props: IUserLinkProps) {
                     flexDirection: "row",
                     alignItems: "center"
                 }}>
-                <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "28px", height: "28px"}} />
+                <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "24px", height: "24px"}} />
                 <Typography
                     variant="inherit"
                     sx={{
@@ -54,7 +54,7 @@ function UserLink(props: IUserLinkProps) {
                 <Box title="You" sx={{
                     display: "flex"
                 }}>
-                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 18}} htmlColor={theme.palette.secondary.main} /> 
                 </Box>
                 : null}
             </Box>

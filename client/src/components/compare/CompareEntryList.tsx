@@ -1,4 +1,4 @@
-import { Box, darken, IconButton, lighten, Link, Paper, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { alpha, Box, IconButton, Link, Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Game, Style, User, getAllowedStyles } from "shared";
@@ -24,8 +24,6 @@ interface ICompareEntryListProps {
 function CompareEntryList(props: ICompareEntryListProps) {
     const { entries, setEntries, idToUser, game } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
-    const theme = useTheme();
-    const isLightMode = theme.palette.mode === "light";
 
     const onRemove = (index: number) => {
         setEntries(entries.filter((_, i) => i !== index));
@@ -52,8 +50,8 @@ function CompareEntryList(props: ICompareEntryListProps) {
 
     if (entries.length === 0) {
         return (
-            <Paper elevation={2} sx={{ padding: 2 }}>
-                <Typography variant="caption">
+            <Paper sx={{ padding: 2 }}>
+                <Typography component="h2" variant="subtitle2">
                     Users ({entries.length}/{MAX_ENTRIES})
                 </Typography>
                 <Box
@@ -72,8 +70,8 @@ function CompareEntryList(props: ICompareEntryListProps) {
     }
 
     return (
-        <Paper elevation={2} sx={{ padding: 2 }}>
-            <Typography variant="caption">
+        <Paper sx={{ padding: 2 }}>
+            <Typography component="h2" variant="subtitle2">
                 Users ({entries.length}/{MAX_ENTRIES})
             </Typography>
             <Box
@@ -82,7 +80,7 @@ function CompareEntryList(props: ICompareEntryListProps) {
                     flexDirection: smallScreen ? "column" : "row",
                     flexWrap: "wrap",
                     gap: 1,
-                    mt: 0.5
+                    mt: 1
                 }}>
                 {entries.map((entry, index) => {
                     const userInfo = idToUser[entry.userId];
@@ -100,8 +98,8 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                 padding: smallScreen ? 1 : 0.5,
                                 paddingLeft: 1,
                                 borderRadius: 1,
-                                borderLeft: `4px solid ${color}`,
-                                backgroundColor: isLightMode ? lighten(color, 0.95) : darken(color, 0.8),
+                                border: `1px solid ${alpha(color, 0.4)}`,
+                                backgroundColor: alpha(color, 0.1),
                                 minWidth: smallScreen ? undefined : "200px",
                             }}
                         >
@@ -113,6 +111,7 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     to={{pathname: user ? `/users/${user.userId}` : "/users", search: `?style=${entry.style}&game=${game}`}}
                                     component={RouterLink}
                                     color="textPrimary"
+                                    underline="hover"
                                     sx={{
                                         display: "inline-flex",
                                         alignItems: "center",
@@ -126,7 +125,7 @@ function CompareEntryList(props: ICompareEntryListProps) {
                                     <Typography
                                         variant="body2"
                                         sx={{
-                                            fontWeight: "bold",
+                                            fontWeight: 500,
                                             overflow: "hidden",
                                             textOverflow: "ellipsis",
                                             whiteSpace: "nowrap",

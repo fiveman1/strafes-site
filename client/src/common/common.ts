@@ -60,6 +60,8 @@ function getUserRoleColorCore(role: UserRole) {
     }
 }
 
+export const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+
 export const RANK_HELP_TEXT = "Rank is based on the weighted sum of a user's times. Better placements are worth more.";
 export const SKILL_HELP_TEXT = "Skill is based on the average percentile of a user's times. Maps with more completions have a higher weight.";
 

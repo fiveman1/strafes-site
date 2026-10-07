@@ -1,12 +1,10 @@
-import { useMemo } from "react";
-import { Box, IconButton, Link, Paper, Tooltip, Typography } from "@mui/material";
+import React, { useMemo } from "react";
+import { Box, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Style, User, formatRank, formatSkill } from "shared";
-import CircularProgress from '@mui/material/CircularProgress';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
-import { useOutletContext } from "react-router";
-import { yellow } from "@mui/material/colors";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { yellow } from "@mui/material/colors";
+import { useOutletContext } from "react-router";
 import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../../common/common";
 import { useQuery } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
@@ -17,11 +15,10 @@ export interface IProfileCardProps {
     style: Style
     user?: User
     userLoading: boolean
-    minHeight?: number
 }
 
 function ProfileCard(props: IProfileCardProps) {
-    const { userId, game, style, user, userLoading, minHeight } = props;
+    const { userId, game, style, user, userLoading } = props;
     const { mapCounts } = useOutletContext() as ContextParams;
 
     const { data: rank, isLoading: rankLoading } = useQuery(queries.users.rank(userId ?? "", game, style));
@@ -78,202 +75,68 @@ function ProfileCard(props: IProfileCardProps) {
             break;
     }
 
-    const disableButton = !userId || game === Game.all || style === Style.all;
-
     return (
-        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column", width: "100%", minHeight: minHeight}}>
-            <Box sx={{
-                display: "flex"
+        <Box
+            sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                columnGap: 3,
+                rowGap: 2,
+                width: "100%"
             }}>
-                <Typography variant="caption" sx={{
-                    flexGrow: 1
-                }}>
-                    Profile
+            <Stat label="Rank" help={RANK_HELP_TEXT} loading={rankLoading}>
+                {rankFormatted}
+            </Stat>
+            <Stat label="Skill" help={SKILL_HELP_TEXT} loading={rankLoading}>
+                {skillFormatted}
+            </Stat>
+            <Stat label="Moderation status" help={tooltip} loading={userLoading}>
+                {formattedStatus}
+            </Stat>
+            <Stat label="Completions" loading={compsLoading}>
+                {compsFormatted}
+            </Stat>
+            <Stat label="World records" loading={wrsLoading}>
+                {!wrs ? "n/a" :
+                <Box component="span" sx={{ display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 1, whiteSpace: "nowrap" }}>
+                    <span>
+                        <EmojiEventsIcon htmlColor={yellow[800]} sx={{ fontSize: 18, mr: 0.75, verticalAlign: "-3px" }} />
+                        {wrs.mainWrs + wrs.bonusWrs}
+                    </span>
+                    {wrs.mainWrs + wrs.bonusWrs > 0 &&
+                    <Typography component="span" variant="caption" sx={{ fontWeight: 400 }}>
+                        {`${wrs.mainWrs} main`}
+                        <Typography component="span" variant="inherit" color="textSecondary">
+                            {` · ${wrs.bonusWrs} bonus`}
+                        </Typography>
+                    </Typography>}
+                </Box>}
+            </Stat>
+        </Box>
+    );
+}
+
+interface IStatProps {
+    label: string
+    help?: string
+    loading: boolean
+    children: React.ReactNode
+}
+
+function Stat(props: IStatProps) {
+    const { label, help, loading, children } = props;
+    return (
+        <Box sx={{ minWidth: 0 }}>
+            <Tooltip arrow title={help} placement="top-start">
+                <Typography variant="caption" color="textSecondary" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                    {label}
+                    {help && <InfoOutlineIcon fontSize="inherit" />}
                 </Typography>
-                <IconButton 
-                    size="small" 
-                    disabled={disableButton}
-                    title={user ? `Compare @${user.username} to other users` : "Compare to other users"} 
-                    LinkComponent={Link} 
-                    href={disableButton ? "/compare" : `/compare?game=${game}&users=${userId}:${style}`}>
-                    <CompareArrowsIcon fontSize="inherit" />
-                </IconButton>
-            </Box>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexWrap: "wrap"
-                }}>
-                <Box
-                    sx={{
-                        flex: "1 0 20%",
-                        padding: 1,
-                        minWidth: 150
-                    }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column"
-                        }}>
-                        <Tooltip sx={{marginRight: "auto"}} arrow title={RANK_HELP_TEXT} placement="top-start">
-                            <Typography variant="subtitle1">
-                                Rank
-                                <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
-                            </Typography>
-                        </Tooltip>
-                        {rankLoading ? <CircularProgress size="32px" /> : 
-                        <Typography variant="h6">
-                            {rankFormatted}
-                        </Typography>}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        flex: "1 0 20%",
-                        padding: 1,
-                        minWidth: 150
-                    }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column"
-                        }}>
-                        <Tooltip sx={{marginRight: "auto"}} arrow title={SKILL_HELP_TEXT} placement="top-start">
-                            <Typography variant="subtitle1">
-                                Skill
-                                <InfoOutlineIcon sx={{marginLeft: "4px"}} fontSize="inherit" color="secondary" />
-                            </Typography>
-                        </Tooltip>
-                        {rankLoading ? <CircularProgress size="32px" /> : 
-                        <Typography variant="h6">
-                            {skillFormatted}
-                        </Typography>}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        flex: "1 0 20%",
-                        padding: 1,
-                        minWidth: 150
-                    }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column"
-                        }}>
-                        <Typography variant="subtitle1">
-                            Moderation status
-                        </Typography>
-                        {userLoading ? <CircularProgress size="32px" /> : 
-                        tooltip ? 
-                        <Tooltip 
-                            title={tooltip} 
-                            arrow 
-                            placement="bottom-start" 
-                            sx={{marginRight: "auto"}}>
-                        {
-                            <Typography variant="h6">
-                                {formattedStatus}
-                                <InfoOutlineIcon sx={{marginLeft: "6px"}} fontSize="inherit" color="secondary" />
-                            </Typography>
-                        }
-                        </Tooltip> : 
-                        <Typography variant="h6">{formattedStatus}</Typography>}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        flex: "1 0 20%",
-                        padding: 1,
-                        minWidth: 150
-                    }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column"
-                        }}>
-                        <Typography variant="subtitle1">
-                            Completions
-                        </Typography>
-                        {compsLoading ? <CircularProgress size="32px" /> : 
-                        <Typography variant="h6">
-                            {compsFormatted}
-                        </Typography>}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        flex: "1 0 20%",
-                        padding: 1,
-                        minWidth: 150
-                    }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column"
-                        }}>
-                        <Typography variant="subtitle1">
-                            World Records
-                        </Typography>
-                        {wrsLoading ? <CircularProgress size="32px" /> : 
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "center"
-                            }}>
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    flexDirection: "row"
-                                }}>
-                                <EmojiEventsIcon htmlColor={yellow[800]} sx={{fontSize: "24px"}} />
-                            </Box>
-                            {!wrs ?
-                            <Typography variant="h6" sx={{
-                                marginLeft: 1
-                            }}>
-                                n/a
-                            </Typography>
-                            :
-                            <>
-                            <Typography variant="h6" sx={{
-                                marginLeft: 1
-                            }}>
-                                {`${wrs.mainWrs + wrs.bonusWrs}`}
-                            </Typography>
-                            {wrs.mainWrs + wrs.bonusWrs <= 0 ? <></> :
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    marginTop: 0.25,
-                                    marginLeft: 1.5
-                                }}>
-                                <Typography variant="caption">
-                                    {`${wrs.mainWrs} main`}
-                                </Typography>
-                                <Typography variant="caption" color="textSecondary">
-                                    {`${wrs.bonusWrs} bonus`}
-                                </Typography>
-                            </Box>}
-                            </>}
-                        </Box>}
-                    </Box>
-                </Box>
-                {/* <Box flexGrow={1} padding={1}>
-                    <Box display="flex" flexDirection="column">
-                        <Typography variant="subtitle1">
-                            Chat muted?
-                        </Typography>
-                        {userLoading ? <CircularProgress size="32px" /> : 
-                        <Typography variant="h6">
-                            {user?.muted !== undefined ? (user.muted ? "Yes" : "No") : "n/a"}
-                        </Typography>}
-                    </Box>
-                </Box> */}
-            </Box>
-        </Paper>
+            </Tooltip>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.4 }}>
+                {loading ? <Skeleton width={72} /> : children}
+            </Typography>
+        </Box>
     );
 }
 

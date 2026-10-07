@@ -18,6 +18,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
+import { isTyping } from "../../common/utils";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
@@ -208,6 +209,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             return;
         }
 
+        if (isTyping(event.target)) {
+            return;
+        }
+
         let didAction = false;
         
         if (event.key === " ") {
@@ -361,6 +366,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
                 "button": {
                     color: "white",
+                    borderRadius: "50%",
                     bgcolor: "#00000080",
                     "&:hover": {
                         bgcolor: "#42424280"
@@ -392,7 +398,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         component="span"
                         sx={{
                             display: showSpeed ? "flex" : "none",
-                            fontFamily: "monospace",
+                            fontFamily: '"Geist Mono", monospace',
                             fontWeight: "bold",
                             fontSize: "28px",
                             lineHeight: 1.2,
@@ -408,7 +414,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
 
                             ".diffText": {
                                 fontSize: "18px",
-                                fontFamily: "monospace",
+                                fontFamily: '"Geist Mono", monospace',
                                 fontWeight: "bold",
                                 borderRadius: "6px",
                                 textShadow: "0 0 4px black",
@@ -596,7 +602,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     sx={{
                         bgcolor: "#00000080",
                         color: "white",
-                        fontFamily: "monospace",
+                        fontFamily: '"Geist Mono", monospace',
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",

@@ -1,11 +1,12 @@
-import { Box, darken, Link, Typography, useTheme } from "@mui/material";
+import { Box, Link, Typography, useTheme } from "@mui/material";
 import { Game, Style, formatCourse, formatGameShort, formatStyleShort, formatTier } from "shared";
 import { ContextParams, getGameColor, getStyleColor } from "../../common/common";
 import { Link as RouterLink, useOutletContext } from "react-router";
 import { getMapTierColor, UNRELEASED_MAP_COLOR } from "../../common/colors";
 import MapThumb from "./MapThumb";
+import ColorChip from "./ColorChip";
 
-export const MAP_THUMB_SIZE = 50;
+export const MAP_THUMB_SIZE = 40;
 
 interface IMapLinkProps {
     id: number
@@ -28,134 +29,52 @@ function MapLink(props: IMapLinkProps) {
     const isUnreleased = !mapInfo ? false : new Date() < new Date(mapInfo.date);
 
     const tier = mapInfo?.tier;
-    const tierColor = getMapTierColor(tier);
-    const gameColor = getGameColor(game, theme);
-    const styleColor = getStyleColor(style, theme);
 
     return (
         <Link
             to={{pathname: `/maps/${id}`, search: `?style=${style}&game=${game}&course=${course}`}}
             component={RouterLink}
             underline="none"
+            color="textPrimary"
             sx={{
-                fontWeight: "bold",
                 display: "inline-flex",
+                alignItems: "center",
+                gap: 1.25,
                 maxWidth: "100%",
                 height: "100%",
-                alignItems: "center",
-                textDecoration: "none",
 
                 "&:hover .map-name": {
-                    textDecoration: "underline !important"
+                    textDecoration: "underline"
                 }
             }}>
+            <MapThumb size={MAP_THUMB_SIZE} map={mapInfo} sx={{ flexShrink: 0 }} />
             <Box
                 sx={{
-                    display: "inline-flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    height: "100%",
-                    maxWidth: "100%"
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                    minWidth: 0
                 }}>
-                <MapThumb size={MAP_THUMB_SIZE} map={mapInfo} />
-                <Box
+                <Typography
+                    className="map-name"
+                    variant="inherit"
+                    noWrap
                     sx={{
-                        display: "inline-flex",
-                        marginLeft: "10px",
-                        flexDirection: "column",
-                        maxWidth: "100%",
-                        minWidth: 0,
-                        height: "calc(100% - 8px)",
-                        justifyContent: "space-evenly"
+                        lineHeight: 1.2,
+                        fontWeight: 500,
+                        textUnderlineOffset: "3px",
+                        color: isUnreleased ? UNRELEASED_MAP_COLOR : undefined
                     }}>
-                    <Typography
-                        className="map-name"
-                        variant="inherit"
-                        sx={{
-                            lineHeight: "normal",
-                            fontWeight: "bold",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            color: isUnreleased ? UNRELEASED_MAP_COLOR : undefined
-                        }}>
-                        {name}
-                    </Typography>
-                    {showCourse ? 
-                    <Typography
-                        variant="caption"
-                        color="textPrimary"
-                        sx={{
-                            lineHeight: "normal",
-                            fontWeight: "normal",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
-                        }}>
-                        {formatCourse(course)}
-                    </Typography>
-                    : <></>}
-                    <Box
-                        sx={{
-                            lineHeight: "normal",
-                            display: "inline-flex",
-                            alignItems: "center"
-                        }}>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                lineHeight: 1.0,
-                                fontWeight: "bold",
-                                padding: 0.3,
-                                backgroundColor: darken(tierColor, 0.4),
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                border: 1,
-                                borderColor: tierColor
-                            }}>
-                            {formatTier(tier, showGame || showStyle)}
-                        </Typography>
-                        {showGame &&
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                lineHeight: 1.0,
-                                fontWeight: "bold",
-                                ml: 0.5,
-                                padding: 0.3,
-                                overflow: "hidden",
-                                backgroundColor: gameColor,
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                border: 1,
-                                borderColor: gameColor
-                            }}>
-                            {formatGameShort(game)}
-                        </Typography>}
-                        {showStyle &&
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                lineHeight: 1.0,
-                                fontWeight: "bold",
-                                ml: 0.5,
-                                padding: 0.3,
-                                overflow: "hidden",
-                                backgroundColor: styleColor,
-                                textAlign: "center",
-                                color: "white",
-                                textShadow: "black 1px 1px 1px",
-                                borderRadius: "6px",
-                                border: 1,
-                                borderColor: styleColor
-                            }}>
-                            {formatStyleShort(style)}
-                        </Typography>}
-                    </Box>
+                    {name}
+                </Typography>
+                {showCourse &&
+                <Typography variant="caption" color="textSecondary" noWrap sx={{ lineHeight: 1.2 }}>
+                    {formatCourse(course)}
+                </Typography>}
+                <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <ColorChip color={getMapTierColor(tier)} label={formatTier(tier, showGame || showStyle)} />
+                    {showGame && <ColorChip color={getGameColor(game, theme)} label={formatGameShort(game)} />}
+                    {showStyle && <ColorChip color={getStyleColor(style, theme)} label={formatStyleShort(style)} />}
                 </Box>
             </Box>
         </Link>

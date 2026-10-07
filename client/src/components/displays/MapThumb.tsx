@@ -39,8 +39,9 @@ function MapThumb(props: MapThumbProps) {
             sx={{
                 height: size,
                 width: size,
-                border: isUnreleased ? 1 : 0,
-                borderColor: isUnreleased ? UNRELEASED_MAP_COLOR : undefined,
+                outline: "1px solid",
+                outlineOffset: -1,
+                outlineColor: isUnreleased ? UNRELEASED_MAP_COLOR : (theme.palette.mode === "light" ? "oklch(0 0 0 / 0.1)" : "oklch(1 0 0 / 0.1)"),
                 borderRadius: `${Math.min(10, Math.round(size / 12))}px`,
                 ...sx,
 

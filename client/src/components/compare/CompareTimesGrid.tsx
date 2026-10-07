@@ -68,8 +68,8 @@ function CompareTimesGrid(props: ICompareTimesGridProps) {
     const minCardWidth = smallScreen ? 200 : 320;
 
     return (
-        <Paper elevation={2} sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
-            <Typography variant="caption">
+        <Paper sx={{ padding: 2, display: "flex", flexDirection: "column" }}>
+            <Typography component="h2" variant="subtitle2">
                 Times ({filteredAndSorted.length})
             </Typography>
             <Box

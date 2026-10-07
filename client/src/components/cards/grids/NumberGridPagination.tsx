@@ -31,8 +31,8 @@ function NumberGridPagination(props: NumberGridPaginationProps) {
     const renderItem = useCallback((item: PaginationRenderItemParams): JSX.Element | null => {
         // There is always exactly 0 or 1 selected page, use that to render our page selector
         if (item.selected && showPageInput) {
-            // Padding on left/right is 14px * 2 = 28. Add 8 per digit that can be shown
-            const width = numDigits(rowCount) * 8 + 28;
+            // Padding on left/right is 14px * 2 = 28. Add 9 per digit that can be shown
+            const width = numDigits(rowCount) * 9 + 28;
             return (
                 <SimpleNumberField 
                     size="small" 

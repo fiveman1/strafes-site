@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { PaletteMode, ThemeProvider, alpha, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from "@mui/material/Box";
 import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
-import { ContextParams, MapCount } from "./common/common";
-import { Breadcrumbs, useMediaQuery } from "@mui/material";
+import { ContextParams, EASE_OUT, MapCount } from "./common/common";
+import { useMediaQuery } from "@mui/material";
 import { Game, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./common/sort";
@@ -110,102 +110,82 @@ function App() {
 
     const theme = useMemo(() => {
         const isLight = mode === "light";
-        const surface = isLight ? "#ffffff" : "#141114";
-        const border = isLight ? "rgba(45, 32, 55, 0.14)" : "rgba(255, 255, 255, 0.16)";
+        const ink = isLight ? "#000000" : "#ffffff";
+        const background = isLight ? "#f7f7f8" : "#0b0b0c";
+        const surface = isLight ? "#ffffff" : "#121214";
+        const raised = isLight ? "#ffffff" : "#1a1a1d";
+        const border = alpha(ink, isLight ? 0.1 : 0.09);
+        const borderStrong = alpha(ink, isLight ? 0.22 : 0.2);
+        const hover = alpha(ink, isLight ? 0.04 : 0.055);
+        const primary = isLight ? "#cf2572" : "#ee4b93";
+        const popShadow = isLight
+            ? "0 4px 8px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.1)"
+            : "0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.5)";
+        const popPaper = {
+            backgroundColor: raised,
+            borderColor: isLight ? border : borderStrong,
+            borderRadius: 10,
+            boxShadow: popShadow
+        };
 
         return createTheme({
             palette: {
                 primary: {
-                    main: "#df2f78",
-                    light: "#ef6e9f",
-                    dark: "#a81754",
+                    main: primary,
                     contrastText: "#ffffff"
                 },
                 secondary: {
-                    main: "#55bfd6",
-                    light: "#91dce9",
-                    dark: "#07677c"
+                    main: isLight ? "#0e7f96" : "#5cc3d8"
                 },
                 mode: mode,
                 background: {
-                    default: isLight ? "#f8f6f8" : "#090809",
+                    default: background,
                     paper: surface
                 },
                 text: {
-                    primary: isLight ? "#211d28" : "#faf7fa",
-                    secondary: isLight ? "#625b69" : "#bbb3bb"
+                    primary: isLight ? "#17171a" : "#ededee",
+                    secondary: isLight ? "#66666f" : "#9a9aa2"
                 },
                 divider: border,
+                action: {
+                    hover: hover,
+                    selected: alpha(ink, isLight ? 0.07 : 0.09)
+                },
                 DataGrid: {
-                    bg: surface
+                    bg: surface,
+                    headerBg: surface
                 }
             },
             shape: {
-                borderRadius: 6
+                borderRadius: 8
+            },
+            mixins: {
+                toolbar: {
+                    minHeight: 56
+                }
             },
             typography: {
-                h1: { fontWeight: 700 },
-                h2: { fontWeight: 700 },
-                h3: { fontWeight: 700 },
-                h4: { fontWeight: 700 },
-                h5: { fontWeight: 600 },
-                h6: { fontWeight: 600 },
-                button: { fontWeight: 600 }
+                fontFamily: '"Geist", system-ui, -apple-system, "Segoe UI", sans-serif',
+                h1: { fontWeight: 600, letterSpacing: "-0.025em" },
+                h2: { fontWeight: 600, letterSpacing: "-0.025em" },
+                h3: { fontWeight: 600, letterSpacing: "-0.02em" },
+                h4: { fontWeight: 600, letterSpacing: "-0.02em" },
+                h5: { fontWeight: 600, letterSpacing: "-0.015em" },
+                h6: { fontWeight: 600, letterSpacing: "-0.01em" },
+                button: { fontWeight: 500 }
             },
             components: {
                 MuiCssBaseline: {
                     styleOverrides: {
                         body: {
-                            backgroundColor: isLight ? "#f8f6f8" : "#0c0a0c"
+                            backgroundColor: background,
+                            fontVariantNumeric: "tabular-nums"
                         },
-                        // "#root": {
-                        //     isolation: "isolate",
-                        // },
-                        // "#root::before, #root::after": {
-                        //     content: '\"\"',
-                        //     position: "fixed",
-                        //     zIndex: -1,
-                        //     width: "min(46vw, 680px)",
-                        //     aspectRatio: "1",
-                        //     borderRadius: "50%",
-                        //     pointerEvents: "none",
-                        //     filter: "blur(100px)",
-                        //     opacity: isLight ? 0.12 : 0.14,
-                        //     willChange: "transform"
-                        // },
-                        // "#root::before": {
-                        //     top: "-22%",
-                        //     left: "-13%",
-                        //     background: alpha("#df2f78", 0.3),
-                        //     animation: "ambientDriftA 18s ease-in-out infinite alternate"
-                        // },
-                        // "#root::after": {
-                        //     right: "-15%",
-                        //     bottom: "-30%",
-                        //     background: isLight ? alpha("#55bfd6", 0.3) : alpha("#278da3", 0.3),
-                        //     animation: "ambientDriftB 22s ease-in-out infinite alternate"
-                        // },
-                        // "@keyframes ambientDriftA": {
-                        //     from: { transform: "translate3d(0, 0, 0) scale(0.9)" },
-                        //     to: { transform: "translate3d(12vw, 10vh, 0) scale(1.12)" }
-                        // },
-                        // "@keyframes ambientDriftB": {
-                        //     from: { transform: "translate3d(0, 0, 0) scale(1)" },
-                        //     to: { transform: "translate3d(-10vw, -8vh, 0) scale(0.86)" }
-                        // },
-                        "@keyframes cardEnter": {
-                            from: { opacity: 0, transform: "translate3d(0, 14px, 0) scale(0.985)" },
-                            to: { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" }
+                        "#root": {
+                            scrollbarColor: `${borderStrong} transparent`
                         },
-                        "@keyframes glowPulse": {
-                            "0%, 100%": { opacity: 0.55, transform: "scaleX(0.86)" },
-                            "50%": { opacity: 1, transform: "scaleX(1.08)" }
-                        },
-                        // "::selection": {
-                        //     backgroundColor: alpha("#ec3b83", 0.32)
-                        // },
-                        "h1, h2, h3": {
-                            letterSpacing: "-0.03em"
+                        "::selection": {
+                            backgroundColor: alpha(primary, 0.3)
                         },
                         "@media (prefers-reduced-motion: reduce)": {
                             "*, *::before, *::after": {
@@ -223,7 +203,7 @@ function App() {
                     } as LinkProps,
                     styleOverrides: {
                         root: {
-                            textUnderlineOffset: "2px",
+                            textUnderlineOffset: "3px",
                             textDecorationThickness: "1px"
                         }
                     }
@@ -231,126 +211,113 @@ function App() {
                 MuiButtonBase: {
                     defaultProps: {
                         LinkComponent: LinkBehavior,
+                        disableRipple: true
                     },
-                },
-                MuiAppBar: {
                     styleOverrides: {
                         root: {
-                            width: "calc(100% - 32px)",
-                            maxWidth: "1450px",
-                            top: 12,
-                            margin: "0 auto 4px",
-                            color: isLight ? "#202027" : "#f4f4f6",
-                            backgroundColor: alpha(isLight ? "#ffffff" : "#10111a", isLight ? 0.72 : 0.62),
-                            backgroundImage: "none",
-                            border: `1px solid ${border}`,
-                            borderRadius: 12,
-                            overflow: "hidden",
-                            backdropFilter: "blur(30px) saturate(180%)",
-                            WebkitBackdropFilter: "blur(30px) saturate(180%)",
-                            "&::after": {
-                                content: '\"\"',
-                                position: "absolute",
-                                inset: "0 14% auto",
-                                height: 1,
-                                background: "linear-gradient(90deg, transparent, rgba(255, 79, 154, 0.65), rgba(93, 217, 255, 0.45), transparent)"
-                            },
-                            "@media (max-width: 600px)": {
-                                width: "calc(100% - 16px)",
-                                top: 8,
-                                marginBottom: 8,
-                                borderRadius: 10
+                            "&.Mui-focusVisible": {
+                                outline: `2px solid ${primary}`,
+                                outlineOffset: 2
                             }
                         }
                     }
                 },
-                MuiToolbar: {
+                MuiAppBar: {
+                    defaultProps: {
+                        elevation: 0
+                    },
                     styleOverrides: {
                         root: {
-                            minHeight: "64px"
+                            color: "inherit",
+                            backgroundColor: alpha(background, 0.8),
+                            backgroundImage: "none",
+                            border: 0,
+                            borderBottom: `1px solid ${border}`,
+                            borderRadius: 0,
+                            backdropFilter: "blur(12px)",
+                            WebkitBackdropFilter: "blur(12px)"
                         }
                     }
                 },
                 MuiPaper: {
                     styleOverrides: {
                         root: {
-                            backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
-                            backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.75), rgba(255,255,255,0.28))" : "linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.008))",
+                            backgroundImage: "none",
                             border: `1px solid ${border}`,
-                            backdropFilter: "blur(26px) saturate(165%)",
-                            WebkitBackdropFilter: "blur(26px) saturate(165%)",
-                            transition: "border-color 220ms ease, box-shadow 220ms ease, background-color 220ms ease",
-                            boxShadow: isLight
-                                ? "0 1px 2px rgba(20, 20, 30, 0.04), 0 6px 8px rgba(35, 20, 38, 0.055)"
-                                : "0 1px 2px rgba(0, 0, 0, 0.20), 0 6px 8px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
-                        }
-                    }
-                },
-                MuiCard: {
-                    styleOverrides: {
-                        root: {
-                            backgroundColor: alpha(surface, isLight ? 0.70 : 0.56),
-                            backgroundImage: isLight ? "linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.3))" : "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.008))",
-                            border: `1px solid ${border}`,
-                            backdropFilter: "blur(26px) saturate(170%)",
-                            WebkitBackdropFilter: "blur(26px) saturate(170%)",
-                            boxShadow: isLight
-                                ? "0 6px 8px rgba(35, 20, 38, 0.055)"
-                                : "0 6px 8px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035)"
+                            borderRadius: 10,
+                            boxShadow: "none"
                         }
                     }
                 },
                 MuiButton: {
+                    defaultProps: {
+                        disableElevation: true
+                    },
                     styleOverrides: {
                         root: {
-                            borderRadius: 8,
                             textTransform: "none",
-                            transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                            transition: `transform 160ms ${EASE_OUT}, background-color 150ms ease, border-color 150ms ease, color 150ms ease`,
                             "&:active": {
-                                transform: "scale(0.975)"
+                                transform: "scale(0.96)"
                             }
                         },
                         outlined: {
-                            borderColor: alpha(isLight ? "#202027" : "#ffffff", 0.18)
+                            borderColor: borderStrong
                         }
                     }
                 },
                 MuiIconButton: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 32,
-                            transition: "transform 180ms ease, background-color 180ms ease, color 180ms ease",
+                            borderRadius: 8,
+                            transition: `transform 160ms ${EASE_OUT}, background-color 150ms ease, color 150ms ease`,
+                            "&:hover": {
+                                backgroundColor: hover
+                            },
                             "&:active": {
-                                transform: "scale(0.92)"
+                                transform: "scale(0.96)"
                             }
                         }
+                    }
+                },
+                MuiFormControl: {
+                    defaultProps: {
+                        size: "small"
+                    }
+                },
+                MuiTextField: {
+                    defaultProps: {
+                        size: "small"
                     }
                 },
                 MuiOutlinedInput: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 8,
-                            backgroundColor: alpha(surface, isLight ? 0.68 : 0.48),
-                            transition: "border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease",
+                            backgroundColor: surface,
+                            transition: "box-shadow 150ms ease",
+                            "& .MuiOutlinedInput-notchedOutline": {
+                                transition: "border-color 150ms ease"
+                            },
                             "&:hover .MuiOutlinedInput-notchedOutline": {
-                                borderColor: alpha("#ec3b83", 0.55)
+                                borderColor: borderStrong
                             },
                             "&.Mui-focused": {
-                                boxShadow: `0 0 0 3px ${alpha("#ff4f9a", 0.15)}, 0 10px 32px ${alpha("#ff4f9a", 0.10)}`
+                                boxShadow: `0 0 0 3px ${alpha(primary, 0.2)}`
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                borderWidth: 1
                             }
                         },
                         notchedOutline: {
-                            borderColor: alpha(isLight ? "#202027" : "#ffffff", 0.14)
+                            borderColor: border
                         }
                     }
                 },
                 MuiMenu: {
                     styleOverrides: {
-                        paper: {
-                            borderRadius: 10
-                        },
+                        paper: popPaper,
                         list: {
-                            padding: 6
+                            padding: 4
                         }
                     },
                     defaultProps: {
@@ -361,13 +328,37 @@ function App() {
                     styleOverrides: {
                         root: {
                             borderRadius: 6,
-                            margin: "2px 0"
+                            minHeight: 34,
+                            fontSize: "0.875rem",
+                            "&.Mui-focusVisible": {
+                                outline: "none"
+                            }
                         }
+                    }
+                },
+                MuiAutocomplete: {
+                    styleOverrides: {
+                        paper: popPaper,
+                        listbox: {
+                            padding: 4
+                        },
+                        option: {
+                            borderRadius: 6
+                        }
+                    }
+                },
+                MuiPopover: {
+                    styleOverrides: {
+                        paper: popPaper
+                    },
+                    defaultProps: {
+                        transitionDuration: 0
                     }
                 },
                 MuiDialog: {
                     styleOverrides: {
                         paper: {
+                            ...popPaper,
                             borderRadius: 12
                         }
                     }
@@ -376,71 +367,82 @@ function App() {
                     styleOverrides: {
                         root: {
                             borderRadius: 6,
-                            backdropFilter: "blur(12px)",
-                            fontWeight: 600
+                            fontWeight: 500
                         }
                     }
                 },
                 MuiTabs: {
                     styleOverrides: {
                         indicator: {
-                            height: 3,
-                            borderRadius: 3,
-                            boxShadow: "0 0 14px rgba(255, 79, 154, 0.65)"
+                            height: 2
                         }
                     }
                 },
                 MuiLinearProgress: {
                     styleOverrides: {
                         root: {
-                            backgroundColor: alpha("#ff4f9a", 0.10)
-                        },
-                        bar: {
-                            boxShadow: "0 0 16px rgba(255, 79, 154, 0.8)"
+                            height: 2,
+                            backgroundColor: "transparent"
                         }
                     }
                 },
                 MuiBreadcrumbs: {
                     styleOverrides: {
                         root: {
-                            color: isLight ? "#73737f" : "#9595a1"
+                            color: isLight ? "#66666f" : "#9a9aa2",
+                            fontSize: "0.875rem",
+                            "& .MuiTypography-root": {
+                                fontSize: "inherit"
+                            }
                         },
                         separator: {
-                            color: alpha(isLight ? "#202027" : "#ffffff", 0.24)
+                            marginLeft: 4,
+                            marginRight: 4,
+                            color: borderStrong,
+                            "& svg": {
+                                fontSize: 18
+                            }
                         }
                     }
                 },
                 MuiDataGrid: {
                     styleOverrides: {
                         root: {
-                            border: `1px solid ${isLight ? "rgba(45, 32, 55, 0.18)" : "rgba(255, 255, 255, 0.20)"}`,
-                            borderRadius: 8,
+                            border: `1px solid ${border}`,
+                            borderRadius: 10,
                             overflow: "hidden",
-                            backgroundColor: isLight ? "#ffffff" : "#141114",
-                            boxShadow: isLight
-                                ? "0 8px 26px rgba(35, 20, 38, 0.08)"
-                                : "0 12px 34px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
-                        },
-                        columnHeaders: {
-                            backgroundColor: isLight ? "#f3eff3" : "#211b20",
-                            borderBottom: `1px solid ${border}`
+                            backgroundColor: surface,
+                            fontVariantNumeric: "tabular-nums",
+                            "--DataGrid-rowBorderColor": border,
+                            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": {
+                                outline: "none"
+                            }
                         },
                         columnHeader: {
-                            fontWeight: 600
+                            color: isLight ? "#66666f" : "#9a9aa2",
+                            fontSize: "0.8125rem"
                         },
-                        cell: {
-                            borderColor: border
+                        columnHeaderTitle: {
+                            fontWeight: 500
+                        },
+                        columnSeparator: {
+                            opacity: 0,
+                            transition: "opacity 150ms ease",
+                            "&:hover": {
+                                opacity: 1
+                            }
                         },
                         virtualScroller: {
                             overflowY: "hidden"
                         },
                         row: {
                             "&:hover": {
-                                backgroundColor: alpha("#ec3b83", isLight ? 0.045 : 0.065)
+                                backgroundColor: hover
                             }
                         },
                         footerContainer: {
-                            borderColor: border
+                            borderColor: border,
+                            minHeight: 48
                         }
                     },
                     defaultProps: {
@@ -452,16 +454,24 @@ function App() {
                 MuiTooltip: {
                     styleOverrides: {
                         tooltip: {
+                            backgroundColor: isLight ? "#17171a" : "#26262a",
+                            color: "#ededee",
+                            border: `1px solid ${alpha("#ffffff", 0.1)}`,
                             borderRadius: 6,
                             fontSize: "0.75rem",
+                            fontWeight: 400,
+                            lineHeight: 1.45,
                             padding: "6px 8px"
+                        },
+                        arrow: {
+                            color: isLight ? "#17171a" : "#26262a"
                         }
                     }
                 },
                 MuiPaginationItem: {
                     styleOverrides: {
                         root: {
-                            borderRadius: 8,
+                            borderRadius: 6,
                             fontWeight: 500
                         }
                     }
@@ -480,20 +490,27 @@ function App() {
                             transitionDuration: 0
                         }
                     }
-                },
-                MuiPopover: {
-                    defaultProps: {
-                        transitionDuration: 0
-                    }
                 }
             },
         }
     )}, [mode]);
 
+    useLayoutEffect(() => {
+        const style = document.createElement("style");
+        style.textContent = "*,*::before,*::after{transition:none !important}";
+        document.head.appendChild(style);
+        void document.body.offsetHeight;
+        const frame = requestAnimationFrame(() => style.remove());
+        return () => {
+            cancelAnimationFrame(frame);
+            style.remove();
+        };
+    }, [mode]);
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} />
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} maps={mapInfo.sortedMaps} />
             <Box
                 component="main"
                 sx={{
@@ -501,7 +518,7 @@ function App() {
                     flexGrow: 1,
                     flexDirection: "column",
                     width: "100%",
-                    maxWidth: "1800px",
+                    maxWidth: location.pathname.startsWith("/replays") ? "1800px" : "1440px",
                     padding: smallScreen ? 1 : 2,
                     marginBottom: "auto",
                     marginX: "auto"
@@ -510,41 +527,51 @@ function App() {
                     <Outlet context={contextParams}/>
                 </NuqsAdapter>
             </Box>
-            <Box component="footer">
-                <Breadcrumbs separator="·" sx={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "auto 16px 16px 16px", "& ol": {"justifyContent": "center"}, "& a": {color: "text.secondary", fontSize: "0.875rem"}}}>
-                    <Link href="https://www.roblox.com/games/5315046213/bhop" underline="hover" sx={{
-                        display: "flex"
-                    }}>
-                        bhop
-                        <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
-                    </Link>
-                    <Link href="https://www.roblox.com/games/5315066937/surf" underline="hover" sx={{
-                        display: "flex"
-                    }}>
-                        surf
-                        <RobloxIcon size={24} color={theme.palette.primary.main} style={{marginLeft: 4}} />
-                    </Link>
-                    <Link href="https://discord.gg/Fw8E75X" sx={{
-                        display: "flex"
-                    }}>
-                        <DiscordIcon size={24} color={theme.palette.primary.main} />
-                    </Link>
-                    <Link href="https://github.com/fiveman1/strafes-site" sx={{
-                        display: "flex"
-                    }}>
-                        <GithubIcon size={24} color={theme.palette.primary.main} />
-                    </Link>
-                    <Link href="/terms" underline="hover" sx={{
-                        display: "flex"
-                    }}>
-                        terms
-                    </Link>
-                    <Link href="/privacy" underline="hover" sx={{
-                        display: "flex"
-                    }}>
-                        privacy
-                    </Link>
-                </Breadcrumbs>
+            <Box
+                component="footer"
+                sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    columnGap: 2.5,
+                    rowGap: 1,
+                    px: 2,
+                    py: 2.5,
+                    borderTop: 1,
+                    borderColor: "divider",
+                    "& a": {
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                        color: "text.secondary",
+                        fontSize: "0.8125rem",
+                        transition: "color 150ms ease",
+                        "&:hover": {
+                            color: "text.primary"
+                        }
+                    }
+                }}>
+                <Link href="https://www.roblox.com/games/5315046213/bhop" underline="none">
+                    <RobloxIcon size={16} color="currentColor" />
+                    bhop
+                </Link>
+                <Link href="https://www.roblox.com/games/5315066937/surf" underline="none">
+                    <RobloxIcon size={16} color="currentColor" />
+                    surf
+                </Link>
+                <Link href="https://discord.gg/Fw8E75X" underline="none" aria-label="Discord">
+                    <DiscordIcon size={18} color="currentColor" />
+                </Link>
+                <Link href="https://github.com/fiveman1/strafes-site" underline="none" aria-label="GitHub">
+                    <GithubIcon size={18} color="currentColor" />
+                </Link>
+                <Link href="/terms" underline="none">
+                    terms
+                </Link>
+                <Link href="/privacy" underline="none">
+                    privacy
+                </Link>
             </Box>
         </ThemeProvider>
     );

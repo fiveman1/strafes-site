@@ -30,19 +30,19 @@ function RecordCard(props: RecordCardProps) {
     const selectedMap = maps[mapId];
 
     return (
-        <Paper elevation={2} sx={{padding: 2, display: "flex", flexDirection: "column"}}>
+        <Paper sx={{padding: 2, display: "flex", flexDirection: "column"}}>
             <Box
                 sx={{
                     display: "flex",
                     alignItems: "center"
                 }}>
-                <Typography variant="caption">
+                <Typography component="h2" variant="subtitle2">
                     Your Time
                 </Typography>
                 <Box title="You" sx={{
                     display: "flex"
                 }}>
-                    <AccountBoxIcon sx={{marginLeft: 0.75, mt: -0.5, fontSize: 20}} htmlColor={theme.palette.secondary.main} /> 
+                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 18}} htmlColor={theme.palette.secondary.main} /> 
                 </Box>
             </Box>
             <Box
@@ -63,7 +63,7 @@ function RecordCard(props: RecordCardProps) {
                         color="textPrimary"
                         sx={{
                             display: "inline-block",
-                            fontFamily: "monospace"
+                            fontFamily: '"Geist Mono", monospace'
                         }}>
                         {formatPlacement(record.placement)}
                     </Typography>
@@ -76,7 +76,8 @@ function RecordCard(props: RecordCardProps) {
                             variant="body2"
                             color="textPrimary"
                             sx={{
-                                display: "inline-block"
+                                display: "inline-block",
+                                fontFamily: '"Geist Mono", monospace'
                             }}
                         >
                             {formatTime(record.time)}

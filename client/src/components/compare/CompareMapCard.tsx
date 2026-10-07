@@ -6,6 +6,7 @@ import { formatDiff, formatStyleShort, formatTime } from "shared";
 import UserAvatar from "../displays/UserAvatar";
 import DateDisplay from "../displays/DateDisplay";
 import { CompareTimeInfo, TIE_COLOR } from "./types";
+import ColorChip from "../displays/ColorChip";
 import { getStyleColor } from "../../common/common";
 
 interface ICompareMapCardProps {
@@ -24,15 +25,10 @@ function CompareMapCard(props: ICompareMapCardProps) {
 
     return (
         <Paper
-            elevation={1}
             sx={{
                 display: "flex",
                 flexDirection: "column",
-                overflow: "hidden",
-                transition: "box-shadow .3s ease",
-                "&:hover": {
-                    boxShadow: 6,
-                },
+                overflow: "hidden"
             }}
         >
             {/* Compact header: thumbnail + map name */}
@@ -137,26 +133,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                                 {time.username}
                                             </Typography>
                                             <Box>
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        lineHeight: 1.0,
-                                                        fontWeight: "bold",
-                                                        display: "inline-flex",
-                                                        padding: 0.3,
-                                                        backgroundColor: styleColor,
-                                                        textAlign: "center",
-                                                        color: "white",
-                                                        textShadow: "black 1px 1px 1px",
-                                                        borderRadius: "6px",
-                                                        border: 1,
-                                                        borderColor: styleColor,
-                                                        overflow: "hidden",
-                                                        textOverflow: "ellipsis",
-                                                        whiteSpace: "nowrap"
-                                                    }}>
-                                                    {formatStyleShort(time.style)}
-                                                </Typography>
+                                                <ColorChip color={styleColor} label={formatStyleShort(time.style)} />
                                             </Box>
                                         </Box>
                                     </Box>
@@ -175,7 +152,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                             variant="body2"
                                             sx={{
                                                 fontWeight: "bold",
-                                                fontFamily: "monospace"
+                                                fontFamily: '"Geist Mono", monospace'
                                             }}>
                                             {formatTime(time.time)}
                                         </Typography>
@@ -183,7 +160,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                                 <Typography
                                                     variant="caption"
                                                     sx={{
-                                                        fontFamily: "monospace",
+                                                        fontFamily: '"Geist Mono", monospace',
                                                         color: red["A400"]
                                                     }}
                                                 >
@@ -193,7 +170,7 @@ function CompareMapCard(props: ICompareMapCardProps) {
                                                 <Typography
                                                     variant="caption"
                                                     sx={{
-                                                        fontFamily: "monospace",
+                                                        fontFamily: '"Geist Mono", monospace',
                                                         fontWeight: "bold",
                                                         color: isTie
                                                             ? TIE_COLOR
