@@ -104,7 +104,7 @@ function RanksCard(props: IRanksCardProps) {
         .withOptions({ history: "replace" })
     );
 
-    const placementWidth = numDigits(maxPage) > 3 ? 62 : 50;
+    const placementWidth = Math.max(50, numDigits(maxPage) * 8 + 24);
     const gridCols = useMemo(() => makeColumns(placementWidth), [placementWidth]);
 
     useEffect(() => {

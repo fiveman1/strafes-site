@@ -178,7 +178,8 @@ function TimesGrid(props: ITimesCardProps) {
         }
     }, [userId, mapId, game, style, course, onlyWRs, currentSortBy, apiRef, gridKey]);
 
-    const placementWidth = currentSortBy !== TimeSortBy.TimeAsc || numDigits(maxVisisbleRow) > 3 ? (numDigits(rowCount) > 5 ? 70 : 62) : 50;
+    const placementDigits = numDigits(currentSortBy === TimeSortBy.TimeAsc ? maxVisisbleRow : rowCount);
+    const placementWidth = Math.max(50, placementDigits * 8 + 24);
 
     const getSort = useCallback((model: GridSortModel) => {
         const sort = model[0];

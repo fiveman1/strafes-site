@@ -412,6 +412,7 @@ function App() {
                             borderRadius: 10,
                             overflow: "hidden",
                             backgroundColor: surface,
+                            fontVariantNumeric: "tabular-nums",
                             "--DataGrid-rowBorderColor": border,
                             "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": {
                                 outline: "none"
