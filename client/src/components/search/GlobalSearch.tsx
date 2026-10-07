@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Autocomplete, Box, InputAdornment, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, InputAdornment, TextField, Typography, useTheme } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,8 @@ import { filterMapsBySearch } from "../../common/sort";
 import { queries } from "../../api/queries";
 import MapThumb from "../displays/MapThumb";
 import UserAvatar from "../displays/UserAvatar";
+import ColorChip from "../displays/ColorChip";
+import { getGameColor } from "../../common/common";
 
 type SearchOption = { kind: "map", map: StrafesMap } | { kind: "user", user: UserSearchData };
 
@@ -25,6 +27,7 @@ function isTyping(target: EventTarget | null) {
 function GlobalSearch(props: IGlobalSearchProps) {
     const { maps } = props;
     const navigate = useNavigate();
+    const theme = useTheme();
     const queryClient = useQueryClient();
     const inputRef = useRef<HTMLInputElement>(null);
     const { userText, setUserText, options: users } = useUserSearch();
@@ -152,15 +155,15 @@ function GlobalSearch(props: IGlobalSearchProps) {
                     {option.kind === "map" ?
                     <>
                         <MapThumb size={28} map={option.map} />
-                        <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-                            {option.map.name}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary" noWrap sx={{ flexGrow: 1, minWidth: 0 }}>
-                            {option.map.creator}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                            {formatGame(option.map.game)}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.25, flexGrow: 1, minWidth: 0 }}>
+                            <Typography variant="body2" noWrap sx={{ flexShrink: 0, maxWidth: "70%", fontWeight: 500 }}>
+                                {option.map.name}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary" noWrap>
+                                {option.map.creator}
+                            </Typography>
+                        </Box>
+                        <ColorChip color={getGameColor(option.map.game, theme)} label={formatGame(option.map.game)} />
                     </>
                     :
                     <>
