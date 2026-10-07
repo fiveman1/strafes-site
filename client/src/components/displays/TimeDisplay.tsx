@@ -96,7 +96,8 @@ function TimeDisplay(props: ITimeDisplayProps) {
                     }}>
                     <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{
                         fontFamily: MONO,
-                        width: diff !== undefined ? "80px" : undefined
+                        minWidth: diff !== undefined ? "9ch" : undefined,
+                        mr: diff !== undefined ? 1.25 : undefined
                     }}>
                         {formatTime(ms)}
                     </Typography>
@@ -116,7 +117,8 @@ function TimeDisplay(props: ITimeDisplayProps) {
             }}>
             <Typography variant="inherit" sx={{
                 fontFamily: MONO,
-                width: "80px"
+                minWidth: "9ch",
+                mr: 1.25
             }}>
                 {formatTime(ms)}
             </Typography>
