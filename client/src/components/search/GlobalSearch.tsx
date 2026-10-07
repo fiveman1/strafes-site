@@ -3,7 +3,7 @@ import { Autocomplete, Box, InputAdornment, TextField, Typography, useTheme } fr
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Map as StrafesMap, UserSearchData, formatGame } from "shared";
+import { Game, Map as StrafesMap, Style, UserSearchData, formatGame } from "shared";
 import { useUserSearch } from "../../common/states";
 import { filterMapsBySearch } from "../../common/sort";
 import { isTyping } from "../../common/utils";
@@ -72,9 +72,18 @@ function GlobalSearch(props: IGlobalSearchProps) {
             path = `/users/${userId}`;
         }
 
+        const current = new URLSearchParams(window.location.search);
+        const search = new URLSearchParams();
+        for (const [key, all] of [["game", Game.all], ["style", Style.all]] as const) {
+            const param = current.get(key);
+            if (param !== null && !(value.kind === "map" && +param === all)) {
+                search.set(key, param);
+            }
+        }
+
         setUserText("");
         inputRef.current?.blur();
-        navigate(path);
+        navigate({ pathname: path, search: search.toString() });
     }, [navigate, queryClient, setUserText]);
 
     return (
