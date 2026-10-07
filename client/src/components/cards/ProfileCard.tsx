@@ -98,17 +98,19 @@ function ProfileCard(props: IProfileCardProps) {
             </Stat>
             <Stat label="World records" loading={wrsLoading}>
                 {!wrs ? "n/a" :
-                <>
-                    <EmojiEventsIcon htmlColor={yellow[800]} sx={{ fontSize: 18, mr: 0.75, verticalAlign: "-3px" }} />
-                    {wrs.mainWrs + wrs.bonusWrs}
+                <Box component="span" sx={{ display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 1, whiteSpace: "nowrap" }}>
+                    <span>
+                        <EmojiEventsIcon htmlColor={yellow[800]} sx={{ fontSize: 18, mr: 0.75, verticalAlign: "-3px" }} />
+                        {wrs.mainWrs + wrs.bonusWrs}
+                    </span>
                     {wrs.mainWrs + wrs.bonusWrs > 0 &&
-                    <Typography component="span" variant="caption" sx={{ ml: 1, fontWeight: 400 }}>
+                    <Typography component="span" variant="caption" sx={{ fontWeight: 400 }}>
                         {`${wrs.mainWrs} main`}
                         <Typography component="span" variant="inherit" color="textSecondary">
                             {` · ${wrs.bonusWrs} bonus`}
                         </Typography>
                     </Typography>}
-                </>}
+                </Box>}
             </Stat>
         </Box>
     );
