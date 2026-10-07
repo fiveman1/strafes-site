@@ -57,7 +57,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                             flexDirection: "row",
                             alignItems: "center"
                         }}>
-                        <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{ fontFamily: MONO }}>
+                        <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{ fontFamily: MONO, fontSize: "0.8125rem" }}>
                             {formatTime(ms)}
                         </Typography>
                         <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />
@@ -67,7 +67,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
         }
 
         return (
-            <Typography variant="inherit" sx={{ fontFamily: MONO }}>
+            <Typography variant="inherit" sx={{ fontFamily: MONO, fontSize: "0.8125rem" }}>
                 {formatTime(ms)}
             </Typography>
         );
@@ -96,6 +96,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
                     }}>
                     <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{
                         fontFamily: MONO,
+                        fontSize: "0.8125rem",
                         minWidth: diff !== undefined ? "9ch" : undefined,
                         mr: diff !== undefined ? 1.25 : undefined
                     }}>
@@ -117,6 +118,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
             }}>
             <Typography variant="inherit" sx={{
                 fontFamily: MONO,
+                fontSize: "0.8125rem",
                 minWidth: "9ch",
                 mr: 1.25
             }}>
