@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { Box, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Style, User, formatRank, formatSkill } from "shared";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { yellow } from "@mui/material/colors";
 import { useOutletContext } from "react-router";
 import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../../common/common";
 import { useQuery } from "@tanstack/react-query";
@@ -97,6 +99,7 @@ function ProfileCard(props: IProfileCardProps) {
             <Stat label="World records" loading={wrsLoading}>
                 {!wrs ? "n/a" :
                 <>
+                    <EmojiEventsIcon htmlColor={yellow[800]} sx={{ fontSize: 18, mr: 0.75, verticalAlign: "-3px" }} />
                     {wrs.mainWrs + wrs.bonusWrs}
                     {wrs.mainWrs + wrs.bonusWrs > 0 &&
                     <Typography component="span" variant="caption" color="textSecondary" sx={{ ml: 1, fontWeight: 400 }}>
