@@ -329,7 +329,7 @@ function Replays() {
                     }
                     const botDownloader = new BotDownloader(url);
                     try {
-                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000);
+                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000, 512000);
                         botDownloaderRef.current = botDownloader;
                         return bot;
                     }
@@ -363,8 +363,8 @@ function Replays() {
                 handleCanvasSize(width, height, graphics, [surface]);
                 handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
 
-                playback.advance_time(bot, 0);
-                playback.set_bot_time(bot, 0, 0);
+                playback.advance_time(bot, map, 0);
+                playback.set_bot_time(bot, map, 0, 0);
                 thumbPlayback.set_time(bot, 0);
 
                 const botDuration = bot.duration();
@@ -398,9 +398,17 @@ function Replays() {
                 const downloadNextBlock = async () => {
                     const thumbTime = thumbPlayback.get_run_time(bot, replay.course);
                     let botBlock: BotBlockRange | undefined = undefined;
+                    let mapBlock: MapBlockRange | undefined = undefined;
+                    
                     if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
                     if (botBlock) {
                         await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    if (thumbTime !== undefined) mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
+                    if (mapBlock) {
+                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
                     }
 
@@ -410,7 +418,7 @@ function Replays() {
                         return true;
                     }
 
-                    const mapBlock = map.next_block_session(bot, playback);
+                    mapBlock = map.next_block_session(bot, playback, surface);
                     if (mapBlock) {
                         await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
@@ -484,7 +492,7 @@ function Replays() {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
-                    playback.advance_time(bot, newSessionTime);
+                    playback.advance_time(bot, map, newSessionTime);
                     map.promote_ready_assets(graphics);
                     graphics.render_session(surface, map, bot, playback);
                     
@@ -569,10 +577,11 @@ function Replays() {
         setPlaybackTime(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
-                playback.set_paused(bot, sessionTimer.current, false);
+                playback.set_paused(bot, map, sessionTimer.current, false);
             }
         }
     }, [botOffset, paused]);
@@ -581,27 +590,30 @@ function Replays() {
         setPlaybackTime(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
-            playback.set_paused(bot, sessionTimer.current, true);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(time + botOffset, bot));
+            playback.set_paused(bot, map, sessionTimer.current, true);
         }
     }, [botOffset]);
 
     const onSeek = useCallback((offset: number) => {
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
+        const map = mapRef.current;
+        if (playback && bot && map) {
             const curTime = playback.get_bot_time();
             const newTime = curTime + offset;
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(newTime, bot));
         }
     }, []);
 
     const onReset = useCallback(() => {
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, 0.0001);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, 0.0001);
         }
     }, []);
 
@@ -609,8 +621,9 @@ function Replays() {
         setPaused(paused);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_paused(bot, sessionTimer.current, paused);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_paused(bot, map, sessionTimer.current, paused);
         }
     }, []);
 
@@ -628,8 +641,9 @@ function Replays() {
         setPlaybackSpeed(speed);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_scale(bot, sessionTimer.current, speed);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_scale(bot, map, sessionTimer.current, speed);
         }
     }, []);
 

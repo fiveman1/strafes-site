@@ -225,12 +225,13 @@ export class StreamableMap {
     clear_downloading(): void;
     count_downloading(): number;
     ingest(graphics: Graphics, arg1: MapBlockData): void;
+    next_block_head_throttled(bot: StreamableBot, head: StreamableHead, surface: Surface): MapBlockRange | undefined;
     /**
      * Returns the next block to download in a reasonable order based on the
      * current camera view.  Do not lose track of this object, since it will
      * never be requested for download again unless cancelled.
      */
-    next_block_session(bot: StreamableBot, session: StreamableSession): MapBlockRange | undefined;
+    next_block_session(bot: StreamableBot, session: StreamableSession, surface: Surface): MapBlockRange | undefined;
     /**
      * Call this before rendering to promote streaming assets which are ready
      * to render onto the render queue.
@@ -248,7 +249,7 @@ export class StreamableMap {
 export class StreamableSession {
     free(): void;
     [Symbol.dispose](): void;
-    advance_time(bot: StreamableBot, session_time: number): void;
+    advance_time(bot: StreamableBot, map: StreamableMap, session_time: number): void;
     /**
      * Returns the camera angles yaw delta between the last game tick and the most recent game tick.
      */
@@ -267,9 +268,9 @@ export class StreamableSession {
     /**
      * Set the playback position to new_time.
      */
-    set_bot_time(bot: StreamableBot, session_time: number, bot_time: number): void;
-    set_paused(bot: StreamableBot, session_time: number, paused: boolean): void;
-    set_scale(bot: StreamableBot, session_time: number, scale: number): void;
+    set_bot_time(bot: StreamableBot, map: StreamableMap, session_time: number, bot_time: number): void;
+    set_paused(bot: StreamableBot, map: StreamableMap, session_time: number, paused: boolean): void;
+    set_scale(bot: StreamableBot, map: StreamableMap, session_time: number, scale: number): void;
 }
 
 export class Surface {
@@ -292,7 +293,7 @@ export class Vector3 {
  * Initialize a StreamableBot by estimating the header length based on the leaderboard run duration.
  * This may make 2 requests if the file is a malformed outlier, or even 3 for a maliciously crafted file.
  */
-export function new_streamable_bot(downloader: BotDownloader, run_duration: number): Promise<StreamableBot>;
+export function new_streamable_bot(downloader: BotDownloader, run_duration: number, group_split_size: number): Promise<StreamableBot>;
 
 /**
  * Initialize a StreamableMap by estimating the header length based on the leaderboard run duration.
@@ -318,6 +319,7 @@ export interface InitOutput {
     readonly __wbg_completebot_free: (a: number, b: number) => void;
     readonly __wbg_completehead_free: (a: number, b: number) => void;
     readonly __wbg_downloadbotblockrangeerror_free: (a: number, b: number) => void;
+    readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_get_range_end: (a: number) => number;
     readonly __wbg_get_range_start: (a: number) => number;
     readonly __wbg_get_vector3_x: (a: number) => number;
@@ -325,6 +327,9 @@ export interface InitOutput {
     readonly __wbg_get_vector3_z: (a: number) => number;
     readonly __wbg_graphics_free: (a: number, b: number) => void;
     readonly __wbg_graphicsandsurface_free: (a: number, b: number) => void;
+    readonly __wbg_mapblockdata_free: (a: number, b: number) => void;
+    readonly __wbg_mapblockrange_free: (a: number, b: number) => void;
+    readonly __wbg_mapdownloader_free: (a: number, b: number) => void;
     readonly __wbg_range_free: (a: number, b: number) => void;
     readonly __wbg_set_range_end: (a: number, b: number) => void;
     readonly __wbg_set_range_start: (a: number, b: number) => void;
@@ -336,6 +341,7 @@ export interface InitOutput {
     readonly __wbg_streamablemap_free: (a: number, b: number) => void;
     readonly __wbg_streamablesession_free: (a: number, b: number) => void;
     readonly __wbg_surface_free: (a: number, b: number) => void;
+    readonly __wbg_vector3_free: (a: number, b: number) => void;
     readonly botblockrange_range: (a: number) => number;
     readonly botdownloader_download_bot_block_range: (a: number, b: number) => number;
     readonly botdownloader_get_complete_bot: (a: number) => number;
@@ -357,13 +363,17 @@ export interface InitOutput {
     readonly completehead_set_time: (a: number, b: number, c: number) => void;
     readonly downloadbotblockrangeerror_error: (a: number) => number;
     readonly downloadbotblockrangeerror_request: (a: number) => number;
+    readonly downloadmapblockrangeerror_error: (a: number) => number;
+    readonly downloadmapblockrangeerror_request: (a: number) => number;
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
+    readonly mapblockrange_range: (a: number) => number;
     readonly mapdownloader_download_map_block_range: (a: number, b: number) => number;
-    readonly new_streamable_bot: (a: number, b: number) => number;
+    readonly mapdownloader_new: (a: number, b: number) => number;
+    readonly new_streamable_bot: (a: number, b: number, c: number) => number;
     readonly new_streamable_map: (a: number, b: number, c: number) => number;
     readonly setup_graphics: (a: number) => number;
     readonly streamablebot_cancel: (a: number, b: number) => void;
@@ -388,10 +398,11 @@ export interface InitOutput {
     readonly streamablemap_cancel: (a: number, b: number) => void;
     readonly streamablemap_clear_downloading: (a: number) => void;
     readonly streamablemap_count_downloading: (a: number) => number;
-    readonly streamablemap_ingest: (a: number, b: number, c: number, d: number) => void;
-    readonly streamablemap_next_block_session: (a: number, b: number, c: number) => number;
+    readonly streamablemap_ingest: (a: number, b: number, c: number) => void;
+    readonly streamablemap_next_block_head_throttled: (a: number, b: number, c: number, d: number) => number;
+    readonly streamablemap_next_block_session: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_promote_ready_assets: (a: number, b: number) => void;
-    readonly streamablesession_advance_time: (a: number, b: number, c: number) => void;
+    readonly streamablesession_advance_time: (a: number, b: number, c: number, d: number) => void;
     readonly streamablesession_get_angles_yaw_delta: (a: number) => number;
     readonly streamablesession_get_bot_time: (a: number) => number;
     readonly streamablesession_get_fov_slope_y: (a: number) => number;
@@ -404,24 +415,15 @@ export interface InitOutput {
     readonly streamablesession_is_run_finished: (a: number, b: number) => number;
     readonly streamablesession_is_run_in_progress: (a: number, b: number) => number;
     readonly streamablesession_new: (a: number, b: number) => number;
-    readonly streamablesession_set_bot_time: (a: number, b: number, c: number, d: number) => void;
-    readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number) => void;
-    readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number) => void;
+    readonly streamablesession_set_bot_time: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly downloadmapblockrangeerror_error: (a: number) => number;
-    readonly downloadmapblockrangeerror_request: (a: number) => number;
-    readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
-    readonly mapdownloader_new: (a: number, b: number) => number;
-    readonly mapblockrange_range: (a: number) => number;
-    readonly __wbg_mapblockrange_free: (a: number, b: number) => void;
-    readonly __wbg_vector3_free: (a: number, b: number) => void;
-    readonly __wbg_mapdownloader_free: (a: number, b: number) => void;
-    readonly __wbg_mapblockdata_free: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_2354: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1149: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1149_2: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1149_3: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2369: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1169: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1169_90: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1169_91: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2440: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2455: (a: number, b: number, c: number, d: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
