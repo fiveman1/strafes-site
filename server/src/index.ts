@@ -21,6 +21,7 @@ import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { readdir, readFile } from "fs/promises";
 import { rateLimiterMiddleware } from "./middleware.js";
 import { isBot } from "isbot";
+import memoize from "memoize";
 
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
@@ -915,6 +916,18 @@ app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), async (req, res) => {
     return res.status(200).json({ url: url });
 });
 
+export const getMapFiles = memoize(getMapFilesCore, {maxAge: 15 * 60 * 1000});
+async function getMapFilesCore() {
+    const fileNames = new Set<string>();
+    const files = await readdir(mapDir);
+    for (const file of files) {
+        if (!file.endsWith(".snfm")) continue;
+        const name = file.split(".", 2)[0];
+        fileNames.add(name);
+    }
+    return fileNames;
+}
+
 app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
@@ -923,14 +936,11 @@ app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     }
 
     const id = result.id;
+    const idStr = id.toString(10);
 
-    const files = await readdir(mapDir);
-    for (const file of files) {
-        if (!file.endsWith(".snfm")) continue;
-        const name = file.split(".", 2)[0];
-        if (name === id.toString(10)) {
-            return res.status(200).json({ url: "/api/files/maps/" + file });
-        }
+    const files = await getMapFiles();
+    if (files.has(idStr)) {
+        return res.status(200).json({ url: "/api/files/maps/" + idStr + ".snfm" });
     }
 
     const url = await getMapDownloadURL(id);
