@@ -273,15 +273,15 @@ function Replays() {
             return;
         }
 
+        if (replay.compareTimeId) {
+            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+        }
+
         let isCanceled = false;
         setDiffReady(false);
         setLoading(true);
 
         const promise = async () => {
-            if (replay.compareTimeId) {
-                queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
-            }
-
             await init();
 
             if (isCanceled) return;
