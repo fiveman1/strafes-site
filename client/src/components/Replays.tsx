@@ -18,7 +18,7 @@ import Alert from "@mui/material/Alert";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { clamp, sleep } from "../common/utils";
+import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
@@ -148,10 +148,11 @@ function releaseRefs(refs: React.RefObject<Freeable | null>[]) {
     }
 }
 
-async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, bot: StreamableBot) {
+async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, bot: StreamableBot): Promise<boolean> {
     try {
         const data = await downloader.download_bot_block_range(block);
         bot.ingest(data);
+        return true;
     }
     catch (err) {
         if (err instanceof DownloadBotBlockRangeError) {
@@ -168,13 +169,15 @@ async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, b
             console.error(err);
             bot.clear_downloading();
         }
+        return false;
     }
 }
 
-async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics) {
+async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics): Promise<boolean> {
     try {
         const data = await downloader.download_map_block_range(block);
         map.ingest(graphics, data);
+        return true;
     }
     catch (err) {
         if (err instanceof DownloadMapBlockRangeError) {
@@ -191,8 +194,11 @@ async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, m
             console.error(err);
             map.clear_downloading();
         }
+        return false;
     }
 }
+
+function noop() {}
 
 // Browsers typically support 6 concurrent connections over HTTP/1.1
 const MAX_CONCURRENT_DOWNLOADS = 6;
@@ -243,6 +249,8 @@ function Replays() {
 
     const animTimer = useRef(0);
     const sessionTimer = useRef(0);
+    // Requests more blocks to be downloaded; call after anything that changes which blocks are needed
+    const pumpRef = useRef<() => void>(noop);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
@@ -279,6 +287,7 @@ function Replays() {
         }
 
         let isCanceled = false;
+        let pumpInterval: ReturnType<typeof setInterval> | undefined = undefined;
         setDiffReady(false);
         setLoading(true);
 
@@ -403,60 +412,61 @@ function Replays() {
 
                 diffBotPromise();
 
-                const downloadNextBlock = async () => {
+                // Picks the highest priority block that isn't already downloaded or in flight, or undefined if nothing is needed right now
+                const pickNextBlock = (): (() => Promise<boolean>) | undefined => {
                     const thumbTime = thumbPlayback?.get_run_time(bot, replay.course);
-                    let botBlock: BotBlockRange | undefined = undefined;
-                    let mapBlock: MapBlockRange | undefined = undefined;
-                    
-                    if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
-                    if (botBlock) {
-                        await ingestBotBlock(botBlock, botDownloader, bot);
-                        return true;
+                    const downloadBot = (block: BotBlockRange) => () => ingestBotBlock(block, botDownloader, bot);
+                    const downloadMap = (block: MapBlockRange) => () => ingestMapBlock(block, mapDownloader, map, graphics);
+
+                    if (thumbTime !== undefined) {
+                        const botBlock = bot.next_block_at_time(thumbTime);
+                        if (botBlock) return downloadBot(botBlock);
                     }
 
-                    if (thumbPlayback && thumbSurface && thumbTime !== undefined) mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
-                    if (mapBlock) {
-                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
-                        return true;
+                    if (thumbPlayback && thumbSurface && thumbTime !== undefined) {
+                        const mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
+                        if (mapBlock) return downloadMap(mapBlock);
                     }
 
-                    botBlock = bot.next_block_throttled(playback, 2);
-                    if (botBlock) {
-                        await ingestBotBlock(botBlock, botDownloader, bot);
-                        return true;
-                    }
+                    const botBlock = bot.next_block_throttled(playback, 2);
+                    if (botBlock) return downloadBot(botBlock);
 
-                    mapBlock = map.next_block_session(bot, playback, surface);
-                    if (mapBlock) {
-                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
-                        return true;
-                    }
+                    const mapBlock = map.next_block_session(bot, playback, surface);
+                    if (mapBlock) return downloadMap(mapBlock);
 
-                    botBlock = bot.next_block_eager(playback, 2);
-                    if (botBlock) {
-                        await ingestBotBlock(botBlock, botDownloader, bot);
-                        return true;
-                    }
+                    const eagerBotBlock = bot.next_block_eager(playback, 2);
+                    if (eagerBotBlock) return downloadBot(eagerBotBlock);
 
-                    if (bot.count_downloading() > 0 || map.count_downloading() > 0) {
-                        await sleep(50);
-                        return true;
-                    }
-
-                    return false;
+                    return undefined;
                 };
 
-                const startDownloader = async () => {
-                    while (!isCanceled) {
-                        const hasBlock = await downloadNextBlock();
-                        if (!hasBlock) break;
+                // Fills free download slots. Safe to call at any time and as often as needed, so that blocks which become
+                // needed later (failed downloads, seeking, the tab becoming visible again) always get picked up.
+                let activeDownloads = 0;
+                const pump = () => {
+                    try {
+                        while (!isCanceled && activeDownloads < MAX_CONCURRENT_DOWNLOADS) {
+                            const download = pickNextBlock();
+                            if (!download) break;
+                            ++activeDownloads;
+                            download().then((success) => {
+                                --activeDownloads;
+                                if (success) pump();
+                                // Back off a little so a failing server doesn't get hammered
+                                else setTimeout(pump, 1000);
+                            });
+                        }
+                    }
+                    catch (err) {
+                        console.error(err);
                     }
                 };
 
-                for (let i = 0; i < MAX_CONCURRENT_DOWNLOADS; ++i) {
-                    startDownloader();
-                }
-                
+                pumpRef.current = pump;
+                // Background tabs throttle timers, but this still keeps downloads moving while hidden
+                pumpInterval = setInterval(pump, 250);
+                document.addEventListener("visibilitychange", pump);
+                pump();
             }
             catch (err) {
                 console.error(err);
@@ -473,6 +483,9 @@ function Replays() {
 
         return () => {
             isCanceled = true;
+            clearInterval(pumpInterval);
+            document.removeEventListener("visibilitychange", pumpRef.current);
+            pumpRef.current = noop;
             releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
@@ -599,6 +612,7 @@ function Replays() {
             if (!paused) {
                 playback.set_paused(bot, map, sessionTimer.current, false);
             }
+            pumpRef.current();
         }
     }, [botOffset, paused]);
 
@@ -610,6 +624,7 @@ function Replays() {
         if (playback && bot && map) {
             playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(time + botOffset, bot));
             playback.set_paused(bot, map, sessionTimer.current, true);
+            pumpRef.current();
         }
     }, [botOffset]);
 
@@ -621,6 +636,7 @@ function Replays() {
             const curTime = playback.get_bot_time();
             const newTime = curTime + offset;
             playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(newTime, bot));
+            pumpRef.current();
         }
     }, []);
 
@@ -630,6 +646,7 @@ function Replays() {
         const map = mapRef.current;
         if (playback && bot && map) {
             playback.set_bot_time(bot, map, sessionTimer.current, 0.0001);
+            pumpRef.current();
         }
     }, []);
 
@@ -670,6 +687,7 @@ function Replays() {
         if (playback && bot) {
             try {
                 playback.set_time(bot, time);
+                pumpRef.current();
             }
             catch {}
         }
