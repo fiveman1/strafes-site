@@ -108,11 +108,11 @@ export const streamablesession_set_bot_time: (a: number, b: number, c: number, d
 export const streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
 export const streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
 export const surface_resize: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_1169: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_1169_90: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_1169_91: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_2440: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_2455: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1343: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1343_90: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1343_91: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_2616: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_2631: (a: number, b: number, c: number, d: number) => void;
 export const __wbindgen_export: (a: number, b: number) => number;
 export const __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_export3: (a: number) => void;
