@@ -217,6 +217,7 @@ function Replays() {
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
+    const [ showThumb, setShowThumb ] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const thumbCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -277,11 +278,6 @@ function Replays() {
         setLoading(true);
 
         const promise = async () => {
-            if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
-
             if (replay.compareTimeId) {
                 queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
             }
@@ -291,8 +287,7 @@ function Replays() {
             if (isCanceled) return;
 
             const canvas = canvasRef.current;
-            const thumbCanvas = thumbCanvasRef.current;
-            if (!canvas || !thumbCanvas) {
+            if (!canvas) {
                 setError("Couldn't setup bot playback.");
                 return;
             }
@@ -301,6 +296,9 @@ function Replays() {
                 const graphics_and_surface = await setup_graphics(canvas);
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
+
+                const supportsMultiSurface = graphics.supports_multiple_surfaces();
+                setShowThumb(supportsMultiSurface);
 
                 const mapPromise = async () => {
                     const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
@@ -347,25 +345,32 @@ function Replays() {
                 if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) return;
                 
                 const playback = new StreamableSession(bot, 0);
-                const thumbPlayback = new StreamableHead(bot, 0);
-                const thumbSurface = graphics.new_surface(thumbCanvas);
-
+                
                 playbackRef.current = playback;
-                thumbPlaybackRef.current = thumbPlayback;
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
-                thumbSurfaceRef.current = thumbSurface;
+                
                 botRef.current = bot;
                 mapRef.current = map;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, graphics, [surface]);
-                handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
 
                 playback.advance_time(bot, map, 0);
                 playback.set_bot_time(bot, map, 0, 0);
-                thumbPlayback.set_time(bot, 0);
+
+                let thumbPlayback: StreamableHead | null = null;
+                let thumbSurface: Surface | null = null;
+                const thumbCanvas = thumbCanvasRef.current;
+                if (supportsMultiSurface && thumbCanvas) {
+                    thumbPlayback = new StreamableHead(bot, 0);
+                    thumbSurface = graphics.new_surface(thumbCanvas);
+                    handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
+                    thumbPlayback.set_time(bot, 0);
+                    thumbPlaybackRef.current = thumbPlayback;
+                    thumbSurfaceRef.current = thumbSurface;
+                }
 
                 const botDuration = bot.duration();
                 const runDuration = bot.run_duration(replay.course);
@@ -396,7 +401,7 @@ function Replays() {
                 diffBotPromise();
 
                 const downloadNextBlock = async () => {
-                    const thumbTime = thumbPlayback.get_run_time(bot, replay.course);
+                    const thumbTime = thumbPlayback?.get_run_time(bot, replay.course);
                     let botBlock: BotBlockRange | undefined = undefined;
                     let mapBlock: MapBlockRange | undefined = undefined;
                     
@@ -406,7 +411,7 @@ function Replays() {
                         return true;
                     }
 
-                    if (thumbTime !== undefined) mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
+                    if (thumbPlayback && thumbSurface && thumbTime !== undefined) mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
                     if (mapBlock) {
                         await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
@@ -567,8 +572,11 @@ function Replays() {
         const graphics = graphicsRef.current;
         const surface = surfaceRef.current;
         const thumbSurface = thumbSurfaceRef.current;
-        if (graphics && surface && thumbSurface) {
+        if (!graphics) return;
+        if (surface) {
             handleCanvasSize(width, height, graphics, [surface]);
+        }
+        if (thumbSurface) {
             handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
         }
     }, []);
@@ -783,6 +791,7 @@ function Replays() {
                                         allowDiff={allowDiff}
                                         thumbCanvasRef={thumbCanvasRef}
                                         setThumbTime={setThumbTime}
+                                        showThumb={showThumb}
                                     />
                                 </Box>
                                 {(loading && !error) &&
