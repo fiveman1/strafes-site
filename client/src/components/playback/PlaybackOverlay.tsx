@@ -51,6 +51,7 @@ interface PlaybackOverlayProps {
     thumbCanvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
     showThumb: boolean
+    debugInfo: string
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
@@ -61,7 +62,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
-        thumbCanvasRef, setThumbTime, showThumb } = props;
+        thumbCanvasRef, setThumbTime, showThumb, debugInfo } = props;
 
     const theme = useTheme();
     
@@ -72,6 +73,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const [ showSpeed, setShowSpeed ] = useState(localStorage.getItem(SHOW_SPEED_SETTING) !== "false");
     const [ showInput, setShowInput ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
+    const [ showDebug, setShowDebug ] = useState(false);
     const [ showDiffSetting, setShowDiff ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
@@ -194,6 +196,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         setShowInput(!showInput);
         localStorage.setItem(SHOW_INPUT_SETTING, !showInput ? "true" : "false");
     }, [showInput]);
+
+    const onClickDebugButton = useCallback(() => {
+        setShowDebug(!showDebug);
+    }, [showDebug]);
 
     const onClickDiffButton = useCallback(() => {
         setShowDiff(!showDiffSetting);
@@ -578,6 +584,20 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         </Box>
                     </Box>
                 </Box>
+                {showDebug &&
+                <Box sx={{
+                    display: smallScreen || loading || errorReplay ? "none" : "flex",
+                    position: "absolute",
+                    alignItems: "center",
+                    top: "2%",
+                    left: "2%",
+                    width: "30%",
+                    flexDirection: "column"
+                }}>
+                    <Typography>
+                        {debugInfo}
+                    </Typography>
+                </Box>}
             </Box>
             <Box
                 id={bottomDivId}
@@ -815,12 +835,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             Input
                                         </Typography>
                                     </Box>
-                                    {allowDiff &&
                                     <Box
                                         sx={{
                                             display: "flex",
                                             mt: 1
                                         }}>
+                                        {allowDiff &&
                                         <Typography
                                             variant="subtitle2"
                                             className={showDiffSetting ? "speedButton active" : "speedButton"}
@@ -832,8 +852,21 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             }}>
                                             {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                             Diff
+                                        </Typography>}
+                                        <Typography
+                                            variant="subtitle2"
+                                            className={showDebug ? "speedButton active" : "speedButton"}
+                                            component="button"
+                                            onClick={onClickDebugButton}
+                                            sx={{
+                                                display: "flex",
+                                                fontWeight: "bold",
+                                                ml: 1
+                                            }}>
+                                            {showDebug ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                            Debug
                                         </Typography>
-                                    </Box>}
+                                    </Box>
                                 </Box>
                             </Box>
                         </Box>

@@ -218,6 +218,7 @@ function Replays() {
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
     const [ showThumb, setShowThumb ] = useState(false);
+    const [ debugInfo, setDebugInfo ] = useState("");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const thumbCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -299,6 +300,8 @@ function Replays() {
 
                 const supportsMultiSurface = graphics.supports_multiple_surfaces();
                 setShowThumb(supportsMultiSurface);
+
+                setDebugInfo(graphics.debug_info());
 
                 const mapPromise = async () => {
                     const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
@@ -797,6 +800,7 @@ function Replays() {
                                         thumbCanvasRef={thumbCanvasRef}
                                         setThumbTime={setThumbTime}
                                         showThumb={showThumb}
+                                        debugInfo={debugInfo}
                                     />
                                 </Box>
                                 {(loading && !error) &&

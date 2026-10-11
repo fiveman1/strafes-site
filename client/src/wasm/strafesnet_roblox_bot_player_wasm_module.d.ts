@@ -93,6 +93,10 @@ export class Graphics {
     private constructor();
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * The adapter, enabled features and chosen formats, for bug reports from devices you can't test on.
+     */
+    debug_info(): string;
     new_surface(canvas: HTMLCanvasElement): Surface;
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
@@ -376,6 +380,7 @@ export interface InitOutput {
     readonly downloadbotblockrangeerror_request: (a: number) => number;
     readonly downloadmapblockrangeerror_error: (a: number) => number;
     readonly downloadmapblockrangeerror_request: (a: number) => number;
+    readonly graphics_debug_info: (a: number, b: number) => void;
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
@@ -432,13 +437,13 @@ export interface InitOutput {
     readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1740: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1740_94: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1740_95: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7755: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7776: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1744: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1744_93: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1761: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1761_95: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1761_96: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7782: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7803: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1765: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1765_94: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
