@@ -89,7 +89,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const isDraggingSpeed = useRef(false);
     const lastChangedSpeed = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
-    const smallScreen = useMediaQuery("(max-width: 800px)");
+    const smallScreen = useMediaQuery("(max-width: 720px)");
     const bottomDivId = useId();
     const settingsOpen = Boolean(settingsEl);
 
@@ -586,17 +586,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 </Box>
                 {showDebug &&
                 <Box sx={{
-                    display: smallScreen || loading || errorReplay ? "none" : "flex",
-                    position: "absolute",
+                    display: "flex",
                     alignItems: "center",
-                    top: "2%",
-                    left: "2%",
-                    width: "30%",
-                    flexDirection: "column"
+                    pl: "8px",
+                    pt: "8px",
+                    flexDirection: "column",
+                    bgcolor: "#00000080",
                 }}>
-                    <Typography>
-                        {debugInfo}
-                    </Typography>
+                    {debugInfo}
                 </Box>}
             </Box>
             <Box
