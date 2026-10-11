@@ -98,9 +98,15 @@ export class Graphics {
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
      * False with WebGL, which can only draw to the canvas passed to setup_graphics.
-     * Drawing extra surfaces like thumbnails is also much slower with WebGL.
+     * Drawing extra surfaces is technically possible but performs much slower on WebGL.
      */
     supports_multiple_surfaces(): boolean;
+    /**
+     * GPU errors since the last call, oldest first.
+     * WebGPU reports validation errors (like a shader the browser can't compile) and device loss
+     * without throwing, and the frame just stays black, so poll this to show them.
+     */
+    take_errors(): string[];
 }
 
 /**
@@ -374,6 +380,7 @@ export interface InitOutput {
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_supports_multiple_surfaces: (a: number) => number;
+    readonly graphics_take_errors: (a: number, b: number) => void;
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
     readonly mapblockrange_range: (a: number) => number;
@@ -425,16 +432,19 @@ export interface InitOutput {
     readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1716: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1716_91: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1716_92: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7689: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7710: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1740: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1740_94: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1740_95: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7755: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7776: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1744: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1744_93: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
     readonly __wbindgen_export4: (a: number, b: number) => void;
     readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+    readonly __wbindgen_export5: (a: number, b: number, c: number) => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

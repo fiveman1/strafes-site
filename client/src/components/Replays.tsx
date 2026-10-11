@@ -502,6 +502,11 @@ function Replays() {
                     graphics.render_session(surface, map, bot, playback);
                     
                     setLoading(playback.is_buffering());
+
+                    const errors = graphics.take_errors();
+                    if (errors.length > 0) {
+                        setError(errors.join("\n"));
+                    }
                     
                     const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
