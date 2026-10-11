@@ -16,10 +16,11 @@ interface ProgressSliderProps {
     setIsDragging: (drag: boolean) => void
     canvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
+    displayThumb: boolean
 }
 
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime } = props;
+    const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb } = props;
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
@@ -131,7 +132,7 @@ function ProgressSlider(props: ProgressSliderProps) {
     const thumbWidth = PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO;
     return (
         <>
-            <Box
+            {displayThumb && <Box
                 sx={{
                     position: "fixed",
                     width: `${thumbWidth}px`,
@@ -155,7 +156,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                         height: "100%"
                     }}
                 />
-            </Box>
+            </Box>}
             <Box
                 sx={{
                     position: "fixed",

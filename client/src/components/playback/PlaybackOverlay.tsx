@@ -50,6 +50,8 @@ interface PlaybackOverlayProps {
     allowDiff: boolean
     thumbCanvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
+    showThumb: boolean
+    debugInfo: string
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
@@ -59,7 +61,8 @@ const SHOW_DIFF_SETTING = "player_showDiff";
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
-        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff, thumbCanvasRef, setThumbTime } = props;
+        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
+        thumbCanvasRef, setThumbTime, showThumb, debugInfo } = props;
 
     const theme = useTheme();
     
@@ -70,6 +73,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const [ showSpeed, setShowSpeed ] = useState(localStorage.getItem(SHOW_SPEED_SETTING) !== "false");
     const [ showInput, setShowInput ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
+    const [ showDebug, setShowDebug ] = useState(false);
     const [ showDiffSetting, setShowDiff ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
@@ -85,7 +89,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const isDraggingSpeed = useRef(false);
     const lastChangedSpeed = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
-    const smallScreen = useMediaQuery("(max-width: 800px)");
+    const smallScreen = useMediaQuery("(max-width: 720px)");
     const bottomDivId = useId();
     const settingsOpen = Boolean(settingsEl);
 
@@ -192,6 +196,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         setShowInput(!showInput);
         localStorage.setItem(SHOW_INPUT_SETTING, !showInput ? "true" : "false");
     }, [showInput]);
+
+    const onClickDebugButton = useCallback(() => {
+        setShowDebug(!showDebug);
+    }, [showDebug]);
 
     const onClickDiffButton = useCallback(() => {
         setShowDiff(!showDiffSetting);
@@ -576,6 +584,17 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         </Box>
                     </Box>
                 </Box>
+                {showDebug &&
+                <Box sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    pl: "8px",
+                    pt: "8px",
+                    flexDirection: "column",
+                    bgcolor: "#00000080",
+                }}>
+                    {debugInfo}
+                </Box>}
             </Box>
             <Box
                 id={bottomDivId}
@@ -624,6 +643,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     setIsDragging={setIsDragging}
                     canvasRef={thumbCanvasRef}
                     setThumbTime={setThumbTime}
+                    displayThumb={showThumb}
                 />
                 <Box ref={settingsButtonRef}>
                     <IconButton
@@ -812,12 +832,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             Input
                                         </Typography>
                                     </Box>
-                                    {allowDiff &&
                                     <Box
                                         sx={{
                                             display: "flex",
                                             mt: 1
                                         }}>
+                                        {allowDiff &&
                                         <Typography
                                             variant="subtitle2"
                                             className={showDiffSetting ? "speedButton active" : "speedButton"}
@@ -829,8 +849,21 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             }}>
                                             {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
                                             Diff
+                                        </Typography>}
+                                        <Typography
+                                            variant="subtitle2"
+                                            className={showDebug ? "speedButton active" : "speedButton"}
+                                            component="button"
+                                            onClick={onClickDebugButton}
+                                            sx={{
+                                                display: "flex",
+                                                fontWeight: "bold",
+                                                ml: 1
+                                            }}>
+                                            {showDebug ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                                            Debug
                                         </Typography>
-                                    </Box>}
+                                    </Box>
                                 </Box>
                             </Box>
                         </Box>

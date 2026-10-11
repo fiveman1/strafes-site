@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "@strafesnet/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
@@ -217,6 +217,8 @@ function Replays() {
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
+    const [ showThumb, setShowThumb ] = useState(false);
+    const [ debugInfo, setDebugInfo ] = useState("");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const thumbCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -272,27 +274,21 @@ function Replays() {
             return;
         }
 
+        if (replay.compareTimeId) {
+            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+        }
+
         let isCanceled = false;
         setDiffReady(false);
         setLoading(true);
 
         const promise = async () => {
-            if (!("gpu" in navigator) || !(await navigator.gpu.requestAdapter())) {
-                setError("This device does not support WebGPU. Make sure you have hardware acceleration enabled.");
-                return;
-            }
-
-            if (replay.compareTimeId) {
-                queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
-            }
-
             await init();
 
             if (isCanceled) return;
 
             const canvas = canvasRef.current;
-            const thumbCanvas = thumbCanvasRef.current;
-            if (!canvas || !thumbCanvas) {
+            if (!canvas) {
                 setError("Couldn't setup bot playback.");
                 return;
             }
@@ -301,6 +297,11 @@ function Replays() {
                 const graphics_and_surface = await setup_graphics(canvas);
                 const graphics = graphics_and_surface.graphics()!;
                 const surface = graphics_and_surface.surface()!;
+
+                const supportsMultiSurface = graphics.supports_multiple_surfaces();
+                setShowThumb(supportsMultiSurface);
+
+                setDebugInfo(graphics.debug_info());
 
                 const mapPromise = async () => {
                     const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
@@ -329,7 +330,7 @@ function Replays() {
                     }
                     const botDownloader = new BotDownloader(url);
                     try {
-                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000);
+                        const bot = await new_streamable_bot(botDownloader, replay.time / 1000, 512000);
                         botDownloaderRef.current = botDownloader;
                         return bot;
                     }
@@ -347,25 +348,32 @@ function Replays() {
                 if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) return;
                 
                 const playback = new StreamableSession(bot, 0);
-                const thumbPlayback = new StreamableHead(bot, 0);
-                const thumbSurface = graphics.new_surface(thumbCanvas);
-
+                
                 playbackRef.current = playback;
-                thumbPlaybackRef.current = thumbPlayback;
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
-                thumbSurfaceRef.current = thumbSurface;
+                
                 botRef.current = bot;
                 mapRef.current = map;
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 handleCanvasSize(width, height, graphics, [surface]);
-                handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
 
-                playback.advance_time(bot, 0);
-                playback.set_bot_time(bot, 0, 0);
-                thumbPlayback.set_time(bot, 0);
+                playback.advance_time(bot, map, 0);
+                playback.set_bot_time(bot, map, 0, 0);
+
+                let thumbPlayback: StreamableHead | null = null;
+                let thumbSurface: Surface | null = null;
+                const thumbCanvas = thumbCanvasRef.current;
+                if (supportsMultiSurface && thumbCanvas) {
+                    thumbPlayback = new StreamableHead(bot, 0);
+                    thumbSurface = graphics.new_surface(thumbCanvas);
+                    handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
+                    thumbPlayback.set_time(bot, 0);
+                    thumbPlaybackRef.current = thumbPlayback;
+                    thumbSurfaceRef.current = thumbSurface;
+                }
 
                 const botDuration = bot.duration();
                 const runDuration = bot.run_duration(replay.course);
@@ -396,11 +404,19 @@ function Replays() {
                 diffBotPromise();
 
                 const downloadNextBlock = async () => {
-                    const thumbTime = thumbPlayback.get_run_time(bot, replay.course);
+                    const thumbTime = thumbPlayback?.get_run_time(bot, replay.course);
                     let botBlock: BotBlockRange | undefined = undefined;
+                    let mapBlock: MapBlockRange | undefined = undefined;
+                    
                     if (thumbTime !== undefined) botBlock = bot.next_block_at_time(thumbTime);
                     if (botBlock) {
                         await ingestBotBlock(botBlock, botDownloader, bot);
+                        return true;
+                    }
+
+                    if (thumbPlayback && thumbSurface && thumbTime !== undefined) mapBlock = map.next_block_head_throttled(bot, thumbPlayback, thumbSurface);
+                    if (mapBlock) {
+                        await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
                     }
 
@@ -410,7 +426,7 @@ function Replays() {
                         return true;
                     }
 
-                    const mapBlock = map.next_block_session(bot, playback);
+                    mapBlock = map.next_block_session(bot, playback, surface);
                     if (mapBlock) {
                         await ingestMapBlock(mapBlock, mapDownloader, map, graphics);
                         return true;
@@ -484,11 +500,16 @@ function Replays() {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
-                    playback.advance_time(bot, newSessionTime);
+                    playback.advance_time(bot, map, newSessionTime);
                     map.promote_ready_assets(graphics);
                     graphics.render_session(surface, map, bot, playback);
                     
                     setLoading(playback.is_buffering());
+
+                    const errors = graphics.take_errors();
+                    if (errors.length > 0) {
+                        setError(errors.join("\n"));
+                    }
                     
                     const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
@@ -559,8 +580,11 @@ function Replays() {
         const graphics = graphicsRef.current;
         const surface = surfaceRef.current;
         const thumbSurface = thumbSurfaceRef.current;
-        if (graphics && surface && thumbSurface) {
+        if (!graphics) return;
+        if (surface) {
             handleCanvasSize(width, height, graphics, [surface]);
+        }
+        if (thumbSurface) {
             handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
         }
     }, []);
@@ -569,10 +593,11 @@ function Replays() {
         setPlaybackTime(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(time + botOffset, bot));
             if (!paused) {
-                playback.set_paused(bot, sessionTimer.current, false);
+                playback.set_paused(bot, map, sessionTimer.current, false);
             }
         }
     }, [botOffset, paused]);
@@ -581,27 +606,30 @@ function Replays() {
         setPlaybackTime(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(time + botOffset, bot));
-            playback.set_paused(bot, sessionTimer.current, true);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(time + botOffset, bot));
+            playback.set_paused(bot, map, sessionTimer.current, true);
         }
     }, [botOffset]);
 
     const onSeek = useCallback((offset: number) => {
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
+        const map = mapRef.current;
+        if (playback && bot && map) {
             const curTime = playback.get_bot_time();
             const newTime = curTime + offset;
-            playback.set_bot_time(bot, sessionTimer.current, getSafeTime(newTime, bot));
+            playback.set_bot_time(bot, map, sessionTimer.current, getSafeTime(newTime, bot));
         }
     }, []);
 
     const onReset = useCallback(() => {
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_bot_time(bot, sessionTimer.current, 0.0001);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_bot_time(bot, map, sessionTimer.current, 0.0001);
         }
     }, []);
 
@@ -609,8 +637,9 @@ function Replays() {
         setPaused(paused);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_paused(bot, sessionTimer.current, paused);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_paused(bot, map, sessionTimer.current, paused);
         }
     }, []);
 
@@ -628,8 +657,9 @@ function Replays() {
         setPlaybackSpeed(speed);
         const playback = playbackRef.current;
         const bot = botRef.current;
-        if (playback && bot) {
-            playback.set_scale(bot, sessionTimer.current, speed);
+        const map = mapRef.current;
+        if (playback && bot && map) {
+            playback.set_scale(bot, map, sessionTimer.current, speed);
         }
     }, []);
 
@@ -769,6 +799,8 @@ function Replays() {
                                         allowDiff={allowDiff}
                                         thumbCanvasRef={thumbCanvasRef}
                                         setThumbTime={setThumbTime}
+                                        showThumb={showThumb}
+                                        debugInfo={debugInfo}
                                     />
                                 </Box>
                                 {(loading && !error) &&
