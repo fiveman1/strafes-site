@@ -233,6 +233,7 @@ function Replays() {
     const inputContainerRef = useRef<HTMLDivElement>(null);
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
+    const fpsTextRef = useRef<HTMLSpanElement>(null);
 
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
@@ -492,6 +493,8 @@ function Replays() {
 
     useLayoutEffect(() => {
         let animationId: number;
+        let fpsFrames = 0;
+        let fpsWindowStart = performance.now();
 
         if (replay?.course === undefined) {
             return;
@@ -500,6 +503,18 @@ function Replays() {
         const animate = (timeMs: number) => {
             const time = timeMs / 1000;
             animationId = requestAnimationFrame(animate);
+
+            // Average over half a second windows so the number is readable
+            ++fpsFrames;
+            const fpsElapsed = timeMs - fpsWindowStart;
+            if (fpsElapsed >= 500) {
+                const fpsText = fpsTextRef.current;
+                if (fpsText) {
+                    fpsText.innerText = `${Math.round(fpsFrames * 1000 / fpsElapsed)} FPS`;
+                }
+                fpsFrames = 0;
+                fpsWindowStart = timeMs;
+            }
 
             const playback = playbackRef.current;
             const bot = botRef.current;
@@ -819,6 +834,7 @@ function Replays() {
                                         setThumbTime={setThumbTime}
                                         showThumb={showThumb}
                                         debugInfo={debugInfo}
+                                        fpsTextRef={fpsTextRef}
                                     />
                                 </Box>
                                 {(loading && !error) &&

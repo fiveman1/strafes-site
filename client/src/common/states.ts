@@ -1,5 +1,5 @@
 import { PaletteMode } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { allGames, allGamesWithAll, allStyles, allStylesWithAll, Game, getAllowedStyles, LoginUser, MAX_TIER, SettingsValues, Style, UserSearchData } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "./common";
@@ -236,4 +236,21 @@ export function useMaps() {
 
 export function useMapTierVote(user: LoginUser | undefined, mapId: number) {
     return useQuery(queries.maps.tierVote(user, mapId));
+}
+
+// A boolean setting that is remembered in localStorage
+export function usePersistedToggle(key: string, defaultValue: boolean): [boolean, () => void] {
+    const [ value, setValue ] = useState(() => {
+        const stored = localStorage.getItem(key);
+        return stored === null ? defaultValue : stored === "true";
+    });
+
+    const toggle = useCallback(() => {
+        setValue((prev) => {
+            localStorage.setItem(key, !prev ? "true" : "false");
+            return !prev;
+        });
+    }, [key]);
+
+    return [value, toggle];
 }

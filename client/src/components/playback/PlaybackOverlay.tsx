@@ -19,6 +19,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
 import { isTyping } from "../../common/utils";
+import { usePersistedToggle } from "../../common/states";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
@@ -52,17 +53,46 @@ interface PlaybackOverlayProps {
     setThumbTime: (time: number) => void
     showThumb: boolean
     debugInfo: string
+    fpsTextRef: React.Ref<HTMLSpanElement>
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
 const SHOW_INPUT_SETTING = "player_showInput";
 const SHOW_DIFF_SETTING = "player_showDiff";
+const SHOW_FPS_SETTING = "player_showFps";
+const SHOW_DEBUG_SETTING = "player_showDebug";
+
+interface HudToggleProps {
+    label: string
+    active: boolean
+    onClick: () => void
+}
+
+function HudToggle(props: HudToggleProps) {
+    const { label, active, onClick } = props;
+    const iconSx = { mr: 0.5 };
+
+    return (
+        <Typography
+            variant="subtitle2"
+            className={active ? "active" : undefined}
+            component="button"
+            onClick={onClick}
+            sx={{
+                display: "flex",
+                fontWeight: "bold"
+            }}>
+            {active ? <VisibilityIcon fontSize="small" sx={iconSx} /> : <VisibilityOffIcon fontSize="small" sx={iconSx} />}
+            {label}
+        </Typography>
+    );
+}
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
-        thumbCanvasRef, setThumbTime, showThumb, debugInfo } = props;
+        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef } = props;
 
     const theme = useTheme();
     
@@ -71,10 +101,11 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ isDragging, setIsDragging ] = useState(false);
     const [ wasRecentAction, setWasRecentAction ] = useState(false);
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
-    const [ showSpeed, setShowSpeed ] = useState(localStorage.getItem(SHOW_SPEED_SETTING) !== "false");
-    const [ showInput, setShowInput ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
-    const [ showDebug, setShowDebug ] = useState(false);
-    const [ showDiffSetting, setShowDiff ] = useState(localStorage.getItem(SHOW_INPUT_SETTING) !== "false");
+    const [ showSpeed, onClickSpeedButton ] = usePersistedToggle(SHOW_SPEED_SETTING, true);
+    const [ showInput, onClickInputButton ] = usePersistedToggle(SHOW_INPUT_SETTING, true);
+    const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
+    const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, false);
+    const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
     const playerRef = useRef<HTMLDivElement>(null);
@@ -187,25 +218,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const onClickDoubleSpeedButton = useCallback(() => onSetSpeed(2.0), [onSetSpeed]);
     const onClickHalfSpeedButton = useCallback(() => onSetSpeed(0.5), [onSetSpeed]);
     
-    const onClickSpeedButton = useCallback(() => {
-        setShowSpeed(!showSpeed);
-        localStorage.setItem(SHOW_SPEED_SETTING, !showSpeed ? "true" : "false");
-    }, [showSpeed]);
-    
-    const onClickInputButton = useCallback(() => {
-        setShowInput(!showInput);
-        localStorage.setItem(SHOW_INPUT_SETTING, !showInput ? "true" : "false");
-    }, [showInput]);
-
-    const onClickDebugButton = useCallback(() => {
-        setShowDebug(!showDebug);
-    }, [showDebug]);
-
-    const onClickDiffButton = useCallback(() => {
-        setShowDiff(!showDiffSetting);
-        localStorage.setItem(SHOW_DIFF_SETTING, !showDiffSetting ? "true" : "false");
-    }, [showDiffSetting]);
-
     const onFinishChangingSpeed = useCallback(() => {
         lastChangedSpeed.current = Date.now();
         isDraggingSpeed.current = false;
@@ -584,17 +596,51 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         </Box>
                     </Box>
                 </Box>
-                {showDebug &&
-                <Box sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    pl: "8px",
-                    pt: "8px",
-                    flexDirection: "column",
-                    bgcolor: "#00000080",
-                }}>
-                    {debugInfo}
-                </Box>}
+                <Box
+                    sx={{
+                        display: smallScreen ? "none" : "flex",
+                        position: "absolute",
+                        top: 8,
+                        left: 8,
+                        right: 8,
+                        alignItems: "flex-start",
+                        gap: 1,
+                        pointerEvents: "none",
+
+                        ".debugText": {
+                            fontFamily: '"Geist Mono", monospace',
+                            fontSize: "12px",
+                            lineHeight: 1.4,
+                            color: "white",
+                            bgcolor: "#00000080",
+                            borderRadius: "4px",
+                            px: 0.75,
+                            py: 0.25
+                        }
+                    }}>
+                    {showDebug && debugInfo &&
+                    <Typography
+                        component="span"
+                        className="debugText"
+                        sx={{
+                            maxWidth: "600px",
+                            whiteSpace: "pre-wrap",
+                            overflowWrap: "anywhere"
+                        }}>
+                        {debugInfo}
+                    </Typography>}
+                    <Typography
+                        ref={fpsTextRef}
+                        component="span"
+                        className="debugText"
+                        sx={{
+                            display: showFps ? "block" : "none",
+                            // Pushed to the right edge even when the debug info is hidden
+                            ml: "auto",
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap"
+                        }} />
+                </Box>
             </Box>
             <Box
                 id={bottomDivId}
@@ -783,7 +829,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     sx={{
                                         mt: 1,
                                         display: "flex",
-                                        flexDirection: "column",
+                                        flexWrap: "wrap",
+                                        gap: 1,
 
                                         "button": {
                                             py: 0.5,
@@ -803,67 +850,11 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                             }
                                         }
                                     }}>
-                                    <Box sx={{
-                                        display: "flex"
-                                    }}>
-                                        <Typography
-                                            variant="subtitle2"
-                                            className={showSpeed ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            onClick={onClickSpeedButton}
-                                            sx={{
-                                                display: "flex",
-                                                fontWeight: "bold"
-                                            }}>
-                                            {showSpeed ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Speed
-                                        </Typography>
-                                        <Typography
-                                            variant="subtitle2"
-                                            className={showInput ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            onClick={onClickInputButton}
-                                            sx={{
-                                                display: "flex",
-                                                fontWeight: "bold",
-                                                ml: 1
-                                            }}>
-                                            {showInput ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Input
-                                        </Typography>
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            mt: 1
-                                        }}>
-                                        {allowDiff &&
-                                        <Typography
-                                            variant="subtitle2"
-                                            className={showDiffSetting ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            onClick={onClickDiffButton}
-                                            sx={{
-                                                display: "flex",
-                                                fontWeight: "bold"
-                                            }}>
-                                            {showDiffSetting ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Diff
-                                        </Typography>}
-                                        <Typography
-                                            variant="subtitle2"
-                                            className={showDebug ? "speedButton active" : "speedButton"}
-                                            component="button"
-                                            onClick={onClickDebugButton}
-                                            sx={{
-                                                display: "flex",
-                                                fontWeight: "bold",
-                                                ml: 1
-                                            }}>
-                                            {showDebug ? <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> : <VisibilityOffIcon fontSize="small" sx={{ mr: 0.5 }} />}
-                                            Debug
-                                        </Typography>
-                                    </Box>
+                                    <HudToggle label="Speed" active={showSpeed} onClick={onClickSpeedButton} />
+                                    <HudToggle label="Input" active={showInput} onClick={onClickInputButton} />
+                                    {allowDiff && <HudToggle label="Diff" active={showDiffSetting} onClick={onClickDiffButton} />}
+                                    <HudToggle label="FPS" active={showFps} onClick={onClickFpsButton} />
+                                    <HudToggle label="Debug" active={showDebug} onClick={onClickDebugButton} />
                                 </Box>
                             </Box>
                         </Box>
