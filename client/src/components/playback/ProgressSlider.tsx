@@ -18,10 +18,11 @@ interface ProgressSliderProps {
     canvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
     displayThumb: boolean
+    setShowingThumb: (showing: boolean) => void
 }
 
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb } = props;
+    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, setShowingThumb } = props;
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
@@ -115,15 +116,17 @@ function ProgressSlider(props: ProgressSliderProps) {
         setIsHovering(true);
         if (e.pointerType === "mouse") {
             setShowThumb(true);
+            setShowingThumb(true);
         }
-    }, []);
+    }, [setShowingThumb]);
 
     const onPointerLeave = useCallback((e: React.PointerEvent) => {
         setIsHovering(false);
         if (e.pointerType === "mouse") {
             setShowThumb(false);
+            setShowingThumb(false);
         }
-    }, []);
+    }, [setShowingThumb]);
 
     const onMouseMove = useCallback((e: React.MouseEvent) => {
         if (!ref.current) return;

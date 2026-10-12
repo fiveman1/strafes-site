@@ -286,6 +286,7 @@ function Replays() {
     const sessionTimer = useRef(0);
     // Requests more blocks to be downloaded; call after anything that changes which blocks are needed
     const pumpRef = useRef<() => void>(noop);
+    const isShowingThumb = useRef(false);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
@@ -588,7 +589,7 @@ function Replays() {
                     const thumbPlayback = thumbPlaybackRef.current;
                     const thumbSurface = thumbSurfaceRef.current;
 
-                    if (thumbPlayback && thumbSurface) {
+                    if (thumbPlayback && thumbSurface && isShowingThumb.current) {
                         graphics.render_head(thumbSurface, map, bot, thumbPlayback);
                     }
 
@@ -732,6 +733,10 @@ function Replays() {
         }
     }, [botOffset]);
 
+    const setShowingThumb = useCallback((showing: boolean) => {
+        isShowingThumb.current = showing;
+    }, []);
+
     useEffect(() => {
         const handler = () => {
             if (!document.fullscreenElement) {
@@ -859,6 +864,7 @@ function Replays() {
                                         showThumb={showThumb}
                                         debugInfo={debugInfo}
                                         fpsTextRef={fpsTextRef}
+                                        setShowingThumb={setShowingThumb}
                                     />
                                 </Box>
                                 {(loading && !error) &&

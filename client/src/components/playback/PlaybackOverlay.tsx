@@ -55,6 +55,7 @@ interface PlaybackOverlayProps {
     showThumb: boolean
     debugInfo: string
     fpsTextRef: React.Ref<HTMLSpanElement>
+    setShowingThumb: (showing: boolean) => void
 }
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
@@ -93,7 +94,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
-        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef } = props;
+        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef, setShowingThumb } = props;
 
     const theme = useTheme();
     
@@ -701,6 +702,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     canvasRef={thumbCanvasRef}
                     setThumbTime={setThumbTime}
                     displayThumb={showThumb}
+                    setShowingThumb={setShowingThumb}
                 />
                 <Box ref={settingsButtonRef}>
                     <IconButton
