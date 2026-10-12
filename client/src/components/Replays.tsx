@@ -200,6 +200,39 @@ async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, m
 
 function noop() {}
 
+// One WebGPU device for the whole tab, shared by every replay viewed.
+// This is primarily to avoid what seems to be a Chrome issue with WebGPU where garbage collecting
+// a graphics object while another one was being used could cause the page to go unresponsive.
+let sharedGraphics: Promise<Graphics> | null = null;
+
+async function getGraphicsAndSurface(canvas: HTMLCanvasElement): Promise<{ graphics: Graphics, surface: Surface }> {
+    if (sharedGraphics) {
+        const graphics = await sharedGraphics;
+        // WebGL can only draw to the canvas it was set up with, so it falls through to a new setup.
+        if (graphics.supports_multiple_surfaces()) {
+            return { graphics, surface: graphics.new_surface(canvas) };
+        }
+    }
+    const promise = setup_graphics(canvas);
+    const graphicsPromise = promise.then(gs => gs.graphics()!);
+    sharedGraphics = graphicsPromise;
+    try {
+        const gs = await promise;
+        return { graphics: await graphicsPromise, surface: gs.surface()! };
+    }
+    catch (err) {
+        // Don't cache a failed setup, so the next replay tries again.
+        if (sharedGraphics === graphicsPromise) sharedGraphics = null;
+        throw err;
+    }
+}
+
+function discardSharedGraphics(graphics: Graphics) {
+    sharedGraphics?.then(shared => {
+        if (shared === graphics) sharedGraphics = null;
+    });
+}
+
 // Browsers typically support 6 concurrent connections over HTTP/1.1
 const MAX_CONCURRENT_DOWNLOADS = 6;
 
@@ -304,9 +337,7 @@ function Replays() {
             }
 
             try {
-                const graphics_and_surface = await setup_graphics(canvas);
-                const graphics = graphics_and_surface.graphics()!;
-                const surface = graphics_and_surface.surface()!;
+                const { graphics, surface } = await getGraphicsAndSurface(canvas);
 
                 const supportsMultiSurface = graphics.supports_multiple_surfaces();
                 setShowThumb(supportsMultiSurface);
@@ -536,6 +567,10 @@ function Replays() {
 
                     const errors = graphics.take_errors();
                     if (errors.length > 0) {
+                        // A lost device can't render anything again, so the next replay gets a new one.
+                        if (errors.some(e => e.startsWith("GPU device lost"))) {
+                            discardSharedGraphics(graphics);
+                        }
                         setError(errors.join("\n"));
                     }
                     
