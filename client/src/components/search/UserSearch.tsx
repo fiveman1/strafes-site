@@ -94,7 +94,6 @@ function UserSearch(props: IUserSearchProps) {
             onChange={(e, v) => onSearch(v)}
             isOptionEqualToValue={(opt, val) => {
                 const username = typeof val === "string" ? val : val.username.toLowerCase();
-                console.log(val);
                 return opt.username.toLowerCase() === username || prevUsernamesContains(opt, username)
             }}
             filterOptions={(x) => x}
