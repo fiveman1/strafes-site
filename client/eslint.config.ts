@@ -1,4 +1,4 @@
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
 import globals from "globals";
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -8,6 +8,7 @@ export default defineConfig([
     tseslint.configs.recommended,
     reactHooks.configs.flat.recommended,
     reactRefresh.configs.vite(),
+    globalIgnores(["**/*.js"]),
 	{
         files: ["**/*.{ts,tsx}"],
         languageOptions: { 
