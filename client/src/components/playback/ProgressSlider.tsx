@@ -1,7 +1,8 @@
 import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clamp, normalize } from "../../common/utils";
+import { PlaybackTime } from "./playbackTime";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import { PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../../common/common";
@@ -9,7 +10,7 @@ import { PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../../common/common";
 interface ProgressSliderProps {
     min: number
     max: number
-    value: number
+    time: PlaybackTime
     onDragPlayback: (time: number) => void
     onSetPlayback: (time: number) => void
     isDragging: boolean
@@ -20,17 +21,26 @@ interface ProgressSliderProps {
 }
 
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, value, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb } = props;
+    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb } = props;
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
     const [thumbTime, setThumbTimeFormatted] = useState("");
     const [coords, setCoords] = useState({ x: 0, y: 0 });
     const ref = useRef<HTMLSpanElement>(null);
+    const fillRef = useRef<HTMLSpanElement>(null);
+    const handleRef = useRef<HTMLSpanElement>(null);
 
-    const diff = max - min;
-    const lerp = (value - min) / diff;
-    const offset = `${lerp * 100}%`;
+    // Progress is written directly instead of rendered, see playbackTime.ts
+    useLayoutEffect(() => {
+        const update = (value: number) => {
+            const offset = `${(value - min) / (max - min) * 100}%`;
+            if (fillRef.current) fillRef.current.style.width = offset;
+            if (handleRef.current) handleRef.current.style.left = offset;
+        };
+        update(time.get());
+        return time.subscribe(update);
+    }, [time, min, max]);
 
     useEffect(() => {
         const handler = (event: MouseEvent) => {
@@ -211,9 +221,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                     }} />
                 <Box
                     component="span"
-                    style={{
-                        width: offset
-                    }}
+                    ref={fillRef}
                     sx={{
                         position: "absolute",
                         width: "100%",
@@ -228,9 +236,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                     }} />
                 <Box
                     component="span"
-                    style={{
-                        left: offset
-                    }}
+                    ref={handleRef}
                     sx={{
                         position: "absolute",
                         width: "12px",

@@ -2,7 +2,8 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import ProgressSlider from "./ProgressSlider";
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { PlaybackTime } from "./playbackTime";
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -29,7 +30,7 @@ function getInfoDisplayScale(playerHeight: number) {
 
 interface PlaybackOverlayProps {
     duration: number
-    time: number
+    time: PlaybackTime
     paused: boolean
     offset: number
     fullscreen: boolean
@@ -364,9 +365,19 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         }
     }, [closeSettingsIfClickedOutside]);
 
-    const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
-    const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
-    const timeText = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
+    // The time text is written directly instead of rendered, see playbackTime.ts
+    const timeTextRef = useRef<HTMLSpanElement>(null);
+    useLayoutEffect(() => {
+        const durationFormatted = formatTime(Math.round(duration * 1000), smallScreen);
+        const update = (time: number) => {
+            const timeText = timeTextRef.current;
+            if (!timeText) return;
+            const timeFormatted = formatTime(Math.round(Math.max(0, time * 1000)), smallScreen);
+            timeText.textContent = verySmallScreen ? timeFormatted : `${timeFormatted} / ${durationFormatted}`;
+        };
+        update(time.get());
+        return time.subscribe(update);
+    }, [time, duration, smallScreen, verySmallScreen]);
     const curSettingsMenuId = settingsOpen ? settingsMenuId : undefined;
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
 
@@ -677,12 +688,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         px: 1.25,
                         whiteSpace: "nowrap"
                     }}>
-                    {timeText}
+                    <span ref={timeTextRef} />
                 </Typography>
-                <ProgressSlider 
+                <ProgressSlider
                     min={-offset}
                     max={duration}
-                    value={time}
+                    time={time}
                     onDragPlayback={onDragPlayback}
                     onSetPlayback={onSetPlaybackHandler}
                     isDragging={isDragging}

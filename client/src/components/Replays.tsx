@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
+import { createPlaybackTime } from "./playback/playbackTime";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import Typography from "@mui/material/Typography";
@@ -250,7 +251,7 @@ function Replays() {
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
-    const [ playbackTime, setPlaybackTime ] = useState(-1);
+    const [ playbackTime ] = useState(() => createPlaybackTime(-1));
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
@@ -421,7 +422,7 @@ function Replays() {
                 setDuration(runDuration);
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
-                setPlaybackTime(-offset);
+                playbackTime.set(-offset);
                 setLoading(false);
 
                 const diffBotPromise = async () => {
@@ -520,7 +521,7 @@ function Replays() {
             pumpRef.current = noop;
             releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
-    }, [id, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
+    }, [id, playbackTime, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -573,6 +574,9 @@ function Replays() {
                         }
                         setError(errors.join("\n"));
                     }
+
+                    const curPlayerTime = Math.min(playback.get_bot_time() - botOffset, bot.duration());
+                    playbackTime.set(curPlayerTime);
                     
                     const speed = playback.get_speed(bot);
                     const newText = speed.toFixed(2).toString();
@@ -622,22 +626,7 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [setError, replay?.course]);
-
-    // Update current run timer on a 17ms interval
-    // Separated from animation loop for *important* performance reasons
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const playback = playbackRef.current;
-            if (playback) {
-                const botTime = playback.get_bot_time();
-                const curPlayerTime = Math.min(botTime - botOffset, duration);
-                setPlaybackTime(curPlayerTime);
-            }
-        }, 17);
-
-        return () => clearInterval(interval);
-    }, [botOffset, duration]);
+    }, [setError, replay?.course, botOffset, playbackTime]);
 
     const onResize = useCallback((width: number, height: number) => {
         const graphics = graphicsRef.current;
@@ -653,7 +642,7 @@ function Replays() {
     }, []);
 
     const onSetPlayback = useCallback((time: number) => {
-        setPlaybackTime(time);
+        playbackTime.set(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
         const map = mapRef.current;
@@ -664,10 +653,10 @@ function Replays() {
             }
             pumpRef.current();
         }
-    }, [botOffset, paused]);
+    }, [botOffset, paused, playbackTime]);
 
     const onDragPlayback = useCallback((time: number) => {
-        setPlaybackTime(time);
+        playbackTime.set(time);
         const playback = playbackRef.current;
         const bot = botRef.current;
         const map = mapRef.current;
@@ -676,7 +665,7 @@ function Replays() {
             playback.set_paused(bot, map, sessionTimer.current, true);
             pumpRef.current();
         }
-    }, [botOffset]);
+    }, [botOffset, playbackTime]);
 
     const onSeek = useCallback((offset: number) => {
         const playback = playbackRef.current;
