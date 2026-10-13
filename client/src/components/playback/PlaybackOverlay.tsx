@@ -55,6 +55,7 @@ interface PlaybackOverlayProps {
     showThumb: boolean
     debugInfo: string
     fpsTextRef: React.Ref<HTMLSpanElement>
+    frameStatsTextRef: React.Ref<HTMLSpanElement>
     setShowingThumb: (showing: boolean) => void
 }
 
@@ -94,7 +95,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
-        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef, setShowingThumb } = props;
+        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb } = props;
 
     const theme = useTheme();
     
@@ -641,17 +642,33 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         }}>
                         {debugInfo}
                     </Typography>}
-                    <Typography
-                        ref={fpsTextRef}
-                        component="span"
-                        className="debugText"
+                    <Box
                         sx={{
-                            display: showFps ? "block" : "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: 0.5,
                             // Pushed to the right edge even when the debug info is hidden
-                            ml: "auto",
-                            fontWeight: "bold",
-                            whiteSpace: "nowrap"
-                        }} />
+                            ml: "auto"
+                        }}>
+                        <Typography
+                            ref={fpsTextRef}
+                            component="span"
+                            className="debugText"
+                            sx={{
+                                display: showFps ? "block" : "none",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                            }} />
+                        <Typography
+                            ref={frameStatsTextRef}
+                            component="span"
+                            className="debugText"
+                            sx={{
+                                display: showDebug ? "block" : "none",
+                                whiteSpace: "nowrap"
+                            }} />
+                    </Box>
                 </Box>
             </Box>
             <Box
