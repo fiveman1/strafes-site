@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import { Link, Paper, Skeleton, Typography, useTheme } from "@mui/material";
 import { useOutletContext } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ALL_COURSES, Game, RankSortBy, Style, TimeSortBy, formatGame, formatRank, formatSkill, formatStyle } from "shared";
+import { Game, MAIN_COURSE, RankSortBy, Style, TimeSortBy, formatGame, formatRank, formatSkill, formatStyle } from "shared";
 import { ContextParams, getGameColor, getStyleColor } from "../common/common";
 import { queries } from "../api/queries";
 import { useNow } from "../common/states";
@@ -81,7 +81,7 @@ function Home() {
     const game = settings.defaultGame;
     const style = settings.defaultStyle;
 
-    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, ALL_COURSES, Game.all, Style.all, undefined, undefined, true));
+    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, MAIN_COURSE, Game.all, Style.all, undefined, undefined, true));
     const { data: ranks, isLoading: ranksLoading } = useQuery(queries.ranks.ranks(0, RANK_COUNT - 1, RankSortBy.RankAsc, game, style));
 
     const [ now ] = useNow();
