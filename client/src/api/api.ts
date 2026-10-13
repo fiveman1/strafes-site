@@ -4,7 +4,7 @@ import { JsonObject } from "../common/utils";
 
 async function tryGetRequest(url: string, params?: JsonObject) {
     try {
-        return await axios.get("/api/" + url, {params: params, timeout: 15000});
+        return await axios.get("/api/" + url, {params: params, timeout: 15000, paramsSerializer: {indexes: null}});
     } 
     catch {
         return null;
@@ -72,7 +72,8 @@ export async function getTimeData(
     end: number | string, 
     sortBy: TimeSortBy, 
     course: number,
-    game?: Game, 
+    game?: Game,
+    filterGames?: Game[],
     style?: Style, 
     userId?: string, 
     mapId?: string, 
@@ -86,6 +87,7 @@ export async function getTimeData(
         end: end,
         sort: sortBy,
         game: game,
+        filterGames: filterGames,
         style: style,
         course: course,
         onlyWR: !!onlyWR

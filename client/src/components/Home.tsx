@@ -81,7 +81,9 @@ function Home() {
     const game = settings.defaultGame;
     const style = settings.defaultStyle;
 
-    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, MAIN_COURSE, Game.all, Style.all, undefined, undefined, true));
+    // Filter out fly trials unless the user has it as their default game
+    const filterGames = game !== Game.fly_trials ? [Game.bhop, Game.surf] : undefined;
+    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, MAIN_COURSE, Game.all, Style.all, undefined, undefined, true, filterGames));
     const { data: ranks, isLoading: ranksLoading } = useQuery(queries.ranks.ranks(0, RANK_COUNT - 1, RankSortBy.RankAsc, game, style));
 
     const [ now ] = useNow();
