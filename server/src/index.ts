@@ -916,7 +916,7 @@ app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), async (req, res) => {
     return res.status(200).json({ url: url });
 });
 
-export const getMapFiles = memoize(getMapFilesCore, {maxAge: 15 * 60 * 1000});
+export const getMapFiles = memoize(getMapFilesCore, {maxAge: IS_DEV_MODE ? 0 : 15 * 60 * 1000});
 async function getMapFilesCore() {
     const fileNames = new Set<string>();
     const files = await readdir(mapDir);
