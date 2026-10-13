@@ -268,6 +268,7 @@ function Replays() {
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
     const fpsTextRef = useRef<HTMLSpanElement>(null);
+    const frameStatsTextRef = useRef<HTMLSpanElement>(null);
 
     const graphicsRef = useRef<Graphics>(null);
     const surfaceRef = useRef<Surface>(null);
@@ -528,6 +529,13 @@ function Replays() {
         let animationId: number;
         let fpsFrames = 0;
         let fpsWindowStart = performance.now();
+        // Set with each FPS update, cleared once the next main view render reports its stats
+        let frameStatsDue = false;
+        // CPU time spent in render_session since the last stats update.
+        // WebGPU only records and sends commands there, so this is the cost of issuing draws, not GPU time.
+        let renderMsTotal = 0;
+        let renderMsMax = 0;
+        let renderCount = 0;
 
         if (replay?.course === undefined) {
             return;
@@ -547,6 +555,7 @@ function Replays() {
                 }
                 fpsFrames = 0;
                 fpsWindowStart = timeMs;
+                frameStatsDue = true;
             }
 
             const playback = playbackRef.current;
@@ -563,7 +572,22 @@ function Replays() {
                 try {
                     playback.advance_time(bot, map, newSessionTime);
                     map.promote_ready_assets(graphics);
+                    const renderStart = performance.now();
                     graphics.render_session(surface, map, bot, playback);
+                    const renderMs = performance.now() - renderStart;
+                    renderMsTotal += renderMs;
+                    renderMsMax = Math.max(renderMsMax, renderMs);
+                    ++renderCount;
+                    // Read before the thumbnail renders, since the stats are for the last render
+                    const frameStatsText = frameStatsTextRef.current;
+                    if (frameStatsDue && frameStatsText) {
+                        const renderMsAverage = renderMsTotal / renderCount;
+                        frameStatsText.innerText = `${graphics.frame_stats()}\nrender CPU: ${renderMsAverage.toFixed(2)} ms avg, ${renderMsMax.toFixed(2)} ms max`;
+                        renderMsTotal = 0;
+                        renderMsMax = 0;
+                        renderCount = 0;
+                        frameStatsDue = false;
+                    }
                     
                     setLoading(playback.is_buffering());
 
@@ -864,6 +888,7 @@ function Replays() {
                                         showThumb={showThumb}
                                         debugInfo={debugInfo}
                                         fpsTextRef={fpsTextRef}
+                                        frameStatsTextRef={frameStatsTextRef}
                                         setShowingThumb={setShowingThumb}
                                     />
                                 </Box>
