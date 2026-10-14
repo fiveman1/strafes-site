@@ -98,7 +98,8 @@ export class Graphics {
      */
     debug_info(): string;
     /**
-     * Draw calls and triangles in the last rendered frame, after skipping what was out of view.
+     * Draw calls and triangles in the last rendered frame, after skipping what was out of view,
+     * and on devices with timestamp queries, the average GPU time of the frames rendered since the last call.
      */
     frame_stats(): string;
     new_surface(canvas: HTMLCanvasElement): Surface;
@@ -442,13 +443,13 @@ export interface InitOutput {
     readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1760: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1760_96: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1760_97: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7743: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7764: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1764: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1764_95: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1826: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1826_96: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1826_97: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7871: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7892: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1830: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1830_95: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
