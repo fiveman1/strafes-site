@@ -380,8 +380,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         update(time.get());
         return time.subscribe(update);
     }, [time, duration, smallScreen, verySmallScreen]);
+
     const curSettingsMenuId = settingsOpen ? settingsMenuId : undefined;
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
+    const showFullscreenButton = document.fullscreenEnabled;
 
     return (
         <Box
@@ -890,6 +892,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         </Box>
                     </Box>
                 </Popper>
+                {showFullscreenButton &&
                 <IconButton 
                     ref={fullscreenButtonRef}
                     size="small" 
@@ -900,7 +903,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     }}
                 >
                     {fullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-                </IconButton>
+                </IconButton>}
             </Box>
         </Box>
     );
