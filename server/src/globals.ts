@@ -121,7 +121,7 @@ export class GlobalsClient {
         return records.map(GlobalsClient.recordToTime);
     }
 
-    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number, mapId?: number): Promise<{ total: number; wrs: Time[]; }> {
+    public async getWRList(start: number, end: number, game: Game, style: Style, sort: TimeSortBy, course?: number, userId?: number, mapId?: number, filterGames?: Game[]): Promise<{ total: number; wrs: Time[]; }> {
         let query = `SELECT globals.*, users.username, maps.name as map_name, COUNT(globals.time_id) OVER() as totalCount
         FROM globals 
         INNER JOIN users ON globals.user_id = users.user_id 
@@ -143,6 +143,10 @@ export class GlobalsClient {
         if (game !== Game.all) {
             whereClause += " AND globals.game = ?";
             values.push(game);
+        }
+        else if (filterGames) {
+            whereClause += " AND globals.game in (?)";
+            values.push(filterGames);
         }
 
         if (style !== Style.all) {
@@ -175,7 +179,7 @@ export class GlobalsClient {
 
         query += ` LIMIT ${end - start + 1} OFFSET ${start};`;
 
-        const [records] = await this.pool.execute<(RecordRow & WithTotalCount)[]>(query, values);
+        const [records] = await this.pool.query<(RecordRow & WithTotalCount)[]>(query, values);
 
         if (!records) {
             return {

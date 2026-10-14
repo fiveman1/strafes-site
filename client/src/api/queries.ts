@@ -60,10 +60,11 @@ export const queries = createQueryKeyStore({
             style?: Style, 
             userId?: string, 
             mapId?: string, 
-            onlyWR?: boolean
+            onlyWR?: boolean,
+            filterGames?: Game[]
         ) => ({
-            queryKey: [game, style, userId, mapId, onlyWR, course, sortBy, start, end],
-            queryFn: () => getTimeData(start, end, sortBy, course, game, style, userId, mapId, onlyWR)
+            queryKey: [game, filterGames ? filterGames.toSorted() : undefined, style, userId, mapId, onlyWR, course, sortBy, start, end],
+            queryFn: () => getTimeData(start, end, sortBy, course, game, filterGames, style, userId, mapId, onlyWR)
         })
     },
     wrs: {

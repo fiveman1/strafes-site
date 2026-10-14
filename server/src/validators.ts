@@ -7,6 +7,7 @@ function formatIntEnum(val: unknown) {
 
 export const game = () => vine.enum(allGames).parse(formatIntEnum);
 export const gameOrAll = () => vine.enum(allGamesWithAll).parse(formatIntEnum);
+export const gameList = () => vine.array(vine.enum(allGames).parse(formatIntEnum)).compact().distinct().notEmpty();
 export const style = () => vine.enum(allStyles).parse(formatIntEnum);
 export const styleOrAll = () => vine.enum(allStylesWithAll).parse(formatIntEnum);
 export const timesSort = () => vine.enum([TimeSortBy.DateAsc, TimeSortBy.DateDesc, TimeSortBy.TimeAsc, TimeSortBy.TimeDesc]).parse(formatIntEnum);

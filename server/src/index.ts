@@ -413,6 +413,7 @@ const timesValidator = vine.create({
     mapId: vine.number().withoutDecimals().nonNegative().optional(),
     userId: vine.number().withoutDecimals().nonNegative().optional(),
     game: validators.gameOrAll(),
+    filterGames: validators.gameList().optional(),
     style: validators.styleOrAll(),
     course: vine.number().withoutDecimals(),
     onlyWR: vine.boolean().optional(),
@@ -431,6 +432,7 @@ app.get("/api/times", rateLimiterMiddleware(1), cache("5 minutes"), async (req, 
     const userId = result.userId;
     const mapId = result.mapId;
     const game = result.game;
+    const filterGames = result.filterGames;
     const style = result.style;
     const course = result.course;
     const onlyWR = !!result.onlyWR;
@@ -443,7 +445,19 @@ app.get("/api/times", rateLimiterMiddleware(1), cache("5 minutes"), async (req, 
         return;
     }
 
-    const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId });
+    if (filterGames) {
+        if (!onlyWR) {
+            res.status(400).json({ error: "filterGames is only allowed when onlyWR is true" });
+            return;
+        }
+
+        if (game !== Game.all) {
+            res.status(400).json({ error: "filterGames is only allowed when game is All" });
+            return;
+        }
+    }
+
+    const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId }, filterGames);
 
     if (!timeData) {
         res.status(404).json({ error: "Not found" });
@@ -762,14 +776,14 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
     res.status(200).json({ data: data, pagination: timeInfo.pagination });
 });
 
-async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: number, mapId?: number }) {
+async function getTimesPaged(start: number, end: number, sort: TimeSortBy, course: number, onlyWR: boolean, game: Game, style: Style, searchInfo: { userId?: number, mapId?: number }, filterGames?: Game[]) {
     let times: Time[];
     let pagination: Pagination;
     const { userId, mapId } = searchInfo;
     const idToPlacement = new Map<string, number>();
 
     if (onlyWR) {
-        const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId, mapId);
+        const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId, mapId, filterGames);
 
         if (!wrs) return undefined;
 
