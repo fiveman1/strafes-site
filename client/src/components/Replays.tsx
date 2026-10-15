@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
@@ -70,6 +70,97 @@ const controlToState = new Map([
     [GameControls.MoveBack, InputState.MoveBack],
     [GameControls.Jump, InputState.Jump]
 ]);
+
+type Rgb = [number, number, number];
+
+// Diamond like the game's top medal, then a green to red scale.
+const EFFICIENCY_COLORS: [number, string][] = [
+    [0.95, "rgb(64, 224, 224)"], // diamond
+    [0.90, "#5df25d"],
+    [0.80, "#c6f24a"],
+    [0.70, "#ffd84a"],
+    [0.50, "#ff9a3c"],
+    [0, "#ff5a4a"],
+];
+
+function efficiencyColor(efficiency: number) {
+    return EFFICIENCY_COLORS.find(([min]) => efficiency >= min)?.[1] ?? "#ff5a4a";
+}
+
+const STRAFE_SLOW: Rgb = [70, 150, 255];
+const STRAFE_OPTIMAL: Rgb = [255, 255, 255];
+const STRAFE_FAST: Rgb = [255, 70, 70];
+// Within this of 100% stays white, and this far past it is fully blue or red.
+const STRAFE_DEAD_ZONE = 0.01;
+const STRAFE_FULL_COLOR = 0.15;
+
+function mixRgb(a: Rgb, b: Rgb, t: number) {
+    const [r, g, bl] = a.map((x, i) => Math.round(x + (b[i] - x) * t));
+    return `rgb(${r}, ${g}, ${bl})`;
+}
+
+// Cold for understrafing (turning too slowly), hot for overstrafing.
+function strafeRateColor(rate: number) {
+    const error = rate - 1;
+    const t = clamp((Math.abs(error) - STRAFE_DEAD_ZONE) / (STRAFE_FULL_COLOR - STRAFE_DEAD_ZONE), 0, 1);
+    return mixRgb(STRAFE_OPTIMAL, error < 0 ? STRAFE_SLOW : STRAFE_FAST, t);
+}
+
+function setJhudColor(container: HTMLElement, selector: string, color: string) {
+    container.querySelectorAll<HTMLElement>(selector).forEach(element => {
+        element.style.color = color;
+    });
+}
+
+function setJhudText(container: HTMLElement, selector: string, text: string) {
+    const element = container.querySelector<HTMLElement>(selector);
+    if (element) element.textContent = text;
+}
+
+function formatPercent(value: number | undefined) {
+    return value === undefined ? "n/a" : (value * 100).toFixed(1) + "%";
+}
+
+function updateJhudDisplay(container: HTMLElement, stats: JumpStats | undefined) {
+    // Unknown counts are still downloading after a seek.
+    const jump = stats?.number ?? "?";
+    const strafes = stats?.strafes ?? "?";
+    const gain = stats?.gain;
+    const rate = stats?.strafe_rate;
+    const efficiency = stats?.efficiency;
+
+    // Skip the DOM work unless something visible changed.
+    const key = stats ? [jump, stats.speed.toFixed(2), gain?.toFixed(2), strafes, rate?.toFixed(3), efficiency?.toFixed(3)].join() : "";
+    if (container.dataset.key === key) return;
+    container.dataset.key = key;
+
+    container.style.visibility = stats ? "visible" : "hidden";
+    if (!stats) return;
+
+    setJhudText(container, ".jhudJump", `#${jump}`);
+    setJhudText(container, ".jhudSpeed", stats.speed.toFixed(2));
+    setJhudText(container, ".jhudGain", gain === undefined ? "" : (gain >= 0 ? "+" : "") + gain.toFixed(2));
+    setJhudColor(container, ".jhudGain", gain === undefined ? "" : gain >= 0 ? "#5df25d" : "#ff5a4a");
+
+    setJhudText(container, ".jhudStrafes", `${strafes} ${strafes === 1 ? "strafe" : "strafes"}`);
+    setJhudText(container, ".jhudRate", formatPercent(rate));
+    setJhudColor(container, ".jhudRateColor", rate === undefined ? "" : strafeRateColor(rate));
+    const marker = container.querySelector<HTMLElement>(".jhudRateMarker");
+    if (marker) {
+        // The bar spans 50% to 150% with 100% in the middle.
+        marker.style.display = rate === undefined ? "none" : "block";
+        marker.style.left = `${clamp(rate ?? 1, 0.5, 1.5) * 100 - 50}%`;
+    }
+
+    setJhudText(container, ".jhudEff", formatPercent(efficiency));
+    // Colour by the displayed value so 95.0% never shows the colour for below 95% for example.
+    const shownEfficiency = efficiency === undefined ? undefined : Number((efficiency * 100).toFixed(1)) / 100;
+    setJhudColor(container, ".jhudEffColor", shownEfficiency === undefined ? "" : efficiencyColor(shownEfficiency));
+    const fill = container.querySelector<HTMLElement>(".jhudEffFill");
+    if (fill) {
+        fill.style.width = `${clamp(efficiency ?? 0, 0, 1) * 100}%`;
+    }
+}
 
 function updateInputDisplay(input: HTMLDivElement, playback: StreamableSession) {
     const controls = playback.get_game_controls();
@@ -264,6 +355,7 @@ function Replays() {
     const thumbCanvasRef = useRef<HTMLCanvasElement>(null);
     const playerRef = useRef<HTMLDivElement>(null);
     const speedTextRef = useRef<HTMLSpanElement>(null);
+    const jhudRef = useRef<HTMLDivElement>(null);
     const inputContainerRef = useRef<HTMLDivElement>(null);
     const diffTimeTextRef = useRef<HTMLElement>(null);
     const diffSpeedTextRef = useRef<HTMLElement>(null);
@@ -610,6 +702,13 @@ function Replays() {
                     }
                     updateInputDisplay(input, playback);
 
+                    const jhud = jhudRef.current;
+                    if (jhud) {
+                        const stats = playback.get_jump_stats(bot);
+                        updateJhudDisplay(jhud, stats);
+                        stats?.free();
+                    }
+
                     const thumbPlayback = thumbPlaybackRef.current;
                     const thumbSurface = thumbSurfaceRef.current;
 
@@ -876,6 +975,7 @@ function Replays() {
                                         onReset={onReset}
                                         onSetSpeed={onChangePlaybackSpeed}
                                         speedTextRef={speedTextRef}
+                                        jhudRef={jhudRef}
                                         playerHeight={playerHeight}
                                         inputContainerRef={inputContainerRef}
                                         loading={loading}

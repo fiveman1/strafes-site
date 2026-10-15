@@ -43,6 +43,7 @@ interface PlaybackOverlayProps {
     onReset: () => void
     onSetSpeed: (speed: number) => void
     speedTextRef: React.Ref<HTMLSpanElement>
+    jhudRef: React.Ref<HTMLDivElement>
     playerHeight: number
     inputContainerRef: React.Ref<HTMLDivElement>
     loading: boolean
@@ -61,6 +62,7 @@ interface PlaybackOverlayProps {
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
 const SHOW_INPUT_SETTING = "player_showInput";
+const SHOW_JHUD_SETTING = "player_showJhud";
 const SHOW_DIFF_SETTING = "player_showDiff";
 const SHOW_FPS_SETTING = "player_showFps";
 const SHOW_DEBUG_SETTING = "player_showDebug";
@@ -93,7 +95,7 @@ function HudToggle(props: HudToggleProps) {
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
-        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, 
+        onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb } = props;
 
@@ -106,6 +108,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const [ showSpeed, onClickSpeedButton ] = usePersistedToggle(SHOW_SPEED_SETTING, true);
     const [ showInput, onClickInputButton ] = usePersistedToggle(SHOW_INPUT_SETTING, true);
+    const [ showJhud, onClickJhudButton ] = usePersistedToggle(SHOW_JHUD_SETTING, true);
     const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
     const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, false);
     const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
@@ -416,6 +419,95 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     position: "relative",
                     flexGrow: 1
                 }}>
+                <Box
+                    ref={jhudRef}
+                    style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
+                    sx={{
+                        display: showJhud && !smallScreen && !loading && !errorReplay ? "grid" : "none",
+                        visibility: "hidden",
+                        position: "absolute",
+                        top: "60%",
+                        left: "50%",
+                        transformOrigin: "50% 0",
+                        // Fixed widths in a monospace font, so changing numbers never move anything.
+                        // Widest texts: "999 strafes", "-99.99" and "100.0%".
+                        gridTemplateColumns: "11ch 84px 6ch",
+                        alignItems: "center",
+                        columnGap: "10px",
+                        rowGap: "2px",
+                        fontFamily: '"Geist Mono", monospace',
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        lineHeight: 1.3,
+                        whiteSpace: "nowrap",
+                        fontVariantNumeric: "tabular-nums",
+                        textShadow: "0 0 6px rgba(0, 0, 0, 0.9)",
+                        userSelect: "none",
+                        pointerEvents: "none",
+                        color: "white",
+
+                        ".jhudLabel": {
+                            textAlign: "right",
+                            color: "#ffffffbb"
+                        },
+                        ".jhudValue": {
+                            textAlign: "right"
+                        },
+                        ".jhudSpeed": {
+                            fontSize: "22px",
+                            textAlign: "center",
+                            // The bigger speed may be wider than its column; let it overflow evenly.
+                            justifySelf: "center"
+                        },
+                        ".jhudBar": {
+                            position: "relative",
+                            height: "6px",
+                            borderRadius: "3px",
+                            bgcolor: "#00000080",
+                            boxShadow: "0 0 4px rgba(0, 0, 0, 0.6)"
+                        },
+                        ".jhudBarFill": {
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            borderRadius: "3px",
+                            bgcolor: "currentColor"
+                        },
+                        ".jhudBarCenter": {
+                            position: "absolute",
+                            left: "50%",
+                            top: "-3px",
+                            bottom: "-3px",
+                            width: "2px",
+                            ml: "-1px",
+                            bgcolor: "#ffffff80"
+                        },
+                        ".jhudBarMarker": {
+                            position: "absolute",
+                            top: "-3px",
+                            bottom: "-3px",
+                            width: "6px",
+                            ml: "-3px",
+                            borderRadius: "3px",
+                            bgcolor: "currentColor"
+                        },
+                    }}>
+                    <span className="jhudLabel jhudJump" />
+                    <span className="jhudSpeed" />
+                    <span className="jhudValue jhudGain" />
+                    <span className="jhudLabel jhudStrafes" />
+                    <span className="jhudBar jhudRateColor">
+                        <span className="jhudBarCenter" />
+                        <span className="jhudBarMarker jhudRateMarker" />
+                    </span>
+                    <span className="jhudValue jhudRate jhudRateColor" />
+                    <span className="jhudLabel">efficiency</span>
+                    <span className="jhudBar jhudEffColor">
+                        <span className="jhudBarFill jhudEffFill" />
+                    </span>
+                    <span className="jhudValue jhudEff jhudEffColor" />
+                </Box>
                 <Box
                     style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
                     sx={{
@@ -884,6 +976,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     }}>
                                     <HudToggle label="Speed" active={showSpeed} onClick={onClickSpeedButton} />
                                     <HudToggle label="Input" active={showInput} onClick={onClickInputButton} />
+                                    <HudToggle label="JHUD" active={showJhud} onClick={onClickJhudButton} />
                                     {allowDiff && <HudToggle label="Diff" active={showDiffSetting} onClick={onClickDiffButton} />}
                                     <HudToggle label="FPS" active={showFps} onClick={onClickFpsButton} />
                                     <HudToggle label="Debug" active={showDebug} onClick={onClickDebugButton} />

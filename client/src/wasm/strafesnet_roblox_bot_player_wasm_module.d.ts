@@ -132,6 +132,59 @@ export class GraphicsAndSurface {
 }
 
 /**
+ * Jump HUD stats for the most recent jump.  Percentages are fractions, 1.0 is optimal.
+ */
+export class JumpStats {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Mean speed gain relative to optimal, undefined for the first jump.
+     */
+    get efficiency(): number | undefined;
+    /**
+     * Mean speed gain relative to optimal, undefined for the first jump.
+     */
+    set efficiency(value: number | null | undefined);
+    /**
+     * Speed gained since the previous jump, undefined for the first jump.
+     */
+    get gain(): number | undefined;
+    /**
+     * Speed gained since the previous jump, undefined for the first jump.
+     */
+    set gain(value: number | null | undefined);
+    /**
+     * Jump number in the current chain, undefined while earlier parts of the replay are still downloading.
+     */
+    get number(): number | undefined;
+    /**
+     * Jump number in the current chain, undefined while earlier parts of the replay are still downloading.
+     */
+    set number(value: number | null | undefined);
+    /**
+     * Horizontal speed on the jump tick.
+     */
+    speed: number;
+    /**
+     * Mean strafe rate relative to optimal, undefined for the first jump.
+     */
+    get strafe_rate(): number | undefined;
+    /**
+     * Mean strafe rate relative to optimal, undefined for the first jump.
+     */
+    set strafe_rate(value: number | null | undefined);
+    /**
+     * Strafes since the previous jump, undefined while still downloading.
+     */
+    get strafes(): number | undefined;
+    /**
+     * Strafes since the previous jump, undefined while still downloading.
+     */
+    set strafes(value: number | null | undefined);
+}
+
+/**
  * A completed download request.
  */
 export class MapBlockData {
@@ -277,6 +330,11 @@ export class StreamableSession {
     get_bot_time(): number;
     get_fov_slope_y(): number;
     get_game_controls(): number;
+    /**
+     * Jump HUD stats for the most recent jump in the current jump chain.
+     * Undefined before the first jump, after standing on the ground, and for fly trials styles.
+     */
+    get_jump_stats(bot: StreamableBot): JumpStats | undefined;
     get_position(bot: StreamableBot): Vector3;
     get_run_time(bot: StreamableBot, mode_id: number): number | undefined;
     get_scale(): number;
@@ -340,6 +398,12 @@ export interface InitOutput {
     readonly __wbg_completehead_free: (a: number, b: number) => void;
     readonly __wbg_downloadbotblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
+    readonly __wbg_get_jumpstats_efficiency: (a: number) => number;
+    readonly __wbg_get_jumpstats_gain: (a: number) => number;
+    readonly __wbg_get_jumpstats_number: (a: number) => number;
+    readonly __wbg_get_jumpstats_speed: (a: number) => number;
+    readonly __wbg_get_jumpstats_strafe_rate: (a: number) => number;
+    readonly __wbg_get_jumpstats_strafes: (a: number) => number;
     readonly __wbg_get_range_end: (a: number) => number;
     readonly __wbg_get_range_start: (a: number) => number;
     readonly __wbg_get_vector3_x: (a: number) => number;
@@ -347,10 +411,17 @@ export interface InitOutput {
     readonly __wbg_get_vector3_z: (a: number) => number;
     readonly __wbg_graphics_free: (a: number, b: number) => void;
     readonly __wbg_graphicsandsurface_free: (a: number, b: number) => void;
+    readonly __wbg_jumpstats_free: (a: number, b: number) => void;
     readonly __wbg_mapblockdata_free: (a: number, b: number) => void;
     readonly __wbg_mapblockrange_free: (a: number, b: number) => void;
     readonly __wbg_mapdownloader_free: (a: number, b: number) => void;
     readonly __wbg_range_free: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_efficiency: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_gain: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_number: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_speed: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_strafe_rate: (a: number, b: number) => void;
+    readonly __wbg_set_jumpstats_strafes: (a: number, b: number) => void;
     readonly __wbg_set_range_end: (a: number, b: number) => void;
     readonly __wbg_set_range_start: (a: number, b: number) => void;
     readonly __wbg_set_vector3_x: (a: number, b: number) => void;
@@ -431,6 +502,7 @@ export interface InitOutput {
     readonly streamablesession_get_bot_time: (a: number) => number;
     readonly streamablesession_get_fov_slope_y: (a: number) => number;
     readonly streamablesession_get_game_controls: (a: number) => number;
+    readonly streamablesession_get_jump_stats: (a: number, b: number) => number;
     readonly streamablesession_get_position: (a: number, b: number) => number;
     readonly streamablesession_get_run_time: (a: number, b: number, c: number, d: number) => void;
     readonly streamablesession_get_scale: (a: number) => number;
@@ -443,13 +515,13 @@ export interface InitOutput {
     readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1825: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1825_96: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1825_97: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7870: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7891: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1829: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1829_95: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1850: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1850_109: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1850_110: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7895: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7916: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1854: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1854_108: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

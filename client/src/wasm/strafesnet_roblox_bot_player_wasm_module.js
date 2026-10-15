@@ -566,6 +566,119 @@ export class GraphicsAndSurface {
 if (Symbol.dispose) GraphicsAndSurface.prototype[Symbol.dispose] = GraphicsAndSurface.prototype.free;
 
 /**
+ * Jump HUD stats for the most recent jump.  Percentages are fractions, 1.0 is optimal.
+ */
+export class JumpStats {
+    static __wrap(ptr) {
+        const obj = Object.create(JumpStats.prototype);
+        obj.__wbg_ptr = ptr;
+        JumpStatsFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        JumpStatsFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_jumpstats_free(ptr, 0);
+    }
+    /**
+     * Mean speed gain relative to optimal, undefined for the first jump.
+     * @returns {number | undefined}
+     */
+    get efficiency() {
+        const ret = wasm.__wbg_get_jumpstats_efficiency(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Speed gained since the previous jump, undefined for the first jump.
+     * @returns {number | undefined}
+     */
+    get gain() {
+        const ret = wasm.__wbg_get_jumpstats_gain(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Jump number in the current chain, undefined while earlier parts of the replay are still downloading.
+     * @returns {number | undefined}
+     */
+    get number() {
+        const ret = wasm.__wbg_get_jumpstats_number(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Horizontal speed on the jump tick.
+     * @returns {number}
+     */
+    get speed() {
+        const ret = wasm.__wbg_get_jumpstats_speed(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Mean strafe rate relative to optimal, undefined for the first jump.
+     * @returns {number | undefined}
+     */
+    get strafe_rate() {
+        const ret = wasm.__wbg_get_jumpstats_strafe_rate(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Strafes since the previous jump, undefined while still downloading.
+     * @returns {number | undefined}
+     */
+    get strafes() {
+        const ret = wasm.__wbg_get_jumpstats_strafes(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Mean speed gain relative to optimal, undefined for the first jump.
+     * @param {number | null} [arg0]
+     */
+    set efficiency(arg0) {
+        wasm.__wbg_set_jumpstats_efficiency(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : Math.fround(arg0));
+    }
+    /**
+     * Speed gained since the previous jump, undefined for the first jump.
+     * @param {number | null} [arg0]
+     */
+    set gain(arg0) {
+        wasm.__wbg_set_jumpstats_gain(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : Math.fround(arg0));
+    }
+    /**
+     * Jump number in the current chain, undefined while earlier parts of the replay are still downloading.
+     * @param {number | null} [arg0]
+     */
+    set number(arg0) {
+        wasm.__wbg_set_jumpstats_number(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+    /**
+     * Horizontal speed on the jump tick.
+     * @param {number} arg0
+     */
+    set speed(arg0) {
+        wasm.__wbg_set_jumpstats_speed(this.__wbg_ptr, arg0);
+    }
+    /**
+     * Mean strafe rate relative to optimal, undefined for the first jump.
+     * @param {number | null} [arg0]
+     */
+    set strafe_rate(arg0) {
+        wasm.__wbg_set_jumpstats_strafe_rate(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : Math.fround(arg0));
+    }
+    /**
+     * Strafes since the previous jump, undefined while still downloading.
+     * @param {number | null} [arg0]
+     */
+    set strafes(arg0) {
+        wasm.__wbg_set_jumpstats_strafes(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+}
+if (Symbol.dispose) JumpStats.prototype[Symbol.dispose] = JumpStats.prototype.free;
+
+/**
  * A completed download request.
  */
 export class MapBlockData {
@@ -1107,6 +1220,17 @@ export class StreamableSession {
     get_game_controls() {
         const ret = wasm.streamablesession_get_game_controls(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * Jump HUD stats for the most recent jump in the current jump chain.
+     * Undefined before the first jump, after standing on the ground, and for fly trials styles.
+     * @param {StreamableBot} bot
+     * @returns {JumpStats | undefined}
+     */
+    get_jump_stats(bot) {
+        _assertClass(bot, StreamableBot);
+        const ret = wasm.streamablesession_get_jump_stats(this.__wbg_ptr, bot.__wbg_ptr);
+        return ret === 0 ? undefined : JumpStats.__wrap(ret);
     }
     /**
      * @param {StreamableBot} bot
@@ -2425,7 +2549,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_7891(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_7916(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -3450,33 +3574,33 @@ function __wbg_get_imports() {
             getObject(arg0).writeTexture(getObject(arg1), getArrayU8FromWasm0(arg2, arg3), getObject(arg4), getObject(arg5));
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 2396, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_7870);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 2397, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_7895);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 331, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1825);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 332, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1850);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 335, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1829);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 336, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1854);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000004: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 335, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1829_95);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 336, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1854_108);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000005: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 331, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1825_96);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 332, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1850_109);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000006: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 331, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1825_97);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 332, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1850_110);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000007: function(arg0) {
@@ -3538,22 +3662,22 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1829(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1829(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1854(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1854(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1829_95(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1829_95(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1854_108(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1854_108(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_7891(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_7891(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_7916(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_7916(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
-function __wasm_bindgen_func_elem_7870(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_7895(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_7870(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_7895(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3564,10 +3688,10 @@ function __wasm_bindgen_func_elem_7870(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1825(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1850(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1825(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1850(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3578,10 +3702,10 @@ function __wasm_bindgen_func_elem_1825(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1825_96(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1850_109(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1825_96(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1850_109(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3592,10 +3716,10 @@ function __wasm_bindgen_func_elem_1825_96(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1825_97(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1850_110(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1825_97(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1850_110(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3725,6 +3849,9 @@ const GraphicsFinalization = (typeof FinalizationRegistry === 'undefined')
 const GraphicsAndSurfaceFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_graphicsandsurface_free(ptr, 1));
+const JumpStatsFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_jumpstats_free(ptr, 1));
 const MapBlockDataFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_mapblockdata_free(ptr, 1));
