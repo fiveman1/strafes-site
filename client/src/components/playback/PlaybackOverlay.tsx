@@ -25,7 +25,7 @@ import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
 function getInfoDisplayScale(playerHeight: number) {
-    return clamp(playerHeight / 850, 0, 1);
+    return clamp(playerHeight / 1000, 0, 1);
 }
 
 interface PlaybackOverlayProps {
@@ -426,7 +426,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         display: showJhud && !smallScreen && !loading && !errorReplay ? "grid" : "none",
                         visibility: "hidden",
                         position: "absolute",
-                        top: "60%",
+                        top: "63%",
                         left: "50%",
                         transformOrigin: "50% 0",
                         // Fixed widths in a monospace font, so changing numbers never move anything.
