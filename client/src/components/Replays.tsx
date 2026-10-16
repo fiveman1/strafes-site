@@ -25,6 +25,7 @@ import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
+import { getTextureTranscoder } from "./playback/textureTranscoder";
 
 function getPlayerHeight(width: number, height: number) {
     if (width / height > PLAYER_ASPECT_RATIO) {
@@ -265,10 +266,20 @@ async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, b
     }
 }
 
+// Main thread time spent in map.ingest_deferred since the last stats update. Ingest runs when downloads resolve, outside the frame loop.
+const mapIngestStats = { totalMs: 0, maxMs: 0, count: 0 };
+
 async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics): Promise<boolean> {
     try {
         const data = await downloader.download_map_block_range(block);
-        map.ingest(graphics, data);
+        const ingestStart = performance.now();
+        // Textures are transcoded in a worker and uploaded from the frame loop
+        const textureJobs = map.ingest_deferred(data);
+        getTextureTranscoder().submit(map, graphics, textureJobs);
+        const ingestMs = performance.now() - ingestStart;
+        mapIngestStats.totalMs += ingestMs;
+        mapIngestStats.maxMs = Math.max(mapIngestStats.maxMs, ingestMs);
+        ++mapIngestStats.count;
         return true;
     }
     catch (err) {
@@ -628,6 +639,8 @@ function Replays() {
         let renderMsTotal = 0;
         let renderMsMax = 0;
         let renderCount = 0;
+        let promoteMsTotal = 0;
+        let promoteMsMax = 0;
 
         if (replay?.course === undefined) {
             return;
@@ -662,9 +675,14 @@ function Replays() {
                 const elapsed = time - animTimer.current;
                 const newSessionTime = sessionTimer.current + elapsed;
                 try {
+                    getTextureTranscoder().uploadReady(map, graphics);
                     playback.advance_time(bot, map, newSessionTime);
+                    const promoteStart = performance.now();
                     map.promote_ready_assets(graphics);
                     const renderStart = performance.now();
+                    const promoteMs = renderStart - promoteStart;
+                    promoteMsTotal += promoteMs;
+                    promoteMsMax = Math.max(promoteMsMax, promoteMs);
                     graphics.render_session(surface, map, bot, playback);
                     const renderMs = performance.now() - renderStart;
                     renderMsTotal += renderMs;
@@ -674,10 +692,19 @@ function Replays() {
                     const frameStatsText = frameStatsTextRef.current;
                     if (frameStatsDue && frameStatsText) {
                         const renderMsAverage = renderMsTotal / renderCount;
-                        frameStatsText.innerText = `${graphics.frame_stats()}\nrender CPU: ${renderMsAverage.toFixed(2)} ms avg, ${renderMsMax.toFixed(2)} ms max`;
+                        const promoteMsAverage = promoteMsTotal / renderCount;
+                        const ingestMsAverage = mapIngestStats.count > 0 ? mapIngestStats.totalMs / mapIngestStats.count : 0;
+                        frameStatsText.innerText = `${graphics.frame_stats()}\nrender CPU: ${renderMsAverage.toFixed(2)} ms avg, ${renderMsMax.toFixed(2)} ms max`
+                            + `\npromote: ${promoteMsAverage.toFixed(2)} ms avg, ${promoteMsMax.toFixed(2)} ms max`
+                            + `\ningest: ${ingestMsAverage.toFixed(2)} ms avg, ${mapIngestStats.maxMs.toFixed(2)} ms max (${mapIngestStats.count} groups, ${getTextureTranscoder().queued} textures queued)`;
                         renderMsTotal = 0;
                         renderMsMax = 0;
                         renderCount = 0;
+                        promoteMsTotal = 0;
+                        promoteMsMax = 0;
+                        mapIngestStats.totalMs = 0;
+                        mapIngestStats.maxMs = 0;
+                        mapIngestStats.count = 0;
                         frameStatsDue = false;
                     }
                     

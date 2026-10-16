@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
 		build: {
 			outDir: "build"
 		},
+		worker: {
+			// The texture worker imports the wasm module, which needs ES module output
+			format: "es"
+		},
 		resolve: {
 			preserveSymlinks: true
 		},

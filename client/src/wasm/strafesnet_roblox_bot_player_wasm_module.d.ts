@@ -116,6 +116,10 @@ export class Graphics {
      * without throwing, and the frame just stays black, so poll this to show them.
      */
     take_errors(): string[];
+    /**
+     * Which compressed texture formats this device supports, for transcode_texture in a web worker.
+     */
+    texture_support(): number;
 }
 
 /**
@@ -298,6 +302,12 @@ export class StreamableMap {
     clear_downloading(): void;
     count_downloading(): number;
     ingest(graphics: Graphics, arg1: MapBlockData): void;
+    /**
+     * Like ingest, but returns the group's texture files instead of transcoding them, which takes most of the time.
+     * Transcode each with transcode_texture (in a web worker) and pass the result to upload_texture.
+     * Playback buffers at a spot until its textures are uploaded.
+     */
+    ingest_deferred(arg0: MapBlockData): TextureJob[];
     next_block_head_throttled(bot: StreamableBot, head: StreamableHead, surface: Surface): MapBlockRange | undefined;
     /**
      * Returns the next block to download in a reasonable order based on the
@@ -310,6 +320,10 @@ export class StreamableMap {
      * to render onto the render queue.
      */
     promote_ready_assets(graphics: Graphics): void;
+    /**
+     * Upload a texture from transcode_texture. Do this before promote_ready_assets.
+     */
+    upload_texture(graphics: Graphics, texture: TranscodedTexture): void;
 }
 
 /**
@@ -358,6 +372,42 @@ export class Surface {
     resize(graphics: Graphics, width: number, height: number): void;
 }
 
+/**
+ * A texture file from StreamableMap.ingest_deferred. Transcode it with transcode_texture,
+ * usually in a web worker, and pass the result to StreamableMap.upload_texture.
+ */
+export class TextureJob {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * The KTX2 or DDS file. Moves the data out, so it can only be taken once.
+     */
+    take_data(): Uint8Array;
+    readonly texture_id: number;
+}
+
+/**
+ * A texture ready to upload, as plain data so it can be sent between a web worker and the page.
+ */
+export class TranscodedTexture {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Rebuild from the fields of a TranscodedTexture sent from a web worker.
+     */
+    constructor(texture_id: number, width: number, height: number, mip_level_count: number, format: number, data: Uint8Array);
+    /**
+     * Every mip level, largest first. Moves the data out, so it can only be taken once.
+     */
+    take_data(): Uint8Array;
+    readonly format: number;
+    readonly height: number;
+    readonly mip_level_count: number;
+    readonly texture_id: number;
+    readonly width: number;
+}
+
 export class Vector3 {
     private constructor();
     free(): void;
@@ -385,6 +435,14 @@ export function new_streamable_map(downloader: MapDownloader, graphics: Graphics
  * Call graphics.new_surface to set up new surfaces as needed.
  */
 export function setup_graphics(canvas: HTMLCanvasElement): Promise<GraphicsAndSurface>;
+
+/**
+ * Transcode a texture file from a TextureJob into a format the device supports
+ * (`texture_support` from Graphics.texture_support). This is the slow part of loading a map,
+ * and it needs no Graphics, so it can run in a web worker.
+ * A file which fails to load becomes the missing texture checkerboard.
+ */
+export function transcode_texture(texture_id: number, data: Uint8Array, texture_support: number): TranscodedTexture;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -432,6 +490,8 @@ export interface InitOutput {
     readonly __wbg_streamablemap_free: (a: number, b: number) => void;
     readonly __wbg_streamablesession_free: (a: number, b: number) => void;
     readonly __wbg_surface_free: (a: number, b: number) => void;
+    readonly __wbg_texturejob_free: (a: number, b: number) => void;
+    readonly __wbg_transcodedtexture_free: (a: number, b: number) => void;
     readonly __wbg_vector3_free: (a: number, b: number) => void;
     readonly botblockrange_range: (a: number) => number;
     readonly botdownloader_download_bot_block_range: (a: number, b: number) => number;
@@ -463,6 +523,7 @@ export interface InitOutput {
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_supports_multiple_surfaces: (a: number) => number;
     readonly graphics_take_errors: (a: number, b: number) => void;
+    readonly graphics_texture_support: (a: number) => number;
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
     readonly mapblockrange_range: (a: number) => number;
@@ -494,9 +555,11 @@ export interface InitOutput {
     readonly streamablemap_clear_downloading: (a: number) => void;
     readonly streamablemap_count_downloading: (a: number) => number;
     readonly streamablemap_ingest: (a: number, b: number, c: number) => void;
+    readonly streamablemap_ingest_deferred: (a: number, b: number, c: number) => void;
     readonly streamablemap_next_block_head_throttled: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_next_block_session: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_promote_ready_assets: (a: number, b: number) => void;
+    readonly streamablemap_upload_texture: (a: number, b: number, c: number) => void;
     readonly streamablesession_advance_time: (a: number, b: number, c: number, d: number) => void;
     readonly streamablesession_get_angles_yaw_delta: (a: number) => number;
     readonly streamablesession_get_bot_time: (a: number) => number;
@@ -515,13 +578,23 @@ export interface InitOutput {
     readonly streamablesession_set_paused: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly streamablesession_set_scale: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly surface_resize: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1850: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1850_109: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1850_110: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7895: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7916: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1854: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1854_108: (a: number, b: number, c: number) => void;
+    readonly texturejob_take_data: (a: number, b: number) => void;
+    readonly texturejob_texture_id: (a: number) => number;
+    readonly transcode_texture: (a: number, b: number, c: number, d: number) => number;
+    readonly transcodedtexture_format: (a: number) => number;
+    readonly transcodedtexture_height: (a: number) => number;
+    readonly transcodedtexture_mip_level_count: (a: number) => number;
+    readonly transcodedtexture_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+    readonly transcodedtexture_take_data: (a: number, b: number) => void;
+    readonly transcodedtexture_texture_id: (a: number) => number;
+    readonly transcodedtexture_width: (a: number) => number;
+    readonly __wasm_bindgen_func_elem_1908: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1908_122: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1908_123: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7953: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7974: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1912: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1912_121: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
