@@ -28,7 +28,9 @@ export function toGraphicsQuality(level: GraphicsLevel): GraphicsQuality {
  * the pixels of its CSS size, then the render scale shrinks it further. The browser stretches the canvas to fit.
  */
 export function canvasPixelRatio(level: GraphicsLevel, renderScale: number): number {
-    const cap = level === "low" ? 1 : level === "medium" ? 2 : Infinity;
+    // Medium's 4x anti-aliasing stores 4 samples a pixel, so it stays below 2 to keep that memory
+    // and bandwidth down on high density screens
+    const cap = level === "low" ? 1 : level === "medium" ? 1.5 : Infinity;
     return Math.min(window.devicePixelRatio, cap) * renderScale;
 }
 
