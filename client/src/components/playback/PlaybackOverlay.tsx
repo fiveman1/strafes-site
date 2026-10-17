@@ -26,8 +26,14 @@ import { usePersistedToggle } from "../../common/states";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 
-function getInfoDisplayScale(playerHeight: number) {
-    return clamp(playerHeight / 1000, 0, 1);
+// HUD elements are drawn at full size on players at least this tall, and shrink with the player below it,
+// so they always cover the same part of the player
+const DEFAULT_HUD_FULL_SIZE_HEIGHT = 1000;
+const DEBUG_HUD_FULL_SIZE_HEIGHT = 650;
+
+function getHudScale(playerHeight: number, fullSizeHeight: number) {
+    // kept above 0 so elements can divide their size by it
+    return clamp(playerHeight / fullSizeHeight, 0.01, 1);
 }
 
 interface PlaybackOverlayProps {
@@ -149,7 +155,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const isDraggingSpeed = useRef(false);
     const lastChangedSpeed = useRef(0);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
-    const smallScreen = useMediaQuery("(max-width: 720px)");
+    const smallScreen = useMediaQuery("(max-width: 660px)");
     const bottomDivId = useId();
     const settingsOpen = Boolean(settingsEl);
 
@@ -408,6 +414,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [time, duration, smallScreen, verySmallScreen]);
 
     const curSettingsMenuId = settingsOpen ? settingsMenuId : undefined;
+    const hudScale = getHudScale(playerHeight, DEFAULT_HUD_FULL_SIZE_HEIGHT).toFixed(4);
+    const debugHudScale = getHudScale(playerHeight, DEBUG_HUD_FULL_SIZE_HEIGHT).toFixed(4);
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
     const showFullscreenButton = document.fullscreenEnabled;
 
@@ -444,7 +452,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 }}>
                 <Box
                     ref={jhudRef}
-                    style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
+                    style={{ transform: `translate(-50%) scale(${hudScale})` }}
                     sx={{
                         display: showJhud && !smallScreen && !loading && !errorReplay ? "grid" : "none",
                         visibility: "hidden",
@@ -532,7 +540,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     <span className="jhudValue jhudEff jhudEffColor" />
                 </Box>
                 <Box
-                    style={{ transform: `translate(-50%) scale(${getInfoDisplayScale(playerHeight).toFixed(4)})` }}
+                    style={{ transform: `translate(-50%) scale(${hudScale})` }}
                     sx={{
                         display: smallScreen || loading || errorReplay ? "none" : "flex",
                         position: "absolute",
@@ -727,12 +735,17 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     </Box>
                 </Box>
                 <Box
+                    // Laid out at full size across the player, then scaled down into its corner like the other HUD elements
+                    style={{
+                        width: `calc((100% - 16px) / ${debugHudScale})`,
+                        transform: `scale(${debugHudScale})`
+                    }}
                     sx={{
                         display: smallScreen ? "none" : "flex",
                         position: "absolute",
                         top: 8,
                         left: 8,
-                        right: 8,
+                        transformOrigin: "0 0",
                         alignItems: "flex-start",
                         gap: 1,
                         pointerEvents: "none",
