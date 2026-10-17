@@ -17,6 +17,8 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
 import { isTyping } from "../../common/utils";
@@ -112,6 +114,27 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
     const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, false);
     const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
+    // The FPS and frame stats are written straight into the DOM every half second, so copy what's shown
+    const statsBoxRef = useRef<HTMLDivElement>(null);
+    const [ statsCopied, setStatsCopied ] = useState(false);
+    const onClickCopyStats = useCallback(async () => {
+        const stats = statsBoxRef.current?.innerText.trim() ?? "";
+        const text = debugInfo ? `${debugInfo}\n\n${stats}` : stats;
+        try {
+            await navigator.clipboard.writeText(text);
+            setStatsCopied(true);
+        } catch (error) {
+            console.error("Couldn't copy the debug stats", error);
+        }
+    }, [debugInfo]);
+    const stopPropagation = useCallback((event: React.SyntheticEvent) => event.stopPropagation(), []);
+    useEffect(() => {
+        if (!statsCopied) {
+            return;
+        }
+        const timeout = setTimeout(() => setStatsCopied(false), 1500);
+        return () => clearTimeout(timeout);
+    }, [statsCopied]);
     const [ settingsEl, setSettingsEl ] = useState<HTMLButtonElement | null>(null);
     
     const playerRef = useRef<HTMLDivElement>(null);
@@ -737,6 +760,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         {debugInfo}
                     </Typography>}
                     <Box
+                        ref={statsBoxRef}
                         sx={{
                             display: "flex",
                             flexDirection: "column",
@@ -762,6 +786,27 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 display: showDebug ? "block" : "none",
                                 whiteSpace: "nowrap"
                             }} />
+                        {showDebug &&
+                        <IconButton
+                            size="small"
+                            onClick={onClickCopyStats}
+                            // the player pauses or plays on pointer up and goes fullscreen on double click anywhere in it
+                            onPointerUp={stopPropagation}
+                            onDoubleClick={stopPropagation}
+                            title="Copy debug stats"
+                            aria-label="Copy debug stats"
+                            sx={{
+                                // the overlay lets clicks through to the player, except here
+                                pointerEvents: "auto",
+                                color: "white",
+                                bgcolor: "#00000080",
+                                borderRadius: "4px",
+                                "&:hover": {
+                                    bgcolor: "#000000b0"
+                                }
+                            }}>
+                            {statsCopied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+                        </IconButton>}
                     </Box>
                 </Box>
             </Box>
