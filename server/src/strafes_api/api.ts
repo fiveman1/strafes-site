@@ -159,7 +159,9 @@ async function getTimeByIdCore(timeId: string) {
     }
 }
 
-export async function getBotDownloadURL(timeId: string) {
+// These download URLs are signed and only live for 5 minutes, but a 2 minute cache should be okay.
+export const getBotDownloadURL = memoize(getBotDownloadURLCore, {cacheKey: JSON.stringify, maxAge: 2 * 60 * 1000});
+async function getBotDownloadURLCore(timeId: string) {
     try {
         const res = await STRAFES_CLIENT.time.getTime(timeId, { redirect: "manual" });
         const url = res.headers.get("location");
@@ -173,7 +175,8 @@ export async function getBotDownloadURL(timeId: string) {
     }
 }
 
-export async function getMapDownloadURL(mapId: number) {
+export const getMapDownloadURL = memoize(getMapDownloadURLCore, {cacheKey: JSON.stringify, maxAge: 2 * 60 * 1000});
+export async function getMapDownloadURLCore(mapId: number) {
     try {
         const res = await MAPS_CLIENT.map.snfmList(mapId, { redirect: "manual" });
         const url = res.headers.get("location");

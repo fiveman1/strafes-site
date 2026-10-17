@@ -912,7 +912,7 @@ app.get("/api/maps", rateLimiterMiddleware(1), cache("30 minutes"), async (req, 
     });
 });
 
-app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), async (req, res) => {
+app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), cache("2 minutes"), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -942,7 +942,7 @@ async function getMapFilesCore() {
     return fileNames;
 }
 
-app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
+app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), cache("2 minutes"), async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
