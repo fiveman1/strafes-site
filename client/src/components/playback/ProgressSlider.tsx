@@ -17,12 +17,15 @@ interface ProgressSliderProps {
     setIsDragging: (drag: boolean) => void
     canvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
+    /** Whether there's a thumbnail canvas. It stays mounted, since the player draws into that exact canvas. */
     displayThumb: boolean
+    /** Whether the thumbnail shows while hovering */
+    thumbEnabled: boolean
     setShowingThumb: (showing: boolean) => void
 }
 
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, setShowingThumb } = props;
+    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, thumbEnabled, setShowingThumb } = props;
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
@@ -150,7 +153,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                     position: "fixed",
                     width: `${thumbWidth}px`,
                     height: `${thumbHeight}px`,
-                    display: showThumb ? "block" : "none",
+                    display: showThumb && thumbEnabled ? "block" : "none",
                     borderRadius: "4px",
                     border: "1px solid #ffffff49",
                     background: "rgba(255, 255, 255, 0.3)",

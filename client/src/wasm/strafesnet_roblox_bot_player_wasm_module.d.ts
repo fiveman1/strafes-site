@@ -121,6 +121,8 @@ export class Graphics {
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
      * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
+     * Medium and High use 4x anti-aliasing; Low skips it, material normal maps and sky reflections, and blurs the glow more coarsely.
+     * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
      */
     set_graphics_quality(quality: GraphicsQuality): void;
     set_light_distance(light_distance: number): void;
@@ -135,6 +137,12 @@ export class Graphics {
      * without throwing, and the frame just stays black, so poll this to show them.
      */
     take_errors(): string[];
+    /**
+     * The average GPU time per frame of the frames rendered since the last call, in milliseconds,
+     * or undefined on devices without timestamp queries (WebGL) or before any frame was timed.
+     * Counted separately from gpu_stats, so both can be read.
+     */
+    take_gpu_frame_ms(): number | undefined;
     /**
      * Which compressed texture formats this device supports, for transcode_texture in a web worker.
      */
@@ -556,6 +564,7 @@ export interface InitOutput {
     readonly graphics_set_light_distance: (a: number, b: number) => void;
     readonly graphics_supports_multiple_surfaces: (a: number) => number;
     readonly graphics_take_errors: (a: number, b: number) => void;
+    readonly graphics_take_gpu_frame_ms: (a: number, b: number) => void;
     readonly graphics_texture_support: (a: number) => number;
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
@@ -621,13 +630,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1960: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1960_127: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1960_128: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8009: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8030: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1964: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1964_126: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1966: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1966_128: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1966_129: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8015: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8036: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1970: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1970_127: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -13,6 +13,7 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Slider from "@mui/material/Slider";
 import Popper from "@mui/material/Popper";
+import type { Instance as PopperInstance } from "@popperjs/core";
 import SpeedIcon from '@mui/icons-material/Speed';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -25,6 +26,8 @@ import { isTyping } from "../../common/utils";
 import { usePersistedToggle } from "../../common/states";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
+import GraphicsMenu from "./GraphicsMenu";
+import { GraphicsLevel, GraphicsSettings } from "./graphicsSettings";
 
 // HUD elements are drawn at full size on players at least this tall, and shrink with the player below it,
 // so they always cover the same part of the player
@@ -61,12 +64,21 @@ interface PlaybackOverlayProps {
     allowDiff: boolean
     thumbCanvasRef: React.Ref<HTMLCanvasElement>
     setThumbTime: (time: number) => void
+    /** Whether the seek bar has a thumbnail canvas, which stays on the page once made */
     showThumb: boolean
+    /** Whether the thumbnail is shown while hovering the seek bar */
+    thumbEnabled: boolean
     debugInfo: string
     fpsTextRef: React.Ref<HTMLSpanElement>
     frameStatsTextRef: React.Ref<HTMLSpanElement>
     setShowingThumb: (showing: boolean) => void
+    graphicsSettings: GraphicsSettings
+    /** The graphics preset in use */
+    graphicsLevel: GraphicsLevel
 }
+
+/** Gap between the settings menu and the top of the player, in pixels. */
+const SETTINGS_MENU_MARGIN = 8;
 
 const SHOW_SPEED_SETTING = "player_showSpeed";
 const SHOW_INPUT_SETTING = "player_showInput";
@@ -105,7 +117,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
-        thumbCanvasRef, setThumbTime, showThumb, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb } = props;
+        thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
+        graphicsSettings, graphicsLevel } = props;
 
     const theme = useTheme();
     
@@ -231,6 +244,17 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         }
     }, [onPausePlay]);
 
+    // The menu opens upward inside the player, so on short players (phones held upright) it scrolls
+    // instead of running off the top. It's measured when opening, so the first layout already fits.
+    const [ settingsMaxHeight, setSettingsMaxHeight ] = useState<number | undefined>(undefined);
+    const settingsPopperRef = useRef<PopperInstance>(null);
+    const measureSettingsSpace = useCallback(() => {
+        const player = playerRef.current;
+        const button = settingsButtonRef.current;
+        if (!player || !button) return undefined;
+        return Math.max(button.getBoundingClientRect().top - player.getBoundingClientRect().top - SETTINGS_MENU_MARGIN, 0);
+    }, []);
+
     const onClickSettings = useCallback(() => {
         // Click must have originated within settings button
         if (!lastPointerDownRef.current || !settingsButtonRef.current || !settingsButtonRef.current.contains(lastPointerDownRef.current)) {
@@ -240,9 +264,10 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
             setSettingsEl(null);
         }
         else {
+            setSettingsMaxHeight(measureSettingsSpace());
             setSettingsEl(settingsButtonRef.current);
         }
-    }, [settingsOpen]);
+    }, [settingsOpen, measureSettingsSpace]);
 
     const onChangeSpeed = useCallback((e: Event, speed: number) => {
         onSetSpeed(speed);
@@ -356,6 +381,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [settingsEl]);
 
     const getPlayerRef = useCallback(() => playerRef.current, []);
+
+    // re-place the open menu after its height cap changes
+    useLayoutEffect(() => {
+        if (!settingsOpen) return;
+        setSettingsMaxHeight(measureSettingsSpace());
+        settingsPopperRef.current?.update();
+    }, [settingsOpen, playerHeight, fullscreen, measureSettingsSpace]);
 
     useEffect(() => {
         const div = document.getElementById(bottomDivId);
@@ -871,6 +903,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     canvasRef={thumbCanvasRef}
                     setThumbTime={setThumbTime}
                     displayThumb={showThumb}
+                    thumbEnabled={thumbEnabled}
                     setShowingThumb={setShowingThumb}
                 />
                 <Box ref={settingsButtonRef}>
@@ -891,6 +924,9 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     anchorEl={settingsEl}
                     container={getPlayerRef}
                     placement="top-end"
+                    popperRef={settingsPopperRef}
+                    // the menu always opens upward, scrolling when there's little room
+                    modifiers={[{ name: "flip", enabled: false }]}
                 >
                     <Box
                         ref={settingsMenuRef}
@@ -900,14 +936,23 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             padding: 1,
                             bgcolor: "#00000080",
                             color: "white",
-                            borderRadius: "8px"
+                            borderRadius: "8px",
+                            maxHeight: settingsMaxHeight,
+                            overflowY: "auto",
+                            // scrolling one way makes the other auto too, and slider thumbs poke out a little
+                            overflowX: "hidden",
+                            // scrolling to the end doesn't scroll the page
+                            overscrollBehavior: "contain",
+                            scrollbarWidth: "thin",
+                            scrollbarColor: "#ffffff60 transparent"
                         }}>
                         <Box
                             sx={{
                                 display: "flex",
                                 flexDirection: "column",
                                 padding: verySmallScreen ?  0.25 : 0.5,
-                                width: verySmallScreen ? "150px" : "200px"
+                                // wide enough for the four graphics presets on one line and the HUD toggles on two
+                                width: verySmallScreen ? "220px" : "260px"
                             }}>
                             <Box sx={{
                                 display: "flex"
@@ -993,6 +1038,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     2.0x
                                 </Typography>
                             </Box>
+                            <GraphicsMenu settings={graphicsSettings} level={graphicsLevel} />
                             <Box
                                 sx={{
                                     display: smallScreen ? "none" : "flex",
@@ -1012,7 +1058,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         mt: 1,
                                         display: "flex",
                                         flexWrap: "wrap",
-                                        gap: 1,
+                                        gap: 0.75,
 
                                         "button": {
                                             py: 0.5,

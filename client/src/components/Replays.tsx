@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats, GraphicsQuality } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
@@ -26,6 +26,8 @@ import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
 import { getTextureTranscoder } from "./playback/textureTranscoder";
+import { mapIngestStats, PlaybackStats } from "./playback/playbackStats";
+import { AutoGraphicsTuner, canvasPixelRatio, GraphicsLevel, guessGraphicsLevel, toGraphicsQuality, useGraphicsSettings } from "./playback/graphicsSettings";
 
 function getPlayerHeight(width: number, height: number) {
     if (width / height > PLAYER_ASPECT_RATIO) {
@@ -45,9 +47,10 @@ function getPlayerWidth(width: number, height: number) {
     }
 }
 
-function handleCanvasSize(width: number, height: number, graphics: Graphics, surfaces: Surface[]) {
-    const screenWidth = getPlayerWidth(width, height) * window.devicePixelRatio;
-    const screenHeight = getPlayerHeight(width, height) * window.devicePixelRatio;
+/** pixelRatio is canvas pixels per CSS pixel, see canvasPixelRatio. */
+function handleCanvasSize(width: number, height: number, graphics: Graphics, surfaces: Surface[], pixelRatio: number) {
+    const screenWidth = Math.max(1, Math.round(getPlayerWidth(width, height) * pixelRatio));
+    const screenHeight = Math.max(1, Math.round(getPlayerHeight(width, height) * pixelRatio));
     for (const surface of surfaces) {
         surface.resize(graphics, screenWidth, screenHeight);
     }
@@ -267,8 +270,6 @@ async function ingestBotBlock(block: BotBlockRange, downloader: BotDownloader, b
 }
 
 // Main thread time spent in map.ingest_deferred since the last stats update. Ingest runs when downloads resolve, outside the frame loop.
-const mapIngestStats = { totalMs: 0, maxMs: 0, count: 0 };
-
 async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, map: StreamableMap, graphics: Graphics): Promise<boolean> {
     try {
         const data = await downloader.download_map_block_range(block);
@@ -328,6 +329,41 @@ async function getGraphicsAndSurface(canvas: HTMLCanvasElement): Promise<{ graph
         if (sharedGraphics === graphicsPromise) sharedGraphics = null;
         throw err;
     }
+}
+
+/** Shows GPU errors, which WebGPU reports without throwing. */
+function reportGraphicsErrors(graphics: Graphics, setError: (error: string) => void) {
+    const errors = graphics.take_errors();
+    if (errors.length === 0) {
+        return;
+    }
+    // A lost device can't render anything again, so the next replay gets a new one.
+    if (errors.some(e => e.startsWith("GPU device lost"))) {
+        discardSharedGraphics(graphics);
+    }
+    setError(errors.join("\n"));
+}
+
+interface DiffView {
+    bot: CompleteBot
+    bvh: Bvh
+    playback: CompleteHead
+    timeElement: HTMLElement
+    speedElement: HTMLElement
+}
+
+/** Compares the replay against the diff bot at the closest point of the diff bot's path. */
+function updateDiff(diff: DiffView, playback: StreamableSession, bot: StreamableBot, course: number, speed: number) {
+    const pos = playback.get_position(bot);
+    const diffPlaybackTime = diff.bvh.closest_time_to_point(diff.bot, pos);
+    if (diffPlaybackTime === undefined) {
+        return;
+    }
+    diff.playback.set_time(diff.bot, getSafeTime(diffPlaybackTime, diff.bot));
+    const botTime = playback.get_run_time(bot, course) ?? 0;
+    const diffBotTime = diff.playback.get_run_time(diff.bot, course) ?? 0;
+    const speedDiff = speed - diff.playback.get_speed(diff.bot);
+    updateDiffDisplay(diff.timeElement, diff.speedElement, botTime - diffBotTime, speedDiff);
 }
 
 function discardSharedGraphics(graphics: Graphics) {
@@ -392,6 +428,30 @@ function Replays() {
     const pumpRef = useRef<() => void>(noop);
     const isShowingThumb = useRef(false);
 
+    // graphics presets: one picked by the player, or auto, which measures this device once and remembers the result
+    const graphicsSettings = useGraphicsSettings();
+    const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale } = graphicsSettings;
+    // whether the player uses WebGL, known once graphics are set up
+    const [ webgl, setWebgl ] = useState<boolean | undefined>(undefined);
+    // the preset auto is measuring right now
+    const [ tuningLevel, setTuningLevel ] = useState<GraphicsLevel | undefined>(undefined);
+    const tunerRef = useRef<AutoGraphicsTuner | null>(null);
+    const graphicsLevel: GraphicsLevel = graphicsMode !== "auto"
+        ? graphicsMode
+        : autoLevel ?? tuningLevel ?? (webgl === undefined ? "medium" : guessGraphicsLevel(webgl));
+    const pixelRatio = canvasPixelRatio(graphicsLevel, renderScale);
+    // the seek bar thumbnail draws the scene a second time while hovering, too costly on Low
+    const thumbEnabled = showThumb && graphicsLevel !== "low";
+    // for the setup and the render loop, which outlive renders
+    const graphicsLevelRef = useRef(graphicsLevel);
+    const pixelRatioRef = useRef(pixelRatio);
+    const thumbEnabledRef = useRef(thumbEnabled);
+    useLayoutEffect(() => {
+        graphicsLevelRef.current = graphicsLevel;
+        pixelRatioRef.current = pixelRatio;
+        thumbEnabledRef.current = thumbEnabled;
+    }, [graphicsLevel, pixelRatio, thumbEnabled]);
+
     const setError = useCallback((error: string) => {
         setErrorState(error);
         setLoading(false);
@@ -444,10 +504,12 @@ function Replays() {
 
             try {
                 const { graphics, surface } = await getGraphicsAndSurface(canvas);
-                graphics.set_graphics_quality(GraphicsQuality.High);
+                graphics.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
 
                 const supportsMultiSurface = graphics.supports_multiple_surfaces();
                 setShowThumb(supportsMultiSurface);
+                // only WebGL can't draw to several canvases
+                setWebgl(!supportsMultiSurface);
 
                 setDebugInfo(graphics.debug_info());
 
@@ -506,7 +568,7 @@ function Replays() {
 
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
-                handleCanvasSize(width, height, graphics, [surface]);
+                handleCanvasSize(width, height, graphics, [surface], pixelRatioRef.current);
 
                 playback.advance_time(bot, map, 0);
                 playback.set_bot_time(bot, map, 0, 0);
@@ -517,7 +579,7 @@ function Replays() {
                 if (supportsMultiSurface && thumbCanvas) {
                     thumbPlayback = new StreamableHead(bot, 0);
                     thumbSurface = graphics.new_surface(thumbCanvas);
-                    handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
+                    handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface], window.devicePixelRatio);
                     thumbPlayback.set_time(bot, 0);
                     thumbPlaybackRef.current = thumbPlayback;
                     thumbSurfaceRef.current = thumbSurface;
@@ -631,40 +693,63 @@ function Replays() {
 
     useLayoutEffect(() => {
         let animationId: number;
-        let fpsFrames = 0;
-        let fpsWindowStart = performance.now();
-        // Set with each FPS update, cleared once the next main view render reports its stats
-        let frameStatsDue = false;
-        // CPU time spent in render_session since the last stats update.
-        // WebGPU only records and sends commands there, so this is the cost of issuing draws, not GPU time.
-        let renderMsTotal = 0;
-        let renderMsMax = 0;
-        let renderCount = 0;
-        let promoteMsTotal = 0;
-        let promoteMsMax = 0;
-        // GPU times arrive a few frames late, so keep the last line when a window has none
-        let lastGpuStats: string | undefined;
+        const stats = new PlaybackStats();
 
         if (replay?.course === undefined) {
             return;
         }
+        const course = replay.course;
+
+        // auto graphics: measure while the replay plays in a visible tab
+        const stepAutoGraphics = (timeMs: number, graphics: Graphics, playback: StreamableSession) => {
+            const tuner = tunerRef.current;
+            if (!tuner) {
+                return;
+            }
+            const counting = !playback.is_buffering() && document.visibilityState === "visible";
+            const decision = tuner.update(timeMs, counting, () => graphics.take_gpu_frame_ms());
+            if (!decision) {
+                return;
+            }
+            setTuningLevel(decision.level);
+            if (decision.done) {
+                tunerRef.current = null;
+                setAutoLevel(decision.level);
+            }
+        };
+
+        // the speed, input, JHUD and seek bar
+        const updateHud = (playback: StreamableSession, bot: StreamableBot, speed: number, speedText: HTMLElement, input: HTMLDivElement) => {
+            playbackTime.set(Math.min(playback.get_bot_time() - botOffset, bot.duration()));
+            const newText = speed.toFixed(2).toString();
+            if (speedText.innerText !== newText) {
+                speedText.innerText = newText;
+            }
+            updateInputDisplay(input, playback);
+            const jhud = jhudRef.current;
+            if (jhud) {
+                const jumpStats = playback.get_jump_stats(bot);
+                updateJhudDisplay(jhud, jumpStats);
+                jumpStats?.free();
+            }
+        };
+
+        const getDiffView = (): DiffView | undefined => {
+            const bot = diffBotRef.current;
+            const bvh = diffBvhRef.current;
+            const playback = diffPlaybackRef.current;
+            const timeElement = diffTimeTextRef.current;
+            const speedElement = diffSpeedTextRef.current;
+            if (bot && bvh && playback && timeElement && speedElement) {
+                return { bot, bvh, playback, timeElement, speedElement };
+            }
+            return undefined;
+        };
 
         const animate = (timeMs: number) => {
             const time = timeMs / 1000;
             animationId = requestAnimationFrame(animate);
-
-            // Average over half a second windows so the number is readable
-            ++fpsFrames;
-            const fpsElapsed = timeMs - fpsWindowStart;
-            if (fpsElapsed >= 500) {
-                const fpsText = fpsTextRef.current;
-                if (fpsText) {
-                    fpsText.innerText = `${Math.round(fpsFrames * 1000 / fpsElapsed)} FPS`;
-                }
-                fpsFrames = 0;
-                fpsWindowStart = timeMs;
-                frameStatsDue = true;
-            }
+            stats.frame(timeMs, fpsTextRef.current);
 
             const playback = playbackRef.current;
             const bot = botRef.current;
@@ -675,112 +760,33 @@ function Replays() {
             const input = inputContainerRef.current;
 
             if (playback && bot && map && graphics && surface && speedText && input) {
-                const elapsed = time - animTimer.current;
-                const newSessionTime = sessionTimer.current + elapsed;
+                const newSessionTime = sessionTimer.current + time - animTimer.current;
                 try {
                     getTextureTranscoder().uploadReady(map, graphics);
                     playback.advance_time(bot, map, newSessionTime);
                     const promoteStart = performance.now();
                     map.promote_ready_assets(graphics);
                     const renderStart = performance.now();
-                    const promoteMs = renderStart - promoteStart;
-                    promoteMsTotal += promoteMs;
-                    promoteMsMax = Math.max(promoteMsMax, promoteMs);
                     graphics.render_session(surface, map, bot, playback);
-                    const renderMs = performance.now() - renderStart;
-                    renderMsTotal += renderMs;
-                    renderMsMax = Math.max(renderMsMax, renderMs);
-                    ++renderCount;
-                    // Read before the thumbnail renders, since the stats are for the last render
-                    const frameStatsText = frameStatsTextRef.current;
-                    if (frameStatsDue && frameStatsText) {
-                        const renderMsAverage = renderMsTotal / renderCount;
-                        const promoteMsAverage = promoteMsTotal / renderCount;
-                        // timing first, then what was drawn, then loading and the camera
-                        const lines: string[] = [];
-                        // undefined on WebGL, which has no GPU timestamps
-                        lastGpuStats = graphics.gpu_stats() ?? lastGpuStats;
-                        if (lastGpuStats !== undefined) {
-                            lines.push(lastGpuStats);
-                        }
-                        lines.push(`CPU render ${renderMsAverage.toFixed(2)} ms avg (${renderMsMax.toFixed(2)} max), promote ${promoteMsAverage.toFixed(2)} (${promoteMsMax.toFixed(2)})`);
-                        lines.push(graphics.frame_stats());
-                        // only while the map is still loading
-                        const texturesQueued = getTextureTranscoder().queued;
-                        if (mapIngestStats.count > 0 || texturesQueued > 0) {
-                            const ingestMsAverage = mapIngestStats.count > 0 ? mapIngestStats.totalMs / mapIngestStats.count : 0;
-                            lines.push(`Loading: ingest ${ingestMsAverage.toFixed(2)} ms avg (${mapIngestStats.maxMs.toFixed(2)} max), ${mapIngestStats.count} groups, ${texturesQueued} textures queued`);
-                        }
-                        const cameraStats = graphics.camera_stats();
-                        if (cameraStats !== undefined) {
-                            lines.push(cameraStats);
-                        }
-                        frameStatsText.innerText = lines.join("\n");
-                        renderMsTotal = 0;
-                        renderMsMax = 0;
-                        renderCount = 0;
-                        promoteMsTotal = 0;
-                        promoteMsMax = 0;
-                        mapIngestStats.totalMs = 0;
-                        mapIngestStats.maxMs = 0;
-                        mapIngestStats.count = 0;
-                        frameStatsDue = false;
-                    }
-                    
+                    stats.addRender(renderStart - promoteStart, performance.now() - renderStart);
+                    stats.report(frameStatsTextRef.current, graphics);
+                    stepAutoGraphics(timeMs, graphics, playback);
+
                     setLoading(playback.is_buffering());
+                    reportGraphicsErrors(graphics, setError);
 
-                    const errors = graphics.take_errors();
-                    if (errors.length > 0) {
-                        // A lost device can't render anything again, so the next replay gets a new one.
-                        if (errors.some(e => e.startsWith("GPU device lost"))) {
-                            discardSharedGraphics(graphics);
-                        }
-                        setError(errors.join("\n"));
-                    }
-
-                    const curPlayerTime = Math.min(playback.get_bot_time() - botOffset, bot.duration());
-                    playbackTime.set(curPlayerTime);
-                    
                     const speed = playback.get_speed(bot);
-                    const newText = speed.toFixed(2).toString();
-                    if (speedText.innerText !== newText) {
-                        speedText.innerText = newText;
-                    }
-                    updateInputDisplay(input, playback);
-
-                    const jhud = jhudRef.current;
-                    if (jhud) {
-                        const stats = playback.get_jump_stats(bot);
-                        updateJhudDisplay(jhud, stats);
-                        stats?.free();
-                    }
+                    updateHud(playback, bot, speed, speedText, input);
 
                     const thumbPlayback = thumbPlaybackRef.current;
                     const thumbSurface = thumbSurfaceRef.current;
-
-                    if (thumbPlayback && thumbSurface && isShowingThumb.current) {
+                    if (thumbPlayback && thumbSurface && isShowingThumb.current && thumbEnabledRef.current) {
                         graphics.render_head(thumbSurface, map, bot, thumbPlayback);
                     }
 
-                    const diffBot = diffBotRef.current;
-                    const bvh = diffBvhRef.current;
-                    const diffPlayback = diffPlaybackRef.current;
-                    const diffTimeElement = diffTimeTextRef.current;
-                    const diffSpeedElement = diffSpeedTextRef.current;
-
-                    if (diffBot && bvh && diffPlayback && diffTimeElement && diffSpeedElement) {
-                        const pos = playback.get_position(bot);
-                        const diffPlaybackTime = bvh.closest_time_to_point(diffBot, pos);
-                        if (diffPlaybackTime !== undefined) {
-                            diffPlayback.set_time(diffBot, getSafeTime(diffPlaybackTime, diffBot));
-                            const botTime = playback.get_run_time(bot, replay.course) ?? 0;
-                            const diffBotTime = diffPlayback.get_run_time(diffBot, replay.course) ?? 0;
-                            const timeDiff = botTime - diffBotTime;
-                            const diffBotSpeed = diffPlayback.get_speed(diffBot);
-                            const speedDiff = speed - diffBotSpeed;
-
-                            updateDiffDisplay(diffTimeElement, diffSpeedElement, timeDiff, speedDiff);
-                        }
+                    const diff = getDiffView();
+                    if (diff) {
+                        updateDiff(diff, playback, bot, course, speed);
                     }
                 }
                 catch (err) {
@@ -796,7 +802,7 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [setError, replay?.course, botOffset, playbackTime]);
+    }, [setError, replay?.course, botOffset, playbackTime, setAutoLevel]);
 
     const onResize = useCallback((width: number, height: number) => {
         const graphics = graphicsRef.current;
@@ -804,12 +810,37 @@ function Replays() {
         const thumbSurface = thumbSurfaceRef.current;
         if (!graphics) return;
         if (surface) {
-            handleCanvasSize(width, height, graphics, [surface]);
+            handleCanvasSize(width, height, graphics, [surface], pixelRatioRef.current);
         }
         if (thumbSurface) {
-            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface]);
+            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface], window.devicePixelRatio);
         }
     }, []);
+
+    // start measuring when auto has nothing saved for this device, once graphics are set up
+    useEffect(() => {
+        if (graphicsMode !== "auto" || autoLevel !== undefined || webgl === undefined) {
+            tunerRef.current = null;
+            setTuningLevel(undefined);
+            return;
+        }
+        if (!tunerRef.current) {
+            const start = guessGraphicsLevel(webgl);
+            tunerRef.current = new AutoGraphicsTuner(start);
+            setTuningLevel(start);
+        }
+    }, [graphicsMode, autoLevel, webgl]);
+
+    // apply the preset and the canvas size whenever they change
+    useEffect(() => {
+        const graphics = graphicsRef.current;
+        const canvas = canvasRef.current;
+        if (!graphics) return;
+        graphics.set_graphics_quality(toGraphicsQuality(graphicsLevel));
+        if (canvas) {
+            onResize(canvas.clientWidth, canvas.clientHeight);
+        }
+    }, [graphicsLevel, pixelRatio, onResize, webgl]);
 
     const onSetPlayback = useCallback((time: number) => {
         playbackTime.set(time);
@@ -1032,10 +1063,13 @@ function Replays() {
                                         thumbCanvasRef={thumbCanvasRef}
                                         setThumbTime={setThumbTime}
                                         showThumb={showThumb}
+                                        thumbEnabled={thumbEnabled}
                                         debugInfo={debugInfo}
                                         fpsTextRef={fpsTextRef}
                                         frameStatsTextRef={frameStatsTextRef}
                                         setShowingThumb={setShowingThumb}
+                                        graphicsSettings={graphicsSettings}
+                                        graphicsLevel={graphicsLevel}
                                     />
                                 </Box>
                                 {(loading && !error) &&
