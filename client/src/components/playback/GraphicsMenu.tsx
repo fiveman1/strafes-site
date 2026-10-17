@@ -110,7 +110,7 @@ function GraphicsMenu(props: GraphicsMenuProps) {
                 display: "flex"
             }}>
                 <Typography variant="subtitle2">
-                    Resolution
+                    Render scale
                 </Typography>
                 <Typography variant="subtitle2" sx={{ ml: "auto" }}>
                     {Math.round(shownScale * 100)}%
