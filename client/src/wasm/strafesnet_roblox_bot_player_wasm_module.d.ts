@@ -94,17 +94,36 @@ export class Graphics {
     free(): void;
     [Symbol.dispose](): void;
     /**
+     * The last render_session's camera as a render-snfm view, as one line, or undefined before one.
+     */
+    camera_stats(): string | undefined;
+    /**
      * The adapter, enabled features and chosen formats, for bug reports from devices you can't test on.
      */
     debug_info(): string;
     /**
-     * Draw calls and triangles in the last rendered frame, after skipping what was out of view,
-     * and on devices with timestamp queries, the average GPU time of the frames rendered since the last call.
+     * What the last rendered frame drew after skipping what was out of view, and its lights, as two lines.
      */
     frame_stats(): string;
+    /**
+     * The average GPU time of the frames rendered since the last call, as one line,
+     * or undefined on devices without timestamp queries (WebGL) or before any frame was timed.
+     */
+    gpu_stats(): string | undefined;
+    /**
+     * How far from the camera pixels add up local lights one by one, with highlights.
+     * Farther pixels read the light volume, which costs the same however many lights overlap.
+     * 0 lights everything from the volume, Infinity never uses it.
+     */
+    light_distance(): number;
     new_surface(canvas: HTMLCanvasElement): Surface;
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
+    /**
+     * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
+     */
+    set_graphics_quality(quality: GraphicsQuality): void;
+    set_light_distance(light_distance: number): void;
     /**
      * False with WebGL, which can only draw to the canvas passed to setup_graphics.
      * Drawing extra surfaces is technically possible but performs much slower on WebGL.
@@ -133,6 +152,15 @@ export class GraphicsAndSurface {
     [Symbol.dispose](): void;
     graphics(): Graphics | undefined;
     surface(): Surface | undefined;
+}
+
+/**
+ * Graphics presets, for devices from phones to fast desktops.
+ */
+export enum GraphicsQuality {
+    Low = 0,
+    Medium = 1,
+    High = 2,
 }
 
 /**
@@ -516,11 +544,16 @@ export interface InitOutput {
     readonly downloadbotblockrangeerror_request: (a: number) => number;
     readonly downloadmapblockrangeerror_error: (a: number) => number;
     readonly downloadmapblockrangeerror_request: (a: number) => number;
+    readonly graphics_camera_stats: (a: number, b: number) => void;
     readonly graphics_debug_info: (a: number, b: number) => void;
     readonly graphics_frame_stats: (a: number, b: number) => void;
+    readonly graphics_gpu_stats: (a: number, b: number) => void;
+    readonly graphics_light_distance: (a: number) => number;
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly graphics_set_graphics_quality: (a: number, b: number) => void;
+    readonly graphics_set_light_distance: (a: number, b: number) => void;
     readonly graphics_supports_multiple_surfaces: (a: number) => number;
     readonly graphics_take_errors: (a: number, b: number) => void;
     readonly graphics_texture_support: (a: number) => number;
@@ -588,13 +621,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1908: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1908_122: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1908_123: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7953: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_7974: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1912: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1912_121: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1949: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1949_127: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1949_128: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_7998: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8019: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1953: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1953_126: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
+import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats, GraphicsQuality } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
@@ -444,6 +444,7 @@ function Replays() {
 
             try {
                 const { graphics, surface } = await getGraphicsAndSurface(canvas);
+                graphics.set_graphics_quality(GraphicsQuality.High);
 
                 const supportsMultiSurface = graphics.supports_multiple_surfaces();
                 setShowThumb(supportsMultiSurface);
@@ -641,6 +642,8 @@ function Replays() {
         let renderCount = 0;
         let promoteMsTotal = 0;
         let promoteMsMax = 0;
+        // GPU times arrive a few frames late, so keep the last line when a window has none
+        let lastGpuStats: string | undefined;
 
         if (replay?.course === undefined) {
             return;
@@ -693,10 +696,26 @@ function Replays() {
                     if (frameStatsDue && frameStatsText) {
                         const renderMsAverage = renderMsTotal / renderCount;
                         const promoteMsAverage = promoteMsTotal / renderCount;
-                        const ingestMsAverage = mapIngestStats.count > 0 ? mapIngestStats.totalMs / mapIngestStats.count : 0;
-                        frameStatsText.innerText = `${graphics.frame_stats()}\nrender CPU: ${renderMsAverage.toFixed(2)} ms avg, ${renderMsMax.toFixed(2)} ms max`
-                            + `\npromote: ${promoteMsAverage.toFixed(2)} ms avg, ${promoteMsMax.toFixed(2)} ms max`
-                            + `\ningest: ${ingestMsAverage.toFixed(2)} ms avg, ${mapIngestStats.maxMs.toFixed(2)} ms max (${mapIngestStats.count} groups, ${getTextureTranscoder().queued} textures queued)`;
+                        // timing first, then what was drawn, then loading and the camera
+                        const lines: string[] = [];
+                        // undefined on WebGL, which has no GPU timestamps
+                        lastGpuStats = graphics.gpu_stats() ?? lastGpuStats;
+                        if (lastGpuStats !== undefined) {
+                            lines.push(lastGpuStats);
+                        }
+                        lines.push(`CPU render ${renderMsAverage.toFixed(2)} ms avg (${renderMsMax.toFixed(2)} max), promote ${promoteMsAverage.toFixed(2)} (${promoteMsMax.toFixed(2)})`);
+                        lines.push(graphics.frame_stats());
+                        // only while the map is still loading
+                        const texturesQueued = getTextureTranscoder().queued;
+                        if (mapIngestStats.count > 0 || texturesQueued > 0) {
+                            const ingestMsAverage = mapIngestStats.count > 0 ? mapIngestStats.totalMs / mapIngestStats.count : 0;
+                            lines.push(`Loading: ingest ${ingestMsAverage.toFixed(2)} ms avg (${mapIngestStats.maxMs.toFixed(2)} max), ${mapIngestStats.count} groups, ${texturesQueued} textures queued`);
+                        }
+                        const cameraStats = graphics.camera_stats();
+                        if (cameraStats !== undefined) {
+                            lines.push(cameraStats);
+                        }
+                        frameStatsText.innerText = lines.join("\n");
                         renderMsTotal = 0;
                         renderMsMax = 0;
                         renderCount = 0;
