@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Autocomplete, Box, InputAdornment, TextField } from "@mui/material";
 import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
@@ -11,6 +11,10 @@ interface IUserSearchProps {
     setUserId: (id: string | undefined) => void
     userSearch: UserSearchInfo
     disabled?: boolean
+    compact?: boolean
+    autoFocus?: boolean
+    // Called when the user is done with the search: a user was found, or the input lost focus
+    onDone?: () => void
 }
 
 function prevUsernamesContains(data: UserSearchData, search: string) {
@@ -21,11 +25,14 @@ function prevUsernamesContains(data: UserSearchData, search: string) {
 }
 
 function UserSearch(props: IUserSearchProps) {
-    const { setUserId, userSearch, disabled } = props;
+    const { setUserId, userSearch, disabled, compact, autoFocus, onDone } = props;
     const queryClient = useQueryClient();
     const { userText, setUserText, selectedUser, setSelectedUser, options, loadingOptions } = userSearch
 
     const [ hasError, setHasError ] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    // The input blurs on select before the user lookup finishes, so don't count that blur as being done
+    const searchPending = useRef(false);
 
     const onInputChange = useCallback((val: string) => {
         setUserText(val);
@@ -36,21 +43,33 @@ function UserSearch(props: IUserSearchProps) {
         if (!search) {
             setSelectedUser({username: ""});
             setUserId(undefined);
+            onDone?.();
             return;
         }
 
         const newSelectedUser = typeof search === "string" ? {username: search} : search;
+        searchPending.current = true;
         const userId = await queryClient.fetchQuery(queries.users.fromSearch(newSelectedUser));
+        searchPending.current = false;
 
         if (userId !== null) {
             setUserId(userId.toString());
             setSelectedUser(newSelectedUser);
+            onDone?.();
         }
         else {
             setHasError(true);
             setSelectedUser({username: ""});
+            // Refocus so the user can fix the name (and so clicking away still counts as done)
+            inputRef.current?.focus();
         }
-    }, [queryClient, setSelectedUser, setUserId]);
+    }, [onDone, queryClient, setSelectedUser, setUserId]);
+
+    const onBlur = useCallback(() => {
+        if (!searchPending.current) {
+            onDone?.();
+        }
+    }, [onDone]);
 
     const sortedOptions = useMemo(() => {
         if (userText === "" || loadingOptions) {
@@ -84,7 +103,11 @@ function UserSearch(props: IUserSearchProps) {
             sx={{
                 // Disable the "x" shown by some (Safari and Chrome) browsers for type=search fields, since we already have an "x" button
                 "[type=\"search\"]::-webkit-search-decoration": {appearance: "none"},
-                "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"}
+                "[type=\"search\"]::-webkit-search-cancel-button": {appearance: "none"},
+                ...(compact ? {
+                    ".MuiAutocomplete-inputRoot": { paddingTop: "2px", paddingBottom: "2px" },
+                    ".MuiAutocomplete-input": { fontSize: "0.875rem" }
+                } : {})
             }}
             fullWidth
             inputMode="search"
@@ -92,6 +115,7 @@ function UserSearch(props: IUserSearchProps) {
             value={selectedUser}
             onInputChange={(e, v) => onInputChange(v)}
             onChange={(e, v) => onSearch(v)}
+            onBlur={onBlur}
             isOptionEqualToValue={(opt, val) => {
                 const username = typeof val === "string" ? val : val.username.toLowerCase();
                 return opt.username.toLowerCase() === username || prevUsernamesContains(opt, username)
@@ -117,6 +141,13 @@ function UserSearch(props: IUserSearchProps) {
                     placeholder="Search by username"
                     variant="outlined"
                     type="search"
+                    inputRef={inputRef}
+                    autoFocus={autoFocus}
+                    onKeyDown={(e) => {
+                        if (e.key === "Escape" && onDone) {
+                            inputRef.current?.blur();
+                        }
+                    }}
                     slotProps={{
                         ...params.slotProps,
 
@@ -129,7 +160,7 @@ function UserSearch(props: IUserSearchProps) {
                             ...params.slotProps.input,
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon />
+                                    <SearchIcon fontSize={compact ? "small" : "medium"} />
                                 </InputAdornment>
                             )
                         }

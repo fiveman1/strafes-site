@@ -360,7 +360,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
 
 function MapsPage() {
     const { id } = useParams() as { id: string };
-    const { maps, sortedMaps, loginUser } = useOutletContext() as ContextParams;
+    const { maps, sortedMaps } = useOutletContext() as ContextParams;
 
     const [initalLoadComplete, setInitalLoadComplete] = useState(false);
     const [selectedMap, setSelectedMap] = useState<Map>();
@@ -481,12 +481,11 @@ function MapsPage() {
                 <StyleSelector game={game} style={style} setStyle={setStyle} />
                 <CourseSelector course={course} setCourse={setCourse} map={selectedMap} />
             </Box>
-            {loginUser &&
             <Box sx={{
                 padding: 1
             }}>
-                <RecordCard mapId={+id} userId={loginUser.userId} game={game} style={style} course={course} />
-            </Box>}
+                <RecordCard mapId={+id} game={game} style={style} course={course} />
+            </Box>
             <Box sx={{
                 padding: 1
             }}>
