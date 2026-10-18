@@ -129,9 +129,9 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ wasRecentMouseOver, setWasRecentMouseOver ] = useState(false);
     const [ showSpeed, onClickSpeedButton ] = usePersistedToggle(SHOW_SPEED_SETTING, true);
     const [ showInput, onClickInputButton ] = usePersistedToggle(SHOW_INPUT_SETTING, true);
-    const [ showJhud, onClickJhudButton ] = usePersistedToggle(SHOW_JHUD_SETTING, true);
+    const [ showJhud, onClickJhudButton ] = usePersistedToggle(SHOW_JHUD_SETTING, false);
     const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
-    const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, false);
+    const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, true);
     const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
     // The FPS and frame stats are written straight into the DOM every half second, so copy what's shown
     const statsBoxRef = useRef<HTMLDivElement>(null);
