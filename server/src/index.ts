@@ -23,6 +23,11 @@ import { rateLimiterMiddleware } from "./middleware.js";
 import { isBot } from "isbot";
 import memoize from "memoize";
 
+// Log instead of crashing the whole server when a stray promise rejects
+process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled promise rejection:", reason);
+});
+
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
 

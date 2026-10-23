@@ -329,6 +329,10 @@ export class AuthClient {
     }
 
     public async loadSettingsFromDBMulti(userIds: number[]): Promise<Map<number, SettingsValues> | undefined> {
+        if (userIds.length === 0) {
+            return new Map();
+        }
+
         const query = `SELECT * FROM settings WHERE userId IN (?);`;
         const [rows] = await this.pool.query<(SettingsRow & RowDataPacket)[]>(query, [userIds]);
         if (!rows) {
