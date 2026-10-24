@@ -57,7 +57,7 @@ function MapBrowser(props: MapBrowserProps) {
                 sx={{
                     display: "flex",
                     flexWrap: "wrap",
-                    justifyContent: "space-between",
+                    justifyContent: { xs: "center", sm: "space-between" },
                     alignItems: "center",
                     gap: 1,
                     mt: 2.5
