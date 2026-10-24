@@ -79,7 +79,7 @@ export function rateLimiterMiddleware(points: number) {
 
 // Vite puts a content hash in every file name under /assets, so a changed file always gets a new URL
 // and the old one can be cached forever. index.html is what points at the current files.
-const HASHED_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
+export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 function isHashedAsset(root: string, filePath: string) {
     return path.relative(root, filePath).startsWith("assets" + path.sep);
@@ -89,7 +89,7 @@ function isHashedAsset(root: string, filePath: string) {
 export function staticCacheHeaders(root: string) {
     return (res: Response, filePath: string) => {
         if (isHashedAsset(root, filePath)) {
-            res.setHeader("Cache-Control", HASHED_ASSET_CACHE_CONTROL);
+            res.setHeader("Cache-Control", IMMUTABLE_CACHE_CONTROL);
         }
     };
 }
@@ -128,7 +128,7 @@ export function precompressedMiddleware(root: string) {
         }
 
         res.setHeader("Content-Encoding", "br");
-        res.setHeader("Cache-Control", HASHED_ASSET_CACHE_CONTROL);
+        res.setHeader("Cache-Control", IMMUTABLE_CACHE_CONTROL);
         res.type(path.extname(filePath));
         res.sendFile(brPath, (err) => {
             if (err && !res.headersSent) {

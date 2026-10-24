@@ -18,8 +18,8 @@ import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
-import { readdir, readFile } from "fs/promises";
-import { precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
+import { readdir, readFile, stat } from "fs/promises";
+import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
 import memoize from "memoize";
 
@@ -950,7 +950,14 @@ async function getMapFilesCore() {
     return fileNames;
 }
 
-app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), cache("2 minutes"), async (req, res) => {
+// Changes whenever a map file is replaced, so its URL changes too and each version can be cached forever
+async function getMapFileVersion(idStr: string) {
+    const stats = await stat(path.join(mapDir, idStr + ".snfm"));
+    return Math.floor(stats.mtimeMs).toString(36) + "-" + stats.size.toString(36);
+}
+
+// Not cached: a stale response would hand out the URL of a replaced map version, which 404s
+app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     const [error, result] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -962,7 +969,13 @@ app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), cache("2 minutes"), a
 
     const files = await getMapFiles();
     if (files.has(idStr)) {
-        return res.status(200).json({ url: "/api/files/maps/" + idStr + ".snfm" });
+        try {
+            const version = await getMapFileVersion(idStr);
+            return res.status(200).json({ url: "/api/files/maps/" + idStr + ".snfm?v=" + version });
+        }
+        catch {
+            // The file was removed since the directory was listed; fall back to the download URL
+        }
     }
 
     const url = await getMapDownloadURL(id);
@@ -1032,6 +1045,41 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     res.status(200).send(replay);
 });
 
+const mapFileValidator = vine.create({
+    id: vine.number().withoutDecimals().nonNegative(),
+    v: vine.string().maxLength(64).optional()
+});
+
+// Versioned map URLs (?v=, from /api/replays/maps/:id) are cached forever, and a request for any version
+// other than the current file's gets a 404, so a cache never holds a different map under the same URL.
+// Unversioned URLs (from clients older than this) are served uncached as before.
+app.get("/api/files/maps/:id.snfm", async (req, res, next) => {
+    const [error, result] = await mapFileValidator.tryValidate({ ...req.params, ...req.query });
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    if (result.v === undefined) {
+        return next();
+    }
+
+    let currentVersion: string;
+    try {
+        currentVersion = await getMapFileVersion(result.id.toString(10));
+    }
+    catch {
+        return next();
+    }
+
+    if (result.v !== currentVersion) {
+        res.status(404).json({ error: "Map version not found" });
+        return;
+    }
+
+    res.setHeader("Cache-Control", IMMUTABLE_CACHE_CONTROL);
+    next();
+});
 app.use("/api/files/maps", express.static(mapDir, { index: false }));
 app.use(precompressedMiddleware(buildDir));
 app.use(express.static(buildDir, { index: false, setHeaders: staticCacheHeaders(buildDir) }));
