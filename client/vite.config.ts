@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
 			open: true,
 			proxy: {
 				"/api": {
-					target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://localhost:8080",
+					target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://127.0.0.1:8080",
 					changeOrigin: true,
 					secure: false
 				}

@@ -340,6 +340,10 @@ export class GlobalsClient {
             mapIds.push(wr.mapId);
         }
 
+        if (mapIds.length === 0) {
+            return true;
+        }
+
         const query = `SELECT map_id FROM maps WHERE map_id IN (?);`;
         const [rows] = await this.pool.query<RowDataPacket[]>(query, [mapIds]);
         return rows.length === mapIds.length;

@@ -23,6 +23,11 @@ import { rateLimiterMiddleware } from "./middleware.js";
 import { isBot } from "isbot";
 import memoize from "memoize";
 
+// Log instead of crashing the whole server when a stray promise rejects
+process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled promise rejection:", reason);
+});
+
 const STRAFES_DB_USER = process.env.STRAFES_DB_USER;
 const STRAFES_DB_PASSWORD = process.env.STRAFES_DB_PASSWORD;
 
@@ -54,6 +59,8 @@ if (TRUST_PROXY) {
 }
 
 const PORT = process.env.PORT ?? "8080";
+// Only accept local connections by default (nginx / vite proxy); set HOST=0.0.0.0 to expose directly
+const HOST = process.env.HOST ?? "127.0.0.1";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
 const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
@@ -1171,6 +1178,6 @@ app.get("*splat", async (req, res): Promise<any> => {
 });
 
 
-app.listen(PORT, () => {
-    console.log(`Strafes site on port ${PORT}`);
+app.listen(+PORT, HOST, () => {
+    console.log(`Strafes site on ${HOST}:${PORT}`);
 });
