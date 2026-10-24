@@ -1229,7 +1229,7 @@ app.get("*splat", async (req, res): Promise<any> => {
         return res.send(html);
     }
     catch {
-        return res.status(500);
+        return res.status(500).end();
     }
 });
 

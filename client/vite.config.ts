@@ -73,7 +73,7 @@ export default defineConfig(({ mode }) => {
 			preserveSymlinks: true
 		},
 		optimizeDeps: {
-			exclude: ["shared", "@strafesnet/strafesnet_roblox_bot_player_wasm_module"]
+			exclude: ["shared"]
 		}
 	};
 });
