@@ -1,7 +1,6 @@
 import Box from "@mui/material/Box";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
-import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
 import { createDownloadStats, readDownloadStats } from "./playback/downloadStats";
@@ -10,7 +9,7 @@ import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
-import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
+import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_MAX_ASPECT_RATIO, PLAYER_MAX_FULLSCREEN_ASPECT_RATIO, PLAYER_MIN_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
 import UserAvatar from "./displays/UserAvatar";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -30,28 +29,26 @@ import { getTextureTranscoder } from "./playback/textureTranscoder";
 import { mapIngestStats, PlaybackStats } from "./playback/playbackStats";
 import { AutoGraphicsTuner, canvasPixelRatio, GraphicsLevel, guessGraphicsLevel, toGraphicsQuality, useGraphicsSettings } from "./playback/graphicsSettings";
 
-function getPlayerHeight(width: number, height: number) {
-    if (width / height > PLAYER_ASPECT_RATIO) {
-        return height;
+/** The largest player that fits in width x height, with its aspect ratio kept within the allowed range */
+function getPlayerSize(width: number, height: number, fullscreen: boolean) {
+    // 0 x 0 happens for a frame mid-resize or entering fullscreen, and its aspect ratio would be NaN
+    if (width <= 0 || height <= 0) {
+        return { playerWidth: 0, playerHeight: 0 };
+    }
+    const maxAspect = fullscreen ? PLAYER_MAX_FULLSCREEN_ASPECT_RATIO : PLAYER_MAX_ASPECT_RATIO;
+    const aspect = clamp(width / height, PLAYER_MIN_ASPECT_RATIO, maxAspect);
+    if (width / height > aspect) {
+        return { playerWidth: height * aspect, playerHeight: height };
     }
     else {
-        return width / PLAYER_ASPECT_RATIO;
+        return { playerWidth: width, playerHeight: width / aspect };
     }
 }
 
-function getPlayerWidth(width: number, height: number) {
-    if (width / height > PLAYER_ASPECT_RATIO) {
-        return height * PLAYER_ASPECT_RATIO;
-    }
-    else {
-        return width;
-    }
-}
-
-/** pixelRatio is canvas pixels per CSS pixel, see canvasPixelRatio. */
+/** width and height are the canvas size in CSS pixels. pixelRatio is canvas pixels per CSS pixel, see canvasPixelRatio. */
 function handleCanvasSize(width: number, height: number, graphics: Graphics, surfaces: Surface[], pixelRatio: number) {
-    const screenWidth = Math.max(1, Math.round(getPlayerWidth(width, height) * pixelRatio));
-    const screenHeight = Math.max(1, Math.round(getPlayerHeight(width, height) * pixelRatio));
+    const screenWidth = Math.max(1, Math.round(width * pixelRatio));
+    const screenHeight = Math.max(1, Math.round(height * pixelRatio));
     for (const surface of surfaces) {
         surface.resize(graphics, screenWidth, screenHeight);
     }
@@ -203,7 +200,12 @@ function updateInputDisplay(input: HTMLDivElement, playback: StreamableSession) 
     }
 }
 
-const FOOTER_HEIGHT = 156;
+const FOOTER_HEIGHT = 148;
+/**
+ * Below this the page scrolls instead of shrinking the player further, e.g. on phones in landscape.
+ * Narrow players only keep as much as 16:9 needs at their width, so portrait phones fit without scrolling.
+ */
+const MIN_PLAYER_HEIGHT = 320;
 
 function updateDiffDisplay(diffTimeElement: HTMLElement, diffSpeedElement: HTMLElement, timeDiff: number, speedDiff: number) {
     const diffMs = Math.round(timeDiff * 1000);
@@ -704,6 +706,22 @@ function Replays() {
         };
     }, [id, playbackTime, downloadStats, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
+    // Resizing a canvas clears it, and ResizeObserver runs after this frame's render, so resizing there would show
+    // a black frame. Instead the render loop resizes right before it draws.
+    const canvasSizeDirty = useRef(false);
+    const onResize = useCallback((width: number, height: number) => {
+        const graphics = graphicsRef.current;
+        const surface = surfaceRef.current;
+        const thumbSurface = thumbSurfaceRef.current;
+        if (!graphics) return;
+        if (surface) {
+            handleCanvasSize(width, height, graphics, [surface], pixelRatioRef.current);
+        }
+        if (thumbSurface) {
+            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface], window.devicePixelRatio);
+        }
+    }, []);
+
     useLayoutEffect(() => {
         let animationId: number;
         const stats = new PlaybackStats();
@@ -775,6 +793,11 @@ function Replays() {
             if (playback && bot && map && graphics && surface && speedText && input) {
                 const newSessionTime = sessionTimer.current + time - animTimer.current;
                 try {
+                    const canvas = canvasRef.current;
+                    if (canvasSizeDirty.current && canvas) {
+                        canvasSizeDirty.current = false;
+                        onResize(canvas.clientWidth, canvas.clientHeight);
+                    }
                     getTextureTranscoder().uploadReady(map, graphics);
                     playback.advance_time(bot, map, newSessionTime);
                     const promoteStart = performance.now();
@@ -815,20 +838,70 @@ function Replays() {
 
         animationId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationId);
-    }, [setError, replay?.course, botOffset, playbackTime, setAutoLevel]);
+    }, [setError, replay?.course, botOffset, playbackTime, setAutoLevel, onResize]);
 
-    const onResize = useCallback((width: number, height: number) => {
-        const graphics = graphicsRef.current;
-        const surface = surfaceRef.current;
-        const thumbSurface = thumbSurfaceRef.current;
-        if (!graphics) return;
-        if (surface) {
-            handleCanvasSize(width, height, graphics, [surface], pixelRatioRef.current);
-        }
-        if (thumbSurface) {
-            handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface], window.devicePixelRatio);
-        }
+    // The player and the info below it fill the window between the app bar and the site footer, so the page doesn't scroll.
+    // One observer measures everything that affects that space. The info renders once there's a size, hence the callback ref.
+    const [ footerElement, setFooterElement ] = useState<HTMLDivElement | null>(null);
+    const [ measuredFooterHeight, setMeasuredFooterHeight ] = useState(FOOTER_HEIGHT);
+    const [ playerArea, setPlayerArea ] = useState<{ width: number, height: number } | undefined>(undefined);
+    const footerAreaKey = useRef("");
+    useLayoutEffect(() => {
+        const area = playerRef.current;
+        const root = document.getElementById("root");
+        const main = area?.closest("main");
+        if (!area || !root || !main) return;
+        const header = document.querySelector("header");
+        const siteFooter = root.querySelector("footer");
+        const update = () => {
+            if (document.fullscreenElement) {
+                // the browser sizes the fullscreen player to the screen
+                setPlayerArea(old => old && old.width === area.clientWidth && old.height === area.clientHeight ? old : { width: area.clientWidth, height: area.clientHeight });
+                return;
+            }
+            const top = area.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
+            const bottomPadding = parseFloat(getComputedStyle(main).paddingBottom) + parseFloat(getComputedStyle(area.parentElement!).paddingBottom);
+            const siteFooterHeight = siteFooter?.getBoundingClientRect().height ?? 0;
+            const width = area.clientWidth;
+            const height = Math.floor(root.clientHeight - top - bottomPadding - siteFooterHeight);
+            setPlayerArea(old => old && old.width === width && old.height === height ? old : { width, height });
+            const areaKey = `${width}x${height}`;
+            const sameArea = areaKey === footerAreaKey.current;
+            footerAreaKey.current = areaKey;
+            if (footerElement) {
+                // hidden while fullscreen, which leaves the last height for when it comes back
+                const footerHeight = Math.ceil(footerElement.getBoundingClientRect().height);
+                // The info's width follows the player's, which depends on the info's height, so a different height can
+                // rewrap it back and forth forever. Within one area size it only grows, which always settles.
+                if (footerHeight > 0) setMeasuredFooterHeight(old => sameArea && footerHeight < old ? old : footerHeight);
+            }
+        };
+        update();
+        const observer = new ResizeObserver(update);
+        // the window, and the player's width within it
+        observer.observe(root);
+        observer.observe(area);
+        // the app bar and site footer wrap onto more lines on narrow screens, and the info's text rewraps
+        if (header) observer.observe(header);
+        if (siteFooter) observer.observe(siteFooter);
+        if (footerElement) observer.observe(footerElement);
+        window.addEventListener("resize", update);
+        document.addEventListener("fullscreenchange", update);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener("resize", update);
+            document.removeEventListener("fullscreenchange", update);
+        };
+    }, [error, footerElement]);
+
+    // The canvas is sized to match what it's shown at whenever that changes. Watching the canvas itself catches every cause:
+    // the window, the info rewrapping, fullscreen. It renders once there's a size, hence the callback ref.
+    const [ canvasElement, setCanvasElementState ] = useState<HTMLCanvasElement | null>(null);
+    const setCanvasElement = useCallback((canvas: HTMLCanvasElement | null) => {
+        canvasRef.current = canvas;
+        setCanvasElementState(canvas);
     }, []);
+
 
     // start measuring when auto has nothing saved for this device, once graphics are set up
     useEffect(() => {
@@ -847,13 +920,18 @@ function Replays() {
     // apply the preset and the canvas size whenever they change
     useEffect(() => {
         const graphics = graphicsRef.current;
-        const canvas = canvasRef.current;
         if (!graphics) return;
         graphics.set_graphics_quality(toGraphicsQuality(graphicsLevel));
-        if (canvas) {
-            onResize(canvas.clientWidth, canvas.clientHeight);
-        }
-    }, [graphicsLevel, pixelRatio, onResize, webgl]);
+        canvasSizeDirty.current = true;
+    }, [graphicsLevel, pixelRatio, webgl]);
+    useLayoutEffect(() => {
+        if (!canvasElement) return;
+        const observer = new ResizeObserver(() => {
+            canvasSizeDirty.current = true;
+        });
+        observer.observe(canvasElement);
+        return () => observer.disconnect();
+    }, [canvasElement]);
 
     const onSetPlayback = useCallback((time: number) => {
         playbackTime.set(time);
@@ -970,12 +1048,14 @@ function Replays() {
         styleColor = getStyleColor(replay.style, theme);
     }
 
-    let footerHeight = FOOTER_HEIGHT;
-    if (fullscreen) {
-        footerHeight = 0;
-    }
+    const footerHeight = fullscreen ? 0 : measuredFooterHeight;
+    // The space measured for the player and the info, grown to fit the smallest player allowed. Fullscreen is the screen.
+    const areaHeight = !playerArea ? 0
+        : fullscreen ? playerArea.height
+        : Math.max(playerArea.height, Math.min(MIN_PLAYER_HEIGHT, playerArea.width / PLAYER_ASPECT_RATIO) + footerHeight);
+    const { playerWidth, playerHeight } = playerArea ? getPlayerSize(playerArea.width, areaHeight - footerHeight, fullscreen) : { playerWidth: 0, playerHeight: 0 };
 
-    const thumbSize = FOOTER_HEIGHT - 20;
+    const thumbSize = FOOTER_HEIGHT - 12;
     const mapLink = replay ? `/maps/${replay.mapId}?game=${replay.game}&style=${replay.style}&course=${replay.course}` : "";
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
@@ -998,346 +1078,331 @@ function Replays() {
             </Alert>}
             <Box
                 ref={playerRef}
+                style={{ height: fullscreen || !playerArea ? "100%" : areaHeight }}
                 sx={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: "600px"
+                    width: "100%"
                 }}
             >
-                <AutoSizer
-                    onResize={({ width, height }) => onResize(width, height - footerHeight)}
-                >
-                {({ width, height }) => {
-                    const playerWidth = getPlayerWidth(width, height - footerHeight);
-                    const playerHeight = getPlayerHeight(width, height - footerHeight);
-                    return (
+                {playerArea &&
+                <Box
+                    style={{
+                        width: playerArea.width,
+                        height: areaHeight
+                    }}
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                    <Box
+                        style={{
+                            width: playerWidth,
+                            height: playerHeight
+                        }}
+                        sx={{
+                            position: "relative",
+                            // sized exactly, like the info below
+                            flexShrink: 0,
+                            bgcolor: "black"
+                        }}>
+                        <canvas
+                            ref={setCanvasElement}
+                            style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: playerWidth,
+                                height: playerHeight
+                            }}
+                        />
                         <Box
                             style={{
-                                width: width,
-                                height: height
+                                width: playerWidth,
+                                height: playerHeight
                             }}
                             sx={{
+                                position: "absolute",
+                                top: 0
+                            }}>
+                            <PlaybackOverlay
+                                time={playbackTime}
+                                downloadStats={downloadStats}
+                                duration={duration}
+                                paused={paused}
+                                offset={botOffset}
+                                fullscreen={fullscreen}
+                                speed={playbackSpeed}
+                                onDragPlayback={onDragPlayback}
+                                onSetPlayback={onSetPlayback}
+                                onSetPause={onSetPause}
+                                onFullscreen={onFullscreen}
+                                onSeek={onSeek}
+                                onReset={onReset}
+                                onSetSpeed={onChangePlaybackSpeed}
+                                speedTextRef={speedTextRef}
+                                jhudRef={jhudRef}
+                                playerWidth={playerWidth}
+                                playerHeight={playerHeight}
+                                inputContainerRef={inputContainerRef}
+                                loading={loading}
+                                errorReplay={!!error}
+                                diffSpeedTextRef={diffSpeedTextRef}
+                                diffTimeTextRef={diffTimeTextRef}
+                                allowDiff={allowDiff}
+                                thumbCanvasRef={thumbCanvasRef}
+                                setThumbTime={setThumbTime}
+                                showThumb={showThumb}
+                                thumbEnabled={thumbEnabled}
+                                debugInfo={debugInfo}
+                                fpsTextRef={fpsTextRef}
+                                frameStatsTextRef={frameStatsTextRef}
+                                setShowingThumb={setShowingThumb}
+                                graphicsSettings={graphicsSettings}
+                                graphicsLevel={graphicsLevel}
+                            />
+                        </Box>
+                        {(loading && !error) &&
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
-                                justifyContent: "center"
+                                justifyContent: "center",
+                                transform: "translate(-50%, -50%)",
+                                userSelect: "none"
                             }}>
+                            <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
                             <Box
-                                style={{
-                                    width: playerWidth,
-                                    height: playerHeight
-                                }}
                                 sx={{
-                                    position: "relative",
-                                    bgcolor: "black"
+                                    mt: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    height: "32px"
                                 }}>
-                                <canvas
-                                    ref={canvasRef}
-                                    style={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        width: playerWidth,
-                                        height: playerHeight
-                                    }}
-                                />
-                                <Box
-                                    style={{
-                                        width: playerWidth,
-                                        height: playerHeight
-                                    }}
-                                    sx={{
-                                        position: "absolute",
-                                        top: 0
-                                    }}>
-                                    <PlaybackOverlay
-                                        time={playbackTime}
-                                        downloadStats={downloadStats}
-                                        duration={duration}
-                                        paused={paused}
-                                        offset={botOffset}
-                                        fullscreen={fullscreen}
-                                        speed={playbackSpeed}
-                                        onDragPlayback={onDragPlayback}
-                                        onSetPlayback={onSetPlayback}
-                                        onSetPause={onSetPause}
-                                        onFullscreen={onFullscreen}
-                                        onSeek={onSeek}
-                                        onReset={onReset}
-                                        onSetSpeed={onChangePlaybackSpeed}
-                                        speedTextRef={speedTextRef}
-                                        jhudRef={jhudRef}
-                                        playerHeight={playerHeight}
-                                        inputContainerRef={inputContainerRef}
-                                        loading={loading}
-                                        errorReplay={!!error}
-                                        diffSpeedTextRef={diffSpeedTextRef}
-                                        diffTimeTextRef={diffTimeTextRef}
-                                        allowDiff={allowDiff}
-                                        thumbCanvasRef={thumbCanvasRef}
-                                        setThumbTime={setThumbTime}
-                                        showThumb={showThumb}
-                                        thumbEnabled={thumbEnabled}
-                                        debugInfo={debugInfo}
-                                        fpsTextRef={fpsTextRef}
-                                        frameStatsTextRef={frameStatsTextRef}
-                                        setShowingThumb={setShowingThumb}
-                                        graphicsSettings={graphicsSettings}
-                                        graphicsLevel={graphicsLevel}
-                                    />
-                                </Box>
-                                {(loading && !error) &&
-                                <Box
-                                    sx={{
-                                        position: "absolute",
-                                        top: "50%",
-                                        left: "50%",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        transform: "translate(-50%, -50%)",
-                                        userSelect: "none"
-                                    }}>
-                                    <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
-                                    <Box
-                                        sx={{
-                                            mt: 1,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            height: "32px"
-                                        }}>
-                                    </Box>
-                                </Box>}
                             </Box>
-                            <Box
-                                style={{ width: playerWidth }}
+                        </Box>}
+                    </Box>
+                    <Box
+                        ref={setFooterElement}
+                        style={{ width: playerWidth }}
+                        sx={{
+                            display: fullscreen ? "none" : "flex",
+                            flexDirection: "row",
+                            // Never squeezed to fit, which would leave a long map name spilling out of a box that measures
+                            // too short. The player is sized from this height instead.
+                            flexShrink: 0,
+                            pt: 1,
+                            minHeight: FOOTER_HEIGHT
+                        }}>
+                        {replay &&
+                        <>
+                        {!smallScreen &&
+                        <Box
+                            sx={{
+                                display: "flex",
+                                mr: 1.5
+                            }}>
+                            <Link
+                                underline="none"
+                                component={RouterLink}
+                                to={mapLink}
                                 sx={{
-                                    display: fullscreen ? "none" : "flex",
-                                    flexDirection: "row",
-                                    pt: 1,
-                                    pb: 1,
-                                    minHeight: FOOTER_HEIGHT
+                                    display: "flex",
+                                    alignItems: "center"
                                 }}>
-                                {replay &&
-                                <>
-                                {!smallScreen &&
                                 <Box
                                     sx={{
-                                        display: "flex",
-                                        mr: 1.5
-                                    }}>
-                                    <Link
-                                        underline="none"
-                                        component={RouterLink}
-                                        to={mapLink}
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center"
-                                        }}>
-                                        <Box
-                                            sx={{
-                                                width: thumbSize,
-                                                height: thumbSize,
-                                                overflow: "hidden",
-                                                borderRadius: "4px",
-
-                                                ":hover": {
-                                                    ".mapThumb": {
-                                                        transform: "scale(1.08)"
-                                                    }
-                                                }
-                                            }}>
-                                            <MapThumb size={thumbSize} map={mapInfo} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
-                                        </Box>
-                                    </Link>
-                                </Box>}
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        flexGrow: 1,
+                                        width: thumbSize,
+                                        height: thumbSize,
                                         overflow: "hidden",
+                                        borderRadius: "4px",
 
-                                        "p": {
-                                            overflowWrap: "break-word",
-                                            wordBreak: "break-word",
-                                            whiteSpace: "normal",
-                                            textWrap: "wrap"
+                                        ":hover": {
+                                            ".mapThumb": {
+                                                transform: "scale(1.08)"
+                                            }
                                         }
                                     }}>
+                                    <MapThumb size={thumbSize} map={mapInfo} className="mapThumb" useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
+                                </Box>
+                            </Link>
+                        </Box>}
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                flexGrow: 1,
+                                overflow: "hidden",
+
+                                "p": {
+                                    overflowWrap: "break-word",
+                                    wordBreak: "break-word",
+                                    whiteSpace: "normal",
+                                    textWrap: "wrap"
+                                }
+                            }}>
+                            <Box
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center"
+                                }}>
+                                {smallScreen &&
+                                <Link
+                                    underline="none"
+                                    component={RouterLink}
+                                    to={mapLink}
+                                    sx={{
+                                        mr: 1.5
+                                    }}
+                                >
                                     <Box
                                         sx={{
-                                            display: "inline-flex",
-                                            alignItems: "center"
-                                        }}>
-                                        {smallScreen &&
-                                        <Link
-                                            underline="none"
-                                            component={RouterLink}
-                                            to={mapLink}
-                                            sx={{
-                                                mr: 1.5
-                                            }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    width: 48,
-                                                    height: 48,
-                                                    overflow: "hidden",
-                                                    borderRadius: "4px",
+                                            width: 48,
+                                            height: 48,
+                                            overflow: "hidden",
+                                            borderRadius: "4px",
 
-                                                    ":hover": {
-                                                        "img": {
-                                                            transform: "scale(1.08)"
-                                                        }
-                                                    }
-                                                }}>
-                                                <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
-                                            </Box>
-                                        </Link>}
-                                        <Link
-                                            underline="none"
-                                            component={RouterLink}
-                                            color="textPrimary"
-                                            to={mapLink}
-                                            sx={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                textDecoration: "none",
-
-                                                ":hover": {
-                                                    "& .map-name": {
-                                                        textDecoration: "underline"
-                                                    }
+                                            ":hover": {
+                                                "img": {
+                                                    transform: "scale(1.08)"
                                                 }
-                                            }}>
-                                            <Typography
-                                                variant="h5"
-                                                className="map-name"
-                                                sx={{
-                                                    display: "inline-block",
-                                                    lineHeight: 1.4
-                                                }}>
-                                                {getMapTitle(replay)}
-                                            </Typography>
-                                        </Link>
-                                        <ColorChip color={tierColor} label={formatTier(mapInfo?.tier, true)} sx={{ ml: 0.75 }} />
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            mt: smallScreen ? 1 : 0.25
+                                            }
                                         }}>
-                                        <ColorChip color={gameColor} label={formatGame(replay.game)} />
-                                        <ColorChip color={styleColor} label={formatStyle(replay.style)} sx={{ ml: 0.5 }} />
+                                        <MapThumb size={48} map={mapInfo} useLargeThumb sx={{ borderRadius: "4px", transition: "transform .2s ease" }} />
                                     </Box>
-                                    <Box
-                                        sx={{
-                                            mt: 1,
-                                            display: "inline-flex",
-                                            alignItems: "center"
-                                        }}>
-                                        <Link
-                                            underline="none"
-                                            component={RouterLink}
-                                            color="textPrimary"
-                                            to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
-                                            sx={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                textDecoration: "none",
+                                </Link>}
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        minWidth: 0,
+                                        lineHeight: 1.4,
+                                        overflowWrap: "break-word"
+                                    }}>
+                                    <Link
+                                        underline="hover"
+                                        component={RouterLink}
+                                        color="textPrimary"
+                                        to={mapLink}>
+                                        {getMapTitle(replay)}
+                                    </Link>
+                                    <ColorChip color={tierColor} label={formatTier(mapInfo?.tier, true)} sx={{ ml: 0.75, verticalAlign: "middle", position: "relative", top: "-2px" }} />
+                                </Typography>
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    mt: smallScreen ? 1 : 0.25
+                                }}>
+                                <ColorChip color={gameColor} label={formatGame(replay.game)} />
+                                <ColorChip color={styleColor} label={formatStyle(replay.style)} sx={{ ml: 0.5 }} />
+                            </Box>
+                            <Box
+                                sx={{
+                                    mt: 1,
+                                    display: "inline-flex",
+                                    alignItems: "center"
+                                }}>
+                                <Link
+                                    underline="none"
+                                    component={RouterLink}
+                                    color="textPrimary"
+                                    to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
+                                    sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        textDecoration: "none",
 
-                                                ":hover": {
-                                                    "p": {
-                                                        textDecoration: "underline"
-                                                    }
-                                                }
-                                            }}>
-                                            <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
-                                            <Typography
-                                                variant="body1"
-                                                sx={{
-                                                    ml: 0.75,
-                                                    display: "inline-block"
-                                                }}>
-                                                @{replay.username}
-                                            </Typography>
-
-                                        </Link>
-                                        {replay.userCountry &&
-                                        <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
-                                        {isCurrentUser &&
-                                        <Box title="You" sx={{
-                                            display: "flex"
-                                        }}>
-                                            <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
-                                        </Box>}
-                                    </Box>
-                                    <Box
+                                        ":hover": {
+                                            "p": {
+                                                textDecoration: "underline"
+                                            }
+                                        }
+                                    }}>
+                                    <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
+                                    <Typography
+                                        variant="body1"
                                         sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            mt: 0.5
-                                        }}>
-                                        <Typography
-                                            variant="body1"
-                                            sx={{
-                                                display: "inline-block",
-                                                fontFamily: '"Geist Mono", monospace'
-                                            }}>
-                                            {formatPlacement(replay.placement)}
-                                        </Typography>
-                                        <Typography
-                                            variant="body1"
-                                            sx={{
-                                                display: "inline-block",
-                                                ml: 0.75,
-                                                mr: 0.75
-                                            }}>
-                                            -
-                                        </Typography>
-                                        <Typography
-                                            variant="body1"
-                                            sx={{
-                                                display: "inline-block",
-                                                mr: 0.75
-                                            }}>
-                                            {formatTime(replay.time)}
-                                        </Typography>
-                                        <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: "inline-flex",
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            mt: 0.25
-                                        }}>
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                fontWeight: "bold",
-                                                display: "inline-block"
-                                            }}>
-                                            {replay.views === 1 ? "1 view" : `${replay.views} views`}
-                                        </Typography>
-                                        <Box sx={{
+                                            ml: 0.75,
                                             display: "inline-block"
                                         }}>
-                                            <DateDisplay date={replay.date} useDateTime={!smallScreen} color={theme.palette.text.secondary} variant="body2" />
-                                        </Box>
-                                    </Box>
+                                        @{replay.username}
+                                    </Typography>
+
+                                </Link>
+                                {replay.userCountry &&
+                                <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
+                                {isCurrentUser &&
+                                <Box title="You" sx={{
+                                    display: "flex"
+                                }}>
+                                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
+                                </Box>}
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    mt: 0.5
+                                }}>
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        display: "inline-block",
+                                        fontFamily: '"Geist Mono", monospace'
+                                    }}>
+                                    {formatPlacement(replay.placement)}
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        display: "inline-block",
+                                        ml: 0.75,
+                                        mr: 0.75
+                                    }}>
+                                    -
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        display: "inline-block",
+                                        mr: 0.75
+                                    }}>
+                                    {formatTime(replay.time)}
+                                </Typography>
+                                <DiffDisplay ms={replay.time} diff={replay.wrDiff} />
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: "inline-flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    mt: 0.25
+                                }}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        fontWeight: "bold",
+                                        display: "inline-block"
+                                    }}>
+                                    {replay.views === 1 ? "1 view" : `${replay.views} views`}
+                                </Typography>
+                                <Box sx={{
+                                    display: "inline-block"
+                                }}>
+                                    <DateDisplay date={replay.date} useDateTime={!smallScreen} color={theme.palette.text.secondary} variant="body2" />
                                 </Box>
-                                </>}
                             </Box>
                         </Box>
-                    );
-                }}
-                </AutoSizer>
+                        </>}
+                    </Box>
+                </Box>}
             </Box>
         </Box>
     );

@@ -16,6 +16,13 @@ import MapsHome from './components/MapsHome';
 import Replays from './components/Replays';
 import { NotFoundPage, RouteErrorPage } from './components/ErrorPage';
 
+// React's dev build records a performance entry, with a diff of the props, for every component render whose props changed,
+// and the browser keeps them all. Resizing the replay player renders a lot, which grew that to gigabytes.
+// Nothing else here uses measures, and a Performance recording still captures them as they're made.
+if (import.meta.env.DEV) {
+    setInterval(() => performance.clearMeasures(), 10_000);
+}
+
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );

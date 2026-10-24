@@ -35,10 +35,14 @@ import { GraphicsLevel, GraphicsSettings } from "./graphicsSettings";
 // so they always cover the same part of the player
 const DEFAULT_HUD_FULL_SIZE_HEIGHT = 1000;
 const DEBUG_HUD_FULL_SIZE_HEIGHT = 650;
+// Tall players also shrink them to fit across. The JHUD is the widest at about 270px, under 40% of this,
+// and the download panel the widest debug text at about 320px.
+const DEFAULT_HUD_FULL_SIZE_WIDTH = 700;
+const DEBUG_HUD_FULL_SIZE_WIDTH = 450;
 
-function getHudScale(playerHeight: number, fullSizeHeight: number) {
+function getHudScale(playerWidth: number, playerHeight: number, fullSizeWidth: number, fullSizeHeight: number) {
     // kept above 0 so elements can divide their size by it
-    return clamp(playerHeight / fullSizeHeight, 0.01, 1);
+    return clamp(Math.min(playerWidth / fullSizeWidth, playerHeight / fullSizeHeight), 0.01, 1);
 }
 
 interface PlaybackOverlayProps {
@@ -58,6 +62,7 @@ interface PlaybackOverlayProps {
     onSetSpeed: (speed: number) => void
     speedTextRef: React.Ref<HTMLSpanElement>
     jhudRef: React.Ref<HTMLDivElement>
+    playerWidth: number
     playerHeight: number
     inputContainerRef: React.Ref<HTMLDivElement>
     loading: boolean
@@ -119,7 +124,7 @@ function HudToggle(props: HudToggleProps) {
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, downloadStats, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
-        playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
+        playerWidth, playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
         graphicsSettings, graphicsLevel } = props;
 
@@ -136,11 +141,16 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
     const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, true);
     const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
-    // The FPS and frame stats are written straight into the DOM every half second, so copy what's shown
+    const verySmallScreen = useMediaQuery("(max-width: 480px)");
+    const smallScreen = useMediaQuery("(max-width: 660px)");
+    // The FPS and frame stats are written straight into the DOM every half second, so copy what's shown.
+    // Narrow screens move the frame stats out of the FPS column, see frameStatsBox.
+    const fpsColumnRef = useRef<HTMLDivElement>(null);
     const statsBoxRef = useRef<HTMLDivElement>(null);
     const [ statsCopied, setStatsCopied ] = useState(false);
     const onClickCopyStats = useCallback(async () => {
-        const stats = statsBoxRef.current?.innerText.trim() ?? "";
+        const columns = smallScreen ? [fpsColumnRef.current, statsBoxRef.current] : [fpsColumnRef.current];
+        const stats = columns.map(column => column?.innerText.trim() ?? "").filter(text => text).join("\n");
         const text = debugInfo ? `${debugInfo}\n\n${stats}` : stats;
         try {
             await navigator.clipboard.writeText(text);
@@ -148,7 +158,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         } catch (error) {
             console.error("Couldn't copy the debug stats", error);
         }
-    }, [debugInfo]);
+    }, [debugInfo, smallScreen]);
     const stopPropagation = useCallback((event: React.SyntheticEvent) => event.stopPropagation(), []);
     useEffect(() => {
         if (!statsCopied) {
@@ -170,8 +180,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const lastMouseOver = useRef(0);
     const isDraggingSpeed = useRef(false);
     const lastChangedSpeed = useRef(0);
-    const verySmallScreen = useMediaQuery("(max-width: 480px)");
-    const smallScreen = useMediaQuery("(max-width: 660px)");
     const bottomDivId = useId();
     const settingsOpen = Boolean(settingsEl);
 
@@ -449,10 +457,52 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     }, [time, duration, smallScreen, verySmallScreen]);
 
     const curSettingsMenuId = settingsOpen ? settingsMenuId : undefined;
-    const hudScale = getHudScale(playerHeight, DEFAULT_HUD_FULL_SIZE_HEIGHT).toFixed(4);
-    const debugHudScale = getHudScale(playerHeight, DEBUG_HUD_FULL_SIZE_HEIGHT).toFixed(4);
+    const hudScale = getHudScale(playerWidth, playerHeight, DEFAULT_HUD_FULL_SIZE_WIDTH, DEFAULT_HUD_FULL_SIZE_HEIGHT).toFixed(4);
+    const debugHudScale = getHudScale(playerWidth, playerHeight, DEBUG_HUD_FULL_SIZE_WIDTH, DEBUG_HUD_FULL_SIZE_HEIGHT).toFixed(4);
     const shouldShow = wasRecentAction || (isHovering && wasRecentMouseOver) || isDragging || isBottomHovering || settingsOpen;
     const showFullscreenButton = document.fullscreenEnabled;
+
+    // Under the FPS on wide screens, and below the other debug text on narrow ones, so the FPS always has the top right corner
+    const frameStatsBox = (
+        <Box
+            ref={statsBoxRef}
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: smallScreen ? "flex-start" : "flex-end",
+                gap: 0.5
+            }}>
+            <Typography
+                ref={frameStatsTextRef}
+                component="span"
+                className="debugText"
+                sx={{
+                    display: showDebug ? "block" : "none",
+                    whiteSpace: "nowrap"
+                }} />
+            {showDebug &&
+            <IconButton
+                size="small"
+                onClick={onClickCopyStats}
+                // the player pauses or plays on pointer up and goes fullscreen on double click anywhere in it
+                onPointerUp={stopPropagation}
+                onDoubleClick={stopPropagation}
+                title="Copy debug stats"
+                aria-label="Copy debug stats"
+                sx={{
+                    // the overlay lets clicks through to the player, except here
+                    pointerEvents: "auto",
+                    color: "white",
+                    bgcolor: "#00000080",
+                    borderRadius: "4px",
+                    "&:hover": {
+                        bgcolor: "#000000b0"
+                    }
+                }}>
+                {statsCopied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+            </IconButton>}
+        </Box>
+    );
 
     return (
         <Box
@@ -489,7 +539,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     ref={jhudRef}
                     style={{ transform: `translate(-50%) scale(${hudScale})` }}
                     sx={{
-                        display: showJhud && !smallScreen && !loading && !errorReplay ? "grid" : "none",
+                        display: showJhud && !loading && !errorReplay ? "grid" : "none",
                         visibility: "hidden",
                         position: "absolute",
                         top: "63%",
@@ -577,7 +627,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                 <Box
                     style={{ transform: `translate(-50%) scale(${hudScale})` }}
                     sx={{
-                        display: smallScreen || loading || errorReplay ? "none" : "flex",
+                        display: loading || errorReplay ? "none" : "flex",
                         position: "absolute",
                         alignItems: "center",
                         height: "150px",
@@ -803,8 +853,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             alignItems: "flex-start",
                             gap: 0.5
                         }}>
-                        <DownloadPanel downloadStats={downloadStats} buffering={loading} showDetails={showDebug && !smallScreen} />
-                        {showDebug && debugInfo && !smallScreen &&
+                        <DownloadPanel downloadStats={downloadStats} buffering={loading} showDetails={showDebug} />
+                        {showDebug && debugInfo &&
                         <Typography
                             component="span"
                             className="debugText"
@@ -815,11 +865,12 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             }}>
                             {debugInfo}
                         </Typography>}
+                        {smallScreen && frameStatsBox}
                     </Box>
                     <Box
-                        ref={statsBoxRef}
+                        ref={fpsColumnRef}
                         sx={{
-                            display: smallScreen ? "none" : "flex",
+                            display: "flex",
                             flexDirection: "column",
                             alignItems: "flex-end",
                             gap: 0.5,
@@ -835,35 +886,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                 fontWeight: "bold",
                                 whiteSpace: "nowrap"
                             }} />
-                        <Typography
-                            ref={frameStatsTextRef}
-                            component="span"
-                            className="debugText"
-                            sx={{
-                                display: showDebug ? "block" : "none",
-                                whiteSpace: "nowrap"
-                            }} />
-                        {showDebug &&
-                        <IconButton
-                            size="small"
-                            onClick={onClickCopyStats}
-                            // the player pauses or plays on pointer up and goes fullscreen on double click anywhere in it
-                            onPointerUp={stopPropagation}
-                            onDoubleClick={stopPropagation}
-                            title="Copy debug stats"
-                            aria-label="Copy debug stats"
-                            sx={{
-                                // the overlay lets clicks through to the player, except here
-                                pointerEvents: "auto",
-                                color: "white",
-                                bgcolor: "#00000080",
-                                borderRadius: "4px",
-                                "&:hover": {
-                                    bgcolor: "#000000b0"
-                                }
-                            }}>
-                            {statsCopied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
-                        </IconButton>}
+                        {!smallScreen && frameStatsBox}
                     </Box>
                 </Box>
             </Box>
@@ -1054,7 +1077,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             <GraphicsMenu settings={graphicsSettings} level={graphicsLevel} />
                             <Box
                                 sx={{
-                                    display: smallScreen ? "none" : "flex",
+                                    display: "flex",
                                     flexDirection: "column",
                                     mt: 1.5
                                 }}>

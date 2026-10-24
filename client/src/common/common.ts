@@ -189,4 +189,9 @@ export enum InputState {
 }
 
 export const PLAYER_ASPECT_RATIO = 16 / 9;
+/** The player fills the space it has, but no narrower or wider than these */
+export const PLAYER_MIN_ASPECT_RATIO = 9 / 16;
+export const PLAYER_MAX_ASPECT_RATIO = 16 / 9;
+/** Fullscreen may go wider, to fill ultrawide screens. Those sold as 21:9 are really up to 2.4:1 (3840x1600) */
+export const PLAYER_MAX_FULLSCREEN_ASPECT_RATIO = 2.4;
 export const PLAYER_THUMB_HEIGHT = 90;

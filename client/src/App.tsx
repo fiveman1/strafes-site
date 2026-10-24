@@ -518,7 +518,8 @@ function App() {
                     flexGrow: 1,
                     flexDirection: "column",
                     width: "100%",
-                    maxWidth: location.pathname.startsWith("/replays") ? "1800px" : "1440px",
+                    // the replay player fills whatever space the window has
+                    maxWidth: location.pathname.startsWith("/replays") ? "none" : "1440px",
                     padding: smallScreen ? 1 : 2,
                     marginBottom: "auto",
                     marginX: "auto"
