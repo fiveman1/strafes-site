@@ -290,7 +290,6 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 sx={{
                     display: "flex",
                     alignItems: "center",
-                    ml: -0.25
                 }}>
                 {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
