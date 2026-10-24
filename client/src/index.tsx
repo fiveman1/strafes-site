@@ -21,7 +21,9 @@ if (import.meta.env.DEV) {
 
 // After a deploy, an open tab still references the old build's chunks, which no longer exist.
 // Reload to pick up the new build, but not more than once a minute in case the chunk is really missing.
-window.addEventListener("vite:preloadError", (event) => {
+// The error still propagates, so the route error page shows "Update ready" until the reload happens
+// (or stays up if the reload was skipped).
+window.addEventListener("vite:preloadError", () => {
     let lastReload = 0;
     try {
         lastReload = Number(sessionStorage.getItem("chunkReloadAt")) || 0;
@@ -38,7 +40,6 @@ window.addEventListener("vite:preloadError", (event) => {
     catch {
         // see above
     }
-    event.preventDefault();
     window.location.reload();
 });
 
