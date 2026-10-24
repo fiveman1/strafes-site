@@ -3,6 +3,7 @@ import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clamp, normalize } from "../../common/utils";
 import { PlaybackTime } from "./playbackTime";
+import { DownloadStats, DownloadStatsStore } from "./downloadStats";
 import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import { PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../../common/common";
@@ -11,6 +12,8 @@ interface ProgressSliderProps {
     min: number
     max: number
     time: PlaybackTime
+    /** Downloaded parts of the replay are drawn lighter on the bar */
+    downloadStats: DownloadStatsStore
     onDragPlayback: (time: number) => void
     onSetPlayback: (time: number) => void
     isDragging: boolean
@@ -24,8 +27,11 @@ interface ProgressSliderProps {
     setShowingThumb: (showing: boolean) => void
 }
 
+/** Drawn over the 30% white track, so downloaded parts read as a lighter gray */
+const BUFFERED_COLOR = "rgba(255, 255, 255, 0.35)";
+
 function ProgressSlider(props: ProgressSliderProps) {
-    const { min, max, time, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, thumbEnabled, setShowingThumb } = props;
+    const { min, max, time, downloadStats, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, thumbEnabled, setShowingThumb } = props;
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
@@ -33,6 +39,7 @@ function ProgressSlider(props: ProgressSliderProps) {
     const [coords, setCoords] = useState({ x: 0, y: 0 });
     const ref = useRef<HTMLSpanElement>(null);
     const fillRef = useRef<HTMLSpanElement>(null);
+    const bufferedRef = useRef<HTMLSpanElement>(null);
     const handleRef = useRef<HTMLSpanElement>(null);
 
     // Progress is written directly instead of rendered, see playbackTime.ts
@@ -45,6 +52,30 @@ function ProgressSlider(props: ProgressSliderProps) {
         update(time.get());
         return time.subscribe(update);
     }, [time, min, max]);
+
+    // The downloaded ranges as one gradient, so any number of them is a single style write
+    useLayoutEffect(() => {
+        let lastBackground = "";
+        const update = (stats: DownloadStats | undefined) => {
+            const buffered = bufferedRef.current;
+            if (!buffered) return;
+            const ranges = stats?.ranges ?? [];
+            const stops: string[] = [];
+            for (let i = 0; i + 1 < ranges.length; i += 2) {
+                const start = clamp((ranges[i] - min) / (max - min) * 100, 0, 100);
+                const end = clamp((ranges[i + 1] - min) / (max - min) * 100, 0, 100);
+                if (end <= start) continue;
+                stops.push(`transparent ${start}%`, `${BUFFERED_COLOR} ${start}%`, `${BUFFERED_COLOR} ${end}%`, `transparent ${end}%`);
+            }
+            const background = stops.length > 0 ? `linear-gradient(to right, ${stops.join(", ")})` : "none";
+            if (background !== lastBackground) {
+                buffered.style.background = background;
+                lastBackground = background;
+            }
+        };
+        update(downloadStats.get());
+        return downloadStats.subscribe(update);
+    }, [downloadStats, min, max]);
 
     useEffect(() => {
         const handler = (event: MouseEvent) => {
@@ -224,6 +255,17 @@ function ProgressSlider(props: ProgressSliderProps) {
                         bgcolor: "white",
                         transform: "translateY(-50%)",
                         opacity: 0.3
+                    }} />
+                <Box
+                    component="span"
+                    ref={bufferedRef}
+                    sx={{
+                        position: "absolute",
+                        width: "100%",
+                        height: "6px",
+                        top: "50%",
+                        borderRadius: "2px",
+                        transform: "translateY(-50%)"
                     }} />
                 <Box
                     component="span"

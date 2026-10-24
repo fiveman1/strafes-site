@@ -4,6 +4,7 @@ import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, Streamab
 import AutoSizer from "react-virtualized-auto-sizer";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
+import { createDownloadStats, readDownloadStats } from "./playback/downloadStats";
 import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import Typography from "@mui/material/Typography";
@@ -390,6 +391,7 @@ function Replays() {
     const [ botOffset, setBotOffset ] = useState(0);
     const [ playbackSpeed, setPlaybackSpeed ] = useState(1.0);
     const [ playbackTime ] = useState(() => createPlaybackTime(-1));
+    const [ downloadStats ] = useState(() => createDownloadStats());
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
@@ -490,6 +492,7 @@ function Replays() {
         let pumpInterval: ReturnType<typeof setInterval> | undefined = undefined;
         setDiffReady(false);
         setLoading(true);
+        downloadStats.set(undefined);
 
         const promise = async () => {
             await init();
@@ -643,20 +646,30 @@ function Replays() {
 
                 // Fills free download slots. Safe to call at any time and as often as needed, so that blocks which become
                 // needed later (failed downloads, seeking, the tab becoming visible again) always get picked up.
+                // The stats only change when a download starts or finishes
+                const updateDownloadStats = () => {
+                    if (!isCanceled) downloadStats.set(readDownloadStats(bot, map, offset));
+                };
+                updateDownloadStats();
+
                 let activeDownloads = 0;
                 const pump = () => {
                     try {
+                        let started = false;
                         while (!isCanceled && activeDownloads < MAX_CONCURRENT_DOWNLOADS) {
                             const download = pickNextBlock();
                             if (!download) break;
                             ++activeDownloads;
+                            started = true;
                             download().then((success) => {
                                 --activeDownloads;
+                                updateDownloadStats();
                                 if (success) pump();
                                 // Back off a little so a failing server doesn't get hammered
                                 else setTimeout(pump, 1000);
                             });
                         }
+                        if (started) updateDownloadStats();
                     }
                     catch (err) {
                         console.error(err);
@@ -689,7 +702,7 @@ function Replays() {
             pumpRef.current = noop;
             releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
-    }, [id, playbackTime, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
+    }, [id, playbackTime, downloadStats, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
 
     useLayoutEffect(() => {
         let animationId: number;
@@ -1039,6 +1052,7 @@ function Replays() {
                                     }}>
                                     <PlaybackOverlay
                                         time={playbackTime}
+                                        downloadStats={downloadStats}
                                         duration={duration}
                                         paused={paused}
                                         offset={botOffset}

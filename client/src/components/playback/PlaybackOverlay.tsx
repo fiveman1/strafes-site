@@ -3,6 +3,8 @@ import Typography from "@mui/material/Typography";
 import { formatTime } from "shared";
 import ProgressSlider from "./ProgressSlider";
 import { PlaybackTime } from "./playbackTime";
+import { DownloadStatsStore } from "./downloadStats";
+import DownloadPanel from "./DownloadPanel";
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import IconButton from "@mui/material/IconButton";
@@ -42,6 +44,7 @@ function getHudScale(playerHeight: number, fullSizeHeight: number) {
 interface PlaybackOverlayProps {
     duration: number
     time: PlaybackTime
+    downloadStats: DownloadStatsStore
     paused: boolean
     offset: number
     fullscreen: boolean
@@ -114,7 +117,7 @@ function HudToggle(props: HudToggleProps) {
 }
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
-    const { time, duration, paused, offset, fullscreen, speed, onDragPlayback, 
+    const { time, downloadStats, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
@@ -773,7 +776,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         transform: `scale(${debugHudScale})`
                     }}
                     sx={{
-                        display: smallScreen ? "none" : "flex",
+                        display: errorReplay ? "none" : "flex",
                         position: "absolute",
                         top: 8,
                         left: 8,
@@ -793,21 +796,30 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                             py: 0.25
                         }
                     }}>
-                    {showDebug && debugInfo &&
-                    <Typography
-                        component="span"
-                        className="debugText"
+                    <Box
                         sx={{
-                            maxWidth: "600px",
-                            whiteSpace: "pre-wrap",
-                            overflowWrap: "anywhere"
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: 0.5
                         }}>
-                        {debugInfo}
-                    </Typography>}
+                        <DownloadPanel downloadStats={downloadStats} buffering={loading} showDetails={showDebug && !smallScreen} />
+                        {showDebug && debugInfo && !smallScreen &&
+                        <Typography
+                            component="span"
+                            className="debugText"
+                            sx={{
+                                maxWidth: "600px",
+                                whiteSpace: "pre-wrap",
+                                overflowWrap: "anywhere"
+                            }}>
+                            {debugInfo}
+                        </Typography>}
+                    </Box>
                     <Box
                         ref={statsBoxRef}
                         sx={{
-                            display: "flex",
+                            display: smallScreen ? "none" : "flex",
                             flexDirection: "column",
                             alignItems: "flex-end",
                             gap: 0.5,
@@ -896,6 +908,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     min={-offset}
                     max={duration}
                     time={time}
+                    downloadStats={downloadStats}
                     onDragPlayback={onDragPlayback}
                     onSetPlayback={onSetPlaybackHandler}
                     isDragging={isDragging}

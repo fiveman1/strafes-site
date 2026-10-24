@@ -269,7 +269,6 @@ export class StreamableBot {
      * This may cause blocks to be downloaded multiple times.
      */
     clear_downloading(): void;
-    count_downloading(): number;
     duration(): number;
     ingest(arg0: BotBlockData): void;
     /**
@@ -292,9 +291,29 @@ export class StreamableBot {
      */
     next_block_throttled(playback_session: StreamableSession, lookahead_seconds: number): BotBlockRange | undefined;
     /**
+     * Contiguous ranges of downloaded replay in bot time (the same clock as StreamableSession.get_bot_time).
+     * Provided as an array of f64 pairs [start0, end0, start1, end1, ...].
+     */
+    ranges(): Float64Array;
+    /**
      * This function may return different values depending on streaming state.
      */
     run_duration(mode_id: number): number;
+    /**
+     * Calculate active streaming details
+     */
+    stats(): StreamableBotStats;
+}
+
+export class StreamableBotStats {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    blocks_downloaded: number;
+    blocks_total: number;
+    bytes_downloaded: number;
+    bytes_total: number;
+    requests_in_flight: number;
 }
 
 /**
@@ -336,7 +355,6 @@ export class StreamableMap {
      * This may cause blocks to be downloaded multiple times.
      */
     clear_downloading(): void;
-    count_downloading(): number;
     ingest(graphics: Graphics, arg1: MapBlockData): void;
     /**
      * Like ingest, but returns the group's texture files instead of transcoding them, which takes most of the time.
@@ -357,9 +375,28 @@ export class StreamableMap {
      */
     promote_ready_assets(graphics: Graphics): void;
     /**
+     * Calculate active streaming details
+     */
+    stats(): StreamableMapStats;
+    /**
      * Upload a texture from transcode_texture. Do this before promote_ready_assets.
      */
     upload_texture(graphics: Graphics, texture: TranscodedTexture): void;
+}
+
+export class StreamableMapStats {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    bytes_downloaded: number;
+    bytes_total: number;
+    meshes_downloaded: number;
+    meshes_total: number;
+    regions_downloaded: number;
+    regions_total: number;
+    requests_in_flight: number;
+    textures_downloaded: number;
+    textures_total: number;
 }
 
 /**
@@ -500,6 +537,20 @@ export interface InitOutput {
     readonly __wbg_get_jumpstats_strafes: (a: number) => number;
     readonly __wbg_get_range_end: (a: number) => number;
     readonly __wbg_get_range_start: (a: number) => number;
+    readonly __wbg_get_streamablebotstats_blocks_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablebotstats_blocks_total: (a: number) => number;
+    readonly __wbg_get_streamablebotstats_bytes_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablebotstats_bytes_total: (a: number) => number;
+    readonly __wbg_get_streamablebotstats_requests_in_flight: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_bytes_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_bytes_total: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_meshes_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_meshes_total: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_regions_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_regions_total: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_requests_in_flight: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_textures_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_textures_total: (a: number) => number;
     readonly __wbg_get_vector3_x: (a: number) => number;
     readonly __wbg_get_vector3_y: (a: number) => number;
     readonly __wbg_get_vector3_z: (a: number) => number;
@@ -518,12 +569,28 @@ export interface InitOutput {
     readonly __wbg_set_jumpstats_strafes: (a: number, b: number) => void;
     readonly __wbg_set_range_end: (a: number, b: number) => void;
     readonly __wbg_set_range_start: (a: number, b: number) => void;
+    readonly __wbg_set_streamablebotstats_blocks_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablebotstats_blocks_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablebotstats_bytes_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablebotstats_bytes_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablebotstats_requests_in_flight: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_bytes_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_bytes_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_meshes_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_meshes_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_regions_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_regions_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_requests_in_flight: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_textures_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_textures_total: (a: number, b: number) => void;
     readonly __wbg_set_vector3_x: (a: number, b: number) => void;
     readonly __wbg_set_vector3_y: (a: number, b: number) => void;
     readonly __wbg_set_vector3_z: (a: number, b: number) => void;
     readonly __wbg_streamablebot_free: (a: number, b: number) => void;
+    readonly __wbg_streamablebotstats_free: (a: number, b: number) => void;
     readonly __wbg_streamablehead_free: (a: number, b: number) => void;
     readonly __wbg_streamablemap_free: (a: number, b: number) => void;
+    readonly __wbg_streamablemapstats_free: (a: number, b: number) => void;
     readonly __wbg_streamablesession_free: (a: number, b: number) => void;
     readonly __wbg_surface_free: (a: number, b: number) => void;
     readonly __wbg_texturejob_free: (a: number, b: number) => void;
@@ -576,13 +643,14 @@ export interface InitOutput {
     readonly setup_graphics: (a: number) => number;
     readonly streamablebot_cancel: (a: number, b: number) => void;
     readonly streamablebot_clear_downloading: (a: number) => void;
-    readonly streamablebot_count_downloading: (a: number) => number;
     readonly streamablebot_duration: (a: number) => number;
     readonly streamablebot_ingest: (a: number, b: number, c: number) => void;
     readonly streamablebot_next_block_at_time: (a: number, b: number) => number;
     readonly streamablebot_next_block_eager: (a: number, b: number, c: number) => number;
     readonly streamablebot_next_block_throttled: (a: number, b: number, c: number) => number;
+    readonly streamablebot_ranges: (a: number, b: number) => void;
     readonly streamablebot_run_duration: (a: number, b: number, c: number) => void;
+    readonly streamablebot_stats: (a: number) => number;
     readonly streamablehead_get_angles_yaw_delta: (a: number) => number;
     readonly streamablehead_get_fov_slope_y: (a: number) => number;
     readonly streamablehead_get_game_controls: (a: number) => number;
@@ -595,12 +663,12 @@ export interface InitOutput {
     readonly streamablehead_set_time: (a: number, b: number, c: number, d: number) => void;
     readonly streamablemap_cancel: (a: number, b: number) => void;
     readonly streamablemap_clear_downloading: (a: number) => void;
-    readonly streamablemap_count_downloading: (a: number) => number;
     readonly streamablemap_ingest: (a: number, b: number, c: number) => void;
     readonly streamablemap_ingest_deferred: (a: number, b: number, c: number) => void;
     readonly streamablemap_next_block_head_throttled: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_next_block_session: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_promote_ready_assets: (a: number, b: number) => void;
+    readonly streamablemap_stats: (a: number) => number;
     readonly streamablemap_upload_texture: (a: number, b: number, c: number) => void;
     readonly streamablesession_advance_time: (a: number, b: number, c: number, d: number) => void;
     readonly streamablesession_get_angles_yaw_delta: (a: number) => number;
@@ -630,13 +698,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1990: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1990_128: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1990_129: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8047: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8068: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1994: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1994_127: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2018: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2018_157: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2018_158: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8075: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8096: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2022: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2022_156: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
