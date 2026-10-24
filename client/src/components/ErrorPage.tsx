@@ -1,4 +1,6 @@
-import { ArrowBackRounded, HomeRounded, RefreshRounded } from "@mui/icons-material";
+import ArrowBackRounded from "@mui/icons-material/ArrowBackRounded";
+import HomeRounded from "@mui/icons-material/HomeRounded";
+import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import { Box, Button, Typography } from "@mui/material";
 import { isRouteErrorResponse, useRouteError } from "react-router";
 

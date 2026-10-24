@@ -121,7 +121,8 @@ app.get("/api/auth/tiers", async (req, res) => {
 
     const mapTierInfo = await getUserTierForMap(globalsClient, user.userId, result.mapId);
 
-    res.status(200).json(mapTierInfo);
+    // null when the user hasn't voted on this map, since res.json(undefined) sends an empty body
+    res.status(200).json(mapTierInfo ?? null);
 });
 
 const submitTierVoteValidator = vine.create({

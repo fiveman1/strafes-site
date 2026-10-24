@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Game, ModerationStatus, Style, User, formatRank, formatSkill } from "shared";
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { yellow } from "@mui/material/colors";
 import { useOutletContext } from "react-router";

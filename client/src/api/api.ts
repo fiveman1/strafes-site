@@ -1,23 +1,43 @@
-import axios from "axios";
 import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay } from "shared";
 import { JsonObject } from "../common/utils";
 
-async function tryGetRequest(url: string, params?: JsonObject) {
+// Mirrors what axios did: skip null/undefined params and repeat the key for each array item (a=1&a=2)
+function toSearchParams(params?: JsonObject) {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params ?? {})) {
+        for (const item of Array.isArray(value) ? value : [value]) {
+            if (item !== null && item !== undefined) {
+                search.append(key, String(item));
+            }
+        }
+    }
+    return search.toString();
+}
+
+// Returns null on network errors, timeouts, and non-2xx responses
+async function tryRequest(url: string, init: RequestInit, timeout: number) {
     try {
-        return await axios.get("/api/" + url, {params: params, timeout: 15000, paramsSerializer: {indexes: null}});
-    } 
+        const res = await fetch("/api/" + url, { ...init, signal: AbortSignal.timeout(timeout) });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return { data };
+    }
     catch {
         return null;
     }
 }
 
+async function tryGetRequest(url: string, params?: JsonObject) {
+    const query = toSearchParams(params);
+    return await tryRequest(query ? `${url}?${query}` : url, { method: "GET" }, 15000);
+}
+
 export async function tryPostRequest(url: string, params?: JsonObject) {
-    try {
-        return await axios.post("/api/" + url, params, {timeout: 5000});
-    } 
-    catch {
-        return null;
-    }
+    return await tryRequest(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params)
+    }, 5000);
 }
 
 export async function getUserIdFromName(username: string): Promise<number | null> {
@@ -234,7 +254,7 @@ export async function getCurrentMapTierVote(mapId: number) {
 
     if (!res) return null;
 
-    return res.data as MapTierInfo | undefined;
+    return res.data as MapTierInfo | null;
 }
 
 export async function voteForMapTier(mapId: number, tier: number | null) {
@@ -269,25 +289,17 @@ export async function getBotFileResponse(timeId: string) {
 }
 
 export async function getBotFileURL(timeId: string) {
-    try {
-        const res = await fetch("/api/replays/bots/" + timeId);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.url as string;
-    }
-    catch {
-        return null;
-    }
+    const res = await tryGetRequest("replays/bots/" + timeId);
+    
+    if (!res) return null;
+
+    return res.data.url as string;
 }
 
 export async function getMapFileURL(mapId: number) {
-    try {
-        const res = await fetch("/api/replays/maps/" + mapId);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.url as string;
-    }
-    catch {
-        return null;
-    }
+    const res = await tryGetRequest("replays/maps/" + mapId);
+    
+    if (!res) return null;
+
+    return res.data.url as string;
 }

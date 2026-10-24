@@ -11,7 +11,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { makeUserColumn } from "./cards/grids/util/columns";
 import { numDigits } from "../common/utils";
 import { useGameStyle } from "../common/states";
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import { parseAsNumberLiteral, useQueryState } from "nuqs";

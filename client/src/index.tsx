@@ -3,18 +3,14 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from "react-router";
 import App from './App';
 import Home from './components/Home';
-import Users from './components/Users';
-import Ranks from './components/Ranks';
-import Globals from './components/Globals';
-import MapsPage from './components/MapsPage';
-import Compare from './components/Compare';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Terms from './components/Terms';
-import Privacy from './components/Privacy';
-import Settings from './components/Settings';
-import MapsHome from './components/MapsHome';
-import Replays from './components/Replays';
 import { NotFoundPage, RouteErrorPage } from './components/ErrorPage';
+
+// Routes other than the home page are split into their own chunks, so heavy dependencies
+// like the data grid, charts, and replay player only download when a page needs them.
+function lazyRoute(load: () => Promise<{ default: React.ComponentType }>) {
+    return async () => ({ Component: (await load()).default });
+}
 
 // React's dev build records a performance entry, with a diff of the props, for every component render whose props changed,
 // and the browser keeps them all. Resizing the replay player renders a lot, which grew that to gigabytes.
@@ -46,24 +42,24 @@ const router = createBrowserRouter([
             {
                 path: "users",
                 children: [
-                    { index: true, Component: Users },
-                    { path: ":id", Component: Users }
+                    { index: true, lazy: lazyRoute(() => import("./components/Users")) },
+                    { path: ":id", lazy: lazyRoute(() => import("./components/Users")) }
                 ]
             },
             {
                 path: "maps",
                 children: [
-                    { index: true, Component: MapsHome },
-                    { path: ":id", Component: MapsPage }
+                    { index: true, lazy: lazyRoute(() => import("./components/MapsHome")) },
+                    { path: ":id", lazy: lazyRoute(() => import("./components/MapsPage")) }
                 ]
             },
-            { path: "ranks", Component: Ranks },
-            { path: "globals", Component: Globals },
-            { path: "compare", Component: Compare },
-            { path: "terms", Component: Terms },
-            { path: "privacy", Component: Privacy },
-            { path: "settings", Component: Settings },
-            { path: "replays/:id", Component: Replays },
+            { path: "ranks", lazy: lazyRoute(() => import("./components/Ranks")) },
+            { path: "globals", lazy: lazyRoute(() => import("./components/Globals")) },
+            { path: "compare", lazy: lazyRoute(() => import("./components/Compare")) },
+            { path: "terms", lazy: lazyRoute(() => import("./components/Terms")) },
+            { path: "privacy", lazy: lazyRoute(() => import("./components/Privacy")) },
+            { path: "settings", lazy: lazyRoute(() => import("./components/Settings")) },
+            { path: "replays/:id", lazy: lazyRoute(() => import("./components/Replays")) },
             { path: "*", Component: NotFoundPage }
         ]
     }

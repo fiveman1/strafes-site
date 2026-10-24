@@ -24,7 +24,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import { dateTimeFormat, relativeTimeFormatter } from "../common/datetime";
 import TimeAgo from "react-timeago";
 import MapTierListSelector from "./forms/MapTierListSelector";
-import { BarPlot, ChartContainer, ChartsTooltip } from "@mui/x-charts";
+import { BarPlot, ChartsContainer, ChartsTooltip } from "@mui/x-charts";
 import MapFilterSortOptions from "./forms/MapFilterSortOptions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
@@ -309,7 +309,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     pt: 0.5,
                     pb: 0.25
                 }}>
-                <ChartContainer 
+                <ChartsContainer 
                     width={28 * MAX_TIER} 
                     height={22}
                     xAxis={[{
@@ -340,7 +340,7 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 >
                     <BarPlot />
                     <ChartsTooltip />
-                </ChartContainer>
+                </ChartsContainer>
             </Box>}
             {voteData?.updatedAt &&
             <Tooltip title={dateTimeFormat.format(new Date(voteData.updatedAt))} disableInteractive slotProps={{popper: {modifiers: [{name: "offset", options: {offset: [0, -12]}}]}}} >

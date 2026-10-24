@@ -15,6 +15,7 @@ import RobloxIcon from "./components/icons/RobloxIcon";
 import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
 import MainAppBar from "./components/other/MainAppBar";
+import NavigationProgress from "./components/other/NavigationProgress";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 
 const LinkBehavior = React.forwardRef<
@@ -510,6 +511,7 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
+            <NavigationProgress />
             <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} maps={mapInfo.sortedMaps} />
             <Box
                 component="main"
