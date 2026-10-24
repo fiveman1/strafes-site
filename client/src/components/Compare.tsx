@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { Typography, useMediaQuery } from "@mui/material";
 import GameSelector from "./forms/GameSelector";
-import UserSearch from "./search/UserSearch";
 import { Game, Style, Time, User, formatStyle, getAllowedStyles } from "shared";
 import { useOutletContext } from "react-router";
 import { ContextParams } from "../common/common";
-import { useCompareEntries, useComparePage, useGame, useUserSearch } from "../common/states";
+import { useCompareEntries, useComparePage, useGame } from "../common/states";
 import { parseAsString, useQueryState } from "nuqs";
 import {
     CompareEntry,
@@ -48,7 +47,6 @@ function Compare() {
     const queryClient = useQueryClient();
     
     const [game, setGameState] = useGame();
-    const userSearch = useUserSearch();
     const [selectedSlice, setSelectedSlice] = useState<number>();
     const [, setPage] = useComparePage();
 
@@ -274,13 +272,6 @@ function Compare() {
                 <Typography component="h1" variant="h5">
                     Compare
                 </Typography>
-                <Box sx={{ width: "100%", maxWidth: smallScreen ? undefined : 360 }}>
-                    <UserSearch
-                        setUserId={onAddUser}
-                        userSearch={userSearch}
-                        disabled={entries.length >= MAX_ENTRIES}
-                    />
-                </Box>
             </Box>
             <Box
                 sx={{
@@ -300,6 +291,7 @@ function Compare() {
                     setEntries={setEntries}
                     idToUser={idToUser}
                     game={game}
+                    onAddUser={onAddUser}
                 />
             </Box>
             {/* Pie chart */}

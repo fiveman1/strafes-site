@@ -1,11 +1,15 @@
-import { alpha, Box, IconButton, Link, Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import { useCallback, useState } from "react";
+import { alpha, Box, Button, IconButton, Link, Paper, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import { Game, Style, User, getAllowedStyles } from "shared";
 import UserAvatar from "../displays/UserAvatar";
 import StyleSelector from "../forms/StyleSelector";
 import { CompareEntry, ENTRY_COLORS, MAX_ENTRIES } from "./types";
 import { Link as RouterLink } from "react-router";
+import { useUserSearch } from "../../common/states";
+import UserSearch from "../search/UserSearch";
 
 interface IdToUser {
     [userId: string]: {
@@ -19,11 +23,26 @@ interface ICompareEntryListProps {
     setEntries: (entries: CompareEntry[]) => void
     idToUser: IdToUser
     game: Game
+    onAddUser: (userId: string | undefined) => void
 }
 
 function CompareEntryList(props: ICompareEntryListProps) {
-    const { entries, setEntries, idToUser, game } = props;
+    const { entries, setEntries, idToUser, game, onAddUser } = props;
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
+    const userSearch = useUserSearch();
+
+    // The search is hidden behind a button, except when there aren't enough users to compare yet
+    const [ editing, setEditing ] = useState(false);
+    const canAdd = entries.length < MAX_ENTRIES;
+    const showSearch = canAdd && (editing || entries.length < 2);
+
+    // Clear the search once done so the next add starts fresh
+    const { setUserText, setSelectedUser } = userSearch;
+    const onSearchDone = useCallback(() => {
+        setEditing(false);
+        setUserText("");
+        setSelectedUser({ username: "" });
+    }, [setSelectedUser, setUserText]);
 
     const onRemove = (index: number) => {
         setEntries(entries.filter((_, i) => i !== index));
@@ -48,26 +67,37 @@ function CompareEntryList(props: ICompareEntryListProps) {
         setEntries(newEntries);
     };
 
-    if (entries.length === 0) {
-        return (
-            <Paper sx={{ padding: 2 }}>
-                <Typography component="h2" variant="subtitle2">
-                    Users ({entries.length}/{MAX_ENTRIES})
-                </Typography>
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "center"
-                    }}>
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
-                        Search for users above to start comparing
-                    </Typography>
-                </Box>
-            </Paper>
-        );
-    }
+    const addSlot = showSearch ?
+        <Box sx={{ width: "100%", maxWidth: smallScreen ? undefined : 280, alignSelf: "center" }}>
+            <UserSearch
+                setUserId={onAddUser}
+                userSearch={userSearch}
+                compact
+                autoFocus={editing}
+                onDone={onSearchDone}
+            />
+        </Box>
+        : canAdd ?
+        // Styled like an empty entry so it lines up with the entries next to it
+        <Button
+            onClick={() => setEditing(true)}
+            startIcon={<PersonAddIcon />}
+            sx={{
+                minWidth: smallScreen ? undefined : "200px",
+                padding: smallScreen ? 1 : 0.5,
+                borderRadius: 1,
+                border: "1px dashed",
+                borderColor: "divider",
+                color: "text.secondary",
+                textTransform: "none",
+                "&:hover": {
+                    borderColor: "text.secondary"
+                }
+            }}
+        >
+            Add user
+        </Button>
+        : null;
 
     return (
         <Paper sx={{ padding: 2 }}>
@@ -177,6 +207,7 @@ function CompareEntryList(props: ICompareEntryListProps) {
                         </Box>
                     );
                 })}
+                {addSlot}
             </Box>
         </Paper>
     );
