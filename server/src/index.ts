@@ -19,7 +19,7 @@ import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { readdir, readFile } from "fs/promises";
-import { rateLimiterMiddleware } from "./middleware.js";
+import { precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
 import memoize from "memoize";
 
@@ -1033,7 +1033,12 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
 });
 
 app.use("/api/files/maps", express.static(mapDir, { index: false }));
-app.use(express.static(buildDir, { index: false }));
+app.use(precompressedMiddleware(buildDir));
+app.use(express.static(buildDir, { index: false, setHeaders: staticCacheHeaders(buildDir) }));
+// A missing hashed asset (e.g. a chunk from before a deploy) should 404, not fall through to index.html
+app.use("/assets", (req, res) => {
+    res.status(404).end();
+});
 app.get("*splat", async (req, res): Promise<any> => {
     try {
         // Inject meta tags for title and description based on the requested URL
@@ -1171,6 +1176,8 @@ app.get("*splat", async (req, res): Promise<any> => {
             html = html.replace("__GOOGLE_SITE_VERIFICATION__", escapeHTML(GOOGLE_SITE_VERIFICATION));
         }
 
+        // Always revalidate, since index.html is what points at the current hashed assets
+        res.setHeader("Cache-Control", "no-cache");
         return res.send(html);
     }
     catch {

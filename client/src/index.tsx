@@ -19,6 +19,29 @@ if (import.meta.env.DEV) {
     setInterval(() => performance.clearMeasures(), 10_000);
 }
 
+// After a deploy, an open tab still references the old build's chunks, which no longer exist.
+// Reload to pick up the new build, but not more than once a minute in case the chunk is really missing.
+window.addEventListener("vite:preloadError", (event) => {
+    let lastReload = 0;
+    try {
+        lastReload = Number(sessionStorage.getItem("chunkReloadAt")) || 0;
+    }
+    catch {
+        // sessionStorage can be unavailable; reloading is still the best option
+    }
+    if (Date.now() - lastReload < 60_000) {
+        return;
+    }
+    try {
+        sessionStorage.setItem("chunkReloadAt", String(Date.now()));
+    }
+    catch {
+        // see above
+    }
+    event.preventDefault();
+    window.location.reload();
+});
+
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );

@@ -2,6 +2,39 @@ import { defineConfig, loadEnv, PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import eslintPlugin from "@nabla/vite-plugin-eslint";
+import { readdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+import { promisify } from "util";
+import { brotliCompress, constants } from "zlib";
+
+const brotli = promisify(brotliCompress);
+
+// Writes a max-quality .br next to each built asset, which the server sends to browsers that accept brotli.
+// Cloudflare's on-the-fly brotli uses a much lower quality, so this saves ~15-20% on the JS and wasm.
+function precompressAssets(): PluginOption {
+	let assetsDir = "";
+	return {
+		name: "precompress-assets",
+		apply: "build",
+		configResolved(config) {
+			assetsDir = path.resolve(config.root, config.build.outDir, config.build.assetsDir);
+		},
+		async closeBundle() {
+			const files = (await readdir(assetsDir)).filter((file) => /\.(js|css|wasm)$/.test(file));
+			await Promise.all(files.map(async (file) => {
+				const filePath = path.join(assetsDir, file);
+				const data = await readFile(filePath);
+				const compressed = await brotli(data, {
+					params: {
+						[constants.BROTLI_PARAM_QUALITY]: constants.BROTLI_MAX_QUALITY,
+						[constants.BROTLI_PARAM_SIZE_HINT]: data.length
+					}
+				});
+				await writeFile(filePath + ".br", compressed);
+			}));
+		}
+	};
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,7 +44,8 @@ export default defineConfig(({ mode }) => {
 		plugins: [
 			react() as PluginOption[],
 			tsconfigPaths() as PluginOption,
-			eslintPlugin() as PluginOption
+			eslintPlugin() as PluginOption,
+			precompressAssets()
 		],
 		server: {
 			port: 3000,
