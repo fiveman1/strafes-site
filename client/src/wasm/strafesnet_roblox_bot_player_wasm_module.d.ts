@@ -102,7 +102,7 @@ export class Graphics {
      */
     debug_info(): string;
     /**
-     * What the last rendered frame drew after skipping what was out of view, its lights and its shadows, as three lines.
+     * What the last rendered frame drew after skipping what was out of view, its lights, its ambient occlusion and its shadows, as four lines.
      */
     frame_stats(): string;
     /**
@@ -698,13 +698,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_2018: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2018_157: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2018_158: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8075: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8096: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2022: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2022_156: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2038: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2038_157: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2038_158: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8095: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8116: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2042: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2042_156: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
