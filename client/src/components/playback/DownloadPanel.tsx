@@ -49,7 +49,7 @@ function DownloadDetails(props: { stats: DownloadStats }) {
     return (
         <>
             <span>replay blocks {bot.blocksDownloaded}/{bot.blocksTotal}, {bot.requestsInFlight} in flight</span>
-            <span>map regions {map.regionsDownloaded}/{map.regionsTotal}, meshes {map.meshesDownloaded}/{map.meshesTotal}, textures {map.texturesDownloaded}/{map.texturesTotal}, {map.requestsInFlight} in flight</span>
+            <span>map regions {map.regionsDownloaded}/{map.regionsTotal}, meshes {map.meshesDownloaded}/{map.meshesTotal}, textures {map.texturesDownloaded}/{map.texturesTotal}{map.skyChunksTotal > 0 && `, sky ${map.skyChunksDownloaded}/${map.skyChunksTotal}`}, {map.requestsInFlight} in flight</span>
         </>
     );
 }

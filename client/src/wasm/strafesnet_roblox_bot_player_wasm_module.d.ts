@@ -102,7 +102,8 @@ export class Graphics {
      */
     debug_info(): string;
     /**
-     * What the last rendered frame drew after skipping what was out of view, its lights, its ambient occlusion and its shadows, as four lines.
+     * What the last rendered frame drew after skipping what was out of view, its lights, its ambient occlusion and its shadows, as four lines,
+     * and a fifth for the baked sky on maps with one.
      */
     frame_stats(): string;
     /**
@@ -395,6 +396,8 @@ export class StreamableMapStats {
     regions_downloaded: number;
     regions_total: number;
     requests_in_flight: number;
+    sky_chunks_downloaded: number;
+    sky_chunks_total: number;
     textures_downloaded: number;
     textures_total: number;
 }
@@ -549,6 +552,8 @@ export interface InitOutput {
     readonly __wbg_get_streamablemapstats_regions_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_regions_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_requests_in_flight: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_sky_chunks_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_sky_chunks_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_textures_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_textures_total: (a: number) => number;
     readonly __wbg_get_vector3_x: (a: number) => number;
@@ -581,6 +586,8 @@ export interface InitOutput {
     readonly __wbg_set_streamablemapstats_regions_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_regions_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_requests_in_flight: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_sky_chunks_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_sky_chunks_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_textures_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_textures_total: (a: number, b: number) => void;
     readonly __wbg_set_vector3_x: (a: number, b: number) => void;
@@ -698,13 +705,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_2038: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2038_157: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2038_158: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8095: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8116: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2042: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2042_156: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2067: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2067_161: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2067_162: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8124: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8145: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2071: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2071_160: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -26,6 +26,7 @@ import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
 import { getTextureTranscoder } from "./playback/textureTranscoder";
+import { compiledWasm } from "./playback/wasmModule";
 import { mapIngestStats, PlaybackStats } from "./playback/playbackStats";
 import { AutoGraphicsTuner, canvasPixelRatio, GraphicsLevel, guessGraphicsLevel, toGraphicsQuality, useGraphicsSettings } from "./playback/graphicsSettings";
 
@@ -496,8 +497,12 @@ function Replays() {
         setLoading(true);
         downloadStats.set(undefined);
 
+        // started before any downloads, so its script isn't queued behind them on a server with few connections
+        getTextureTranscoder();
+
         const promise = async () => {
-            await init();
+            // compiled once and shared with the texture worker
+            await init({ module_or_path: await compiledWasm() });
 
             if (isCanceled) return;
 

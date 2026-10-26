@@ -1,10 +1,16 @@
 // Transcodes map textures off the main thread. See textureTranscoder.ts.
 import init, { transcode_texture } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
-import type { TranscodeRequest, TranscodeResponse } from "./textureTranscoder";
+import type { TranscodeRequest, TranscodeResponse, WorkerInit } from "./textureTranscoder";
 
-const ready = init();
+// Loads the compiled module the page sends; jobs wait for it
+let loadModule: (module: WebAssembly.Module) => void = () => {};
+const ready = new Promise<WebAssembly.Module>(resolve => loadModule = resolve).then(module => init({ module_or_path: module }));
 
-addEventListener("message", async (event: MessageEvent<TranscodeRequest>) => {
+addEventListener("message", async (event: MessageEvent<WorkerInit | TranscodeRequest>) => {
+    if ("module" in event.data) {
+        loadModule(event.data.module);
+        return;
+    }
     const { id, textureId, data, support } = event.data;
     let response: TranscodeResponse;
     let transfer: Transferable[] = [];

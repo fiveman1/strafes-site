@@ -1,4 +1,10 @@
+import { compiledWasm } from "./wasmModule";
 import { Graphics, StreamableMap, TextureJob, TranscodedTexture, transcode_texture } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
+
+// First message to the worker: the module compiled here, so the worker doesn't fetch it again
+export interface WorkerInit {
+    module: WebAssembly.Module;
+}
 
 export interface TranscodeRequest {
     id: number;
@@ -43,12 +49,17 @@ class TextureTranscoder {
 
     constructor() {
         try {
-            this.worker = new Worker(new URL("./textureWorker.ts", import.meta.url), { type: "module" });
-            this.worker.addEventListener("message", (event: MessageEvent<TranscodeResponse>) => this.onResponse(event.data));
-            this.worker.addEventListener("error", (event) => {
+            const worker = new Worker(new URL("./textureWorker.ts", import.meta.url), { type: "module" });
+            this.worker = worker;
+            worker.addEventListener("message", (event: MessageEvent<TranscodeResponse>) => this.onResponse(event.data));
+            worker.addEventListener("error", (event) => {
                 console.error("Texture worker failed, transcoding on the main thread instead", event);
                 this.stopWorker();
             });
+            compiledWasm().then(module => {
+                const init: WorkerInit = { module };
+                worker.postMessage(init);
+            }, () => this.stopWorker());
         }
         catch (err) {
             console.error("Couldn't start the texture worker, transcoding on the main thread instead", err);

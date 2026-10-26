@@ -18,6 +18,9 @@ export interface DownloadStats {
         meshesTotal: number
         regionsDownloaded: number
         regionsTotal: number
+        /** Chunks of the baked sky, 0 total on maps without one */
+        skyChunksDownloaded: number
+        skyChunksTotal: number
     }
     /** Downloaded replay as pairs [start0, end0, start1, end1, ...] in seek bar time */
     ranges: number[]
@@ -74,7 +77,9 @@ export function readDownloadStats(bot: StreamableBot, map: StreamableMap, offset
             meshesDownloaded: mapStats.meshes_downloaded,
             meshesTotal: mapStats.meshes_total,
             regionsDownloaded: mapStats.regions_downloaded,
-            regionsTotal: mapStats.regions_total
+            regionsTotal: mapStats.regions_total,
+            skyChunksDownloaded: mapStats.sky_chunks_downloaded,
+            skyChunksTotal: mapStats.sky_chunks_total
         },
         ranges: Array.from(bot.ranges(), time => time - offset)
     };
