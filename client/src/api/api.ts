@@ -40,16 +40,19 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
     }, 5000);
 }
 
-// Counts this tab's replay player toward how many viewers use WebGL instead of WebGPU, once per tab
+// Counts this browser's replay player toward how many viewers use WebGL instead of WebGPU,
+// once per UTC day (the server's counting day) and again if the backend changes
 export function reportGraphicsBackend(webgl: boolean) {
+    const backend = webgl ? "webgl" : "webgpu";
+    const mark = new Date().toISOString().slice(0, 10) + " " + backend;
     try {
-        if (sessionStorage.getItem("graphicsBackendReported")) return;
-        sessionStorage.setItem("graphicsBackendReported", "1");
+        if (localStorage.getItem("graphicsBackendReported") === mark) return;
+        localStorage.setItem("graphicsBackendReported", mark);
     }
     catch {
-        // without sessionStorage, report anyway; the server limits how often an IP counts
+        // without localStorage, report anyway; the server limits how often an IP counts
     }
-    void tryPostRequest("graphics-backend", { backend: webgl ? "webgl" : "webgpu", hasWebgpuApi: "gpu" in navigator });
+    void tryPostRequest("graphics-backend", { backend, hasWebgpuApi: "gpu" in navigator });
 }
 
 export async function getUserIdFromName(username: string): Promise<number | null> {
