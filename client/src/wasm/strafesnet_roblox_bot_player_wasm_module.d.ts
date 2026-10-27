@@ -102,8 +102,8 @@ export class Graphics {
      */
     debug_info(): string;
     /**
-     * What the last rendered frame drew after skipping what was out of view, its lights, its ambient occlusion and its shadows, as four lines,
-     * and a fifth for the baked sky on maps with one.
+     * What the last rendered frame drew after skipping what was out of view, its lights and its shadows, as three lines,
+     * and a fourth for the baked sky on maps with one.
      */
     frame_stats(): string;
     /**
@@ -705,13 +705,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_2067: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2067_161: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2067_162: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8124: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8145: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2071: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2071_160: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2049: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2049_161: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2049_162: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8106: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_8127: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2053: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2053_160: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
