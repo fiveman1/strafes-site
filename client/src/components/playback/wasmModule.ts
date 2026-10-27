@@ -15,5 +15,7 @@ export function compiledWasm(): Promise<WebAssembly.Module> {
             return await WebAssembly.compile(await response.arrayBuffer());
         }
     })();
+    // a failed fetch is tried again by the next replay, instead of failing every one until a reload
+    compiled.catch(() => { compiled = null; });
     return compiled;
 }
