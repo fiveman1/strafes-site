@@ -40,6 +40,18 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
     }, 5000);
 }
 
+// Counts this tab's replay player toward how many viewers use WebGL instead of WebGPU, once per tab
+export function reportGraphicsBackend(webgl: boolean) {
+    try {
+        if (sessionStorage.getItem("graphicsBackendReported")) return;
+        sessionStorage.setItem("graphicsBackendReported", "1");
+    }
+    catch {
+        // without sessionStorage, report anyway; the server limits how often an IP counts
+    }
+    void tryPostRequest("graphics-backend", { backend: webgl ? "webgl" : "webgpu", hasWebgpuApi: "gpu" in navigator });
+}
+
 export async function getUserIdFromName(username: string): Promise<number | null> {
     if (!username) return null;
 
