@@ -22,6 +22,7 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import { reportGraphicsBackend } from "../api/api";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
@@ -520,6 +521,7 @@ function Replays() {
                 setShowThumb(supportsMultiSurface);
                 // only WebGL can't draw to several canvases
                 setWebgl(!supportsMultiSurface);
+                reportGraphicsBackend(!supportsMultiSurface);
 
                 setDebugInfo(graphics.debug_info());
 
