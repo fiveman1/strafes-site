@@ -40,40 +40,6 @@ export async function tryPostRequest(url: string, params?: JsonObject) {
     }, 5000);
 }
 
-const INTERACTION_EVENTS = ["pointerdown", "keydown"] as const;
-let pendingGraphicsReport: ((e: Event) => void) | null = null;
-
-// Counts this browser's replay player toward how many viewers use WebGL instead of WebGPU,
-// once per UTC day (the server's counting day) and again if the backend changes.
-// Crawlers that render pages in headless browsers have no GPU, so they get WebGL and would inflate its count.
-// Waiting for the viewer to click or press a key leaves them out, since they only load the page.
-export function reportGraphicsBackend(webgl: boolean) {
-    if (navigator.webdriver) return;
-    const backend = webgl ? "webgl" : "webgpu";
-
-    // only the latest player's backend gets reported
-    if (pendingGraphicsReport) {
-        for (const type of INTERACTION_EVENTS) window.removeEventListener(type, pendingGraphicsReport, true);
-    }
-    const report = (e: Event) => {
-        if (!e.isTrusted) return;
-        for (const type of INTERACTION_EVENTS) window.removeEventListener(type, report, true);
-        pendingGraphicsReport = null;
-
-        const mark = new Date().toISOString().slice(0, 10) + " " + backend;
-        try {
-            if (localStorage.getItem("graphicsBackendReportedV2") === mark) return;
-            localStorage.setItem("graphicsBackendReportedV2", mark);
-        }
-        catch {
-            // without localStorage, report anyway; the server limits how often an IP counts
-        }
-        void tryPostRequest("graphics-backend", { backend, hasWebgpuApi: "gpu" in navigator });
-    };
-    pendingGraphicsReport = report;
-    for (const type of INTERACTION_EVENTS) window.addEventListener(type, report, { capture: true, passive: true });
-}
-
 export async function getUserIdFromName(username: string): Promise<number | null> {
     if (!username) return null;
 

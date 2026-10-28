@@ -18,7 +18,6 @@ import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
-import { logGraphicsBackend } from "./graphics.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
@@ -157,32 +156,6 @@ app.post("/api/auth/tiers", rateLimiterMiddleware(2), async (req, res) => {
 
 app.post("/api/auth/settings", async (req, res) => {
     await authClient.updateSettings(req, res);
-});
-
-const graphicsBackendValidator = vine.create({
-    backend: vine.enum(["webgpu", "webgl"] as const),
-    hasWebgpuApi: vine.boolean({ strict: true })
-});
-// The player reports once per tab, so a few an hour per IP is plenty and keeps one client from skewing the counts
-const graphicsBackendRateLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, validate: { xForwardedForHeader: !IS_DEV_MODE } });
-
-app.post("/api/graphics-backend", graphicsBackendRateLimit, rateLimiterMiddleware(1), async (req, res) => {
-    const [error, result] = await graphicsBackendValidator.tryValidate(req.body);
-    if (error) {
-        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
-        return;
-    }
-
-    if (!isBot(req.get("user-agent"))) {
-        try {
-            await logGraphicsBackend(globalsClient, result.backend, result.hasWebgpuApi);
-        }
-        catch (err) {
-            console.error("Couldn't log graphics backend:", err);
-        }
-    }
-
-    res.status(204).end();
 });
 
 app.get("/api/username", rateLimiterMiddleware(1), cache("5 minutes"), async (req, res) => {

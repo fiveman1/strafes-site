@@ -35,11 +35,11 @@ export function canvasPixelRatio(level: GraphicsLevel, renderScale: number): num
 }
 
 /**
- * Where auto starts before measuring: Low for WebGL and touch devices (phones and tablets), Medium otherwise.
+ * Where auto starts before measuring: Low for touch devices (phones and tablets), Medium otherwise.
  */
-export function guessGraphicsLevel(webgl: boolean): GraphicsLevel {
+export function guessGraphicsLevel(): GraphicsLevel {
     const touch = window.matchMedia("(pointer: coarse)").matches;
-    return webgl || touch ? "low" : "medium";
+    return touch ? "low" : "medium";
 }
 
 function isLevel(value: string | null): value is GraphicsLevel {

@@ -62,7 +62,7 @@ export class PlaybackStats {
         const promoteMsAverage = this.promoteMsTotal / this.renderCount;
         // timing first, then what was drawn, then loading and the camera
         const lines: string[] = [];
-        // undefined on WebGL, which has no GPU timestamps
+        // undefined on devices without GPU timestamps
         this.lastGpuStats = graphics.gpu_stats() ?? this.lastGpuStats;
         if (this.lastGpuStats !== undefined) {
             lines.push(this.lastGpuStats);

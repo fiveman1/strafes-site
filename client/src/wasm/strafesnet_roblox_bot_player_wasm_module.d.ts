@@ -108,7 +108,7 @@ export class Graphics {
     frame_stats(): string;
     /**
      * The average GPU time of the frames rendered since the last call, as one line,
-     * or undefined on devices without timestamp queries (WebGL) or before any frame was timed.
+     * or undefined on devices without timestamp queries or before any frame was timed.
      */
     gpu_stats(): string | undefined;
     /**
@@ -128,11 +128,6 @@ export class Graphics {
     set_graphics_quality(quality: GraphicsQuality): void;
     set_light_distance(light_distance: number): void;
     /**
-     * False with WebGL, which can only draw to the canvas passed to setup_graphics.
-     * Drawing extra surfaces is technically possible but performs much slower on WebGL.
-     */
-    supports_multiple_surfaces(): boolean;
-    /**
      * GPU errors since the last call, oldest first.
      * WebGPU reports validation errors (like a shader the browser can't compile) and device loss
      * without throwing, and the frame just stays black, so poll this to show them.
@@ -140,7 +135,7 @@ export class Graphics {
     take_errors(): string[];
     /**
      * The average GPU time per frame of the frames rendered since the last call, in milliseconds,
-     * or undefined on devices without timestamp queries (WebGL) or before any frame was timed.
+     * or undefined on devices without timestamp queries or before any frame was timed.
      * Counted separately from gpu_stats, so both can be read.
      */
     take_gpu_frame_ms(): number | undefined;
@@ -636,7 +631,6 @@ export interface InitOutput {
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
     readonly graphics_set_light_distance: (a: number, b: number) => void;
-    readonly graphics_supports_multiple_surfaces: (a: number) => number;
     readonly graphics_take_errors: (a: number, b: number) => void;
     readonly graphics_take_gpu_frame_ms: (a: number, b: number) => void;
     readonly graphics_texture_support: (a: number) => number;
@@ -705,13 +699,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_2049: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2049_161: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2049_162: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8106: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_8127: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2053: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2053_160: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1636: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1636_160: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1636_161: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2946: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2961: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1640: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1640_159: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

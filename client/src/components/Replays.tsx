@@ -22,7 +22,6 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
-import { reportGraphicsBackend } from "../api/api";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
@@ -317,10 +316,7 @@ let sharedGraphics: Promise<Graphics> | null = null;
 async function getGraphicsAndSurface(canvas: HTMLCanvasElement): Promise<{ graphics: Graphics, surface: Surface }> {
     if (sharedGraphics) {
         const graphics = await sharedGraphics;
-        // WebGL can only draw to the canvas it was set up with, so it falls through to a new setup.
-        if (graphics.supports_multiple_surfaces()) {
-            return { graphics, surface: graphics.new_surface(canvas) };
-        }
+        return { graphics, surface: graphics.new_surface(canvas) };
     }
     const promise = setup_graphics(canvas);
     const graphicsPromise = promise.then(gs => gs.graphics()!);
@@ -401,7 +397,8 @@ function Replays() {
     const [ loading, setLoading ] = useState(true);
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
-    const [ showThumb, setShowThumb ] = useState(false);
+    // known once graphics are set up
+    const [ graphicsReady, setGraphicsReady ] = useState(false);
     const [ debugInfo, setDebugInfo ] = useState("");
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -437,17 +434,15 @@ function Replays() {
     // graphics presets: one picked by the player, or auto, which measures this device once and remembers the result
     const graphicsSettings = useGraphicsSettings();
     const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale } = graphicsSettings;
-    // whether the player uses WebGL, known once graphics are set up
-    const [ webgl, setWebgl ] = useState<boolean | undefined>(undefined);
     // the preset auto is measuring right now
     const [ tuningLevel, setTuningLevel ] = useState<GraphicsLevel | undefined>(undefined);
     const tunerRef = useRef<AutoGraphicsTuner | null>(null);
     const graphicsLevel: GraphicsLevel = graphicsMode !== "auto"
         ? graphicsMode
-        : autoLevel ?? tuningLevel ?? (webgl === undefined ? "medium" : guessGraphicsLevel(webgl));
+        : autoLevel ?? tuningLevel ?? (graphicsReady ? guessGraphicsLevel() : "medium");
     const pixelRatio = canvasPixelRatio(graphicsLevel, renderScale);
     // the seek bar thumbnail draws the scene a second time while hovering, too costly on Low
-    const thumbEnabled = showThumb && graphicsLevel !== "low";
+    const thumbEnabled = graphicsReady && graphicsLevel !== "low";
     // for the setup and the render loop, which outlive renders
     const graphicsLevelRef = useRef(graphicsLevel);
     const pixelRatioRef = useRef(pixelRatio);
@@ -517,11 +512,7 @@ function Replays() {
                 const { graphics, surface } = await getGraphicsAndSurface(canvas);
                 graphics.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
 
-                const supportsMultiSurface = graphics.supports_multiple_surfaces();
-                setShowThumb(supportsMultiSurface);
-                // only WebGL can't draw to several canvases
-                setWebgl(!supportsMultiSurface);
-                reportGraphicsBackend(!supportsMultiSurface);
+                setGraphicsReady(true);
 
                 setDebugInfo(graphics.debug_info());
 
@@ -588,7 +579,7 @@ function Replays() {
                 let thumbPlayback: StreamableHead | null = null;
                 let thumbSurface: Surface | null = null;
                 const thumbCanvas = thumbCanvasRef.current;
-                if (supportsMultiSurface && thumbCanvas) {
+                if (thumbCanvas) {
                     thumbPlayback = new StreamableHead(bot, 0);
                     thumbSurface = graphics.new_surface(thumbCanvas);
                     handleCanvasSize(PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO, PLAYER_THUMB_HEIGHT, graphics, [thumbSurface], window.devicePixelRatio);
@@ -912,17 +903,17 @@ function Replays() {
 
     // start measuring when auto has nothing saved for this device, once graphics are set up
     useEffect(() => {
-        if (graphicsMode !== "auto" || autoLevel !== undefined || webgl === undefined) {
+        if (graphicsMode !== "auto" || autoLevel !== undefined || !graphicsReady) {
             tunerRef.current = null;
             setTuningLevel(undefined);
             return;
         }
         if (!tunerRef.current) {
-            const start = guessGraphicsLevel(webgl);
+            const start = guessGraphicsLevel();
             tunerRef.current = new AutoGraphicsTuner(start);
             setTuningLevel(start);
         }
-    }, [graphicsMode, autoLevel, webgl]);
+    }, [graphicsMode, autoLevel, graphicsReady]);
 
     // apply the preset and the canvas size whenever they change
     useEffect(() => {
@@ -930,7 +921,7 @@ function Replays() {
         if (!graphics) return;
         graphics.set_graphics_quality(toGraphicsQuality(graphicsLevel));
         canvasSizeDirty.current = true;
-    }, [graphicsLevel, pixelRatio, webgl]);
+    }, [graphicsLevel, pixelRatio, graphicsReady]);
     useLayoutEffect(() => {
         if (!canvasElement) return;
         const observer = new ResizeObserver(() => {
@@ -1159,7 +1150,7 @@ function Replays() {
                                 allowDiff={allowDiff}
                                 thumbCanvasRef={thumbCanvasRef}
                                 setThumbTime={setThumbTime}
-                                showThumb={showThumb}
+                                showThumb={graphicsReady}
                                 thumbEnabled={thumbEnabled}
                                 debugInfo={debugInfo}
                                 fpsTextRef={fpsTextRef}
