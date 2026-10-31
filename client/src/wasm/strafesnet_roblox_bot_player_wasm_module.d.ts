@@ -103,7 +103,7 @@ export class Graphics {
     debug_info(): string;
     /**
      * What the last rendered frame drew after skipping what was out of view, its lights and its shadows, as three lines,
-     * and a fourth for the baked sky on maps with one.
+     * and a fourth for the baked occlusion lists on maps with them.
      */
     frame_stats(): string;
     /**
@@ -384,15 +384,17 @@ export class StreamableMapStats {
     private constructor();
     free(): void;
     [Symbol.dispose](): void;
+    baked_chunks_downloaded: number;
+    baked_chunks_total: number;
     bytes_downloaded: number;
     bytes_total: number;
+    lightmap_chunks_downloaded: number;
+    lightmap_chunks_total: number;
     meshes_downloaded: number;
     meshes_total: number;
     regions_downloaded: number;
     regions_total: number;
     requests_in_flight: number;
-    sky_chunks_downloaded: number;
-    sky_chunks_total: number;
     textures_downloaded: number;
     textures_total: number;
 }
@@ -540,15 +542,17 @@ export interface InitOutput {
     readonly __wbg_get_streamablebotstats_bytes_downloaded: (a: number) => number;
     readonly __wbg_get_streamablebotstats_bytes_total: (a: number) => number;
     readonly __wbg_get_streamablebotstats_requests_in_flight: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_baked_chunks_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_baked_chunks_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_bytes_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_bytes_total: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_lightmap_chunks_downloaded: (a: number) => number;
+    readonly __wbg_get_streamablemapstats_lightmap_chunks_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_meshes_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_meshes_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_regions_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_regions_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_requests_in_flight: (a: number) => number;
-    readonly __wbg_get_streamablemapstats_sky_chunks_downloaded: (a: number) => number;
-    readonly __wbg_get_streamablemapstats_sky_chunks_total: (a: number) => number;
     readonly __wbg_get_streamablemapstats_textures_downloaded: (a: number) => number;
     readonly __wbg_get_streamablemapstats_textures_total: (a: number) => number;
     readonly __wbg_get_vector3_x: (a: number) => number;
@@ -574,15 +578,17 @@ export interface InitOutput {
     readonly __wbg_set_streamablebotstats_bytes_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablebotstats_bytes_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablebotstats_requests_in_flight: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_baked_chunks_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_baked_chunks_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_bytes_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_bytes_total: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_lightmap_chunks_downloaded: (a: number, b: number) => void;
+    readonly __wbg_set_streamablemapstats_lightmap_chunks_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_meshes_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_meshes_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_regions_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_regions_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_requests_in_flight: (a: number, b: number) => void;
-    readonly __wbg_set_streamablemapstats_sky_chunks_downloaded: (a: number, b: number) => void;
-    readonly __wbg_set_streamablemapstats_sky_chunks_total: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_textures_downloaded: (a: number, b: number) => void;
     readonly __wbg_set_streamablemapstats_textures_total: (a: number, b: number) => void;
     readonly __wbg_set_vector3_x: (a: number, b: number) => void;
@@ -699,13 +705,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1675: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1675_160: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1675_161: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2992: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3007: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1679: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1679_159: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1696: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1696_164: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1696_165: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3014: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3029: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1700: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1700_163: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

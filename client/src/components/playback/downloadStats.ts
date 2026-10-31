@@ -18,9 +18,12 @@ export interface DownloadStats {
         meshesTotal: number
         regionsDownloaded: number
         regionsTotal: number
-        /** Chunks of the baked sky, 0 total on maps without one */
-        skyChunksDownloaded: number
-        skyChunksTotal: number
+        /** Chunks of the baked ambient occlusion, 0 total on maps without one */
+        bakedChunksDownloaded: number
+        bakedChunksTotal: number
+        /** Chunks of the lightmap, 0 total on maps without one */
+        lightmapChunksDownloaded: number
+        lightmapChunksTotal: number
     }
     /** Downloaded replay as pairs [start0, end0, start1, end1, ...] in seek bar time */
     ranges: number[]
@@ -78,8 +81,10 @@ export function readDownloadStats(bot: StreamableBot, map: StreamableMap, offset
             meshesTotal: mapStats.meshes_total,
             regionsDownloaded: mapStats.regions_downloaded,
             regionsTotal: mapStats.regions_total,
-            skyChunksDownloaded: mapStats.sky_chunks_downloaded,
-            skyChunksTotal: mapStats.sky_chunks_total
+            bakedChunksDownloaded: mapStats.baked_chunks_downloaded,
+            bakedChunksTotal: mapStats.baked_chunks_total,
+            lightmapChunksDownloaded: mapStats.lightmap_chunks_downloaded,
+            lightmapChunksTotal: mapStats.lightmap_chunks_total
         },
         ranges: Array.from(bot.ranges(), time => time - offset)
     };
