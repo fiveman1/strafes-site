@@ -12,11 +12,8 @@ const MODE_KEY = "player_graphicsMode";
 /** The preset auto picked on this device, so it's only measured once. */
 const AUTO_LEVEL_KEY = "player_graphicsAutoLevel";
 const RENDER_SCALE_KEY = "player_renderScale";
-const BOUNCE_LIGHT_KEY = "player_bounceLight";
 
 export const MIN_RENDER_SCALE = 0.5;
-/** Most bounce light the slider goes to, as a multiple of the baked light. */
-export const MAX_BOUNCE_LIGHT = 3;
 
 export function toGraphicsQuality(level: GraphicsLevel): GraphicsQuality {
     switch (level) {
@@ -57,9 +54,6 @@ export interface GraphicsSettings {
     setAutoLevel: (level: GraphicsLevel) => void
     renderScale: number
     setRenderScale: (scale: number) => void
-    /** How much of the map's baked bounce light surfaces get, 1 as baked. */
-    bounceLight: number
-    setBounceLight: (strength: number) => void
 }
 
 /** The player's graphics settings, saved in localStorage. */
@@ -75,11 +69,6 @@ export function useGraphicsSettings(): GraphicsSettings {
     const [ renderScale, setRenderScaleState ] = useState(() => {
         const stored = Number(localStorage.getItem(RENDER_SCALE_KEY));
         return stored >= MIN_RENDER_SCALE && stored <= 1 ? stored : 1;
-    });
-    const [ bounceLight, setBounceLightState ] = useState(() => {
-        const stored = localStorage.getItem(BOUNCE_LIGHT_KEY);
-        const value = Number(stored);
-        return stored !== null && value >= 0 && value <= MAX_BOUNCE_LIGHT ? value : 1;
     });
 
     const setMode = useCallback((mode: GraphicsMode) => {
@@ -100,12 +89,7 @@ export function useGraphicsSettings(): GraphicsSettings {
         setRenderScaleState(scale);
     }, []);
 
-    const setBounceLight = useCallback((strength: number) => {
-        localStorage.setItem(BOUNCE_LIGHT_KEY, strength.toString());
-        setBounceLightState(strength);
-    }, []);
-
-    return { mode, setMode, autoLevel, setAutoLevel, renderScale, setRenderScale, bounceLight, setBounceLight };
+    return { mode, setMode, autoLevel, setAutoLevel, renderScale, setRenderScale };
 }
 
 /** Frames ignored after starting or switching presets, while shaders compile and the light volume fills. */
