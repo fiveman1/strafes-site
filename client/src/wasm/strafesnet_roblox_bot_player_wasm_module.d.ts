@@ -121,6 +121,11 @@ export class Graphics {
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
+     * How much of the map's baked bounce light surfaces get, 1 as baked, 0 for none.
+     * set_graphics_quality resets it to 1.
+     */
+    set_bounce_light(bounce_light: number): void;
+    /**
      * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
      * Medium and High use 4x anti-aliasing; Low skips it, material normal maps and sky reflections, and blurs the glow more coarsely.
      * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
@@ -635,6 +640,7 @@ export interface InitOutput {
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly graphics_set_bounce_light: (a: number, b: number) => void;
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
     readonly graphics_set_light_distance: (a: number, b: number) => void;
     readonly graphics_take_errors: (a: number, b: number) => void;
@@ -705,13 +711,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1696: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1696_164: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1696_165: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3014: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3029: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1700: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1700_163: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1697: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1697_165: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1697_166: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3015: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3030: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1701: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1701_164: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

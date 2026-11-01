@@ -433,7 +433,7 @@ function Replays() {
 
     // graphics presets: one picked by the player, or auto, which measures this device once and remembers the result
     const graphicsSettings = useGraphicsSettings();
-    const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale } = graphicsSettings;
+    const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale, bounceLight } = graphicsSettings;
     // the preset auto is measuring right now
     const [ tuningLevel, setTuningLevel ] = useState<GraphicsLevel | undefined>(undefined);
     const tunerRef = useRef<AutoGraphicsTuner | null>(null);
@@ -922,6 +922,10 @@ function Replays() {
         graphics.set_graphics_quality(toGraphicsQuality(graphicsLevel));
         canvasSizeDirty.current = true;
     }, [graphicsLevel, pixelRatio, graphicsReady]);
+    // after the preset, which resets it
+    useEffect(() => {
+        graphicsRef.current?.set_bounce_light(bounceLight);
+    }, [bounceLight, graphicsLevel, pixelRatio, graphicsReady]);
     useLayoutEffect(() => {
         if (!canvasElement) return;
         const observer = new ResizeObserver(() => {

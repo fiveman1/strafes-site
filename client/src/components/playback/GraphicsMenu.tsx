@@ -5,7 +5,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useState } from "react";
-import { GraphicsLevel, GraphicsMode, GraphicsSettings, MIN_RENDER_SCALE } from "./graphicsSettings";
+import { GraphicsLevel, GraphicsMode, GraphicsSettings, MAX_BOUNCE_LIGHT, MIN_RENDER_SCALE } from "./graphicsSettings";
 
 const MODE_LABELS: [GraphicsMode, string][] = [
     ["auto", "Auto"],
@@ -26,10 +26,10 @@ interface GraphicsMenuProps {
     level: GraphicsLevel
 }
 
-/** The graphics part of the player's settings menu: the preset and the render scale. */
+/** The graphics part of the player's settings menu: the preset, the render scale and the bounce light. */
 function GraphicsMenu(props: GraphicsMenuProps) {
     const { settings, level } = props;
-    const { mode, setMode, autoLevel, renderScale, setRenderScale } = settings;
+    const { mode, setMode, autoLevel, renderScale, setRenderScale, bounceLight, setBounceLight } = settings;
     const theme = useTheme();
 
     // the slider shows its value while dragging and saves it when let go
@@ -40,6 +40,8 @@ function GraphicsMenu(props: GraphicsMenuProps) {
         setRenderScale(value);
     }, [setRenderScale]);
     const shownScale = dragScale ?? renderScale;
+    // bounce light applies while dragging, so its effect shows as it changes
+    const onChangeBounce = useCallback((_: Event, value: number) => setBounceLight(value), [setBounceLight]);
 
     const autoNote = mode !== "auto" ? undefined
         : autoLevel !== undefined ? LEVEL_NAMES[level]
@@ -130,6 +132,32 @@ function GraphicsMenu(props: GraphicsMenuProps) {
                     step={0.05}
                     onChange={onChangeScale}
                     onChangeCommitted={onCommitScale}
+                />
+            </Box>
+            <Box sx={{
+                mt: 1,
+                display: "flex"
+            }}>
+                <Typography variant="subtitle2">
+                    Bounce light
+                </Typography>
+                <Typography variant="subtitle2" sx={{ ml: "auto" }}>
+                    {Math.round(bounceLight * 100)}%
+                </Typography>
+            </Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    pl: 1,
+                    pr: 1
+                }}>
+                <Slider
+                    size="small"
+                    value={bounceLight}
+                    min={0}
+                    max={MAX_BOUNCE_LIGHT}
+                    step={0.05}
+                    onChange={onChangeBounce}
                 />
             </Box>
         </Box>
