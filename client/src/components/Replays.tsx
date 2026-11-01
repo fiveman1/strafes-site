@@ -373,6 +373,17 @@ function discardSharedGraphics(graphics: Graphics) {
     });
 }
 
+/** What the player is doing while it loads, shown under the spinner. */
+const LOAD_STEPS = {
+    replay: "Loading replay",
+    player: "Loading player",
+    graphics: "Starting graphics",
+    files: "Downloading map and replay",
+    buffering: "Buffering",
+} as const;
+type LoadStep = keyof typeof LOAD_STEPS;
+const LOAD_STEP_ORDER = Object.keys(LOAD_STEPS) as LoadStep[];
+
 // Browsers typically support 6 concurrent connections over HTTP/1.1
 const MAX_CONCURRENT_DOWNLOADS = 6;
 
@@ -395,6 +406,7 @@ function Replays() {
     const [ paused, setPaused ] = useState(false);
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
+    const [ loadStep, setLoadStep ] = useState<LoadStep>("replay");
     const [ error, setErrorState ] = useState("");
     const [ diffReady, setDiffReady ] = useState(false);
     // known once graphics are set up
@@ -480,6 +492,7 @@ function Replays() {
             }
         }
         else if (!replay) {
+            setLoadStep("replay");
             return;
         }
 
@@ -491,6 +504,7 @@ function Replays() {
         let pumpInterval: ReturnType<typeof setInterval> | undefined = undefined;
         setDiffReady(false);
         setLoading(true);
+        setLoadStep("player");
         downloadStats.set(undefined);
 
         // started before any downloads, so its script isn't queued behind them on a server with few connections
@@ -509,6 +523,7 @@ function Replays() {
             }
 
             try {
+                setLoadStep("graphics");
                 const { graphics, surface } = await getGraphicsAndSurface(canvas);
                 graphics.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
 
@@ -554,6 +569,7 @@ function Replays() {
                     }
                 };
 
+                setLoadStep("files");
                 const [map, bot] = await Promise.all([mapPromise(), botPromise()]);
 
                 const mapDownloader = mapDownloaderRef.current;
@@ -594,7 +610,9 @@ function Replays() {
                 const offset = botDuration - runDuration;
                 setBotOffset(offset);
                 playbackTime.set(-offset);
-                setLoading(false);
+                // from here on, loading only means waiting for the blocks around the playback time;
+                // the render loop clears it, so the spinner doesn't blink off while the start is still downloading
+                setLoadStep("buffering");
 
                 const diffBotPromise = async () => {
                     if (replay.compareTimeId) {
@@ -1176,12 +1194,33 @@ function Replays() {
                             <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
                             <Box
                                 sx={{
-                                    mt: 1,
+                                    mt: 1.5,
                                     display: "flex",
+                                    flexDirection: "column",
                                     alignItems: "center",
-                                    justifyContent: "center",
-                                    height: "32px"
+                                    gap: 0.75,
+                                    px: 1.25,
+                                    py: 0.75,
+                                    borderRadius: 1,
+                                    bgcolor: "rgba(0, 0, 0, 0.5)",
+                                    color: "common.white"
                                 }}>
+                                <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                                    {LOAD_STEPS[loadStep]}
+                                </Typography>
+                                <Box sx={{ display: "flex", gap: 0.75 }} aria-hidden>
+                                    {LOAD_STEP_ORDER.map((step, index) => (
+                                        <Box
+                                            key={step}
+                                            sx={{
+                                                width: 6,
+                                                height: 6,
+                                                borderRadius: "50%",
+                                                bgcolor: index <= LOAD_STEP_ORDER.indexOf(loadStep) ? "primary.main" : "rgba(255, 255, 255, 0.3)",
+                                                transition: "background-color 0.2s"
+                                            }} />
+                                    ))}
+                                </Box>
                             </Box>
                         </Box>}
                     </Box>
