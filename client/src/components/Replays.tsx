@@ -25,7 +25,7 @@ import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import { replayAssetQueries } from "../api/replayAssets";
-import { getTextureTranscoder } from "./playback/textureTranscoder";
+import { getMapAssetLoader } from "./playback/mapAssetLoader";
 import { compiledWasm } from "./playback/wasmModule";
 import { mapIngestStats, PlaybackStats } from "./playback/playbackStats";
 import { AutoGraphicsTuner, canvasPixelRatio, GraphicsLevel, guessGraphicsLevel, toGraphicsQuality, useGraphicsSettings } from "./playback/graphicsSettings";
@@ -278,9 +278,9 @@ async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, m
     try {
         const data = await downloader.download_map_block_range(block);
         const ingestStart = performance.now();
-        // Textures are transcoded in a worker and uploaded from the frame loop
-        const textureJobs = map.ingest_deferred(data);
-        getTextureTranscoder().submit(map, graphics, textureJobs);
+        // Textures and lightmap chunks are loaded in a worker and added from the frame loop
+        const jobs = map.ingest_deferred(data);
+        getMapAssetLoader().submit(map, graphics, jobs);
         const ingestMs = performance.now() - ingestStart;
         mapIngestStats.totalMs += ingestMs;
         mapIngestStats.maxMs = Math.max(mapIngestStats.maxMs, ingestMs);
@@ -508,10 +508,10 @@ function Replays() {
         downloadStats.set(undefined);
 
         // started before any downloads, so its script isn't queued behind them on a server with few connections
-        getTextureTranscoder();
+        getMapAssetLoader();
 
         const promise = async () => {
-            // compiled once and shared with the texture worker
+            // compiled once and shared with the map asset worker
             await init({ module_or_path: await compiledWasm() });
 
             if (isCanceled) return;
@@ -814,7 +814,7 @@ function Replays() {
                         canvasSizeDirty.current = false;
                         onResize(canvas.clientWidth, canvas.clientHeight);
                     }
-                    getTextureTranscoder().uploadReady(map, graphics);
+                    getMapAssetLoader().uploadReady(map, graphics);
                     playback.advance_time(bot, map, newSessionTime);
                     const promoteStart = performance.now();
                     map.promote_ready_assets(graphics);

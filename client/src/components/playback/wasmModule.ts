@@ -2,7 +2,7 @@ import wasmUrl from "../../wasm/strafesnet_roblox_bot_player_wasm_module_bg.wasm
 
 let compiled: Promise<WebAssembly.Module> | null = null;
 
-// The player's wasm module, fetched and compiled once for the page and the texture worker.
+// The player's wasm module, fetched and compiled once for the page and the map asset worker.
 export function compiledWasm(): Promise<WebAssembly.Module> {
     compiled ??= (async () => {
         const response = await fetch(wasmUrl);

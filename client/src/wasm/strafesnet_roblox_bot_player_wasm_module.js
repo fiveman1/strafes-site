@@ -322,6 +322,63 @@ export class CompleteHead {
 }
 if (Symbol.dispose) CompleteHead.prototype[Symbol.dispose] = CompleteHead.prototype.free;
 
+/**
+ * The slow parts of a downloaded group, which StreamableMap.ingest_deferred leaves for the caller.
+ */
+export class DeferredJobs {
+    static __wrap(ptr) {
+        const obj = Object.create(DeferredJobs.prototype);
+        obj.__wbg_ptr = ptr;
+        DeferredJobsFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        DeferredJobsFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_deferredjobs_free(ptr, 0);
+    }
+    /**
+     * Moves the jobs out, so they can only be taken once.
+     * @returns {LightmapChunkJob[]}
+     */
+    take_lightmap_chunks() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.deferredjobs_take_lightmap_chunks(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayJsValueFromWasm0(r0, r1);
+            wasm.__wbindgen_export5(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * Moves the jobs out, so they can only be taken once.
+     * @returns {TextureJob[]}
+     */
+    take_textures() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.deferredjobs_take_textures(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayJsValueFromWasm0(r0, r1);
+            wasm.__wbindgen_export5(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+}
+if (Symbol.dispose) DeferredJobs.prototype[Symbol.dispose] = DeferredJobs.prototype.free;
+
 export class DownloadBotBlockRangeError {
     static __wrap(ptr) {
         const obj = Object.create(DownloadBotBlockRangeError.prototype);
@@ -777,6 +834,54 @@ export class JumpStats {
     }
 }
 if (Symbol.dispose) JumpStats.prototype[Symbol.dispose] = JumpStats.prototype.free;
+
+/**
+ * A lightmap chunk from StreamableMap.ingest_deferred. Make it ready for the GPU with prepare_lightmap_chunk, usually in
+ * a web worker, and pass both to StreamableMap.insert_lightmap_chunk.
+ */
+export class LightmapChunkJob {
+    static __wrap(ptr) {
+        const obj = Object.create(LightmapChunkJob.prototype);
+        obj.__wbg_ptr = ptr;
+        LightmapChunkJobFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        LightmapChunkJobFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_lightmapchunkjob_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get region_id() {
+        const ret = wasm.lightmapchunkjob_region_id(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * The chunk as maps store it. Moves the data out, so it can only be taken once.
+     * @returns {Uint8Array}
+     */
+    take_deflated() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.lightmapchunkjob_take_deflated(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export5(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+}
+if (Symbol.dispose) LightmapChunkJob.prototype[Symbol.dispose] = LightmapChunkJob.prototype.free;
 
 /**
  * A completed download request.
@@ -1321,26 +1426,33 @@ export class StreamableMap {
         wasm.streamablemap_ingest(this.__wbg_ptr, graphics.__wbg_ptr, ptr0);
     }
     /**
-     * Like ingest, but returns the group's texture files instead of transcoding them, which takes most of the time.
-     * Transcode each with transcode_texture (in a web worker) and pass the result to upload_texture.
-     * Playback buffers at a spot until its textures are uploaded.
+     * Like ingest, but returns the group's texture files and lightmap chunks instead of loading them, which takes most
+     * of the time. Transcode each texture with transcode_texture (in a web worker) and pass the result to
+     * upload_texture; playback buffers at a spot until its textures are uploaded. Prepare each lightmap chunk with
+     * prepare_lightmap_chunk (in a web worker) and pass it to insert_lightmap_chunk.
      * @param {MapBlockData} arg0
-     * @returns {TextureJob[]}
+     * @returns {DeferredJobs}
      */
     ingest_deferred(arg0) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            _assertClass(arg0, MapBlockData);
-            var ptr0 = arg0.__destroy_into_raw();
-            wasm.streamablemap_ingest_deferred(retptr, this.__wbg_ptr, ptr0);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var v2 = getArrayJsValueFromWasm0(r0, r1);
-            wasm.__wbindgen_export5(r0, r1 * 4, 4);
-            return v2;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
+        _assertClass(arg0, MapBlockData);
+        var ptr0 = arg0.__destroy_into_raw();
+        const ret = wasm.streamablemap_ingest_deferred(this.__wbg_ptr, ptr0);
+        return DeferredJobs.__wrap(ret);
+    }
+    /**
+     * Add a lightmap chunk from a LightmapChunkJob with what prepare_lightmap_chunk made of it. Without that (the worker
+     * failed), or if it doesn't hold a chunk (a mismatched worker build), the chunk is inflated here instead, a little
+     * each frame.
+     * @param {number} region_id
+     * @param {Uint8Array} deflated
+     * @param {Uint8Array | null} [prepared]
+     */
+    insert_lightmap_chunk(region_id, deflated, prepared) {
+        const ptr0 = passArray8ToWasm0(deflated, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(prepared) ? 0 : passArray8ToWasm0(prepared, wasm.__wbindgen_export);
+        var len1 = WASM_VECTOR_LEN;
+        wasm.streamablemap_insert_lightmap_chunk(this.__wbg_ptr, region_id, ptr0, len0, ptr1, len1);
     }
     /**
      * @param {StreamableBot} bot
@@ -2031,6 +2143,34 @@ export function new_streamable_map(downloader, graphics, group_split_size) {
 }
 
 /**
+ * Inflate a lightmap chunk from a LightmapChunkJob and lay it out as it goes on the GPU, as bytes for
+ * StreamableMap.insert_lightmap_chunk. This is the slow part of a lightmap chunk, and it needs no Graphics, so it can
+ * run in a web worker.
+ * @param {Uint8Array} deflated
+ * @returns {Uint8Array}
+ */
+export function prepare_lightmap_chunk(deflated) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(deflated, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.prepare_lightmap_chunk(retptr, ptr0, len0);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+        if (r3) {
+            throw takeObject(r2);
+        }
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export5(r0, r1 * 1, 1);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * Set up the graphics.  Returns an object that contains both graphics and surface.
  * Call graphics.new_surface to set up new surfaces as needed.
  * @param {HTMLCanvasElement} canvas
@@ -2348,6 +2488,10 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).length;
             return ret;
         },
+        __wbg_lightmapchunkjob_new: function(arg0) {
+            const ret = LightmapChunkJob.__wrap(arg0);
+            return addHeapObject(ret);
+        },
         __wbg_limits_06bcb36c8409843b: function(arg0) {
             const ret = getObject(arg0).limits;
             return addHeapObject(ret);
@@ -2557,7 +2701,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_3037(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3060(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -3323,33 +3467,33 @@ function __wbg_get_imports() {
             getObject(arg0).writeTexture(getObject(arg1), getArrayU8FromWasm0(arg2, arg3), getObject(arg4), getObject(arg5));
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 346, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3022);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 347, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3045);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 290, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1704);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 294, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1708);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 295, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1731);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000004: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 294, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1708_164);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 295, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1731_170);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000005: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 290, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1704_165);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727_171);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000006: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 290, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1704_166);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727_172);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000007: function(arg0) {
@@ -3381,22 +3525,22 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1708(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1708(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1731(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1731(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1708_164(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1708_164(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1731_170(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1731_170(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_3037(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_3037(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3060(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3060(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
-function __wasm_bindgen_func_elem_3022(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3045(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_3022(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3045(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3407,10 +3551,10 @@ function __wasm_bindgen_func_elem_3022(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1704(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1727(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1704(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1727(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3421,10 +3565,10 @@ function __wasm_bindgen_func_elem_1704(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1704_165(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1727_171(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1704_165(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1727_171(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3435,10 +3579,10 @@ function __wasm_bindgen_func_elem_1704_165(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1704_166(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1727_172(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1704_166(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1727_172(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3556,6 +3700,9 @@ const CompleteBotFinalization = (typeof FinalizationRegistry === 'undefined')
 const CompleteHeadFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_completehead_free(ptr, 1));
+const DeferredJobsFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_deferredjobs_free(ptr, 1));
 const DownloadBotBlockRangeErrorFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_downloadbotblockrangeerror_free(ptr, 1));
@@ -3571,6 +3718,9 @@ const GraphicsAndSurfaceFinalization = (typeof FinalizationRegistry === 'undefin
 const JumpStatsFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_jumpstats_free(ptr, 1));
+const LightmapChunkJobFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_lightmapchunkjob_free(ptr, 1));
 const MapBlockDataFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_mapblockdata_free(ptr, 1));

@@ -1,5 +1,5 @@
 import { Graphics } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
-import { getTextureTranscoder } from "./textureTranscoder";
+import { getMapAssetLoader } from "./mapAssetLoader";
 
 /** Time spent adding downloaded map blocks to the scene, since the stats last showed it. */
 export const mapIngestStats = { totalMs: 0, maxMs: 0, count: 0 };
@@ -70,10 +70,10 @@ export class PlaybackStats {
         lines.push(`CPU render ${renderMsAverage.toFixed(2)} ms avg (${this.renderMsMax.toFixed(2)} max), promote ${promoteMsAverage.toFixed(2)} (${this.promoteMsMax.toFixed(2)})`);
         lines.push(graphics.frame_stats());
         // only while the map is still loading
-        const texturesQueued = getTextureTranscoder().queued;
-        if (mapIngestStats.count > 0 || texturesQueued > 0) {
+        const assetsQueued = getMapAssetLoader().queued;
+        if (mapIngestStats.count > 0 || assetsQueued > 0) {
             const ingestMsAverage = mapIngestStats.count > 0 ? mapIngestStats.totalMs / mapIngestStats.count : 0;
-            lines.push(`Loading: ingest ${ingestMsAverage.toFixed(2)} ms avg (${mapIngestStats.maxMs.toFixed(2)} max), ${mapIngestStats.count} groups, ${texturesQueued} textures queued`);
+            lines.push(`Loading: ingest ${ingestMsAverage.toFixed(2)} ms avg (${mapIngestStats.maxMs.toFixed(2)} max), ${mapIngestStats.count} groups, ${assetsQueued} assets queued`);
         }
         const cameraStats = graphics.camera_stats();
         if (cameraStats !== undefined) {

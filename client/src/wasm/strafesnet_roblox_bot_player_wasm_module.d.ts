@@ -73,6 +73,23 @@ export class CompleteHead {
     set_time(bot: CompleteBot, bot_time: number): void;
 }
 
+/**
+ * The slow parts of a downloaded group, which StreamableMap.ingest_deferred leaves for the caller.
+ */
+export class DeferredJobs {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Moves the jobs out, so they can only be taken once.
+     */
+    take_lightmap_chunks(): LightmapChunkJob[];
+    /**
+     * Moves the jobs out, so they can only be taken once.
+     */
+    take_textures(): TextureJob[];
+}
+
 export class DownloadBotBlockRangeError {
     private constructor();
     free(): void;
@@ -226,6 +243,21 @@ export class JumpStats {
 }
 
 /**
+ * A lightmap chunk from StreamableMap.ingest_deferred. Make it ready for the GPU with prepare_lightmap_chunk, usually in
+ * a web worker, and pass both to StreamableMap.insert_lightmap_chunk.
+ */
+export class LightmapChunkJob {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * The chunk as maps store it. Moves the data out, so it can only be taken once.
+     */
+    take_deflated(): Uint8Array;
+    readonly region_id: number;
+}
+
+/**
  * A completed download request.
  */
 export class MapBlockData {
@@ -358,11 +390,18 @@ export class StreamableMap {
     clear_downloading(): void;
     ingest(graphics: Graphics, arg1: MapBlockData): void;
     /**
-     * Like ingest, but returns the group's texture files instead of transcoding them, which takes most of the time.
-     * Transcode each with transcode_texture (in a web worker) and pass the result to upload_texture.
-     * Playback buffers at a spot until its textures are uploaded.
+     * Like ingest, but returns the group's texture files and lightmap chunks instead of loading them, which takes most
+     * of the time. Transcode each texture with transcode_texture (in a web worker) and pass the result to
+     * upload_texture; playback buffers at a spot until its textures are uploaded. Prepare each lightmap chunk with
+     * prepare_lightmap_chunk (in a web worker) and pass it to insert_lightmap_chunk.
      */
-    ingest_deferred(arg0: MapBlockData): TextureJob[];
+    ingest_deferred(arg0: MapBlockData): DeferredJobs;
+    /**
+     * Add a lightmap chunk from a LightmapChunkJob with what prepare_lightmap_chunk made of it. Without that (the worker
+     * failed), or if it doesn't hold a chunk (a mismatched worker build), the chunk is inflated here instead, a little
+     * each frame.
+     */
+    insert_lightmap_chunk(region_id: number, deflated: Uint8Array, prepared?: Uint8Array | null): void;
     next_block_head_throttled(bot: StreamableBot, head: StreamableHead, surface: Surface): MapBlockRange | undefined;
     /**
      * Returns the next block to download in a reasonable order based on the
@@ -509,6 +548,13 @@ export function new_streamable_bot(downloader: BotDownloader, run_duration: numb
 export function new_streamable_map(downloader: MapDownloader, graphics: Graphics, group_split_size: number): Promise<StreamableMap>;
 
 /**
+ * Inflate a lightmap chunk from a LightmapChunkJob and lay it out as it goes on the GPU, as bytes for
+ * StreamableMap.insert_lightmap_chunk. This is the slow part of a lightmap chunk, and it needs no Graphics, so it can
+ * run in a web worker.
+ */
+export function prepare_lightmap_chunk(deflated: Uint8Array): Uint8Array;
+
+/**
  * Set up the graphics.  Returns an object that contains both graphics and surface.
  * Call graphics.new_surface to set up new surfaces as needed.
  */
@@ -532,6 +578,7 @@ export interface InitOutput {
     readonly __wbg_bvh_free: (a: number, b: number) => void;
     readonly __wbg_completebot_free: (a: number, b: number) => void;
     readonly __wbg_completehead_free: (a: number, b: number) => void;
+    readonly __wbg_deferredjobs_free: (a: number, b: number) => void;
     readonly __wbg_downloadbotblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_get_jumpstats_efficiency: (a: number) => number;
@@ -566,6 +613,7 @@ export interface InitOutput {
     readonly __wbg_graphics_free: (a: number, b: number) => void;
     readonly __wbg_graphicsandsurface_free: (a: number, b: number) => void;
     readonly __wbg_jumpstats_free: (a: number, b: number) => void;
+    readonly __wbg_lightmapchunkjob_free: (a: number, b: number) => void;
     readonly __wbg_mapblockdata_free: (a: number, b: number) => void;
     readonly __wbg_mapblockrange_free: (a: number, b: number) => void;
     readonly __wbg_mapdownloader_free: (a: number, b: number) => void;
@@ -628,6 +676,8 @@ export interface InitOutput {
     readonly completehead_is_run_in_progress: (a: number, b: number) => number;
     readonly completehead_new: (a: number, b: number) => number;
     readonly completehead_set_time: (a: number, b: number, c: number) => void;
+    readonly deferredjobs_take_lightmap_chunks: (a: number, b: number) => void;
+    readonly deferredjobs_take_textures: (a: number, b: number) => void;
     readonly downloadbotblockrangeerror_error: (a: number) => number;
     readonly downloadbotblockrangeerror_request: (a: number) => number;
     readonly downloadmapblockrangeerror_error: (a: number) => number;
@@ -648,11 +698,14 @@ export interface InitOutput {
     readonly graphics_texture_support: (a: number) => number;
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
+    readonly lightmapchunkjob_region_id: (a: number) => number;
+    readonly lightmapchunkjob_take_deflated: (a: number, b: number) => void;
     readonly mapblockrange_range: (a: number) => number;
     readonly mapdownloader_download_map_block_range: (a: number, b: number) => number;
     readonly mapdownloader_new: (a: number, b: number) => number;
     readonly new_streamable_bot: (a: number, b: number, c: number) => number;
     readonly new_streamable_map: (a: number, b: number, c: number) => number;
+    readonly prepare_lightmap_chunk: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
     readonly streamablebot_cancel: (a: number, b: number) => void;
     readonly streamablebot_clear_downloading: (a: number) => void;
@@ -677,7 +730,8 @@ export interface InitOutput {
     readonly streamablemap_cancel: (a: number, b: number) => void;
     readonly streamablemap_clear_downloading: (a: number) => void;
     readonly streamablemap_ingest: (a: number, b: number, c: number) => void;
-    readonly streamablemap_ingest_deferred: (a: number, b: number, c: number) => void;
+    readonly streamablemap_ingest_deferred: (a: number, b: number) => number;
+    readonly streamablemap_insert_lightmap_chunk: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly streamablemap_next_block_head_throttled: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_next_block_session: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_promote_ready_assets: (a: number, b: number) => void;
@@ -711,13 +765,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1704: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1704_165: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1704_166: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3022: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3037: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1708: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1708_164: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1727: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1727_171: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1727_172: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3045: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3060: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1731: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1731_170: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
