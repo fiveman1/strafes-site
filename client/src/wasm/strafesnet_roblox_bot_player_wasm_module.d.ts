@@ -144,7 +144,8 @@ export class Graphics {
     set_bounce_light(bounce_light: number): void;
     /**
      * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
-     * Medium and High use 4x anti-aliasing; Low skips it, material normal maps and sky reflections, and blurs the glow more coarsely.
+     * Only High uses 4x anti-aliasing and darkens corners with ambient occlusion. Low also skips sky reflections,
+     * lighting pixels by local lights one by one and see-through shadows, and blurs the glow more coarsely.
      * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
      */
     set_graphics_quality(quality: GraphicsQuality): void;
