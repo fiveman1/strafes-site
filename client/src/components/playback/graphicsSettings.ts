@@ -12,6 +12,8 @@ const MODE_KEY = "player_graphicsMode";
 /** The preset auto picked on this device, so it's only measured once. */
 const AUTO_LEVEL_KEY = "player_graphicsAutoLevel";
 const RENDER_SCALE_KEY = "player_renderScale";
+/** Followed by the map ID: indoor shading is set per map. Only maps with it off are stored. */
+const INDOOR_SHADING_KEY_PREFIX = "player_indoorShading_";
 
 export const MIN_RENDER_SCALE = 0.5;
 
@@ -54,10 +56,19 @@ export interface GraphicsSettings {
     setAutoLevel: (level: GraphicsLevel) => void
     renderScale: number
     setRenderScale: (scale: number) => void
+    /**
+     * Whether surfaces covered from the sky get the map's indoor ambient. Off lights every surface as though
+     * open to the sky, which suits maps whose big enclosed rooms were built to look outdoors.
+     */
+    indoorShading: boolean
+    toggleIndoorShading: () => void
 }
 
-/** The player's graphics settings, saved in localStorage. */
-export function useGraphicsSettings(): GraphicsSettings {
+/**
+ * The player's graphics settings, saved in localStorage. `onIndoorShading` applies indoor shading when the player
+ * toggles it; the map's saved choice is up to the caller to apply once its graphics are set up.
+ */
+export function useGraphicsSettings(mapId: number | undefined, onIndoorShading: (enabled: boolean) => void): GraphicsSettings {
     const [ mode, setModeState ] = useState<GraphicsMode>(() => {
         const stored = localStorage.getItem(MODE_KEY);
         return isLevel(stored) ? stored : "auto";
@@ -70,6 +81,16 @@ export function useGraphicsSettings(): GraphicsSettings {
         const stored = Number(localStorage.getItem(RENDER_SCALE_KEY));
         return stored >= MIN_RENDER_SCALE && stored <= 1 ? stored : 1;
     });
+    // read again whenever the map changes
+    const indoorShadingKey = mapId === undefined ? undefined : INDOOR_SHADING_KEY_PREFIX + mapId;
+    const [ indoorShadingState, setIndoorShadingState ] = useState(() => readIndoorShading(indoorShadingKey));
+    const currentIndoorShading = indoorShadingState.key === indoorShadingKey
+        ? indoorShadingState
+        : readIndoorShading(indoorShadingKey);
+    if (currentIndoorShading !== indoorShadingState) {
+        setIndoorShadingState(currentIndoorShading);
+    }
+    const indoorShading = currentIndoorShading.enabled;
 
     const setMode = useCallback((mode: GraphicsMode) => {
         localStorage.setItem(MODE_KEY, mode);
@@ -89,7 +110,23 @@ export function useGraphicsSettings(): GraphicsSettings {
         setRenderScaleState(scale);
     }, []);
 
-    return { mode, setMode, autoLevel, setAutoLevel, renderScale, setRenderScale };
+    const toggleIndoorShading = useCallback(() => {
+        if (indoorShadingKey === undefined) return;
+        const enabled = !indoorShading;
+        if (enabled) {
+            localStorage.removeItem(indoorShadingKey);
+        } else {
+            localStorage.setItem(indoorShadingKey, "false");
+        }
+        setIndoorShadingState({ key: indoorShadingKey, enabled });
+        onIndoorShading(enabled);
+    }, [indoorShadingKey, indoorShading, onIndoorShading]);
+
+    return { mode, setMode, autoLevel, setAutoLevel, renderScale, setRenderScale, indoorShading, toggleIndoorShading };
+}
+
+function readIndoorShading(key: string | undefined): { key: string | undefined, enabled: boolean } {
+    return { key, enabled: key === undefined || localStorage.getItem(key) !== "false" };
 }
 
 /** Frames ignored after starting or switching presets, while shaders compile and the light volume fills. */

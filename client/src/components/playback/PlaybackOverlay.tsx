@@ -18,17 +18,14 @@ import Popper from "@mui/material/Popper";
 import type { Instance as PopperInstance } from "@popperjs/core";
 import SpeedIcon from '@mui/icons-material/Speed';
 import MonitorIcon from '@mui/icons-material/Monitor';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import { clamp } from "@mui/x-data-grid/internals";
 import { InputState } from "../../common/common";
 import { isTyping } from "../../common/utils";
 import { usePersistedToggle } from "../../common/states";
-import { alpha, lighten } from "@mui/system";
-import { useTheme } from "@mui/material/styles";
 import GraphicsMenu from "./GraphicsMenu";
+import ToggleButton from "./ToggleButton";
 import { GraphicsLevel, GraphicsSettings } from "./graphicsSettings";
 
 // HUD elements are drawn at full size on players at least this tall, and shrink with the player below it,
@@ -95,32 +92,6 @@ const SHOW_DIFF_SETTING = "player_showDiff";
 const SHOW_FPS_SETTING = "player_showFps";
 const SHOW_DEBUG_SETTING = "player_showDebug";
 
-interface HudToggleProps {
-    label: string
-    active: boolean
-    onClick: () => void
-}
-
-function HudToggle(props: HudToggleProps) {
-    const { label, active, onClick } = props;
-    const iconSx = { mr: 0.5 };
-
-    return (
-        <Typography
-            variant="subtitle2"
-            className={active ? "active" : undefined}
-            component="button"
-            onClick={onClick}
-            sx={{
-                display: "flex",
-                fontWeight: "bold"
-            }}>
-            {active ? <VisibilityIcon fontSize="small" sx={iconSx} /> : <VisibilityOffIcon fontSize="small" sx={iconSx} />}
-            {label}
-        </Typography>
-    );
-}
-
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, downloadStats, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
@@ -128,8 +99,6 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
         graphicsSettings, graphicsLevel } = props;
 
-    const theme = useTheme();
-    
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
     const [ isDragging, setIsDragging ] = useState(false);
@@ -1094,32 +1063,14 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                         mt: 1,
                                         display: "flex",
                                         flexWrap: "wrap",
-                                        gap: 0.75,
-
-                                        "button": {
-                                            py: 0.5,
-                                            pl: 0.75,
-                                            pr: 0.75,
-                                            borderRadius: "8px",
-                                            cursor: "pointer",
-                                            userSelect: "none",
-                                            color: "white",
-                                            transition: "background .15s ease",
-                                            border: 0,
-                                            "&.active": {
-                                                bgcolor: `${alpha(theme.palette.primary.main, 0.7)}`,
-                                                "&:hover": {
-                                                    bgcolor: `${alpha(lighten(theme.palette.primary.main, 0.2), 0.7)}`
-                                                }
-                                            }
-                                        }
+                                        gap: 0.75
                                     }}>
-                                    <HudToggle label="Speed" active={showSpeed} onClick={onClickSpeedButton} />
-                                    <HudToggle label="Input" active={showInput} onClick={onClickInputButton} />
-                                    <HudToggle label="JHUD" active={showJhud} onClick={onClickJhudButton} />
-                                    {allowDiff && <HudToggle label="Diff" active={showDiffSetting} onClick={onClickDiffButton} />}
-                                    <HudToggle label="FPS" active={showFps} onClick={onClickFpsButton} />
-                                    <HudToggle label="Debug" active={showDebug} onClick={onClickDebugButton} />
+                                    <ToggleButton label="Speed" active={showSpeed} onClick={onClickSpeedButton} />
+                                    <ToggleButton label="Input" active={showInput} onClick={onClickInputButton} />
+                                    <ToggleButton label="JHUD" active={showJhud} onClick={onClickJhudButton} />
+                                    {allowDiff && <ToggleButton label="Diff" active={showDiffSetting} onClick={onClickDiffButton} />}
+                                    <ToggleButton label="FPS" active={showFps} onClick={onClickFpsButton} />
+                                    <ToggleButton label="Debug" active={showDebug} onClick={onClickDebugButton} />
                                 </Box>
                             </Box>
                         </Box>

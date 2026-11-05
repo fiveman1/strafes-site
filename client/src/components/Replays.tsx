@@ -444,8 +444,11 @@ function Replays() {
     const isShowingThumb = useRef(false);
 
     // graphics presets: one picked by the player, or auto, which measures this device once and remembers the result
-    const graphicsSettings = useGraphicsSettings();
-    const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale } = graphicsSettings;
+    const applyIndoorShading = useCallback((enabled: boolean) => {
+        graphicsRef.current?.set_sky_occlusion(enabled ? 1 : 0);
+    }, []);
+    const graphicsSettings = useGraphicsSettings(replay?.mapId, applyIndoorShading);
+    const { mode: graphicsMode, autoLevel, setAutoLevel, renderScale, indoorShading } = graphicsSettings;
     // the preset auto is measuring right now
     const [ tuningLevel, setTuningLevel ] = useState<GraphicsLevel | undefined>(undefined);
     const tunerRef = useRef<AutoGraphicsTuner | null>(null);
@@ -457,13 +460,15 @@ function Replays() {
     const thumbEnabled = graphicsReady && graphicsLevel !== "low";
     // for the setup and the render loop, which outlive renders
     const graphicsLevelRef = useRef(graphicsLevel);
+    const indoorShadingRef = useRef(indoorShading);
     const pixelRatioRef = useRef(pixelRatio);
     const thumbEnabledRef = useRef(thumbEnabled);
     useLayoutEffect(() => {
         graphicsLevelRef.current = graphicsLevel;
         pixelRatioRef.current = pixelRatio;
         thumbEnabledRef.current = thumbEnabled;
-    }, [graphicsLevel, pixelRatio, thumbEnabled]);
+        indoorShadingRef.current = indoorShading;
+    }, [graphicsLevel, pixelRatio, thumbEnabled, indoorShading]);
 
     const setError = useCallback((error: string) => {
         setErrorState(error);
@@ -525,8 +530,6 @@ function Replays() {
             try {
                 setLoadStep("graphics");
                 const { graphics, surface } = await getGraphicsAndSurface(canvas);
-                graphics.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
-
                 setGraphicsReady(true);
 
                 setDebugInfo(graphics.debug_info());
@@ -581,7 +584,9 @@ function Replays() {
                 playbackRef.current = playback;
                 graphicsRef.current = graphics;
                 surfaceRef.current = surface;
-                
+
+                graphics.set_sky_occlusion(indoorShadingRef.current ? 1 : 0);
+
                 botRef.current = bot;
                 mapRef.current = map;
 
@@ -741,6 +746,11 @@ function Replays() {
     useLayoutEffect(() => {
         let animationId: number;
         const stats = new PlaybackStats();
+        // the preset last applied and to which graphics, and the pixel ratio last sized for (setup sizes new
+        // graphics' canvas), so the loop applies changes from the menu or auto measuring right before drawing
+        let appliedGraphics: Graphics | undefined;
+        let appliedLevel: GraphicsLevel | undefined;
+        let appliedPixelRatio = pixelRatioRef.current;
 
         if (replay?.course === undefined) {
             return;
@@ -809,6 +819,15 @@ function Replays() {
             if (playback && bot && map && graphics && surface && speedText && input) {
                 const newSessionTime = sessionTimer.current + time - animTimer.current;
                 try {
+                    if (graphics !== appliedGraphics || graphicsLevelRef.current !== appliedLevel) {
+                        graphics.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
+                        appliedGraphics = graphics;
+                        appliedLevel = graphicsLevelRef.current;
+                    }
+                    if (pixelRatioRef.current !== appliedPixelRatio) {
+                        canvasSizeDirty.current = true;
+                        appliedPixelRatio = pixelRatioRef.current;
+                    }
                     const canvas = canvasRef.current;
                     if (canvasSizeDirty.current && canvas) {
                         canvasSizeDirty.current = false;
@@ -933,13 +952,6 @@ function Replays() {
         }
     }, [graphicsMode, autoLevel, graphicsReady]);
 
-    // apply the preset and the canvas size whenever they change
-    useEffect(() => {
-        const graphics = graphicsRef.current;
-        if (!graphics) return;
-        graphics.set_graphics_quality(toGraphicsQuality(graphicsLevel));
-        canvasSizeDirty.current = true;
-    }, [graphicsLevel, pixelRatio, graphicsReady]);
     useLayoutEffect(() => {
         if (!canvasElement) return;
         const observer = new ResizeObserver(() => {

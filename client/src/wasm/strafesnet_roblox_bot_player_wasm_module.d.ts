@@ -143,13 +143,19 @@ export class Graphics {
      */
     set_bounce_light(bounce_light: number): void;
     /**
-     * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
+     * Use a preset's settings, replacing any set one by one like the light distance, except the sky occlusion,
+     * which is a choice about the map rather than the device. The default is Medium.
      * Only High uses 4x anti-aliasing and darkens corners with ambient occlusion. Low also skips sky reflections,
      * lighting pixels by local lights one by one and see-through shadows, and blurs the glow more coarsely.
      * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
      */
     set_graphics_quality(quality: GraphicsQuality): void;
     set_light_distance(light_distance: number): void;
+    /**
+     * How much the sky a surface sees picks between the map's indoor and outdoor ambient, 1 as baked, 0 lights
+     * every surface as though open to the sky. set_graphics_quality keeps it.
+     */
+    set_sky_occlusion(sky_occlusion: number): void;
     /**
      * GPU errors since the last call, oldest first.
      * WebGPU reports validation errors (like a shader the browser can't compile) and device loss
@@ -694,6 +700,7 @@ export interface InitOutput {
     readonly graphics_set_bounce_light: (a: number, b: number) => void;
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
     readonly graphics_set_light_distance: (a: number, b: number) => void;
+    readonly graphics_set_sky_occlusion: (a: number, b: number) => void;
     readonly graphics_take_errors: (a: number, b: number) => void;
     readonly graphics_take_gpu_frame_ms: (a: number, b: number) => void;
     readonly graphics_texture_support: (a: number) => number;
@@ -766,13 +773,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1729: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1729_171: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1729_172: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3047: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3062: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1733: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1733_170: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1730: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1730_172: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1730_173: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3048: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3063: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1734: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1734_171: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -2,6 +2,9 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Slider from "@mui/material/Slider";
 import TuneIcon from '@mui/icons-material/Tune';
+import BlindsIcon from '@mui/icons-material/Blinds';
+import SunnyIcon from '@mui/icons-material/Sunny';
+import ToggleButton from "./ToggleButton";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useState } from "react";
@@ -26,10 +29,10 @@ interface GraphicsMenuProps {
     level: GraphicsLevel
 }
 
-/** The graphics part of the player's settings menu: the preset and the render scale. */
+/** The graphics part of the player's settings menu: the preset, the render scale, and the per-map indoor shading. */
 function GraphicsMenu(props: GraphicsMenuProps) {
     const { settings, level } = props;
-    const { mode, setMode, autoLevel, renderScale, setRenderScale } = settings;
+    const { mode, setMode, autoLevel, renderScale, setRenderScale, indoorShading, toggleIndoorShading } = settings;
     const theme = useTheme();
 
     // the slider shows its value while dragging and saves it when let go
@@ -106,7 +109,7 @@ function GraphicsMenu(props: GraphicsMenuProps) {
                 )}
             </Box>
             <Box sx={{
-                mt: 1,
+                mt: 1.5,
                 display: "flex"
             }}>
                 <Typography variant="subtitle2">
@@ -130,6 +133,28 @@ function GraphicsMenu(props: GraphicsMenuProps) {
                     step={0.05}
                     onChange={onChangeScale}
                     onChangeCommitted={onCommitScale}
+                />
+            </Box>
+            <Box sx={{
+                mt: 0.5,
+                display: "flex"
+            }}>
+                <Typography variant="subtitle2">
+                    Map toggles
+                </Typography>
+            </Box>
+            <Box sx={{
+                mt: 1,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.75
+            }}>
+                <ToggleButton
+                    label="Indoor shading"
+                    active={indoorShading}
+                    onClick={toggleIndoorShading}
+                    activeIcon={BlindsIcon}
+                    inactiveIcon={SunnyIcon}
                 />
             </Box>
         </Box>
