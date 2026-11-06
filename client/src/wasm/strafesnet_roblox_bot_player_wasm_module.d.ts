@@ -130,8 +130,8 @@ export class Graphics {
     gpu_stats(): string | undefined;
     /**
      * How far from the camera pixels add up local lights one by one, with highlights.
-     * Farther pixels read the light volume, which costs the same however many lights overlap.
-     * 0 lights everything from the volume, Infinity never uses it.
+     * Farther pixels read the lights' light baked into the lightmap, which costs the same however many lights overlap.
+     * 0 lights everything from the lightmap, Infinity never uses it.
      */
     light_distance(): number;
     new_surface(canvas: HTMLCanvasElement): Surface;
@@ -772,13 +772,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1730: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1730_172: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1730_173: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3048: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3063: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1734: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1734_171: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1720: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1720_172: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1720_173: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3038: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3053: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1724: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1724_171: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

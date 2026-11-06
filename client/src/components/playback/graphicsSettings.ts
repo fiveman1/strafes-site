@@ -129,7 +129,7 @@ function readIndoorShading(key: string | undefined): { key: string | undefined, 
     return { key, enabled: key === undefined || localStorage.getItem(key) !== "false" };
 }
 
-/** Frames ignored after starting or switching presets, while shaders compile and the light volume fills. */
+/** Frames ignored after starting or switching presets, while shaders compile. */
 const WARMUP_MS = 1500;
 /** How long each preset is measured. */
 const MEASURE_MS = 3000;
