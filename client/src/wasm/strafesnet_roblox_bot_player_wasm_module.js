@@ -612,8 +612,7 @@ export class Graphics {
         wasm.graphics_set_bounce_light(this.__wbg_ptr, bounce_light);
     }
     /**
-     * Use a preset's settings, replacing any set one by one like the light distance, except the sky occlusion,
-     * which is a choice about the map rather than the device. The default is Medium.
+     * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
      * Only High uses 4x anti-aliasing and darkens corners with ambient occlusion. Low also skips sky reflections,
      * lighting pixels by local lights one by one and see-through shadows, and blurs the glow more coarsely.
      * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
@@ -630,7 +629,7 @@ export class Graphics {
     }
     /**
      * How much the sky a surface sees picks between the map's indoor and outdoor ambient, 1 as baked, 0 lights
-     * every surface as though open to the sky. set_graphics_quality keeps it.
+     * every surface as though open to the sky.
      * @param {number} sky_occlusion
      */
     set_sky_occlusion(sky_occlusion) {
