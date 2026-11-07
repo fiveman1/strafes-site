@@ -1,19 +1,92 @@
-import { MouseEvent, useCallback, useState } from "react";
+import { MouseEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import Popover from "@mui/material/Popover";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { alpha, SxProps, Theme } from "@mui/material/styles";
+import { alpha, keyframes, SxProps, Theme } from "@mui/material/styles";
 import AddReactionOutlinedIcon from "@mui/icons-material/AddReactionOutlined";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoginUser, MAX_REACTIONS_PER_USER, REPLAY_REACTIONS, ReplayReaction, ReplayReactionCount, ReplayReactions as ReplayReactionsData } from "shared";
+import { LoginUser, MAX_REACTIONS_PER_USER, REPLAY_REACTIONS, ReplayReaction, ReplayReactionCount, ReplayReactions as ReplayReactionsData, ReplayReactionsUpdate } from "shared";
 import { queries } from "../../api/queries";
-import { login, setReplayReaction } from "../../api/api";
-import { applyReaction, formatReactors, getReactionInfo, REACTION_IMAGES } from "../../common/reactions";
+import { getReplayReactionsStreamURL, login, setReplayReaction } from "../../api/api";
+import { applyReaction, formatReactors, getReactionInfo, mergeReactionUpdate, REACTION_IMAGES } from "../../common/reactions";
 
-const CHIP_HEIGHT = 26;
+// The browser draws an animating chip (see PopIn) at its exact position, then snaps it to whole pixels when the
+// animation ends, so anything on a half pixel jumps a little. These sizes keep every offset whole:
+// (31px row - 27px chip) / 2 = 2px, and inside the 25px between the borders, (25 - 17px emoji) / 2 = 4px
+// and (25 - 13px count) / 2 = 6px.
+const CHIP_HEIGHT = 27;
+const CHIP_EMOJI_SIZE = 17;
+
+// The new count rolls in from below when it goes up, or from above when it goes down
+const countUp = keyframes`
+    from { transform: translateY(75%); opacity: 0; }
+    to { transform: none; opacity: 1; }
+`;
+const countDown = keyframes`
+    from { transform: translateY(-75%); opacity: 0; }
+    to { transform: none; opacity: 1; }
+`;
+
+function AnimatedCount(props: { count: number }) {
+    const { count } = props;
+    const [previous, setPrevious] = useState(count);
+    const [direction, setDirection] = useState<"up" | "down" | undefined>(undefined);
+    // Set during render rather than in an effect, so the new number never shows for a frame without its animation.
+    // Nothing animates on the first render, so counts don't roll in when the page loads.
+    if (count !== previous) {
+        setPrevious(count);
+        setDirection(count > previous ? "up" : "down");
+    }
+
+    return (
+        <Box
+            // A new element for each count restarts the animation
+            key={count}
+            component="span"
+            sx={{
+                display: "inline-block",
+                animation: direction ? `${direction === "up" ? countUp : countDown} 180ms ease-out` : "none",
+
+                "@media (prefers-reduced-motion: reduce)": {
+                    animation: "none"
+                }
+            }}>
+            {count}
+        </Box>
+    );
+}
+
+const popIn = keyframes`
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: none; opacity: 1; }
+`;
+
+/** Scales in when it first shows, if animate was set then. Changing animate later does nothing. */
+function PopIn(props: { animate: boolean, children: ReactNode }) {
+    const [animate] = useState(props.animate);
+    return (
+        <Box
+            component="span"
+            sx={{
+                display: "inline-flex",
+                // overshoots a little before settling
+                animation: animate ? `${popIn} 220ms cubic-bezier(0.34, 1.4, 0.64, 1)` : "none",
+
+                "@media (prefers-reduced-motion: reduce)": {
+                    animation: "none"
+                }
+            }}>
+            {props.children}
+        </Box>
+    );
+}
+
+function getMutationKey(timeId: string) {
+    return ["replays", "reactions", timeId];
+}
 
 interface ReactionChange {
     reaction: ReplayReaction
@@ -64,9 +137,58 @@ function ReplayReactions(props: ReplayReactionsProps) {
     const reactionsQueryOptions = queries.replays.reactions(timeId, loginUser?.userId);
     const reactionsQuery = useQuery(reactionsQueryOptions);
     const queryKey = reactionsQueryOptions.queryKey;
-    const mutationKey = ["replays", "reactions", timeId];
+    const mutationKey = getMutationKey(timeId);
+    const userId = loginUser?.userId;
 
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+    // Set when a live update was skipped because the user had a change in flight
+    const missedUpdate = useRef(false);
+
+    // Chips there when a replay's reactions first load just appear. Ones added after that (by anyone) pop in.
+    const hasData = reactionsQuery.data !== undefined;
+    const [popInFor, setPopInFor] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        if (hasData) setPopInFor(timeId);
+    }, [hasData, timeId]);
+
+    // Live updates while the tab is visible. EventSource reconnects by itself, and the server starts every
+    // connection with the current totals, so nothing's missed while hidden or reconnecting.
+    useEffect(() => {
+        const key = queries.replays.reactions(timeId, userId).queryKey;
+        let source: EventSource | undefined;
+
+        const onUpdate = (event: MessageEvent<string>) => {
+            if (queryClient.isMutating({ mutationKey: getMutationKey(timeId) }) > 0) {
+                // This could be from before or after the user's own change, so it can't safely replace what's shown.
+                // Fetch once their changes finish instead.
+                missedUpdate.current = true;
+                return;
+            }
+            const update = JSON.parse(event.data) as ReplayReactionsUpdate;
+            queryClient.setQueryData<ReplayReactionsData | null>(key, (data) => mergeReactionUpdate(data, update));
+        };
+
+        const open = () => {
+            if (source) return;
+            source = new EventSource(getReplayReactionsStreamURL(timeId));
+            source.addEventListener("reactions", onUpdate);
+        };
+        const close = () => {
+            source?.close();
+            source = undefined;
+        };
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") open();
+            else close();
+        };
+
+        onVisibilityChange();
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        return () => {
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+            close();
+        };
+    }, [timeId, userId, queryClient]);
 
     const mutation = useMutation({
         mutationKey: mutationKey,
@@ -97,6 +219,12 @@ function ReplayReactions(props: ReplayReactionsProps) {
                 queryClient.setQueryData(queryKey, context.previous);
             }
             queryClient.invalidateQueries({ queryKey });
+        },
+        onSettled: () => {
+            if (queryClient.isMutating({ mutationKey }) === 1 && missedUpdate.current) {
+                missedUpdate.current = false;
+                queryClient.invalidateQueries({ queryKey });
+            }
         }
     });
 
@@ -146,44 +274,49 @@ function ReplayReactions(props: ReplayReactionsProps) {
                 // Logged out users get the login prompt instead
                 const blocked = loginUser !== undefined && !canAdd(entry.reaction);
                 return (
-                    <Tooltip
-                        key={entry.reaction}
-                        placement="top"
-                        arrow
-                        disableInteractive
-                        title={
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}>
-                                <ReactionImage reaction={entry.reaction} size={32} />
-                                <Box>
-                                    <Typography variant="body2">
-                                        {formatReactors(entry.users, entry.count, entry.reacted, loginUser, info.label)}
-                                    </Typography>
-                                    {blocked &&
-                                    <Typography variant="caption" sx={{ display: "block", opacity: 0.75 }}>
-                                        {limitText}
-                                    </Typography>}
+                    <PopIn key={entry.reaction} animate={popInFor === timeId}>
+                        <Tooltip
+                            placement="top"
+                            arrow
+                            disableInteractive
+                            title={
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}>
+                                    <ReactionImage reaction={entry.reaction} size={32} />
+                                    <Box>
+                                        <Typography variant="body2">
+                                            {formatReactors(entry.users, entry.count, entry.reacted, loginUser, info.label)}
+                                        </Typography>
+                                        {blocked &&
+                                        <Typography variant="caption" sx={{ display: "block", opacity: 0.75 }}>
+                                            {limitText}
+                                        </Typography>}
+                                    </Box>
                                 </Box>
-                            </Box>
-                        }>
-                        <ButtonBase
-                            aria-label={`${info.label}: ${entry.count}`}
-                            aria-pressed={entry.reacted}
-                            aria-disabled={blocked || undefined}
-                            onClick={(event) => onChipClick(event, entry)}
-                            sx={[chipSx(entry.reacted), blocked && { cursor: "default" }]}>
-                            <ReactionImage reaction={entry.reaction} size={16} />
-                            <Typography
-                                component="span"
-                                sx={{
-                                    fontSize: "0.8rem",
-                                    fontWeight: 600,
-                                    lineHeight: 1,
-                                    fontVariantNumeric: "tabular-nums"
-                                }}>
-                                {entry.count}
-                            </Typography>
-                        </ButtonBase>
-                    </Tooltip>
+                            }>
+                            <ButtonBase
+                                aria-label={`${info.label}: ${entry.count}`}
+                                aria-pressed={entry.reacted}
+                                aria-disabled={blocked || undefined}
+                                onClick={(event) => onChipClick(event, entry)}
+                                sx={[chipSx(entry.reacted), blocked && { cursor: "default" }]}>
+                                <ReactionImage reaction={entry.reaction} size={CHIP_EMOJI_SIZE} />
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        fontSize: "0.8rem",
+                                        fontWeight: 600,
+                                        // A whole pixel height, see CHIP_HEIGHT
+                                        lineHeight: "13px",
+                                        fontVariantNumeric: "tabular-nums",
+                                        // Clips the rolling number to its own line
+                                        display: "inline-flex",
+                                        overflow: "hidden"
+                                    }}>
+                                    <AnimatedCount count={entry.count} />
+                                </Typography>
+                            </ButtonBase>
+                        </Tooltip>
+                    </PopIn>
                 );
             })}
             <Tooltip placement="top" arrow disableInteractive title="Add reaction">

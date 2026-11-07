@@ -1,4 +1,4 @@
-import { allReplayReactions, LoginUser, REPLAY_REACTIONS, ReplayReaction, ReplayReactions } from "shared";
+import { allReplayReactions, LoginUser, REPLAY_REACTIONS, ReplayReaction, ReplayReactions, ReplayReactionsUpdate } from "shared";
 // Twemoji by Twitter and other contributors (https://github.com/jdecked/twemoji), CC-BY 4.0
 import goat from "../assets/twemoji/goat.svg";
 import fire from "../assets/twemoji/fire.svg";
@@ -44,6 +44,15 @@ export function formatReactors(users: string[], count: number, reacted: boolean,
         names.push(others === 1 ? "1 other" : `${others} others`);
     }
     return `${joinNames(names)} reacted with ${label}`;
+}
+
+/** New totals from the live stream, keeping which ones the user has reacted with (the stream doesn't know who they are) */
+export function mergeReactionUpdate(data: ReplayReactions | null | undefined, update: ReplayReactionsUpdate): ReplayReactions {
+    const reacted = new Set(data?.reactions.filter((entry) => entry.reacted).map((entry) => entry.reaction));
+    return {
+        timeId: update.timeId,
+        reactions: update.reactions.map((entry) => ({ ...entry, reacted: reacted.has(entry.reaction) }))
+    };
 }
 
 /** The reactions as they'll be once the server applies the change, for showing it right away */

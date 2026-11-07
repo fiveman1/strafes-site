@@ -292,3 +292,11 @@ export interface ReplayReactions {
     timeId: string
     reactions: ReplayReactionCount[]
 }
+
+// What the live stream sends: the same for every viewer, so it leaves out whether they reacted
+export type ReplayReactionTotal = Omit<ReplayReactionCount, "reacted">;
+
+export interface ReplayReactionsUpdate {
+    timeId: string
+    reactions: ReplayReactionTotal[]
+}

@@ -284,6 +284,10 @@ export async function getReplayReactions(timeId: string) {
     return res.data as ReplayReactions;
 }
 
+export function getReplayReactionsStreamURL(timeId: string) {
+    return "/api/replays/times/" + timeId + "/reactions/stream";
+}
+
 export async function setReplayReaction(timeId: string, reaction: ReplayReaction, active: boolean) {
     const res = await tryPostRequest("auth/reactions", {
         timeId: timeId,

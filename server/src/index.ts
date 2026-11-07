@@ -19,6 +19,7 @@ import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
+import { broadcastReactions, openReactionStream } from "./reactionStream.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
@@ -1065,6 +1066,17 @@ app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(1), async (req
     res.status(200).json(reactions);
 });
 
+// Live updates for the replay page
+app.get("/api/replays/times/:id/reactions/stream", rateLimiterMiddleware(1), async (req, res) => {
+    const [error] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    await openReactionStream(globalsClient, req, res, req.params.id as string);
+});
+
 const setReactionValidator = vine.create({
     // Kept as a string since time IDs can be too big for a JS number
     timeId: vine.string().regex(/^\d{1,20}$/),
@@ -1103,6 +1115,8 @@ app.post("/api/auth/reactions", rateLimiterMiddleware(2), async (req, res) => {
         res.status(400).json({ error: `You can only add ${MAX_REACTIONS_PER_USER} reactions to a replay` });
         return;
     }
+
+    broadcastReactions(globalsClient, result.timeId);
 
     res.status(200).json(reactions);
 });
