@@ -883,6 +883,7 @@ function Replays() {
     const [ measuredFooterHeight, setMeasuredFooterHeight ] = useState(FOOTER_HEIGHT);
     const [ playerArea, setPlayerArea ] = useState<{ width: number, height: number } | undefined>(undefined);
     const footerAreaKey = useRef("");
+    const footerWidthRef = useRef(0);
     useLayoutEffect(() => {
         const area = playerRef.current;
         const root = document.getElementById("root");
@@ -905,10 +906,17 @@ function Replays() {
             footerAreaKey.current = areaKey;
             if (footerElement) {
                 // hidden while fullscreen, which leaves the last height for when it comes back
-                const footerHeight = Math.ceil(footerElement.getBoundingClientRect().height);
-                // The info's width follows the player's, which depends on the info's height, so a different height can
-                // rewrap it back and forth forever. Within one area size it only grows, which always settles.
-                if (footerHeight > 0) setMeasuredFooterHeight(old => sameArea && footerHeight < old ? old : footerHeight);
+                const footerRect = footerElement.getBoundingClientRect();
+                const footerHeight = Math.ceil(footerRect.height);
+                if (footerHeight > 0) {
+                    const footerWidth = Math.round(footerRect.width);
+                    // The info's width follows the player's, which depends on the info's height, so a different height can
+                    // rewrap it back and forth forever. Within one area size, a change that came with a new width only grows,
+                    // which always settles. At the same width the content itself changed (e.g. reactions), so take it as is.
+                    const sameWidth = footerWidth === footerWidthRef.current;
+                    footerWidthRef.current = footerWidth;
+                    setMeasuredFooterHeight(old => sameArea && !sameWidth && footerHeight < old ? old : footerHeight);
+                }
             }
         };
         update();
@@ -1285,6 +1293,7 @@ function Replays() {
                                 flexDirection: "column",
                                 flexGrow: 1,
                                 overflow: "hidden",
+                                justifyContent: "space-evenly",
 
                                 "p": {
                                     overflowWrap: "break-word",
@@ -1296,7 +1305,7 @@ function Replays() {
                             <Box
                                 sx={{
                                     display: "inline-flex",
-                                    alignItems: smallScreen ? "center" : "flex-start"
+                                    alignItems: "center"
                                 }}>
                                 {smallScreen &&
                                 <Link
@@ -1339,35 +1348,32 @@ function Replays() {
                                     </Link>
                                     <ColorChip color={tierColor} label={formatTier(mapInfo?.tier, true)} sx={{ ml: 0.75, verticalAlign: "middle", position: "relative", top: "-2px" }} />
                                 </Typography>
-                                {(!smallScreen && replay.hasBot) &&
+                                {(replay.hasBot) &&
                                 <ReplayReactions
                                     timeId={replay.id}
                                     loginUser={loginUser}
                                     sx={{
                                         // Uses the space beside the map name, wrapping once it reaches half the width
                                         ml: "auto",
-                                        pl: 1.5,
+                                        pl: 1,
                                         flexShrink: 0,
-                                        maxWidth: "50%",
-                                        justifyContent: "flex-end",
-                                        // same height as the first line of the map name so the chips are centered
-                                        height: "31px"
+                                        maxWidth: (smallScreen && replay?.map.length > 16) ? "40%" : "50%",
+                                        justifyContent: "flex-end"
                                     }} />}
                             </Box>
-                            {(smallScreen && replay.hasBot) &&
-                            <ReplayReactions timeId={replay.id} loginUser={loginUser}  />}
                             <Box
                                 sx={{
                                     display: "inline-flex",
                                     alignItems: "center",
-                                    mt: smallScreen ? 1 : 0.25
+                                    pb: 0.25,
+                                    pt: smallScreen ? 0.75 : 0.25
                                 }}>
                                 <ColorChip color={gameColor} label={formatGame(replay.game)} />
                                 <ColorChip color={styleColor} label={formatStyle(replay.style)} sx={{ ml: 0.5 }} />
                             </Box>
                             <Box
                                 sx={{
-                                    mt: 1,
+                                    py: 0.5,
                                     display: "inline-flex",
                                     alignItems: "center"
                                 }}>
@@ -1410,8 +1416,7 @@ function Replays() {
                             <Box
                                 sx={{
                                     display: "flex",
-                                    alignItems: "center",
-                                    mt: 0.5
+                                    alignItems: "center"
                                 }}>
                                 <Typography
                                     variant="body1"
@@ -1445,8 +1450,7 @@ function Replays() {
                                     display: "inline-flex",
                                     flexDirection: "row",
                                     alignItems: "center",
-                                    justifyContent: "space-between",
-                                    mt: 0.25
+                                    justifyContent: "space-between"
                                 }}>
                                 <Typography
                                     variant="body2"
