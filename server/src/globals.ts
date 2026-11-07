@@ -69,6 +69,18 @@ export class GlobalsClient {
         return this._pool;
     }
 
+    /** Adds the user to the users table, or refreshes their username if they're already in it. */
+    public async upsertUser(userId: number, username: string) {
+        const query = `INSERT INTO users (user_id, username) VALUES (?, ?) AS new ON DUPLICATE KEY UPDATE username=new.username;`;
+        await this.pool.execute(query, [userId, username]);
+    }
+
+    /** Refreshes the username of a user that's already in the users table, without adding new users. */
+    public async updateUsername(userId: number, username: string) {
+        const query = `UPDATE users SET username = ? WHERE user_id = ?;`;
+        await this.pool.execute(query, [username, userId]);
+    }
+
     public async getMapWR(mapId: number, game: Game, style: Style, course: number): Promise<Time | undefined> {
         const query = `SELECT globals.*, users.username, maps.name as map_name
             FROM globals 

@@ -4,7 +4,7 @@ import path from "path";
 import { rateLimit } from "express-rate-limit";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
-import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement, formatStyleShort } from "shared";
+import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, LeaderboardSortBy, formatCourse, formatGame, formatStyle, MAIN_COURSE, UserSearchDataComplete, WRCount, MAX_TIER, Map as StrafesMap, formatTime, formatPlacement, formatStyleShort, allReplayReactions, MAX_REACTIONS_PER_USER } from "shared";
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
@@ -18,6 +18,7 @@ import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
+import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
@@ -88,7 +89,10 @@ app.get("/oauth/callback", async (req, res) => {
 });
 
 app.get("/api/auth/user", async (req, res) => {
-    await authClient.requestAuthenticatedUserInfo(req, res);
+    const user = await authClient.requestAuthenticatedUserInfo(req, res);
+    if (user?.username) {
+        globalsClient.updateUsername(user.userId, user.username);
+    }
 });
 
 app.get("/api/auth/user/tiers", async (req, res) => {
@@ -1043,6 +1047,64 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     }
 
     res.status(200).send(replay);
+});
+
+app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(1), async (req, res) => {
+    const [error] = await validators.idValidator.tryValidate(req.params);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const id = req.params.id as string; // Don't want to convert to number
+
+    // Not cached since "reacted" depends on who's asking
+    const user = await authClient.getAuthenticatedUser(req, res);
+    const reactions = await getReactionsForReplay(globalsClient, id, user?.userId);
+
+    res.status(200).json(reactions);
+});
+
+const setReactionValidator = vine.create({
+    // Kept as a string since time IDs can be too big for a JS number
+    timeId: vine.string().regex(/^\d{1,20}$/),
+    reaction: vine.enum(allReplayReactions),
+    active: vine.boolean()
+});
+
+app.post("/api/auth/reactions", rateLimiterMiddleware(2), async (req, res) => {
+    const [error, result] = await setReactionValidator.tryValidate(req.body);
+    if (error) {
+        res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
+        return;
+    }
+
+    const user = await authClient.getAuthenticatedUser(req, res);
+    if (!user) {
+        res.status(401).json({ error: "You are not logged in" });
+        return;
+    }
+
+    // Only check when adding, so a reaction can still be removed if the replay goes away later
+    if (result.active) {
+        const time = await getTimeById(result.timeId);
+        if (!time) {
+            res.status(404).json({ error: "Invalid time" });
+            return;
+        }
+        if (!time.has_bot) {
+            res.status(400).json({ error: "This time doesn't have a replay" });
+            return;
+        }
+    }
+
+    const reactions = await setReactionForReplay(globalsClient, result.timeId, user, result.reaction, result.active);
+    if (!reactions) {
+        res.status(400).json({ error: `You can only add ${MAX_REACTIONS_PER_USER} reactions to a replay` });
+        return;
+    }
+
+    res.status(200).json(reactions);
 });
 
 const mapFileValidator = vine.create({

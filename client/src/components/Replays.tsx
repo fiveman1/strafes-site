@@ -24,6 +24,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
+import ReplayReactions from "./replays/ReplayReactions";
 import { replayAssetQueries } from "../api/replayAssets";
 import { getMapAssetLoader } from "./playback/mapAssetLoader";
 import { compiledWasm } from "./playback/wasmModule";
@@ -875,7 +876,8 @@ function Replays() {
         return () => cancelAnimationFrame(animationId);
     }, [setError, replay?.course, botOffset, playbackTime, setAutoLevel, onResize]);
 
-    // The player and the info below it fill the window between the app bar and the site footer, so the page doesn't scroll.
+    // The player and the info below it fill the window below the app bar. The site footer sits just past the bottom,
+    // so it's a scroll away instead of taking space from the player.
     // One observer measures everything that affects that space. The info renders once there's a size, hence the callback ref.
     const [ footerElement, setFooterElement ] = useState<HTMLDivElement | null>(null);
     const [ measuredFooterHeight, setMeasuredFooterHeight ] = useState(FOOTER_HEIGHT);
@@ -887,7 +889,6 @@ function Replays() {
         const main = area?.closest("main");
         if (!area || !root || !main) return;
         const header = document.querySelector("header");
-        const siteFooter = root.querySelector("footer");
         const update = () => {
             if (document.fullscreenElement) {
                 // the browser sizes the fullscreen player to the screen
@@ -896,9 +897,8 @@ function Replays() {
             }
             const top = area.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop;
             const bottomPadding = parseFloat(getComputedStyle(main).paddingBottom) + parseFloat(getComputedStyle(area.parentElement!).paddingBottom);
-            const siteFooterHeight = siteFooter?.getBoundingClientRect().height ?? 0;
             const width = area.clientWidth;
-            const height = Math.floor(root.clientHeight - top - bottomPadding - siteFooterHeight);
+            const height = Math.floor(root.clientHeight - top - bottomPadding);
             setPlayerArea(old => old && old.width === width && old.height === height ? old : { width, height });
             const areaKey = `${width}x${height}`;
             const sameArea = areaKey === footerAreaKey.current;
@@ -916,9 +916,8 @@ function Replays() {
         // the window, and the player's width within it
         observer.observe(root);
         observer.observe(area);
-        // the app bar and site footer wrap onto more lines on narrow screens, and the info's text rewraps
+        // the app bar wraps onto more lines on narrow screens, and the info's text rewraps
         if (header) observer.observe(header);
-        if (siteFooter) observer.observe(siteFooter);
         if (footerElement) observer.observe(footerElement);
         window.addEventListener("resize", update);
         document.addEventListener("fullscreenchange", update);
@@ -1093,7 +1092,6 @@ function Replays() {
     return (
         <Box
             sx={{
-                padding: smallScreen ? 0 : 0.5,
                 flexGrow: 1,
                 display: "flex",
                 flexDirection: "column",
@@ -1245,7 +1243,7 @@ function Replays() {
                             // Never squeezed to fit, which would leave a long map name spilling out of a box that measures
                             // too short. The player is sized from this height instead.
                             flexShrink: 0,
-                            pt: 1,
+                            pt: smallScreen ? 0.5 : 0.75,
                             minHeight: FOOTER_HEIGHT
                         }}>
                         {replay &&
@@ -1254,7 +1252,7 @@ function Replays() {
                         <Box
                             sx={{
                                 display: "flex",
-                                mr: 1.5
+                                mr: 1.25
                             }}>
                             <Link
                                 underline="none"
@@ -1298,7 +1296,7 @@ function Replays() {
                             <Box
                                 sx={{
                                     display: "inline-flex",
-                                    alignItems: "center"
+                                    alignItems: smallScreen ? "center" : "flex-start"
                                 }}>
                                 {smallScreen &&
                                 <Link
@@ -1306,7 +1304,7 @@ function Replays() {
                                     component={RouterLink}
                                     to={mapLink}
                                     sx={{
-                                        mr: 1.5
+                                        mr: 1.25
                                     }}
                                 >
                                     <Box
@@ -1341,7 +1339,23 @@ function Replays() {
                                     </Link>
                                     <ColorChip color={tierColor} label={formatTier(mapInfo?.tier, true)} sx={{ ml: 0.75, verticalAlign: "middle", position: "relative", top: "-2px" }} />
                                 </Typography>
+                                {(!smallScreen && replay.hasBot) &&
+                                <ReplayReactions
+                                    timeId={replay.id}
+                                    loginUser={loginUser}
+                                    sx={{
+                                        // Uses the space beside the map name, wrapping once it reaches half the width
+                                        ml: "auto",
+                                        pl: 1.5,
+                                        flexShrink: 0,
+                                        maxWidth: "50%",
+                                        justifyContent: "flex-end",
+                                        // same height as the first line of the map name so the chips are centered
+                                        height: "31px"
+                                    }} />}
                             </Box>
+                            {(smallScreen && replay.hasBot) &&
+                            <ReplayReactions timeId={replay.id} loginUser={loginUser}  />}
                             <Box
                                 sx={{
                                     display: "inline-flex",

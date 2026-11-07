@@ -1,5 +1,5 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getReplayReactions, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
 import { Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
@@ -104,6 +104,12 @@ export const queries = createQueryKeyStore({
         replay: (timeId: string) => ({
             queryKey: [timeId],
             queryFn: () => getReplayById(timeId)
+        }),
+        // userId is in the key since "reacted" depends on who's logged in
+        reactions: (timeId: string, userId: number | undefined) => ({
+            queryKey: [timeId, userId],
+            queryFn: () => getReplayReactions(timeId),
+            staleTime: 30 * 1000
         }),
         botURL: (timeId: string) => ({
             queryKey: [timeId],

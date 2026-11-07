@@ -1,4 +1,4 @@
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions } from "shared";
 import { JsonObject } from "../common/utils";
 
 // Mirrors what axios did: skip null/undefined params and repeat the key for each array item (a=1&a=2)
@@ -274,6 +274,26 @@ export async function getReplayById(id: string) {
     if (!res) return null;
 
     return res.data as Replay;
+}
+
+export async function getReplayReactions(timeId: string) {
+    const res = await tryGetRequest("replays/times/" + timeId + "/reactions");
+
+    if (!res) return null;
+
+    return res.data as ReplayReactions;
+}
+
+export async function setReplayReaction(timeId: string, reaction: ReplayReaction, active: boolean) {
+    const res = await tryPostRequest("auth/reactions", {
+        timeId: timeId,
+        reaction: reaction,
+        active: active
+    });
+
+    if (!res) return null;
+
+    return res.data as ReplayReactions;
 }
 
 export async function getBotFileResponse(timeId: string) {

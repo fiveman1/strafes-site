@@ -159,12 +159,13 @@ export class AuthClient {
         });
     }
 
-    public async requestAuthenticatedUserInfo(request: Request, response: Response) {
+    /** Sends the logged in user's info and settings, and returns the user (if logged in) for the caller to use. */
+    public async requestAuthenticatedUserInfo(request: Request, response: Response): Promise<LoginUser | undefined> {
         const user = await this.getAuthenticatedUser(request, response);
 
         if (!user) {
             response.status(401).json({ error: "You are not logged in" });
-            return;
+            return undefined;
         }
 
         const settings = await this.loadSettingsFromDB(user.userId);
@@ -175,6 +176,7 @@ export class AuthClient {
         };
 
         response.status(200).json(data);
+        return user;
     }
 
     public async logout(request: Request, response: Response) {

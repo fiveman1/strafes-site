@@ -67,3 +67,7 @@ STRAFES_DB_PASSWORD=<your MySQL password>
 ### Run production server
 
 `yarn start`
+
+## Credits
+
+Reaction emoji graphics are from [Twemoji](https://github.com/jdecked/twemoji), Copyright 2019 Twitter, Inc and other contributors, licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).

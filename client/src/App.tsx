@@ -39,6 +39,7 @@ function App() {
 
     const smallScreen = useMediaQuery("@media screen and (max-width: 480px)");
     const location = useLocation();
+    const isReplays = location.pathname.startsWith("/replays");
 
     const setSettings = useCallback((settings: SettingsValues) => {
         setMode(settings.theme);
@@ -521,8 +522,10 @@ function App() {
                     flexDirection: "column",
                     width: "100%",
                     // the replay player fills whatever space the window has
-                    maxWidth: location.pathname.startsWith("/replays") ? "none" : "1440px",
-                    padding: smallScreen ? 1 : 2,
+                    maxWidth: isReplays ? "none" : "1440px",
+                    px: smallScreen ? 1 : 2,
+                    // less space above and below the replay player, where height is what limits its size
+                    py: (smallScreen || isReplays) ? 1 : 2,
                     marginBottom: "auto",
                     marginX: "auto"
                 }}>

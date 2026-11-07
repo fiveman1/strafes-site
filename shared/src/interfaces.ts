@@ -261,3 +261,34 @@ export enum GameControls {
     Action1 = 1 << 15,
     Action2 = 1 << 16
 }
+
+// Display order of reactions. Keys are what's stored in the DB, so don't rename them.
+export const REPLAY_REACTIONS = [
+    { key: "goat", emoji: "🐐", label: "Goat" },
+    { key: "fire", emoji: "🔥", label: "Fire" },
+    { key: "thumbsup", emoji: "👍", label: "Thumbs up" },
+    { key: "heart", emoji: "❤️", label: "Heart" },
+    { key: "skull", emoji: "💀", label: "Skull" },
+    { key: "sob", emoji: "😭", label: "Sob" },
+    { key: "interrobang", emoji: "⁉️", label: "Interrobang" },
+    { key: "smoking", emoji: "🚬", label: "Smoking" }
+] as const;
+
+export type ReplayReaction = typeof REPLAY_REACTIONS[number]["key"];
+// How many different reactions one user can add to one replay
+export const MAX_REACTIONS_PER_USER = 3;
+export const allReplayReactions: readonly ReplayReaction[] = REPLAY_REACTIONS.map((reaction) => reaction.key);
+
+export interface ReplayReactionCount {
+    reaction: ReplayReaction
+    count: number
+    // Whether the logged in user has added this reaction
+    reacted: boolean
+    // Usernames of the first few users who reacted, in order. The rest are only counted.
+    users: string[]
+}
+
+export interface ReplayReactions {
+    timeId: string
+    reactions: ReplayReactionCount[]
+}
