@@ -1,10 +1,11 @@
 import Box from "@mui/material/Box";
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import init, { Bvh, CompleteBot, StreamableMap, Graphics, CompleteHead, StreamableHead, StreamableSession, new_streamable_bot, new_streamable_map, setup_graphics, Surface, StreamableBot, BotDownloader, MapDownloader, BotBlockRange, DownloadMapBlockRangeError, DownloadBotBlockRangeError, MapBlockRange, JumpStats } from "../wasm/strafesnet_roblox_bot_player_wasm_module";
 import PlaybackOverlay from "./playback/PlaybackOverlay";
 import { createPlaybackTime } from "./playback/playbackTime";
 import { createDownloadStats, readDownloadStats } from "./playback/downloadStats";
-import { formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
+import { DEFAULT_COMMENT_SORT, formatCourse, formatDiff, formatGame, formatPlacement, formatStyle, formatTier, formatTime, GameControls, MAIN_COURSE, Replay } from "shared";
+import { getCommentMarkers } from "../common/comments";
 import { Link as RouterLink, useOutletContext, useParams } from "react-router";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -25,6 +26,7 @@ import { queries } from "../api/queries";
 import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import ReplayReactions from "./replays/ReplayReactions";
+import ReplayComments from "./replays/comments/ReplayComments";
 import { replayAssetQueries } from "../api/replayAssets";
 import { getMapAssetLoader } from "./playback/mapAssetLoader";
 import { compiledWasm } from "./playback/wasmModule";
@@ -398,6 +400,14 @@ function Replays() {
 
     const replayQuery = useQuery(queries.replays.replay(id));
     const replay = replayQuery.data;
+
+    // For the seek bar. Uses the comment list's starting sort so it's the same request, which the list keeps up to date.
+    const commentsQuery = useQuery({
+        ...queries.replays.comments(id, loginUser?.userId, DEFAULT_COMMENT_SORT),
+        enabled: Boolean(replay?.hasBot)
+    });
+    const commentMarkers = useMemo(() => getCommentMarkers(commentsQuery.data, replay?.userId, loginUser?.userId),
+        [commentsQuery.data, replay?.userId, loginUser?.userId]);
 
     const [ duration, setDuration ] = useState(0);
     const [ botOffset, setBotOffset ] = useState(0);
@@ -1046,6 +1056,12 @@ function Replays() {
         }
     }, []);
 
+    // Also scrolls back up to the player
+    const onCommentSeek = useCallback((seconds: number) => {
+        onSetPlayback(seconds);
+        document.getElementById("root")?.scrollTo({ top: 0, behavior: "smooth" });
+    }, [onSetPlayback]);
+
     const setThumbTime = useCallback((reqTime: number) => {
         const time = reqTime + botOffset;
         const bot = botRef.current;
@@ -1194,6 +1210,7 @@ function Replays() {
                                 setShowingThumb={setShowingThumb}
                                 graphicsSettings={graphicsSettings}
                                 graphicsLevel={graphicsLevel}
+                                commentMarkers={commentMarkers}
                             />
                         </Box>
                         {(loading && !error) &&
@@ -1471,6 +1488,19 @@ function Replays() {
                     </Box>
                 </Box>}
             </Box>
+            {(replay?.hasBot && playerArea) &&
+            <ReplayComments
+                // Starts fresh (open threads, reply boxes) on another replay
+                key={replay.id}
+                replay={replay}
+                loginUser={loginUser}
+                playbackTime={playbackTime}
+                duration={duration}
+                onSeek={onCommentSeek}
+                // Hidden rather than removed while
+                // fullscreen, so it keeps listening for new comments (for the player's pop-ups) and keeps open threads.
+                sx={{ width: playerWidth, maxWidth: "100%", mt: 3, mb: 2, display: fullscreen ? "none" : "flex" }}
+            />}
         </Box>
     );
 }

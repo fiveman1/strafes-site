@@ -7,22 +7,31 @@ import UserAvatar from "./UserAvatar";
 import CountryFlag from "./CountryFlag";
 
 interface IUserLinkProps extends LinkProps, UserInfo {
-    game: Game
-    strafesStyle: Style
+    // The user's page opens on this game and style. Without them it opens on the viewer's defaults.
+    game?: Game
+    strafesStyle?: Style
+    // 24 by default
+    avatarSize?: number
+    hideAvatar?: boolean
+    hideYouIcon?: boolean
+    // @username
+    showAt?: boolean
 }
 
 function UserLink(props: IUserLinkProps) {
-    const { userId, username, userRoles, userCountry, userThumb, game, strafesStyle, ...linkProps }  = props;
+    const { userId, username, userRoles, userCountry, userThumb, game, strafesStyle, avatarSize, hideAvatar, hideYouIcon, showAt, ...linkProps }  = props;
     const theme = useTheme();
     const { loginUser } = useOutletContext() as ContextParams;
 
-    const isCurrentUser = loginUser && userId === loginUser.userId;
+    const isCurrentUser = !hideYouIcon && loginUser && userId === loginUser.userId;
     const userRole = userRoles ? userRoles[0] : undefined;
+    const size = `${avatarSize ?? 24}px`;
+    const avatarGap = (avatarSize ?? 24) < 24 ? 0.5 : 1;
 
     return (
         <Link
             {...linkProps}
-            to={{pathname: `/users/${userId}`, search: `?style=${strafesStyle}&game=${game}`}}
+            to={{pathname: `/users/${userId}`, search: game !== undefined && strafesStyle !== undefined ? `?style=${strafesStyle}&game=${game}` : ""}}
             component={RouterLink}
             color={userRole ? getUserRoleColor(userRole, theme) : "textPrimary"}
             sx={[{
@@ -35,7 +44,8 @@ function UserLink(props: IUserLinkProps) {
                     flexDirection: "row",
                     alignItems: "center"
                 }}>
-                <UserAvatar username={username} userThumb={userThumb} sx={{mr: 1, width: "24px", height: "24px"}} />
+                {!hideAvatar &&
+                <UserAvatar username={username} userThumb={userThumb} sx={{mr: avatarGap, width: size, height: size, flexShrink: 0}} />}
                 <Typography
                     variant="inherit"
                     sx={{
@@ -43,7 +53,7 @@ function UserLink(props: IUserLinkProps) {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                     }}>
-                    {username}
+                    {showAt ? "@" : ""}{username}
                 </Typography>
 
                 {userCountry ? 

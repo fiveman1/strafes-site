@@ -10,7 +10,8 @@ import AddReactionOutlinedIcon from "@mui/icons-material/AddReactionOutlined";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginUser, MAX_REACTIONS_PER_USER, REPLAY_REACTIONS, ReplayReaction, ReplayReactionCount, ReplayReactions as ReplayReactionsData, ReplayReactionsUpdate } from "shared";
 import { queries } from "../../api/queries";
-import { getReplayReactionsStreamURL, login, setReplayReaction } from "../../api/api";
+import { login, setReplayReaction } from "../../api/api";
+import { useReplayStream } from "../../api/replayStream";
 import { applyReaction, formatReactors, getReactionInfo, mergeReactionUpdate, REACTION_IMAGES } from "../../common/reactions";
 
 // The browser draws an animating chip (see PopIn) at its exact position, then snaps it to whole pixels when the
@@ -151,44 +152,21 @@ function ReplayReactions(props: ReplayReactionsProps) {
         if (hasData) setPopInFor(timeId);
     }, [hasData, timeId]);
 
-    // Live updates while the tab is visible. EventSource reconnects by itself, and the server starts every
-    // connection with the current totals, so nothing's missed while hidden or reconnecting.
-    useEffect(() => {
-        const key = queries.replays.reactions(timeId, userId).queryKey;
-        let source: EventSource | undefined;
-
-        const onUpdate = (event: MessageEvent<string>) => {
+    // Live updates while the tab is visible. The server starts every connection with the current totals, so nothing's
+    // missed while hidden or reconnecting.
+    useReplayStream(timeId, {
+        reactions: (data) => {
             if (queryClient.isMutating({ mutationKey: getMutationKey(timeId) }) > 0) {
                 // This could be from before or after the user's own change, so it can't safely replace what's shown.
                 // Fetch once their changes finish instead.
                 missedUpdate.current = true;
                 return;
             }
-            const update = JSON.parse(event.data) as ReplayReactionsUpdate;
-            queryClient.setQueryData<ReplayReactionsData | null>(key, (data) => mergeReactionUpdate(data, update));
-        };
-
-        const open = () => {
-            if (source) return;
-            source = new EventSource(getReplayReactionsStreamURL(timeId));
-            source.addEventListener("reactions", onUpdate);
-        };
-        const close = () => {
-            source?.close();
-            source = undefined;
-        };
-        const onVisibilityChange = () => {
-            if (document.visibilityState === "visible") open();
-            else close();
-        };
-
-        onVisibilityChange();
-        document.addEventListener("visibilitychange", onVisibilityChange);
-        return () => {
-            document.removeEventListener("visibilitychange", onVisibilityChange);
-            close();
-        };
-    }, [timeId, userId, queryClient]);
+            const update = JSON.parse(data) as ReplayReactionsUpdate;
+            const key = queries.replays.reactions(timeId, userId).queryKey;
+            queryClient.setQueryData<ReplayReactionsData | null>(key, (current) => mergeReactionUpdate(current, update));
+        }
+    });
 
     const mutation = useMutation({
         mutationKey: mutationKey,

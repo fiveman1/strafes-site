@@ -19,16 +19,18 @@ interface IDateDisplayProps {
     color?: string
     useDateTime?: boolean
     variant?: TypographyVariant
+    // Relative ("3 days ago") however old, instead of following the relative dates setting
+    alwaysRelative?: boolean
 }
 
 function DateDisplay(props: IDateDisplayProps) {
-    const { date, fontWeight, tooltipPlacement, color, useDateTime, variant } = props;
+    const { date, fontWeight, tooltipPlacement, color, useDateTime, variant, alwaysRelative } = props;
     const [ now ] = useNow();
     const { settings } = useOutletContext() as ContextParams;
 
     const dateValue = new Date(date);
     const maxDaysAgo = now - (settings.maxDaysRelativeDates * 24 * 60 * 60 * 1000);
-    const lessThanMaxDaysAgo = dateValue.getTime() > maxDaysAgo;
+    const lessThanMaxDaysAgo = alwaysRelative || dateValue.getTime() > maxDaysAgo;
     const placement = tooltipPlacement ? tooltipPlacement : "right";
     const tooltipText = lessThanMaxDaysAgo ? dateTimeFormat.format(dateValue) : timeFormat.format(dateValue);
 

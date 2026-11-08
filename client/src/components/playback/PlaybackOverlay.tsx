@@ -27,6 +27,8 @@ import { usePersistedToggle } from "../../common/states";
 import GraphicsMenu from "./GraphicsMenu";
 import ToggleButton from "./ToggleButton";
 import { GraphicsLevel, GraphicsSettings } from "./graphicsSettings";
+import { CommentMarker } from "../../common/comments";
+import CommentPopups from "../replays/comments/CommentPopups";
 
 // HUD elements are drawn at full size on players at least this tall, and shrink with the player below it,
 // so they always cover the same part of the player
@@ -80,6 +82,8 @@ interface PlaybackOverlayProps {
     graphicsSettings: GraphicsSettings
     /** The graphics preset in use */
     graphicsLevel: GraphicsLevel
+    /** For the seek bar and pop-ups. Unset where the player has no comments. */
+    commentMarkers?: CommentMarker[]
 }
 
 /** Gap between the settings menu and the top of the player, in pixels. */
@@ -91,13 +95,14 @@ const SHOW_JHUD_SETTING = "player_showJhud";
 const SHOW_DIFF_SETTING = "player_showDiff";
 const SHOW_FPS_SETTING = "player_showFps";
 const SHOW_DEBUG_SETTING = "player_showDebug";
+const SHOW_COMMENTS_SETTING = "player_showComments";
 
 function PlaybackOverlay(props: PlaybackOverlayProps) {
     const { time, downloadStats, duration, paused, offset, fullscreen, speed, onDragPlayback, 
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerWidth, playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
-        graphicsSettings, graphicsLevel } = props;
+        graphicsSettings, graphicsLevel, commentMarkers } = props;
 
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
@@ -110,6 +115,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     const [ showDiffSetting, onClickDiffButton ] = usePersistedToggle(SHOW_DIFF_SETTING, true);
     const [ showFps, onClickFpsButton ] = usePersistedToggle(SHOW_FPS_SETTING, true);
     const [ showDebug, onClickDebugButton ] = usePersistedToggle(SHOW_DEBUG_SETTING, false);
+    // Only the pop-ups; the seek bar's markers show either way
+    const [ showComments, onClickCommentsButton ] = usePersistedToggle(SHOW_COMMENTS_SETTING, true);
     const verySmallScreen = useMediaQuery("(max-width: 480px)");
     const smallScreen = useMediaQuery("(max-width: 660px)");
     // The FPS and frame stats are written straight into the DOM every half second, so copy what's shown.
@@ -504,6 +511,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     position: "relative",
                     flexGrow: 1
                 }}>
+                {commentMarkers &&
+                <CommentPopups markers={commentMarkers} time={time} enabled={showComments && !loading && !errorReplay} playing={!paused && !isDragging} />}
                 <Box
                     ref={jhudRef}
                     style={{ transform: `translate(-50%) scale(${hudScale})` }}
@@ -910,10 +919,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     displayThumb={showThumb}
                     thumbEnabled={thumbEnabled}
                     setShowingThumb={setShowingThumb}
+                    markers={commentMarkers}
+                    onMarkerClick={onSetPlaybackHandler}
                 />
                 <Box ref={settingsButtonRef}>
                     <IconButton
                         aria-describedby={curSettingsMenuId}
+                        aria-label="Settings"
                         size="small"
                         onPointerUp={onClickSettings}
                         sx={{
@@ -1071,6 +1083,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                                     {allowDiff && <ToggleButton label="Diff" active={showDiffSetting} onClick={onClickDiffButton} />}
                                     <ToggleButton label="FPS" active={showFps} onClick={onClickFpsButton} />
                                     <ToggleButton label="Debug" active={showDebug} onClick={onClickDebugButton} />
+                                    {commentMarkers && <ToggleButton label="Comments" active={showComments} onClick={onClickCommentsButton} />}
                                 </Box>
                             </Box>
                         </Box>

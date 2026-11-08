@@ -1,14 +1,22 @@
 import { Request, Response } from "express";
-import { ReplayReactionsUpdate } from "shared";
+import { ReplayComment, ReplayCommentLikes, ReplayCommentRemoved, ReplayReactionsUpdate } from "shared";
 import { GlobalsClient } from "./globals.js";
 import { getReactionsForReplay } from "./reactions.js";
+import { getLikeCounts } from "./comments/comments.js";
 
-// Live reaction updates over Server-Sent Events. Everything lives in memory, which works because the site runs as one
-// process. With more than one, each would only hear about reactions made through itself.
+// Live updates for a replay page (reactions and comments) over Server-Sent Events. Everything lives in memory, which
+// works because the site runs as one process. With more than one, each would only hear about changes made through itself.
+//
+// Events:
+//   reactions        ReplayReactionsUpdate, sent on connect and after every change
+//   comment          ReplayComment, a comment that just became visible (new, or approved / unhidden)
+//   comment_removed  ReplayCommentRemoved, a visible comment that was deleted, hidden, or reported into review
+//   comment_likes    ReplayCommentLikes, new like counts
+// Comments aren't sent on connect, so a client should refetch them when the stream (re)opens.
 
 // Cloudflare drops proxied connections that send nothing for 100 seconds, and nginx's default proxy_read_timeout is 60
 const HEARTBEAT_MS = 30 * 1000;
-// A burst of reactions on one replay goes out as one update
+// A burst of reactions or likes on one replay goes out as one update
 const BROADCAST_DELAY_MS = 250;
 // Each stream holds a socket open, so don't let one client (or everyone together) hold too many
 const MAX_STREAMS_PER_IP = 10;
@@ -18,13 +26,24 @@ const streamsByTime = new Map<string, Set<Response>>();
 const streamCountByIp = new Map<string, number>();
 let streamCount = 0;
 
-// Replays with an update waiting to go out
+// Replays with a reactions update waiting to go out
 const pendingBroadcasts = new Set<string>();
 // Bumped for every update, so a slow query can't send older totals after newer ones
 const broadcastVersions = new Map<string, number>();
 
-function writeEvent(res: Response, update: ReplayReactionsUpdate) {
-    res.write(`event: reactions\ndata: ${JSON.stringify(update)}\n\n`);
+// Comments with changed likes, by replay, waiting to go out
+const pendingLikes = new Map<string, Set<string>>();
+// Each batch only has its own comments, so batches go out one at a time, in order, rather than dropping older ones
+const likeQueues = new Map<string, Promise<void>>();
+
+function writeEvent(res: Response, event: string, data: unknown) {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function writeToReplay(timeId: string, event: string, data: unknown) {
+    for (const res of streamsByTime.get(timeId) ?? []) {
+        writeEvent(res, event, data);
+    }
 }
 
 async function loadUpdate(client: GlobalsClient, timeId: string): Promise<ReplayReactionsUpdate> {
@@ -45,7 +64,7 @@ setInterval(() => {
     }
 }, HEARTBEAT_MS).unref();
 
-export async function openReactionStream(client: GlobalsClient, req: Request, res: Response, timeId: string) {
+export async function openReplayStream(client: GlobalsClient, req: Request, res: Response, timeId: string) {
     const ip = req.ip ?? "";
     const ipCount = streamCountByIp.get(ip) ?? 0;
     if (ipCount >= MAX_STREAMS_PER_IP || streamCount >= MAX_STREAMS) {
@@ -97,7 +116,7 @@ export async function openReactionStream(client: GlobalsClient, req: Request, re
     try {
         const update = await loadUpdate(client, timeId);
         if (!res.writableEnded) {
-            writeEvent(res, update);
+            writeEvent(res, "reactions", update);
         }
     }
     catch (err) {
@@ -130,8 +149,59 @@ export function broadcastReactions(client: GlobalsClient, timeId: string) {
             // A newer update started while this one was loading
             return;
         }
-        for (const res of streamsByTime.get(timeId) ?? []) {
-            writeEvent(res, update);
-        }
+        writeToReplay(timeId, "reactions", update);
     }, BROADCAST_DELAY_MS);
+}
+
+/** Sends a comment that just became visible. It must be the public version, with liked and reported false. */
+export function broadcastComment(comment: ReplayComment) {
+    writeToReplay(comment.timeId, "comment", comment);
+}
+
+export function broadcastCommentRemoved(timeId: string, commentId: string) {
+    const removed: ReplayCommentRemoved = { timeId: timeId, commentId: commentId };
+    writeToReplay(timeId, "comment_removed", removed);
+}
+
+/** Sends the comment's like count shortly, together with any other likes on the replay in the meantime. */
+export function broadcastCommentLikes(client: GlobalsClient, timeId: string, commentId: string) {
+    if (!streamsByTime.has(timeId)) {
+        return;
+    }
+
+    const pending = pendingLikes.get(timeId);
+    if (pending) {
+        pending.add(commentId);
+        return;
+    }
+    pendingLikes.set(timeId, new Set([commentId]));
+
+    setTimeout(() => {
+        const commentIds = Array.from(pendingLikes.get(timeId) ?? []);
+        pendingLikes.delete(timeId);
+
+        const queued = (likeQueues.get(timeId) ?? Promise.resolve()).then(() => sendLikeCounts(client, timeId, commentIds));
+        likeQueues.set(timeId, queued);
+        queued.finally(() => {
+            if (likeQueues.get(timeId) === queued) {
+                likeQueues.delete(timeId);
+            }
+        });
+    }, BROADCAST_DELAY_MS);
+}
+
+async function sendLikeCounts(client: GlobalsClient, timeId: string, commentIds: string[]) {
+    let counts: Map<string, number>;
+    try {
+        counts = await getLikeCounts(client, commentIds);
+    }
+    catch (err) {
+        console.error("Failed to load comment likes for broadcast:", err);
+        return;
+    }
+    const update: ReplayCommentLikes = {
+        timeId: timeId,
+        likes: Array.from(counts, ([id, likes]) => ({ commentId: id, likes: likes }))
+    };
+    writeToReplay(timeId, "comment_likes", update);
 }

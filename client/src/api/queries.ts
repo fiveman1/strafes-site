@@ -1,6 +1,6 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getReplayReactions, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
-import { Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
+import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getReplayComments, getReplayReactions, getModQueue, searchModComments, getModLog, getCommentBans, getCommentModerators, ModCommentSearch, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { CommentSort, Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
     if (search.userId !== undefined) {
@@ -111,6 +111,12 @@ export const queries = createQueryKeyStore({
             queryFn: () => getReplayReactions(timeId),
             staleTime: 30 * 1000
         }),
+        // userId is in the key since liked, reported, and what's included depend on who's logged in
+        comments: (timeId: string, userId: number | undefined, sort: CommentSort) => ({
+            queryKey: [timeId, userId, sort],
+            queryFn: () => getReplayComments(timeId, sort),
+            staleTime: 30 * 1000
+        }),
         botURL: (timeId: string) => ({
             queryKey: [timeId],
             queryFn: () => getBotFileURL(timeId),
@@ -121,5 +127,27 @@ export const queries = createQueryKeyStore({
             queryFn: () => getMapFileURL(mapId),
             staleTime: 60 * 1000
         })
+    },
+    mod: {
+        queue: {
+            queryKey: null,
+            queryFn: () => getModQueue()
+        },
+        comments: (search: ModCommentSearch) => ({
+            queryKey: [search],
+            queryFn: () => searchModComments(search)
+        }),
+        log: (page: number) => ({
+            queryKey: [page],
+            queryFn: () => getModLog(page)
+        }),
+        bans: {
+            queryKey: null,
+            queryFn: () => getCommentBans()
+        },
+        moderators: {
+            queryKey: null,
+            queryFn: () => getCommentModerators()
+        }
     }
 });

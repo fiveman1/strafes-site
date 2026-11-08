@@ -3,6 +3,7 @@ import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import { isBot } from "isbot";
 import { stat } from "fs/promises";
 import path from "path";
+import { IS_DEV_MODE } from "./util.js";
 
 const BURST_LIMIT = 100;
 const shortLimiter = new RateLimiterMemory({
@@ -49,6 +50,12 @@ async function tryConsumeRequest(ip: string, points: number): Promise<[boolean, 
 
 export function rateLimiterMiddleware(points: number) {
     return async (req: Request, res: Response, next: () => any) => {
+        // Local testing sends far more requests than browsing, all from one IP
+        if (IS_DEV_MODE) {
+            next();
+            return;
+        }
+
         if (!req.ip) {
             res.status(400);
             return;

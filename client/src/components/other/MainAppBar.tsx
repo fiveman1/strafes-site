@@ -3,13 +3,13 @@ import Button from '@mui/material/Button';
 import Box from "@mui/material/Box";
 import { AppBar, CircularProgress, Link, Toolbar, Typography } from "@mui/material";
 import { useLocation } from "react-router";
-import { LoginUser, Map } from "shared";
+import { LoginUserWithInfo, Map } from "shared";
 import { login } from "../../api/api";
 import AccountMenu from "./AccountMenu";
 import GlobalSearch from "../search/GlobalSearch";
 
 interface IMainAppBarProps {
-    loggedInUser: LoginUser | undefined
+    loggedInUser: LoginUserWithInfo | undefined
     isUserLoading: boolean
     disableSettings: boolean
     maps: Map[]

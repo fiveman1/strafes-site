@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { Api as StrafesApi, TimePlacement } from "./generated/strafes.js";
+import { Api as StrafesApi, TimePlacement, User as ApiUser } from "./generated/strafes.js";
 import { Api as MapsApi } from "./generated/maps.js";
 import memoize from "memoize";
 import memCache from "memory-cache";
@@ -131,13 +131,34 @@ async function getRanksCore(pageSize: number, pageNum: number, game: Game, style
     }
 }
 
-export const getUserInfo = memoize(getUserInfoCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-async function getUserInfoCore(userId: number) {
+const FOUND_USER_CACHE_MS = 5 * 60 * 1000;
+// Short, so someone who joins the game for the first time doesn't wait long before the site notices
+const MISSING_USER_CACHE_MS = 60 * 1000;
+// Wrapped, since memory-cache returns null for a miss
+const userInfoCache: memCache.CacheClass<number, { user: ApiUser | null }> = new memCache.Cache();
+
+/**
+ * The user's StrafesNET details, null if they've never joined the game, or undefined if the request failed.
+ * Failures aren't cached, so a blip in the API doesn't stick around.
+ */
+export async function lookupUserInfo(userId: number): Promise<ApiUser | null | undefined> {
+    const cached = userInfoCache.get(userId);
+    if (cached) {
+        return cached.user;
+    }
+
     try {
         const res = await STRAFES_CLIENT.user.userDetail(userId);
-        return res.data.data;
+        const user = res.data.data;
+        userInfoCache.put(userId, { user: user }, FOUND_USER_CACHE_MS);
+        return user;
     }
     catch (err) {
+        // The generated client throws the response itself when the status isn't OK
+        if ((err as { status?: number } | undefined)?.status === 404) {
+            userInfoCache.put(userId, { user: null }, MISSING_USER_CACHE_MS);
+            return null;
+        }
         if (IS_DEV_MODE) {
             console.error(err);
         }
@@ -145,8 +166,28 @@ async function getUserInfoCore(userId: number) {
     }
 }
 
-export const getTimeById = memoize(getTimeByIdCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
-async function getTimeByIdCore(timeId: string) {
+/** Like lookupUserInfo, for callers that treat "never joined" and "request failed" the same. */
+export async function getUserInfo(userId: number): Promise<ApiUser | undefined> {
+    return (await lookupUserInfo(userId)) ?? undefined;
+}
+
+const TIME_CACHE_MS = 5 * 60 * 1000;
+const timeCache = new Map<string, { data: ReturnType<typeof fetchTimeById>, maxAge: number }>();
+export const getTimeById = memoize(fetchTimeById, {cacheKey: JSON.stringify, cache: timeCache, maxAge: TIME_CACHE_MS});
+
+/**
+ * getTimeById without the cache, for when a stale copy would be saved somewhere: a time is updated in place when its
+ * runner beats it. The fresh copy replaces the cached one, so everything else agrees with what was saved.
+ */
+export async function fetchFreshTimeById(timeId: string) {
+    const time = await fetchTimeById(timeId);
+    if (time) {
+        timeCache.set(JSON.stringify([timeId]), { data: Promise.resolve(time), maxAge: Date.now() + TIME_CACHE_MS });
+    }
+    return time;
+}
+
+async function fetchTimeById(timeId: string) {
     try {
         const res = await STRAFES_CLIENT.time.timeDetail(timeId);
         return res.data.data;

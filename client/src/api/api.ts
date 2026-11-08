@@ -1,4 +1,4 @@
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions, CommentReportReason, CommentSort, ReplayComment, ReplayComments, ModComment, ReplayCommentStatus, CommentBan, CommentModerator, CommentModerationLogEntry, CommentRole } from "shared";
 import { JsonObject } from "../common/utils";
 
 // Mirrors what axios did: skip null/undefined params and repeat the key for each array item (a=1&a=2)
@@ -30,6 +30,40 @@ async function tryRequest(url: string, init: RequestInit, timeout: number) {
 async function tryGetRequest(url: string, params?: JsonObject) {
     const query = toSearchParams(params);
     return await tryRequest(query ? `${url}?${query}` : url, { method: "GET" }, 15000);
+}
+
+// bannedUntil comes with "You're banned from commenting", unset for a permanent ban
+export type ApiResult<T> = { ok: true, data: T } | { ok: false, error: string, bannedUntil?: string };
+
+/** Like tryRequest, but keeps the server's error message. */
+async function tryRequestWithError<T>(url: string, init: RequestInit, timeout: number): Promise<ApiResult<T>> {
+    let res: Response;
+    try {
+        res = await fetch("/api/" + url, { ...init, signal: AbortSignal.timeout(timeout) });
+    }
+    catch {
+        return { ok: false, error: "Couldn't reach the server, try again" };
+    }
+
+    const body = await res.json().catch(() => undefined);
+    if (!res.ok) {
+        // Validation errors come back as a list, which isn't worth showing
+        const message = typeof body?.error === "string" ? body.error
+            : res.status === 429 ? "You're doing that too fast, wait a bit"
+            : "Something went wrong, try again";
+        return { ok: false, error: message, bannedUntil: typeof body?.bannedUntil === "string" ? body.bannedUntil : undefined };
+    }
+    return { ok: true, data: body as T };
+}
+
+async function trySendRequest<T>(method: "POST" | "DELETE", url: string, params?: JsonObject) {
+    return await tryRequestWithError<T>(url, {
+        method: method,
+        headers: params ? { "Content-Type": "application/json" } : undefined,
+        body: params ? JSON.stringify(params) : undefined
+    // Generous, since some of these wait on StrafesNET, and giving up early would report a failure for something that
+    // went through
+    }, 20000);
 }
 
 export async function tryPostRequest(url: string, params?: JsonObject) {
@@ -284,8 +318,8 @@ export async function getReplayReactions(timeId: string) {
     return res.data as ReplayReactions;
 }
 
-export function getReplayReactionsStreamURL(timeId: string) {
-    return "/api/replays/times/" + timeId + "/reactions/stream";
+export function getReplayStreamURL(timeId: string) {
+    return "/api/replays/times/" + timeId + "/stream";
 }
 
 export async function setReplayReaction(timeId: string, reaction: ReplayReaction, active: boolean) {
@@ -298,6 +332,132 @@ export async function setReplayReaction(timeId: string, reaction: ReplayReaction
     if (!res) return null;
 
     return res.data as ReplayReactions;
+}
+
+export async function getReplayComments(timeId: string, sort: CommentSort) {
+    const res = await tryGetRequest("replays/times/" + timeId + "/comments", { sort: sort });
+
+    if (!res) return null;
+
+    return res.data as ReplayComments;
+}
+
+export interface NewReplayComment {
+    timeId: string
+    body: string
+    replaySeconds?: number
+    parentId?: string
+}
+
+export async function postReplayComment(comment: NewReplayComment) {
+    return await trySendRequest<ReplayComment>("POST", "auth/comments", { ...comment });
+}
+
+export async function deleteReplayComment(commentId: string) {
+    return await trySendRequest<{ success: boolean }>("DELETE", "auth/comments/" + commentId);
+}
+
+export async function setReplayCommentLike(commentId: string, active: boolean) {
+    return await trySendRequest<{ commentId: string, likes: number, liked: boolean }>("POST", "auth/comments/likes", {
+        commentId: commentId,
+        active: active
+    });
+}
+
+export async function reportReplayComment(commentId: string, reason: CommentReportReason, note: string | undefined) {
+    return await trySendRequest<{ success: boolean }>("POST", "auth/comments/reports", {
+        commentId: commentId,
+        reason: reason,
+        note: note
+    });
+}
+
+/** For the runner on their own replay, or a moderator. */
+export async function setReplayCommentHidden(commentId: string, hidden: boolean) {
+    return await trySendRequest<{ success: boolean }>("POST", "auth/comments/hide", {
+        commentId: commentId,
+        hidden: hidden
+    });
+}
+
+// Moderation. Reads return null if they fail, including when the user isn't a moderator.
+export type ModAction = "approve" | "hide" | "dismiss";
+
+export interface ModCommentSearch {
+    userId?: number
+    timeId?: string
+    status?: ReplayCommentStatus
+    page: number
+}
+
+export interface ModCommentPage {
+    comments: ModComment[]
+    total: number
+    page: number
+    pageSize: number
+}
+
+export interface ModLogPage {
+    entries: CommentModerationLogEntry[]
+    page: number
+    pageSize: number
+}
+
+export async function getModQueue() {
+    const res = await tryGetRequest("mod/queue");
+    return res ? (res.data.comments as ModComment[]) : null;
+}
+
+export async function searchModComments(search: ModCommentSearch) {
+    const res = await tryGetRequest("mod/comments", { ...search });
+    return res ? (res.data as ModCommentPage) : null;
+}
+
+export async function resolveModComment(commentId: string, action: ModAction, reason: string | undefined) {
+    return await trySendRequest<{ success: boolean }>("POST", "mod/comments/resolve", {
+        commentId: commentId,
+        action: action,
+        reason: reason
+    });
+}
+
+export async function getModLog(page: number) {
+    const res = await tryGetRequest("mod/log", { page: page });
+    return res ? (res.data as ModLogPage) : null;
+}
+
+export async function getCommentBans() {
+    const res = await tryGetRequest("mod/bans");
+    return res ? (res.data.bans as CommentBan[]) : null;
+}
+
+/** days unset for a permanent ban */
+export async function banCommenter(userId: number, reason: string, days: number | undefined) {
+    return await trySendRequest<{ success: boolean }>("POST", "mod/bans", {
+        userId: userId,
+        reason: reason,
+        days: days
+    });
+}
+
+export async function unbanCommenter(userId: number) {
+    return await trySendRequest<{ success: boolean }>("DELETE", "mod/bans/" + userId);
+}
+
+export async function getCommentModerators() {
+    const res = await tryGetRequest("mod/moderators");
+    return res ? (res.data.moderators as CommentModerator[]) : null;
+}
+
+export async function grantCommentModerator(userId: number, role: CommentRole) {
+    return await trySendRequest<{ success: boolean }>("POST", "mod/moderators", {
+        userId: userId,
+        role: role
+    });
+}
+
+export async function revokeCommentModerator(userId: number) {
+    return await trySendRequest<{ success: boolean }>("DELETE", "mod/moderators/" + userId);
 }
 
 export async function getBotFileResponse(timeId: string) {

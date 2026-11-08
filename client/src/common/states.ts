@@ -146,7 +146,7 @@ export function useIncludeBonuses() {
 
 export interface UserSearchInfo {
     userText: string
-    setUserText: React.Dispatch<React.SetStateAction<string>>
+    setUserText: (text: string) => void
     selectedUser: UserSearchData
     setSelectedUser: React.Dispatch<React.SetStateAction<UserSearchData>>
     options: readonly UserSearchData[]
@@ -167,6 +167,27 @@ export function useUserSearch(): UserSearchInfo {
         setSelectedUser: setSelectedUser,
         options: optionsQuery.data ?? [],
         loadingOptions: optionsQuery.isLoading || userText !== debounced
+    };
+}
+
+/**
+ * useUserSearch, plus the ID of the user it found. userId is only set while the box still shows that user, so it
+ * can't be acted on after the name is changed or a search fails.
+ */
+export function useFoundUser() {
+    const userSearch = useUserSearch();
+    const [foundId, setFoundId] = useState<number | undefined>(undefined);
+    const showsFound = userSearch.userText !== "" && userSearch.userText === userSearch.selectedUser.username;
+
+    return {
+        userSearch: userSearch,
+        userId: showsFound ? foundId : undefined,
+        setUserId: (id: string | undefined) => setFoundId(id !== undefined ? +id : undefined),
+        clear: () => {
+            userSearch.setUserText("");
+            userSearch.setSelectedUser({ username: "" });
+            setFoundId(undefined);
+        }
     };
 }
 

@@ -25,6 +25,7 @@
         "memoize": "^10.1.0",
         "memory-cache": "^0.2.0",
         "mysql2": "^3.16.0",
+        "obscenity": "^0.4.6",
         "openid-client": "^6.8.1",
         "rate-limiter-flexible": "^11.2.1",
         "shared": "^1.0.0"

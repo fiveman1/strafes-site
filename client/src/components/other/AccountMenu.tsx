@@ -10,7 +10,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-import { LoginUser } from 'shared';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import { LoginUserWithInfo } from 'shared';
 import { grey } from '@mui/material/colors';
 import { logout } from '../../api/api';
 import { useNavigate } from 'react-router';
@@ -18,7 +19,7 @@ import { Typography, useTheme } from '@mui/material';
 import UserAvatar from '../displays/UserAvatar';
 
 interface IAccountMenuProps {
-    user: LoginUser
+    user: LoginUserWithInfo
     disableSettings: boolean
 }
 
@@ -115,6 +116,16 @@ function AccountMenu(props: IAccountMenuProps) {
                     </ListItemIcon>
                     Settings
                 </MenuItem>
+                {user.commentRole &&
+                <MenuItem onClick={() => {
+                    handleClose();
+                    navigate("/moderation");
+                }}>
+                    <ListItemIcon>
+                        <ShieldOutlinedIcon fontSize="small" />
+                    </ListItemIcon>
+                    Moderation
+                </MenuItem>}
                 <MenuItem onClick={async () => {
                     handleClose();
                     await logout();

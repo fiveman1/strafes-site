@@ -7,7 +7,10 @@ import { getUserInfo } from "./strafes_api/api.js";
 
 const cache: memCache.CacheClass<string, string> = new memCache.Cache();
 
-export async function setUserInfoForList(client: AuthClient, users: UserInfo[], largeThumbs?: boolean) {
+// What setUserInfoForList fills in. A UserInfo, without needing the username.
+type UserInfoTarget = Pick<UserInfo, "userId" | "userRoles" | "userCountry" | "userThumb">;
+
+export async function setUserInfoForList(client: AuthClient, users: UserInfoTarget[], largeThumbs?: boolean) {
     if (users.length < 1) {
         return;
     }
@@ -15,7 +18,7 @@ export async function setUserInfoForList(client: AuthClient, users: UserInfo[], 
     await Promise.all([setProfileInfoForList(client, users), setUserThumbsForList(users, largeThumbs ?? false), setUserRolesForList(users)]);
 }
 
-async function setUserRolesForList(users: UserInfo[]) {
+async function setUserRolesForList(users: UserInfoTarget[]) {
     const roles = await getAllUsersToRoles();
 
     for (const user of users) {
@@ -23,7 +26,7 @@ async function setUserRolesForList(users: UserInfo[]) {
     }
 }
 
-async function setProfileInfoForList(client: AuthClient, users: UserInfo[]) {
+async function setProfileInfoForList(client: AuthClient, users: UserInfoTarget[]) {
     const userIds = Array.from(new Set<number>(users.map((val) => val.userId)));
     
     const userIdToSettings = await client.loadSettingsFromDBMulti(userIds);
@@ -48,7 +51,9 @@ export interface ThumbnailData {
     imageUrl: string
 }
 
-export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boolean) {
+const THUMBNAIL_BATCH_SIZE = 100;
+
+export async function setUserThumbsForList(users: { userId: number, userThumb?: string }[], largeThumbs: boolean) {
     const notCachedIds = new Set<number>();
 
     for (const user of users) {
@@ -66,23 +71,31 @@ export async function setUserThumbsForList(users: UserInfo[], largeThumbs: boole
         return;
     }
 
-    const thumbRes = await tryGetRequest("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
-        userIds: Array.from(notCachedIds),
+    // The endpoint takes at most 100 users per request. A failed batch only leaves its own users without a thumbnail.
+    const ids = Array.from(notCachedIds);
+    const batches: number[][] = [];
+    for (let i = 0; i < ids.length; i += THUMBNAIL_BATCH_SIZE) {
+        batches.push(ids.slice(i, i + THUMBNAIL_BATCH_SIZE));
+    }
+
+    const responses = await Promise.all(batches.map((batch) => tryGetRequest("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
+        userIds: batch,
         size: largeThumbs ? "180x180" : "75x75",
         format: "Webp",
         isCircular: false
-    });
+    })));
 
-    if (!thumbRes) {
-        return;
-    }
-
-    const data = thumbRes.data.data as ThumbnailData[];
-    
     const idToThumb = new Map<number, string>();
-    for (const thumbInfo of data) {
-        idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
-        cache.put(getUserThumbKey(thumbInfo.targetId, largeThumbs), thumbInfo.imageUrl, 4 * 60 * 60 * 1000); // 4 hours
+    for (const thumbRes of responses) {
+        if (!thumbRes) {
+            continue;
+        }
+
+        const data = thumbRes.data.data as ThumbnailData[];
+        for (const thumbInfo of data) {
+            idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
+            cache.put(getUserThumbKey(thumbInfo.targetId, largeThumbs), thumbInfo.imageUrl, 4 * 60 * 60 * 1000); // 4 hours
+        }
     }
 
     for (const user of users) {

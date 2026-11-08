@@ -19,7 +19,9 @@ import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
-import { broadcastReactions, openReactionStream } from "./reactionStream.js";
+import { broadcastReactions, openReplayStream } from "./replayStream.js";
+import { createCommentRouter } from "./comments/routes.js";
+import { getCommentRole } from "./comments/roles.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
@@ -90,7 +92,13 @@ app.get("/oauth/callback", async (req, res) => {
 });
 
 app.get("/api/auth/user", async (req, res) => {
-    const user = await authClient.requestAuthenticatedUserInfo(req, res);
+    const user = await authClient.requestAuthenticatedUserInfo(req, res, async (user) => ({
+        // Without a role rather than failing the whole login check
+        commentRole: await getCommentRole(globalsClient, user.userId).catch((err) => {
+            console.error("Failed to load comment role:", err);
+            return undefined;
+        })
+    }));
     if (user?.username) {
         globalsClient.updateUsername(user.userId, user.username);
     }
@@ -1067,15 +1075,17 @@ app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(1), async (req
 });
 
 // Live updates for the replay page
-app.get("/api/replays/times/:id/reactions/stream", rateLimiterMiddleware(1), async (req, res) => {
+app.get("/api/replays/times/:id/stream", rateLimiterMiddleware(1), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
         return;
     }
 
-    await openReactionStream(globalsClient, req, res, req.params.id as string);
+    await openReplayStream(globalsClient, req, res, req.params.id as string);
 });
+
+app.use(createCommentRouter(globalsClient, authClient));
 
 const setReactionValidator = vine.create({
     // Kept as a string since time IDs can be too big for a JS number

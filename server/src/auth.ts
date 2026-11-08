@@ -159,8 +159,15 @@ export class AuthClient {
         });
     }
 
-    /** Sends the logged in user's info and settings, and returns the user (if logged in) for the caller to use. */
-    public async requestAuthenticatedUserInfo(request: Request, response: Response): Promise<LoginUser | undefined> {
+    /**
+     * Sends the logged in user's info and settings, and returns the user (if logged in) for the caller to use.
+     * getExtraInfo adds fields that live outside the auth DB, loaded alongside the settings.
+     */
+    public async requestAuthenticatedUserInfo(
+        request: Request,
+        response: Response,
+        getExtraInfo?: (user: LoginUser) => Promise<Partial<LoginUserWithInfo>>
+    ): Promise<LoginUser | undefined> {
         const user = await this.getAuthenticatedUser(request, response);
 
         if (!user) {
@@ -168,9 +175,13 @@ export class AuthClient {
             return undefined;
         }
 
-        const settings = await this.loadSettingsFromDB(user.userId);
+        const [settings, extraInfo] = await Promise.all([
+            this.loadSettingsFromDB(user.userId),
+            getExtraInfo ? getExtraInfo(user) : undefined
+        ]);
 
         const data: LoginUserWithInfo = {
+            ...extraInfo,
             ...user,
             settings: settings
         };

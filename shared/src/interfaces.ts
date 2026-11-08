@@ -212,6 +212,8 @@ export interface LoginUser {
 
 export interface LoginUserWithInfo extends LoginUser {
     settings: SettingsValues | undefined
+    // Unset for users who can't moderate comments
+    commentRole?: CommentRole
 }
 
 export interface SettingsValues {
@@ -299,4 +301,145 @@ export type ReplayReactionTotal = Omit<ReplayReactionCount, "reacted">;
 export interface ReplayReactionsUpdate {
     timeId: string
     reactions: ReplayReactionTotal[]
+}
+
+// Comments
+export const MAX_COMMENT_LENGTH = 300;
+export const MAX_COMMENT_REPORT_NOTE_LENGTH = 200;
+export const MAX_COMMENT_MODERATION_REASON_LENGTH = 500;
+
+export type ReplayCommentStatus = "visible" | "pending" | "hidden" | "deleted";
+export type CommentHiddenBy = "runner" | "moderator";
+export const COMMENT_REPORT_REASONS = ["hate", "harassment", "spam", "other"] as const;
+export type CommentReportReason = typeof COMMENT_REPORT_REASONS[number];
+export type CommentRole = "moderator" | "admin";
+// How top-level comments are ordered. Replies are always oldest first.
+export const COMMENT_SORTS = ["new", "old", "top"] as const;
+export type CommentSort = typeof COMMENT_SORTS[number];
+export const DEFAULT_COMMENT_SORT: CommentSort = "new";
+
+export interface ReplayComment extends UserInfo {
+    id: string
+    timeId: string
+    // Set on replies; always a top-level comment
+    parentId?: string
+    // Who a reply to a reply was answering
+    replyToUsername?: string
+    // Seconds into the run, unset for a comment about the whole run
+    replaySeconds?: number
+    body: string
+    // Anything but "visible" only reaches the author and moderators
+    status: Exclude<ReplayCommentStatus, "deleted">
+    hiddenBy?: CommentHiddenBy
+    createdAt: string
+    likes: number
+    // Whether the logged in user liked / reported it
+    liked: boolean
+    reported: boolean
+    // A removed top-level comment, kept so its replies have something to sit under. Its author and body are blank.
+    removed: boolean
+    // Set when the runner has since beaten the run this was posted on, so its timestamp points at a different run
+    previousRun?: CommentRun
+    // Oldest first. Always empty on replies.
+    replies: ReplayComment[]
+}
+
+export interface CommentRun {
+    // ms
+    time: number
+    date: string
+}
+
+export interface ReplayComments {
+    timeId: string
+    sort: CommentSort
+    // Top-level comments, in the order of sort
+    comments: ReplayComment[]
+}
+
+// What the live stream sends. Comments in it are the same for every viewer, so liked and reported are always false.
+export interface ReplayCommentRemoved {
+    timeId: string
+    commentId: string
+}
+
+export interface ReplayCommentLikes {
+    timeId: string
+    likes: { commentId: string, likes: number }[]
+}
+
+// Moderation
+
+// Someone shown in the moderation portal. The username is unset for users the site hasn't seen yet.
+export interface ModUser {
+    userId: number
+    username?: string
+    userThumb?: string
+    userRoles?: UserRole[]
+    userCountry?: string
+}
+
+export interface ModCommentReport {
+    reporter: ModUser
+    reason: CommentReportReason
+    note?: string
+    createdAt: string
+    resolved: boolean
+}
+
+export interface ModComment {
+    id: string
+    timeId: string
+    parentId?: string
+    replaySeconds?: number
+    body: string
+    status: ReplayCommentStatus
+    hiddenBy?: CommentHiddenBy
+    createdAt: string
+    statusChangedAt?: string
+    author: ModUser
+    // The run, as it was when the comment was made. The time may have been beaten since.
+    run: CommentRun
+    runner: ModUser
+    mapId: number
+    mapName?: string
+    game: Game
+    style: Style
+    course: number
+    openReports: number
+    // Newest first, resolved ones included
+    reports: ModCommentReport[]
+}
+
+export interface CommentBan {
+    id: string
+    user: ModUser
+    reason: string
+    bannedBy: ModUser
+    createdAt: string
+    // Unset for a permanent ban
+    expiresAt?: string
+}
+
+export interface CommentModerator {
+    user: ModUser
+    role: CommentRole
+    // config: COMMENT_ADMIN_IDS, group: a staff role in the Roblox Bhoppers group, granted: added on the site
+    source: "config" | "group" | "granted"
+    grantedBy?: number
+    grantedAt?: string
+}
+
+export type CommentModerationAction = "hide" | "restore" | "approve" | "dismiss_reports" | "ban" | "unban" | "grant_mod" | "revoke_mod";
+
+export interface CommentModerationLogEntry {
+    id: string
+    actor: ModUser
+    action: CommentModerationAction
+    commentId?: string
+    target?: ModUser
+    reason?: string
+    createdAt: string
+    // The comment the action was on, as it is now
+    comment?: ModComment
 }
