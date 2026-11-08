@@ -1,6 +1,7 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { CommentModerationAction, CommentModerator, CommentRole, UserRole } from "shared";
 import { GlobalsClient } from "../globals.js";
+import { setMissingUsernames } from "../users.js";
 import { unixToISO } from "../util.js";
 import { getAllUsersToRoles } from "../roles.js";
 
@@ -122,6 +123,8 @@ export async function listModerators(client: GlobalsClient): Promise<CommentMode
         for (const moderator of result) {
             moderator.user.username = usernames.get(moderator.user.userId);
         }
+        // Before sorting by name
+        await setMissingUsernames(result.map((moderator) => moderator.user));
     }
 
     result.sort((a, b) => ROLE_WEIGHT[b.role] - ROLE_WEIGHT[a.role] || (a.user.username ?? "").localeCompare(b.user.username ?? ""));

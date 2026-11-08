@@ -1,4 +1,4 @@
-import { tryGetCached, tryGetRequest, tryPostCached } from "./requests.js";
+import { tryGetCached, tryGetRequest, tryPostCached, tryPostRequest } from "./requests.js";
 import { User, UserInfo } from "shared";
 import memCache from "memory-cache";
 import { getAllUsersToRoles } from "./roles.js";
@@ -101,6 +101,54 @@ export async function setUserThumbsForList(users: { userId: number, userThumb?: 
     for (const user of users) {
         if (user.userThumb === undefined) {
             user.userThumb = idToThumb.get(user.userId);
+        }
+    }
+}
+
+function getUsernameKey(userId: number) {
+    return `username,${userId}`;
+}
+
+const USERNAME_BATCH_SIZE = 100;
+const USERNAME_CACHE_MS = 60 * 60 * 1000;
+
+/** Looks up usernames from Roblox for the users that don't have one. */
+export async function setMissingUsernames(users: { userId: number, username?: string }[]) {
+    const missingIds = new Set<number>();
+    for (const user of users) {
+        if (user.username) continue;
+        const cached = cache.get(getUsernameKey(user.userId));
+        if (cached === null) {
+            missingIds.add(user.userId);
+        }
+        else {
+            user.username = cached;
+        }
+    }
+    if (missingIds.size < 1) {
+        return;
+    }
+
+    const ids = Array.from(missingIds);
+    const idToName = new Map<number, string>();
+    const batches: Promise<void>[] = [];
+    for (let i = 0; i < ids.length; i += USERNAME_BATCH_SIZE) {
+        batches.push((async () => {
+            const res = await tryPostRequest("https://users.roblox.com/v1/users", {
+                userIds: ids.slice(i, i + USERNAME_BATCH_SIZE),
+                excludeBannedUsers: false
+            });
+            for (const user of (res?.data.data ?? []) as { id: number, name: string }[]) {
+                idToName.set(user.id, user.name);
+                cache.put(getUsernameKey(user.id), user.name, USERNAME_CACHE_MS);
+            }
+        })());
+    }
+    await Promise.all(batches);
+
+    for (const user of users) {
+        if (!user.username) {
+            user.username = idToName.get(user.userId);
         }
     }
 }
