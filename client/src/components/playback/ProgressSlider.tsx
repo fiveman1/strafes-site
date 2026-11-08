@@ -14,6 +14,8 @@ import CommentPreview from "../replays/comments/CommentPreview";
 // Comments listed when hovering a marker; the rest are counted
 const MARKER_PREVIEW_COUNT = 3;
 const MARKER_SIZE = 16;
+// How far a press on a marker has to move before it drags instead of staying on the marker's time
+const MARKER_DRAG_THRESHOLD = 6;
 
 interface ProgressSliderProps {
     min: number
@@ -58,6 +60,24 @@ function ProgressSlider(props: ProgressSliderProps) {
     const fillRef = useRef<HTMLSpanElement>(null);
     const bufferedRef = useRef<HTMLSpanElement>(null);
     const handleRef = useRef<HTMLSpanElement>(null);
+    // A press on a marker seeks to its exact time, and becomes a normal drag once the pointer moves away
+    const pressedMarkerRef = useRef<{ seconds: number, startX: number } | null>(null);
+    const stillOnMarker = useCallback((clientX: number) => {
+        const pressed = pressedMarkerRef.current;
+        if (!pressed) return false;
+        if (Math.abs(clientX - pressed.startX) < MARKER_DRAG_THRESHOLD) return true;
+        pressedMarkerRef.current = null;
+        return false;
+    }, []);
+    // Ends a drag that never left the marker it started on
+    const releaseOnMarker = useCallback(() => {
+        const pressed = pressedMarkerRef.current;
+        if (!pressed) return false;
+        pressedMarkerRef.current = null;
+        onSetPlayback(pressed.seconds);
+        setIsDragging(false);
+        return true;
+    }, [onSetPlayback, setIsDragging]);
 
     // Markers that would overlap become one, which depends on how wide the bar is
     const [barWidth, setBarWidth] = useState(0);
@@ -110,7 +130,7 @@ function ProgressSlider(props: ProgressSliderProps) {
 
     useEffect(() => {
         const handler = (event: MouseEvent) => {
-            if (!ref.current || !isDragging) return;
+            if (!ref.current || !isDragging || stillOnMarker(event.clientX)) return;
             const rect = ref.current.getBoundingClientRect();
             const x = clamp(event.clientX, rect.left, rect.right);
             const newPlayback = normalize(x, rect.left, rect.right, min, max);
@@ -120,11 +140,11 @@ function ProgressSlider(props: ProgressSliderProps) {
         return () => {
             document.removeEventListener("mousemove", handler);
         }
-    }, [isDragging, max, min, onDragPlayback]);
+    }, [isDragging, max, min, onDragPlayback, stillOnMarker]);
 
     useEffect(() => {
         const handler = (event: MouseEvent) => {
-            if (!ref.current || !isDragging) return;
+            if (!ref.current || !isDragging || releaseOnMarker()) return;
             const rect = ref.current.getBoundingClientRect();
             const x = clamp(event.clientX, rect.left, rect.right);
             const newPlayback = normalize(x, rect.left, rect.right, min, max);
@@ -135,12 +155,13 @@ function ProgressSlider(props: ProgressSliderProps) {
         return () => {
             document.removeEventListener("mouseup", handler);
         }
-    }, [isDragging, max, min, onSetPlayback, setIsDragging]);
+    }, [isDragging, max, min, onSetPlayback, setIsDragging, releaseOnMarker]);
 
     useEffect(() => {
         const handler = (event: TouchEvent) => {
             if (!ref.current || !isDragging || event.touches.length !== 1 || event.targetTouches.length !== 1) return;
             event.preventDefault();
+            if (stillOnMarker(event.targetTouches[0].clientX)) return;
             const rect = ref.current.getBoundingClientRect();
             const x = clamp(event.targetTouches[0].clientX, rect.left, rect.right);
             const newPlayback = normalize(x, rect.left, rect.right, min, max);
@@ -150,12 +171,13 @@ function ProgressSlider(props: ProgressSliderProps) {
         return () => {
             document.removeEventListener("touchmove", handler);
         }
-    }, [isDragging, max, min, onDragPlayback]);
+    }, [isDragging, max, min, onDragPlayback, stillOnMarker]);
 
     useEffect(() => {
         const handler = (event: TouchEvent) => {
             if (!ref.current || !isDragging || event.changedTouches.length !== 1) return;
             event.preventDefault();
+            if (releaseOnMarker()) return;
             setIsDragging(false);
             const rect = ref.current.getBoundingClientRect();
             const x = clamp(event.changedTouches[0].clientX, rect.left, rect.right);
@@ -166,9 +188,10 @@ function ProgressSlider(props: ProgressSliderProps) {
         return () => {
             document.removeEventListener("touchend", handler);
         }
-    }, [isDragging, max, min, onSetPlayback, setIsDragging]);
+    }, [isDragging, max, min, onSetPlayback, setIsDragging, releaseOnMarker]);
 
     const onPointerDown = useCallback((e: React.PointerEvent) => {
+        pressedMarkerRef.current = null;
         setIsDragging(true);
         if (!ref.current) return;
         const rect = ref.current.getBoundingClientRect();
@@ -365,10 +388,12 @@ function ProgressSlider(props: ProgressSliderProps) {
                             component="button"
                             aria-label={label}
                             onPointerDown={(event: React.PointerEvent) => {
-                                // Not to the bar underneath, which would start a drag
+                                // Not to the bar underneath, which would drag to the pointer instead of the marker
                                 event.stopPropagation();
                                 if (event.button !== 0) return;
-                                onMarkerClick?.(marker.seconds);
+                                pressedMarkerRef.current = { seconds: marker.seconds, startX: event.clientX };
+                                setIsDragging(true);
+                                onDragPlayback(marker.seconds);
                             }}
                             onClick={(event: React.MouseEvent) => {
                                 event.stopPropagation();
