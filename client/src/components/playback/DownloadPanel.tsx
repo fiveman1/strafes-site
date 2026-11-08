@@ -1,11 +1,17 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { useTheme } from "@mui/material/styles";
-import { useEffect, useRef, useState } from "react";
+import { keyframes, useTheme } from "@mui/material/styles";
+import { TransitionEvent, useEffect, useRef, useState } from "react";
 import { DownloadStats, DownloadStatsStore, FileDownloadStats, formatBytes, isDownloadComplete } from "./downloadStats";
 
 /** How long the panel stays after everything finishes downloading, so it doesn't vanish the instant it hits 100%. */
 const HIDE_DELAY_MS = 750;
+
+// Fading out is a transition, but it isn't in the layout before it shows, so fading in needs an animation
+const fadeIn = keyframes`
+    from { opacity: 0; }
+    to { opacity: 1; }
+`;
 
 interface DownloadPanelProps {
     downloadStats: DownloadStatsStore
@@ -91,6 +97,22 @@ function DownloadPanel(props: DownloadPanelProps) {
         return () => clearTimeout(timeout);
     }, [active, downloading]);
 
+    // Out of the layout once it has faded, so what's below it (the comment pop-ups) can move up
+    const [ collapsed, setCollapsed ] = useState(true);
+    useEffect(() => {
+        if (visible) {
+            setCollapsed(false);
+        }
+        else if (!fade) {
+            setCollapsed(true);
+        }
+    }, [visible, fade]);
+    const onTransitionEnd = (event: TransitionEvent) => {
+        if (event.target === event.currentTarget && !visible) {
+            setCollapsed(true);
+        }
+    };
+
     if (!stats) {
         return null;
     }
@@ -98,12 +120,14 @@ function DownloadPanel(props: DownloadPanelProps) {
         <Typography
             component="div"
             className="debugText"
+            onTransitionEnd={onTransitionEnd}
             sx={{
-                display: "flex",
+                display: collapsed ? "none" : "flex",
                 flexDirection: "column",
                 gap: 0.25,
                 whiteSpace: "nowrap",
                 transition: fade ? "opacity .4s ease" : "none",
+                animation: fade ? `${fadeIn} .4s ease` : "none",
                 opacity: visible ? 1 : 0
             }}>
             <DownloadRow label="Replay" stats={stats.bot} />

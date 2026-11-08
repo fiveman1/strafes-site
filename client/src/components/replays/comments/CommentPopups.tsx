@@ -29,11 +29,13 @@ interface CommentPopupsProps {
     enabled: boolean
     // Whether the replay is playing on its own. Time moving otherwise is someone dragging or stepping through it.
     playing: boolean
+    // Distance from the top of the player, in pixels
+    top: number
 }
 
 /** Shows comments for a few seconds as playback passes their timestamps. */
 function CommentPopups(props: CommentPopupsProps) {
-    const { markers, time, enabled, playing } = props;
+    const { markers, time, enabled, playing, top } = props;
     const [popups, setPopups] = useState<Popup[]>([]);
     const markersRef = useRef(markers);
     const playingRef = useRef(playing);
@@ -73,8 +75,8 @@ function CommentPopups(props: CommentPopupsProps) {
                 item: item,
                 leaving: false
             }));
-            // Newest at the bottom, dropping the oldest past the limit
-            setPopups((old) => [...old, ...added].slice(-MAX_SHOWN));
+            // Newest at the top, so the oldest leaving from the bottom doesn't move the others
+            setPopups((old) => [...added, ...old].slice(0, MAX_SHOWN));
             for (const popup of added) {
                 later(SHOW_MS - FADE_MS, () => setPopups((old) => old.map((other) => other.key === popup.key ? { ...other, leaving: true } : other)));
                 later(SHOW_MS, () => setPopups((old) => old.filter((other) => other.key !== popup.key)));
@@ -97,7 +99,8 @@ function CommentPopups(props: CommentPopupsProps) {
             sx={{
                 position: "absolute",
                 left: 8,
-                bottom: 8,
+                top: top,
+                transition: "top .2s ease",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",

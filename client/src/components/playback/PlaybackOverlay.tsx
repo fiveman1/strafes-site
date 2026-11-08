@@ -123,6 +123,18 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
     // Narrow screens move the frame stats out of the FPS column, see frameStatsBox.
     const fpsColumnRef = useRef<HTMLDivElement>(null);
     const statsBoxRef = useRef<HTMLDivElement>(null);
+    // The comment pop-ups go under whatever the top left corner is showing, so track how tall it is (before scaling)
+    const leftHudRef = useRef<HTMLDivElement>(null);
+    const [ leftHudHeight, setLeftHudHeight ] = useState(0);
+    useEffect(() => {
+        const element = leftHudRef.current;
+        if (!element) {
+            return;
+        }
+        const observer = new ResizeObserver(() => setLeftHudHeight(element.offsetHeight));
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
     const [ statsCopied, setStatsCopied ] = useState(false);
     const onClickCopyStats = useCallback(async () => {
         const columns = smallScreen ? [fpsColumnRef.current, statsBoxRef.current] : [fpsColumnRef.current];
@@ -512,7 +524,13 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     flexGrow: 1
                 }}>
                 {commentMarkers &&
-                <CommentPopups markers={commentMarkers} time={time} enabled={showComments && !loading && !errorReplay} playing={!paused && !isDragging} />}
+                <CommentPopups
+                    markers={commentMarkers}
+                    time={time}
+                    enabled={showComments && !loading && !errorReplay}
+                    playing={!paused && !isDragging}
+                    // Below the download progress and debug info, which share the top left corner
+                    top={8 + (leftHudHeight > 0 ? leftHudHeight * +debugHudScale + 6 : 0)} />}
                 <Box
                     ref={jhudRef}
                     style={{ transform: `translate(-50%) scale(${hudScale})` }}
@@ -825,6 +843,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         }
                     }}>
                     <Box
+                        ref={leftHudRef}
                         sx={{
                             display: "flex",
                             flexDirection: "column",
