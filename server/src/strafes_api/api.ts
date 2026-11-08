@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { Api as StrafesApi, Time as ApiTime, TimePlacement, User as ApiUser } from "./generated/strafes.js";
+import { Api as StrafesApi, TimePlacement, User as ApiUser } from "./generated/strafes.js";
 import { Api as MapsApi } from "./generated/maps.js";
 import memoize from "memoize";
 import memCache from "memory-cache";
@@ -185,38 +185,6 @@ export async function fetchFreshTimeById(timeId: string) {
         timeCache.set(JSON.stringify([timeId]), { data: Promise.resolve(time), maxAge: Date.now() + TIME_CACHE_MS });
     }
     return time;
-}
-
-export interface RateLimitedTime {
-    time: ApiTime | undefined
-    // 0 when the request never got a response
-    status: number
-    // How many requests are left in the API's burst limit, if the response said
-    burstRemaining: number | undefined
-}
-
-/** Looks up a time without the cache, for scripts that make a lot of requests and need to watch the rate limit. */
-export async function fetchTimeByIdWithRateLimit(timeId: string): Promise<RateLimitedTime> {
-    let response: Response;
-    let time: ApiTime | undefined = undefined;
-    try {
-        const res = await STRAFES_CLIENT.time.timeDetail(timeId);
-        response = res;
-        time = res.data.data;
-    }
-    catch (err) {
-        // The generated client throws the response itself when the status isn't OK
-        if (!(err instanceof Response)) {
-            return { time: undefined, status: 0, burstRemaining: undefined };
-        }
-        response = err;
-    }
-    const burst = response.headers.get("x-rate-limit-burst");
-    return {
-        time: time,
-        status: response.status,
-        burstRemaining: burst !== null && !isNaN(+burst) ? +burst : undefined
-    };
 }
 
 async function fetchTimeById(timeId: string) {

@@ -7,8 +7,7 @@
     "scripts": {
         "dev": "tsx watch --clear-screen=false --env-file ../.env src/index.ts",
         "start": "node --env-file ../.env dist/index.js",
-        "build": "rm -rf dist && npx tsc",
-        "backfill-replay-runs": "node --env-file ../.env dist/scripts/backfillReplayRuns.js"
+        "build": "rm -rf dist && npx tsc"
     },
     "keywords": [],
     "author": "fiveman1",
