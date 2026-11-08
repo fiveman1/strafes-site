@@ -6,13 +6,15 @@ import path from "path";
 import { IS_DEV_MODE } from "./util.js";
 
 const BURST_LIMIT = 100;
+// Points are counted in tenths
+const POINT_SCALE = 10;
 const shortLimiter = new RateLimiterMemory({
-    points: BURST_LIMIT,
+    points: BURST_LIMIT * POINT_SCALE,
     duration: 60
 });
 
 const longLimiter = new RateLimiterMemory({
-    points: BURST_LIMIT * 15,
+    points: BURST_LIMIT * 15 * POINT_SCALE,
     duration: 60 * 60
 });
 
@@ -27,12 +29,13 @@ function createCacheHeaders(result: RateLimiterRes): CacheHeaders {
     return {
         retryAfter: result.msBeforeNext / 1000,
         limit: BURST_LIMIT,
-        remaining: result.remainingPoints,
+        remaining: Math.floor(result.remainingPoints / POINT_SCALE),
         reset: Math.ceil((Date.now() + result.msBeforeNext) / 1000)
     };
 }
 
 async function tryConsumeRequest(ip: string, points: number): Promise<[boolean, CacheHeaders | undefined]> {
+    points = Math.max(1, Math.round(points * POINT_SCALE));
     try {
         await longLimiter.consume(ip, points);
         const result = await shortLimiter.consume(ip, points);
@@ -48,6 +51,7 @@ async function tryConsumeRequest(ip: string, points: number): Promise<[boolean, 
     }
 }
 
+/** points can be fractional, down to 0.1 */
 export function rateLimiterMiddleware(points: number) {
     return async (req: Request, res: Response, next: () => any) => {
         // Local testing sends far more requests than browsing, all from one IP

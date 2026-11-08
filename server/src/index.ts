@@ -1058,7 +1058,7 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     res.status(200).send(replay);
 });
 
-app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(1), async (req, res) => {
+app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(0.2), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -1075,7 +1075,7 @@ app.get("/api/replays/times/:id/reactions", rateLimiterMiddleware(1), async (req
 });
 
 // Live updates for the replay page
-app.get("/api/replays/times/:id/stream", rateLimiterMiddleware(1), async (req, res) => {
+app.get("/api/replays/times/:id/stream", rateLimiterMiddleware(0.5), async (req, res) => {
     const [error] = await validators.idValidator.tryValidate(req.params);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -1094,7 +1094,7 @@ const setReactionValidator = vine.create({
     active: vine.boolean()
 });
 
-app.post("/api/auth/reactions", rateLimiterMiddleware(2), async (req, res) => {
+app.post("/api/auth/reactions", rateLimiterMiddleware(0.5), async (req, res) => {
     const [error, result] = await setReactionValidator.tryValidate(req.body);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });

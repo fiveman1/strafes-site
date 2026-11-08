@@ -182,7 +182,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
 
     // Replay page
 
-    router.get("/api/replays/times/:id/comments", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/replays/times/:id/comments", rateLimiterMiddleware(0.5), async (req, res) => {
         const params = await validate(validators.idValidator, req.params, res);
         if (!params) return;
         const query = await validate(commentListValidator, req.query, res);
@@ -200,7 +200,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json(comments);
     });
 
-    router.post("/api/auth/comments", rateLimiterMiddleware(2), async (req, res) => {
+    router.post("/api/auth/comments", rateLimiterMiddleware(1), async (req, res) => {
         const input = await validate(postCommentValidator, req.body, res);
         if (!input) return;
         const user = await requireUser(req, res);
@@ -217,7 +217,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json(comment);
     });
 
-    router.delete("/api/auth/comments/:id", rateLimiterMiddleware(2), async (req, res) => {
+    router.delete("/api/auth/comments/:id", rateLimiterMiddleware(0.5), async (req, res) => {
         const params = await validate(commentIdParamValidator, req.params, res);
         if (!params) return;
         const user = await requireUser(req, res);
@@ -230,7 +230,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ success: true });
     });
 
-    router.post("/api/auth/comments/likes", rateLimiterMiddleware(1), async (req, res) => {
+    router.post("/api/auth/comments/likes", rateLimiterMiddleware(0.2), async (req, res) => {
         const input = await validate(likeValidator, req.body, res);
         if (!input) return;
         const user = await requireUser(req, res);
@@ -243,7 +243,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ commentId: input.commentId, likes: result.value.likes, liked: input.active });
     });
 
-    router.post("/api/auth/comments/reports", rateLimiterMiddleware(2), async (req, res) => {
+    router.post("/api/auth/comments/reports", rateLimiterMiddleware(0.5), async (req, res) => {
         const input = await validate(reportValidator, req.body, res);
         if (!input) return;
         const user = await requireUser(req, res);
@@ -257,7 +257,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
     });
 
     // For the runner on their own replay, and moderators anywhere
-    router.post("/api/auth/comments/hide", rateLimiterMiddleware(2), async (req, res) => {
+    router.post("/api/auth/comments/hide", rateLimiterMiddleware(0.5), async (req, res) => {
         const input = await validate(hideValidator, req.body, res);
         if (!input) return;
         const user = await requireUser(req, res);
@@ -276,14 +276,14 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
 
     // Moderation portal
 
-    router.get("/api/mod/queue", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/mod/queue", rateLimiterMiddleware(0.5), async (req, res) => {
         if (!await requireModerator(req, res)) return;
         const comments = await getModerationQueue(globalsClient);
         await setModUserInfo(authClient, comments.flatMap(modCommentUsers));
         res.status(200).json({ comments: comments });
     });
 
-    router.get("/api/mod/comments", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/mod/comments", rateLimiterMiddleware(0.5), async (req, res) => {
         const query = await validate(searchValidator, req.query, res);
         if (!query) return;
         if (!await requireModerator(req, res)) return;
@@ -293,7 +293,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ ...result, page: query.page ?? 1, pageSize: SEARCH_PAGE_SIZE });
     });
 
-    router.post("/api/mod/comments/resolve", rateLimiterMiddleware(1), async (req, res) => {
+    router.post("/api/mod/comments/resolve", rateLimiterMiddleware(0.5), async (req, res) => {
         const input = await validate(resolveValidator, req.body, res);
         if (!input) return;
         const moderator = await requireModerator(req, res);
@@ -311,7 +311,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ success: true });
     });
 
-    router.get("/api/mod/log", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/mod/log", rateLimiterMiddleware(0.5), async (req, res) => {
         const query = await validate(pageValidator, req.query, res);
         if (!query) return;
         if (!await requireModerator(req, res)) return;
@@ -322,14 +322,14 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ entries: entries, page: page, pageSize: LOG_PAGE_SIZE });
     });
 
-    router.get("/api/mod/bans", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/mod/bans", rateLimiterMiddleware(0.5), async (req, res) => {
         if (!await requireModerator(req, res)) return;
         const bans = await listActiveBans(globalsClient);
         await setModUserInfo(authClient, bans.flatMap((ban) => [ban.user, ban.bannedBy]));
         res.status(200).json({ bans: bans });
     });
 
-    router.post("/api/mod/bans", rateLimiterMiddleware(1), async (req, res) => {
+    router.post("/api/mod/bans", rateLimiterMiddleware(0.5), async (req, res) => {
         const input = await validate(banValidator, req.body, res);
         if (!input) return;
         const moderator = await requireModerator(req, res);
@@ -349,7 +349,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ success: true });
     });
 
-    router.delete("/api/mod/bans/:userId", rateLimiterMiddleware(1), async (req, res) => {
+    router.delete("/api/mod/bans/:userId", rateLimiterMiddleware(0.5), async (req, res) => {
         const params = await validate(userIdParamValidator, req.params, res);
         if (!params) return;
         const moderator = await requireModerator(req, res);
@@ -362,14 +362,14 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ success: true });
     });
 
-    router.get("/api/mod/moderators", rateLimiterMiddleware(1), async (req, res) => {
+    router.get("/api/mod/moderators", rateLimiterMiddleware(0.5), async (req, res) => {
         if (!await requireModerator(req, res)) return;
         const moderators = await listModerators(globalsClient);
         await setModUserInfo(authClient, moderators.map((moderator) => moderator.user));
         res.status(200).json({ moderators: moderators });
     });
 
-    router.post("/api/mod/moderators", rateLimiterMiddleware(1), async (req, res) => {
+    router.post("/api/mod/moderators", rateLimiterMiddleware(0.5), async (req, res) => {
         const input = await validate(grantValidator, req.body, res);
         if (!input) return;
         const admin = await requireModerator(req, res, "admin");
@@ -383,7 +383,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         res.status(200).json({ success: true });
     });
 
-    router.delete("/api/mod/moderators/:userId", rateLimiterMiddleware(1), async (req, res) => {
+    router.delete("/api/mod/moderators/:userId", rateLimiterMiddleware(0.5), async (req, res) => {
         const params = await validate(userIdParamValidator, req.params, res);
         if (!params) return;
         const admin = await requireModerator(req, res, "admin");
