@@ -34,7 +34,7 @@ function CommentPreview(props: CommentPreviewProps) {
             <UserAvatar username={comment.username} userThumb={comment.userThumb} sx={{ width: 20, height: 20, mt: 0.25 }} />
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                 <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 0.75 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.4 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.4, minWidth: 0, overflowWrap: "anywhere" }}>
                         @{comment.username}
                     </Typography>
                     <CommentBadges isRunner={isRunner} isOwn={isOwn} onDark />
