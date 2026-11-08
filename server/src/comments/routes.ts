@@ -15,12 +15,12 @@ import { GlobalsClient } from "../globals.js";
 import { rateLimiterMiddleware } from "../middleware.js";
 import { broadcastComment, broadcastCommentLikes, broadcastCommentRemoved } from "../replayStream.js";
 import { getTimeById } from "../strafes_api/api.js";
+import { currentRunOf } from "../replayRuns.js";
 import { setUserInfoForList } from "../users.js";
 import * as validators from "../validators.js";
 import {
     CommentChange,
     CommentResult,
-    currentRunOf,
     deleteComment,
     getCommentsForReplay,
     getCommentState,

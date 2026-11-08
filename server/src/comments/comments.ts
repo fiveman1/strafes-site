@@ -18,6 +18,7 @@ import {
 import { GlobalsClient } from "../globals.js";
 import { unixToISO } from "../util.js";
 import { fetchFreshTimeById, lookupUserInfo } from "../strafes_api/api.js";
+import { currentRunOf, saveReplayRun } from "../replayRuns.js";
 import { prepareCommentBody } from "./filter.js";
 import { getActiveBan } from "./moderation.js";
 import { logModerationAction } from "./roles.js";
@@ -38,11 +39,12 @@ export interface CommentViewer {
 /** What every comment query selects, so rows can go through rowToComment. */
 const COMMENT_COLUMNS = `
     c.id, c.time_id, c.user_id, c.parent_id, c.reply_to_user_id, c.replay_seconds, c.body, c.status, c.hidden_by,
-    UNIX_TIMESTAMP(c.created_at) AS created_at, c.runner_id, c.run_time_ms, c.run_date,
+    UNIX_TIMESTAMP(c.created_at) AS created_at, rr.runner_id, c.run_time_ms, c.run_date,
     u.username, ru.username AS reply_to_username,
     (SELECT COUNT(*) FROM replay_comment_likes l WHERE l.comment_id = c.id) AS likes
 `;
 const COMMENT_JOINS = `
+    LEFT JOIN replay_runs rr ON rr.time_id = c.time_id
     LEFT JOIN users u ON u.user_id = c.user_id
     LEFT JOIN users ru ON ru.user_id = c.reply_to_user_id
 `;
@@ -58,7 +60,8 @@ interface CommentSQL {
     status: ReplayCommentStatus
     hidden_by: CommentHiddenBy | null
     created_at: string // unix seconds, as a decimal string
-    runner_id: string
+    // Null only if the time is missing from replay_runs, which a comment's insert makes sure of
+    runner_id: string | null
     run_time_ms: number
     run_date: Date
     username: string | null
@@ -78,16 +81,7 @@ function canView(row: CommentSQL, viewer: CommentViewer | undefined) {
     if (row.status === "deleted" || !viewer) return false;
     if (viewer.role !== undefined || +row.user_id === viewer.userId) return true;
     // So the runner can unhide it
-    return row.status === "hidden" && row.hidden_by === "runner" && +row.runner_id === viewer.userId;
-}
-
-/** The run a time holds now, in the form comments store it. */
-export function currentRunOf(time: { time: number, date: string }): CommentRun {
-    // Whole seconds, since that's all a DATETIME keeps
-    return {
-        time: time.time,
-        date: new Date(Math.floor(Date.parse(time.date) / 1000) * 1000).toISOString()
-    };
+    return row.status === "hidden" && row.hidden_by === "runner" && row.runner_id !== null && +row.runner_id === viewer.userId;
 }
 
 /** The run the comment was posted on, if the runner has beaten it since. */
@@ -246,14 +240,15 @@ interface CommentStateSQL {
     parent_id: string | null
     status: ReplayCommentStatus
     hidden_by: CommentHiddenBy | null
-    runner_id: string
+    runner_id: string | null
 }
 type CommentStateRow = CommentStateSQL & RowDataPacket;
 
 export type CommentState = CommentStateSQL;
 
 export async function getCommentState(client: GlobalsClient, commentId: string): Promise<CommentState | undefined> {
-    const query = `SELECT id, time_id, user_id, parent_id, status, hidden_by, runner_id FROM replay_comments WHERE id = ?;`;
+    const query = `SELECT c.id, c.time_id, c.user_id, c.parent_id, c.status, c.hidden_by, rr.runner_id
+        FROM replay_comments c LEFT JOIN replay_runs rr ON rr.time_id = c.time_id WHERE c.id = ?;`;
     const [[row]] = await client.pool.execute<CommentStateRow[]>(query, [commentId]);
     return row;
 }
@@ -363,9 +358,12 @@ export async function postComment(client: GlobalsClient, user: LoginUser, input:
             await client.upsertUser(user.userId, user.username);
         }
 
+        // Before the comment, so every comment's time is in replay_runs
+        await saveReplayRun(client, time);
+
         const insertQuery = `INSERT INTO replay_comments
-            (time_id, user_id, parent_id, reply_to_user_id, replay_seconds, body, status, runner_id, map_id, game, style, course, run_time_ms, run_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+            (time_id, user_id, parent_id, reply_to_user_id, replay_seconds, body, status, run_time_ms, run_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
         const [inserted] = await client.pool.execute<ResultSetHeader>(insertQuery, [
             input.timeId,
             user.userId,
@@ -374,11 +372,6 @@ export async function postComment(client: GlobalsClient, user: LoginUser, input:
             replaySeconds,
             prepared.body,
             status,
-            time.user.id,
-            time.map.id,
-            time.game_id,
-            time.style_id,
-            time.mode_id,
             run.time,
             new Date(run.date)
         ]);
@@ -532,7 +525,7 @@ export async function setCommentHidden(
         return moderateComment(client, actor.userId, comment, hidden ? "hide" : "approve", reason);
     }
 
-    if (+comment.runner_id !== actor.userId) {
+    if (comment.runner_id === null || +comment.runner_id !== actor.userId) {
         return fail(403, "You can only hide comments on your own replays");
     }
 

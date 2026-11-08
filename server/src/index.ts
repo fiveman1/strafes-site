@@ -19,6 +19,7 @@ import escapeHTML from "escape-html";
 import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
+import { saveReplayRun } from "./replayRuns.js";
 import { broadcastReactions, openReplayStream } from "./replayStream.js";
 import { createCommentRouter } from "./comments/routes.js";
 import { getCommentRole } from "./comments/roles.js";
@@ -1016,6 +1017,11 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
 
     const time = apiTimeToTime(apiTime);
 
+    if (apiTime.has_bot) {
+        // Doesn't hold up the page; it only keeps replay_runs fresh
+        saveReplayRun(globalsClient, apiTime);
+    }
+
     const placements = await getPlacements([id]);
     if (placements && placements.length > 0) {
         time.placement = placements[0].placement;
@@ -1118,6 +1124,7 @@ app.post("/api/auth/reactions", rateLimiterMiddleware(0.5), async (req, res) => 
             res.status(400).json({ error: "This time doesn't have a replay" });
             return;
         }
+        await saveReplayRun(globalsClient, time);
     }
 
     const reactions = await setReactionForReplay(globalsClient, result.timeId, user, result.reaction, result.active);

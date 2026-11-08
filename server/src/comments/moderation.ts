@@ -129,13 +129,15 @@ type ReportRow = ReportSQL & RowDataPacket;
 
 const MOD_COMMENT_SELECT = `SELECT c.id, c.time_id, c.parent_id, c.replay_seconds, c.body, c.status, c.hidden_by,
         UNIX_TIMESTAMP(c.created_at) AS created_at, UNIX_TIMESTAMP(c.status_changed_at) AS status_changed_at,
-        c.user_id, u.username, c.runner_id, ru.username AS runner_username,
-        c.map_id, m.name AS map_name, c.game, c.style, c.course, c.run_time_ms, c.run_date,
+        c.user_id, u.username, rr.runner_id, ru.username AS runner_username,
+        rr.map_id, m.name AS map_name, rr.game, rr.style, rr.course, c.run_time_ms, c.run_date,
         (SELECT COUNT(*) FROM replay_comment_reports r WHERE r.comment_id = c.id AND r.resolved_at IS NULL) AS open_reports
     FROM replay_comments c
+    -- A comment's insert makes sure its time is in replay_runs
+    INNER JOIN replay_runs rr ON rr.time_id = c.time_id
     LEFT JOIN users u ON u.user_id = c.user_id
-    LEFT JOIN users ru ON ru.user_id = c.runner_id
-    LEFT JOIN maps m ON m.map_id = c.map_id`;
+    LEFT JOIN users ru ON ru.user_id = rr.runner_id
+    LEFT JOIN maps m ON m.map_id = rr.map_id`;
 
 async function rowsToModComments(client: GlobalsClient, rows: ModCommentSQL[]): Promise<ModComment[]> {
     const reportsByComment = new Map<string, ModCommentReport[]>();

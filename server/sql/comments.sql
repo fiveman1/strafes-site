@@ -16,13 +16,8 @@ CREATE TABLE replay_comments (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status_changed_at TIMESTAMP NULL,
 
-    -- Copied from the time when the comment is made, so moderation doesn't need to look each time up again
-    runner_id BIGINT NOT NULL,
-    map_id BIGINT NOT NULL,
-    game TINYINT NOT NULL,
-    style TINYINT NOT NULL,
-    course INT NOT NULL,
-    -- The run is replaced in place (same time_id) when the runner beats it, so these tell whether the comment was
+    -- The runner, map, etc. are in replay_runs (replays.sql). The run is replaced in place (same time_id) when the
+    -- runner beats it, so these save the one the comment was made on, to tell whether the comment was
     -- about an earlier run. DATETIME in UTC, not TIMESTAMP, so the session time zone can't shift it around DST.
     run_time_ms INT UNSIGNED NOT NULL,
     run_date DATETIME NOT NULL,
