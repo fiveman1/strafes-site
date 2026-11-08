@@ -126,7 +126,15 @@ function ReactionImage(props: { reaction: ReplayReaction, size: number }) {
             width={size}
             height={size}
             draggable={false}
-            style={{ display: "block", filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.8))" }}
+            style={{
+                display: "block",
+                filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.8))",
+                // Phones open an image menu on a long press, which beats the tooltip that shows who reacted.
+                // Touches go to the button around it instead.
+                pointerEvents: "none",
+                WebkitTouchCallout: "none",
+                userSelect: "none"
+            }}
         />
     );
 }
