@@ -11,6 +11,8 @@ const FADE_MS = 400;
 const MAX_SHOWN = 3;
 // A bigger jump than this between two updates is a seek, not playback passing a comment
 const MAX_PLAYBACK_STEP = 1;
+// After a seek, comments this close behind where playback starts count too, in case the seek lands a hair past one
+const LANDED_SLACK = 0.05;
 
 const slideIn = keyframes`
     from { transform: translateX(-12px); opacity: 0; }
@@ -51,6 +53,9 @@ function CommentPopups(props: CommentPopupsProps) {
         }
 
         let last = time.get();
+        // Whether time last moved by something other than playback, like a seek or the start of the replay. Playing
+        // from there also shows comments right at that spot, so jumping to a comment's dot and playing shows it.
+        let landed = true;
         let nextKey = 0;
         const timers = new Set<ReturnType<typeof setTimeout>>();
         const later = (ms: number, fn: () => void) => {
@@ -65,9 +70,16 @@ function CommentPopups(props: CommentPopupsProps) {
             const previous = last;
             last = now;
             const step = now - previous;
-            if (!playingRef.current || step <= 0 || step > MAX_PLAYBACK_STEP) return;
+            // Nothing moved, so a pause and resume doesn't count as landing here
+            if (step === 0) return;
+            if (!playingRef.current || step < 0 || step > MAX_PLAYBACK_STEP) {
+                landed = true;
+                return;
+            }
+            const from = landed ? previous - LANDED_SLACK : previous;
+            landed = false;
 
-            const passed = markersRef.current.filter((marker) => marker.seconds > previous && marker.seconds <= now);
+            const passed = markersRef.current.filter((marker) => marker.seconds > from && marker.seconds <= now);
             if (passed.length === 0) return;
 
             const added: Popup[] = passed.flatMap((marker) => marker.comments).map((item) => ({
