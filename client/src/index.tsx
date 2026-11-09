@@ -84,6 +84,7 @@ const router = createBrowserRouter([
             { path: "privacy", lazy: lazyRoute(() => import("./components/Privacy")) },
             { path: "settings", lazy: lazyRoute(() => import("./components/Settings")) },
             { path: "moderation", lazy: lazyRoute(() => import("./components/Moderation")) },
+            { path: "inbox", lazy: lazyRoute(() => import("./components/Inbox")) },
             { path: "replays/:id", lazy: lazyRoute(() => import("./components/Replays")) },
             { path: "*", Component: NotFoundPage }
         ]

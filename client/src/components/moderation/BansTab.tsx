@@ -11,7 +11,8 @@ import { queries } from "../../api/queries";
 import { dateFormat } from "../../common/datetime";
 import DateDisplay from "../displays/DateDisplay";
 import BanDialog from "./BanDialog";
-import { LoadFailed, Loading, ModUserLink } from "./common";
+import { LoadFailed, Loading } from "./common";
+import UserRefLink from "../displays/UserRefLink";
 import useModFeedback from "./useModFeedback";
 
 function BansTab() {
@@ -50,7 +51,7 @@ function BansTab() {
                     <Paper key={ban.id} variant="outlined" sx={{ p: 1.5, display: "flex", alignItems: "flex-start", gap: 1.5 }}>
                         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 0.75 }}>
-                                <ModUserLink user={ban.user} avatarSize={28} />
+                                <UserRefLink user={ban.user} avatarSize={28} />
                                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                                     {ban.expiresAt ? `until ${dateFormat.format(new Date(ban.expiresAt))}` : "permanently"}
                                 </Typography>
@@ -59,7 +60,7 @@ function BansTab() {
                                 {ban.reason}
                             </Typography>
                             <Typography variant="caption" component="div" sx={{ color: "text.secondary", display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 0.5 }}>
-                                Banned by <ModUserLink user={ban.bannedBy} avatarSize={16} />
+                                Banned by <UserRefLink user={ban.bannedBy} avatarSize={16} />
                                 <DateDisplay date={ban.createdAt} variant="caption" color={theme.palette.text.secondary} tooltipPlacement="top" alwaysRelative />
                             </Typography>
                         </Box>

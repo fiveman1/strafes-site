@@ -25,6 +25,8 @@ CREATE TABLE replay_comments (
     INDEX replay_comments_idx (time_id, status, created_at),
     INDEX parent_idx (parent_id),
     INDEX user_comments_idx (user_id, created_at DESC),
+    -- For the inbox's replies to a user's replies
+    INDEX reply_to_idx (reply_to_user_id, created_at),
     INDEX queue_idx (status, created_at)
 );
 

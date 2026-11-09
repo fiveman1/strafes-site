@@ -6,6 +6,12 @@ export interface UserInfo {
     userThumb?: string
 }
 
+// A user shown alongside something else, like a comment's author or a run's runner. Unlike UserInfo, the username
+// is unset for users the site hasn't seen yet.
+export interface UserRef extends Omit<UserInfo, "username"> {
+    username?: string
+}
+
 export interface User extends UserInfo {
     displayName: string
     joinedOn: string
@@ -370,17 +376,32 @@ export interface ReplayCommentLikes {
 
 // Moderation
 
-// Someone shown in the moderation portal. The username is unset for users the site hasn't seen yet.
-export interface ModUser {
-    userId: number
-    username?: string
-    userThumb?: string
-    userRoles?: UserRole[]
-    userCountry?: string
+/** The replay a comment is on, as lists of comments (the inbox and the mod portal) show it. */
+export interface CommentReplay {
+    timeId: string
+    mapId: number
+    mapName?: string
+    game: Game
+    style: Style
+    course: number
+    // ms, of the run the time holds now. A comment may have been made on an earlier one the runner has since beaten.
+    time: number
+    runner: UserRef
+}
+
+/** A comment as lists of comments (the inbox and the mod portal) show it. */
+export interface CommentExcerpt {
+    id: string
+    // Empty when removed
+    body: string
+    replaySeconds?: number
+    author: UserRef
+    // Deleted, hidden, or waiting for review, so the viewer doesn't get to see what it said
+    removed?: boolean
 }
 
 export interface ModCommentReport {
-    reporter: ModUser
+    reporter: UserRef
     reason: CommentReportReason
     note?: string
     createdAt: string
@@ -397,15 +418,10 @@ export interface ModComment {
     hiddenBy?: CommentHiddenBy
     createdAt: string
     statusChangedAt?: string
-    author: ModUser
-    // The run, as it was when the comment was made. The time may have been beaten since.
-    run: CommentRun
-    runner: ModUser
-    mapId: number
-    mapName?: string
-    game: Game
-    style: Style
-    course: number
+    author: UserRef
+    replay: CommentReplay
+    // For a reply, the comment it answered
+    repliedTo?: CommentExcerpt
     openReports: number
     // Newest first, resolved ones included
     reports: ModCommentReport[]
@@ -413,16 +429,16 @@ export interface ModComment {
 
 export interface CommentBan {
     id: string
-    user: ModUser
+    user: UserRef
     reason: string
-    bannedBy: ModUser
+    bannedBy: UserRef
     createdAt: string
     // Unset for a permanent ban
     expiresAt?: string
 }
 
 export interface CommentModerator {
-    user: ModUser
+    user: UserRef
     role: CommentRole
     // config: COMMENT_ADMIN_IDS, group: a staff role in the Roblox Bhoppers group, granted: added on the site
     source: "config" | "group" | "granted"
@@ -434,10 +450,10 @@ export type CommentModerationAction = "hide" | "restore" | "approve" | "dismiss_
 
 export interface CommentModerationLogEntry {
     id: string
-    actor: ModUser
+    actor: UserRef
     action: CommentModerationAction
     commentId?: string
-    target?: ModUser
+    target?: UserRef
     reason?: string
     createdAt: string
     // The comment the action was on, as it is now

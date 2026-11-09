@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -12,10 +12,11 @@ import Popover from "@mui/material/Popover";
 import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { SxProps, Theme } from "@mui/material/styles";
+import { alpha, SxProps, Theme, useTheme } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { parseAsString, useQueryState } from "nuqs";
 import { COMMENT_SORTS, CommentSort, DEFAULT_COMMENT_SORT, LoginUser, Replay, ReplayComment, ReplayCommentLikes, ReplayCommentRemoved, ReplayComments as ReplayCommentsData } from "shared";
 import { deleteReplayComment, login, setReplayCommentHidden, setReplayCommentLike } from "../../../api/api";
 import { queries } from "../../../api/queries";
@@ -29,6 +30,8 @@ import ReportDialog from "./ReportDialog";
 
 // Lines the replies up with the text of the comment above: avatar (32px) + gap (12px)
 const REPLY_INDENT = "44px";
+// How long a comment opened from a link (?comment=) stays highlighted
+const LINKED_HIGHLIGHT_MS = 2500;
 
 interface ReplyTarget {
     // The top-level comment the reply goes under
@@ -52,6 +55,9 @@ function ReplayComments(props: ReplayCommentsProps) {
     const userId = loginUser?.userId;
     const queryClient = useQueryClient();
     const commentRole = useLoginUser().data?.commentRole;
+    const theme = useTheme();
+    // Set by links to a comment, like the inbox's
+    const [linkedCommentId] = useQueryState("comment", parseAsString);
 
     const [sort, setSort] = useState<CommentSort>(DEFAULT_COMMENT_SORT);
     const commentsQuery = useQuery({
@@ -70,11 +76,14 @@ function ReplayComments(props: ReplayCommentsProps) {
     const [deleteTarget, setDeleteTarget] = useState<ReplayComment | undefined>(undefined);
     const [loginAnchor, setLoginAnchor] = useState<HTMLElement | null>(null);
     const [message, setMessage] = useState("");
+    const [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
     // Comments with a like request in flight, whose counts from the live stream would be out of order
     const pendingLikes = useRef(new Set<string>());
     // The stream's first open comes right after the page's own fetch, so only later ones (reconnects) refetch
     const streamOpened = useRef(false);
+    // The linked comment that's been opened, so it only happens once per link and not on every refetch
+    const linkHandled = useRef<string | undefined>(undefined);
 
     // Every sort's copy for this replay and viewer. The player's seek bar reads one that may not be the list's sort.
     const allSortsKey = [...queries.replays.comments._def, timeId, userId];
@@ -139,6 +148,28 @@ function ReplayComments(props: ReplayCommentsProps) {
             return next;
         });
     };
+
+    // A link to a comment (from the inbox) opens its thread, scrolls to it, and flashes it
+    useEffect(() => {
+        if (!linkedCommentId || linkHandled.current === linkedCommentId || !data) return;
+        // Not marked handled until it's found, since the first comments can load before the login does, without the
+        // ones only the user can see (like their own hidden ones)
+        const comment = findComment(data, linkedCommentId);
+        if (!comment) return;
+        linkHandled.current = linkedCommentId;
+        if (comment.parentId !== undefined) {
+            expand(comment.parentId);
+        }
+        setHighlighted(comment.id);
+    }, [data, linkedCommentId]);
+
+    // After the thread has opened, so the reply is on the page
+    useEffect(() => {
+        if (!highlighted) return;
+        document.getElementById(`comment-${highlighted}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+        const timeout = setTimeout(() => setHighlighted(undefined), LINKED_HIGHLIGHT_MS);
+        return () => clearTimeout(timeout);
+    }, [highlighted]);
 
     const onPosted = (comment: ReplayComment) => {
         updateData((current) => upsertComment(current, comment));
@@ -211,17 +242,28 @@ function ReplayComments(props: ReplayCommentsProps) {
     const count = countComments(data);
     const comments = data?.comments ?? [];
 
+    const highlightColor = alpha(theme.palette.primary.main, 0.16);
     const renderItem = (comment: ReplayComment, isReply: boolean) => (
-        <CommentItem
+        <Box
             key={comment.id}
-            comment={comment}
-            isReply={isReply}
-            runnerId={replay.userId}
-            game={replay.game}
-            style={replay.style}
-            viewer={viewer}
-            actions={actions}
-        />
+            id={`comment-${comment.id}`}
+            sx={{
+                borderRadius: "8px",
+                // A shadow rather than padding, so the highlight reaches past the comment without moving anything
+                bgcolor: highlighted === comment.id ? highlightColor : "transparent",
+                boxShadow: highlighted === comment.id ? `0 0 0 6px ${highlightColor}` : `0 0 0 6px transparent`,
+                transition: "background-color 600ms ease, box-shadow 600ms ease"
+            }}>
+            <CommentItem
+                comment={comment}
+                isReply={isReply}
+                runnerId={replay.userId}
+                game={replay.game}
+                style={replay.style}
+                viewer={viewer}
+                actions={actions}
+            />
+        </Box>
     );
 
     return (

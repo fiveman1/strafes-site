@@ -1,6 +1,6 @@
 import { Box, Button, Link, PaletteMode, Paper, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Game, SettingsValues, Style } from "shared";
+import { Game, getAllowedStyles, SettingsValues, Style } from "shared";
 import GameSelector from "./forms/GameSelector";
 import StyleSelector from "./forms/StyleSelector";
 import ThemeSelector from "./forms/ThemeSelector";
@@ -8,11 +8,12 @@ import NumberSpinner from "./forms/NumberSpinner";
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { updateSettings } from "../api/api";
-import { useNavigate, useOutletContext, useSearchParams } from "react-router";
+import { useNavigate, useOutletContext } from "react-router";
+import { parseAsString, useQueryState } from "nuqs";
 import { ContextParams } from "../common/common";
 import CountrySelector from "./forms/CountrySelector";
 import { dateFormat, relativeTimeFormat } from "../common/datetime";
-import { useGameStyleNoParams, useNow } from "../common/states";
+import { useLoginUser, useNow } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
@@ -27,35 +28,43 @@ function Settings() {
     const { settings, setSettings, setMode, loginUser } = useOutletContext() as ContextParams;
 
     const [ mockSettings, setMockSettings ] = useState({...settings});
-    const { game, setGame: setGameState, style, setStyle: setStyleState } = useGameStyleNoParams();
     const [ isSaving, setIsSaving ] = useState(false);
     const [ now ] = useNow();
     const navigate = useNavigate();
-    const [ searchParams ] = useSearchParams();
+    // Where to go when leaving, set by the account menu
+    const [ backUrl ] = useQueryState("backUrl", parseAsString);
 
+    // Only once the login check is done, so opening the page directly (or refreshing it) doesn't send you home while
+    // it loads. Still catches logging out with settings open.
+    const loginUserQuery = useLoginUser();
+    const loggedOut = !loginUserQuery.isPending && !loginUserQuery.data;
     useEffect(() => {
-        if (!loginUser) {
-            // In case you logout with settings open, navigate back to home page
+        if (loggedOut) {
             navigate("/");
         }
-    }, [loginUser, navigate]);
+    }, [loggedOut, navigate]);
+
+    // The saved settings can arrive after the page opens (with the login, on a direct load), so start over from them
+    useEffect(() => {
+        setMockSettings({...settings});
+    }, [settings]);
 
     const isDirty = useMemo(() => {
         return !areSettingsEquals(settings, mockSettings);
     }, [mockSettings, settings]);
 
+    // Read from the settings being edited, so they follow along when the saved settings arrive
+    const game = mockSettings.defaultGame;
+    const style = mockSettings.defaultStyle;
+
     const setGame = (game: Game) => setMockSettings((settings) => {
-        const newStyle = setGameState(game);
-        settings.defaultGame = game;
-        settings.defaultStyle = newStyle;
-        return {...settings};
+        // Keep the style if the new game has it, otherwise use the game's first one
+        const allowedStyles = getAllowedStyles(game);
+        const newStyle = allowedStyles.includes(settings.defaultStyle) ? settings.defaultStyle : allowedStyles[0];
+        return { ...settings, defaultGame: game, defaultStyle: newStyle };
     });
 
-    const setStyle = (style: Style) => setMockSettings((settings) => {
-        setStyleState(style);
-        settings.defaultStyle = style;
-        return {...settings};
-    });
+    const setStyle = (style: Style) => setMockSettings((settings) => ({ ...settings, defaultStyle: style }));
 
     const setMaxDays = (value: number | null) => setMockSettings((settings) => {
         settings.maxDaysRelativeDates = value ?? 30;
@@ -77,10 +86,8 @@ function Settings() {
     };
 
     const handleExit = useCallback(() => {
-        const backUrl = searchParams.get("backUrl");
-        const url = backUrl ? decodeURIComponent(backUrl) : "/";
-        navigate(url);
-    }, [navigate, searchParams]);
+        navigate(backUrl ?? "/");
+    }, [navigate, backUrl]);
 
     const onSave = useCallback(async () => {
         setIsSaving(true);

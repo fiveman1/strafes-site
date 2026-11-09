@@ -22,6 +22,7 @@ import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
 import { saveReplayRun } from "./replayRuns.js";
 import { broadcastReactions, openReplayStream } from "./replayStream.js";
 import { createCommentRouter } from "./comments/routes.js";
+import { createInboxRouter } from "./inbox.js";
 import { getCommentRole } from "./comments/roles.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
@@ -1092,6 +1093,7 @@ app.get("/api/replays/times/:id/stream", rateLimiterMiddleware(0.5), async (req,
 });
 
 app.use(createCommentRouter(globalsClient, authClient));
+app.use(createInboxRouter(globalsClient, authClient));
 
 const setReactionValidator = vine.create({
     // Kept as a string since time IDs can be too big for a JS number

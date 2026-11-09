@@ -7,17 +7,13 @@ import {
     CommentReportReason,
     ModComment,
     ModCommentReport,
-    ModUser,
     ReplayCommentStatus
 } from "shared";
 import { GlobalsClient } from "../globals.js";
+import { findRepliedTo, REPLAY_COLUMNS, REPLAY_JOINS, ReplayRunSQL, toCommentReplay } from "./excerpts.js";
+import { userRef } from "../users.js";
 import { unixToISO } from "../util.js";
 import { logModerationAction } from "./roles.js";
-
-function modUser(userId: string | number, username: string | null | undefined): ModUser {
-    return { userId: +userId, username: username ?? undefined };
-}
-
 
 // Bans
 
@@ -43,9 +39,9 @@ const ACTIVE_BAN = `b.revoked_at IS NULL AND (b.expires_at IS NULL OR b.expires_
 function rowToBan(row: BanSQL): CommentBan {
     return {
         id: row.id,
-        user: modUser(row.user_id, row.username),
+        user: userRef(row.user_id, row.username),
         reason: row.reason,
-        bannedBy: modUser(row.banned_by, row.banned_by_username),
+        bannedBy: userRef(row.banned_by, row.banned_by_username),
         createdAt: unixToISO(row.created_at),
         expiresAt: row.expires_at !== null ? unixToISO(row.expires_at) : undefined
     };
@@ -90,10 +86,10 @@ export async function unbanUser(client: GlobalsClient, actorId: number, userId: 
 
 // Comments for moderators
 
-interface ModCommentSQL {
+interface ModCommentSQL extends ReplayRunSQL {
     id: string
-    time_id: string
     parent_id: string | null
+    reply_to_user_id: string | null
     replay_seconds: number | null
     body: string
     status: ReplayCommentStatus
@@ -102,15 +98,6 @@ interface ModCommentSQL {
     status_changed_at: string | null
     user_id: string
     username: string | null
-    runner_id: string
-    runner_username: string | null
-    map_id: string
-    map_name: string | null
-    game: number
-    style: number
-    course: number
-    run_time_ms: number
-    run_date: Date
     open_reports: string
 }
 type ModCommentRow = ModCommentSQL & RowDataPacket;
@@ -127,43 +114,51 @@ interface ReportSQL {
 }
 type ReportRow = ReportSQL & RowDataPacket;
 
-const MOD_COMMENT_SELECT = `SELECT c.id, c.time_id, c.parent_id, c.replay_seconds, c.body, c.status, c.hidden_by,
+const MOD_COMMENT_SELECT = `SELECT c.id, c.time_id, c.parent_id, c.reply_to_user_id, c.replay_seconds, c.body, c.status, c.hidden_by,
         UNIX_TIMESTAMP(c.created_at) AS created_at, UNIX_TIMESTAMP(c.status_changed_at) AS status_changed_at,
-        c.user_id, u.username, rr.runner_id, ru.username AS runner_username,
-        rr.map_id, m.name AS map_name, rr.game, rr.style, rr.course, c.run_time_ms, c.run_date,
+        c.user_id, u.username, ${REPLAY_COLUMNS},
         (SELECT COUNT(*) FROM replay_comment_reports r WHERE r.comment_id = c.id AND r.resolved_at IS NULL) AS open_reports
     FROM replay_comments c
     -- A comment's insert makes sure its time is in replay_runs
     INNER JOIN replay_runs rr ON rr.time_id = c.time_id
     LEFT JOIN users u ON u.user_id = c.user_id
-    LEFT JOIN users ru ON ru.user_id = rr.runner_id
-    LEFT JOIN maps m ON m.map_id = rr.map_id`;
+    ${REPLAY_JOINS}`;
+
+async function loadReports(client: GlobalsClient, commentIds: string[]): Promise<Map<string, ModCommentReport[]>> {
+    const reportsByComment = new Map<string, ModCommentReport[]>();
+    if (commentIds.length === 0) {
+        return reportsByComment;
+    }
+    const query = `SELECT r.comment_id, r.reporter_id, u.username AS reporter_username, r.reason, r.note,
+            UNIX_TIMESTAMP(r.created_at) AS created_at, r.resolved_at IS NOT NULL AS resolved
+        FROM replay_comment_reports r
+        LEFT JOIN users u ON u.user_id = r.reporter_id
+        WHERE r.comment_id IN (?)
+        ORDER BY r.created_at DESC;`;
+    const [reportRows] = await client.pool.query<ReportRow[]>(query, [commentIds]);
+    for (const row of reportRows) {
+        let reports = reportsByComment.get(row.comment_id);
+        if (!reports) {
+            reports = [];
+            reportsByComment.set(row.comment_id, reports);
+        }
+        reports.push({
+            reporter: userRef(row.reporter_id, row.reporter_username),
+            reason: row.reason,
+            note: row.note ?? undefined,
+            createdAt: unixToISO(row.created_at),
+            resolved: row.resolved === "1"
+        });
+    }
+    return reportsByComment;
+}
 
 async function rowsToModComments(client: GlobalsClient, rows: ModCommentSQL[]): Promise<ModComment[]> {
-    const reportsByComment = new Map<string, ModCommentReport[]>();
-    if (rows.length > 0) {
-        const query = `SELECT r.comment_id, r.reporter_id, u.username AS reporter_username, r.reason, r.note,
-                UNIX_TIMESTAMP(r.created_at) AS created_at, r.resolved_at IS NOT NULL AS resolved
-            FROM replay_comment_reports r
-            LEFT JOIN users u ON u.user_id = r.reporter_id
-            WHERE r.comment_id IN (?)
-            ORDER BY r.created_at DESC;`;
-        const [reportRows] = await client.pool.query<ReportRow[]>(query, [rows.map((row) => row.id)]);
-        for (const row of reportRows) {
-            let reports = reportsByComment.get(row.comment_id);
-            if (!reports) {
-                reports = [];
-                reportsByComment.set(row.comment_id, reports);
-            }
-            reports.push({
-                reporter: modUser(row.reporter_id, row.reporter_username),
-                reason: row.reason,
-                note: row.note ?? undefined,
-                createdAt: unixToISO(row.created_at),
-                resolved: row.resolved === "1"
-            });
-        }
-    }
+    const replies = rows.flatMap((row) => row.parent_id !== null ? [{ id: row.id, parentId: row.parent_id, replyToUserId: row.reply_to_user_id }] : []);
+    const [reportsByComment, repliedTo] = await Promise.all([
+        loadReports(client, rows.map((row) => row.id)),
+        findRepliedTo(client, replies)
+    ]);
 
     const comments: ModComment[] = rows.map((row) => ({
         id: row.id,
@@ -175,14 +170,9 @@ async function rowsToModComments(client: GlobalsClient, rows: ModCommentSQL[]): 
         hiddenBy: row.hidden_by ?? undefined,
         createdAt: unixToISO(row.created_at),
         statusChangedAt: row.status_changed_at !== null ? unixToISO(row.status_changed_at) : undefined,
-        author: modUser(row.user_id, row.username),
-        run: { time: row.run_time_ms, date: row.run_date.toISOString() },
-        runner: modUser(row.runner_id, row.runner_username),
-        mapId: +row.map_id,
-        mapName: row.map_name ?? undefined,
-        game: row.game,
-        style: row.style,
-        course: row.course,
+        author: userRef(row.user_id, row.username),
+        replay: toCommentReplay(row),
+        repliedTo: repliedTo.get(row.id),
         openReports: +row.open_reports,
         reports: reportsByComment.get(row.id) ?? []
     }));
@@ -282,10 +272,10 @@ export async function getModerationLog(client: GlobalsClient, page: number, page
 
     const entries: CommentModerationLogEntry[] = rows.map((row) => ({
         id: row.id,
-        actor: modUser(row.actor_id, row.actor_username),
+        actor: userRef(row.actor_id, row.actor_username),
         action: row.action,
         commentId: row.comment_id ?? undefined,
-        target: row.target_user_id !== null ? modUser(row.target_user_id, row.target_username) : undefined,
+        target: row.target_user_id !== null ? userRef(row.target_user_id, row.target_username) : undefined,
         reason: row.reason ?? undefined,
         createdAt: unixToISO(row.created_at),
         comment: row.comment_id !== null ? comments.get(row.comment_id) : undefined

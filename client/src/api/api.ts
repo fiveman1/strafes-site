@@ -1,4 +1,4 @@
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions, CommentReportReason, CommentSort, ReplayComment, ReplayComments, ModComment, ReplayCommentStatus, CommentBan, CommentModerator, CommentModerationLogEntry, CommentRole } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions, CommentReportReason, CommentSort, ReplayComment, ReplayComments, ModComment, ReplayCommentStatus, CommentBan, CommentModerator, CommentModerationLogEntry, CommentRole, Inbox, InboxCount } from "shared";
 import { JsonObject } from "../common/utils";
 
 // Mirrors what axios did: skip null/undefined params and repeat the key for each array item (a=1&a=2)
@@ -458,6 +458,21 @@ export async function grantCommentModerator(userId: number, role: CommentRole) {
 
 export async function revokeCommentModerator(userId: number) {
     return await trySendRequest<{ success: boolean }>("DELETE", "mod/moderators/" + userId);
+}
+
+export async function getInbox() {
+    const res = await tryGetRequest("auth/inbox");
+    return res ? (res.data as Inbox) : null;
+}
+
+export async function getInboxCount() {
+    const res = await tryGetRequest("auth/inbox/count");
+    return res ? (res.data as InboxCount) : null;
+}
+
+/** upTo is the newest item's "at", so anything that came in after the inbox loaded stays unread. */
+export async function markInboxSeen(upTo: string) {
+    return await trySendRequest<{ success: boolean }>("POST", "auth/inbox/seen", { upTo: upTo });
 }
 
 export async function getBotFileResponse(timeId: string) {

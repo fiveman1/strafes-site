@@ -160,6 +160,15 @@ export class AuthClient {
     }
 
     /**
+     * The logged in user's ID from their session alone, without asking Roblox for their profile like
+     * getAuthenticatedUser does. For requests that only need to know who's asking, especially ones that are polled.
+     */
+    public async getAuthenticatedUserId(request: Request, response: Response): Promise<number | undefined> {
+        const session = await this.loadSession(request, response, true);
+        return session ? +session.userId : undefined;
+    }
+
+    /**
      * Sends the logged in user's info and settings, and returns the user (if logged in) for the caller to use.
      * getExtraInfo adds fields that live outside the auth DB, loaded alongside the settings.
      */

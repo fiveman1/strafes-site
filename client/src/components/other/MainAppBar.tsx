@@ -11,14 +11,13 @@ import GlobalSearch from "../search/GlobalSearch";
 interface IMainAppBarProps {
     loggedInUser: LoginUserWithInfo | undefined
     isUserLoading: boolean
-    disableSettings: boolean
     maps: Map[]
 }
 
 const COMPACT = "@media (max-width: 840px)";
 
 function MainAppBar(props: IMainAppBarProps) {
-    const { loggedInUser, isUserLoading, disableSettings, maps } = props;
+    const { loggedInUser, isUserLoading, maps } = props;
     const location = useLocation();
     const onLogin = useCallback(async () => {
         const url = await login(window.location.pathname.slice(1) + window.location.search);
@@ -142,7 +141,7 @@ function MainAppBar(props: IMainAppBarProps) {
                         minWidth: 42
                     }}>
                     {loggedInUser ?
-                    <AccountMenu user={loggedInUser} disableSettings={disableSettings} />
+                    <AccountMenu user={loggedInUser} />
                     :
                     (isUserLoading ?
                     <CircularProgress size={18} color="inherit" sx={{ mr: 1.5, opacity: 0.5 }} />

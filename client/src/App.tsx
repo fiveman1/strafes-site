@@ -513,7 +513,7 @@ function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
             <NavigationProgress />
-            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} disableSettings={settingsOpen} maps={mapInfo.sortedMaps} />
+            <MainAppBar loggedInUser={loggedInUser} isUserLoading={loggedInUserLoading} maps={mapInfo.sortedMaps} />
             <Box
                 component="main"
                 sx={{

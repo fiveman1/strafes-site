@@ -7,6 +7,8 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import Badge from '@mui/material/Badge';
+import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
@@ -14,21 +16,27 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import { LoginUserWithInfo } from 'shared';
 import { grey } from '@mui/material/colors';
 import { logout } from '../../api/api';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Typography, useTheme } from '@mui/material';
 import UserAvatar from '../displays/UserAvatar';
+import { useInboxCount } from '../../common/inbox';
 
 interface IAccountMenuProps {
     user: LoginUserWithInfo
-    disableSettings: boolean
 }
 
 function AccountMenu(props: IAccountMenuProps) {
-    const { user, disableSettings } = props;
+    const { user } = props;
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
+    const location = useLocation();
     const theme = useTheme();
+    // Pages can't be opened from the menu while they're already open
+    const onInbox = location.pathname.startsWith("/inbox");
+    const onSettings = location.pathname.startsWith("/settings");
+    const onModeration = location.pathname.startsWith("/moderation");
+    const unread = useInboxCount(user.userId);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -41,7 +49,7 @@ function AccountMenu(props: IAccountMenuProps) {
     return (
         <>
             <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center' }}>
-                <Tooltip title="Account">
+                <Tooltip title={unread > 0 ? `Account (${unread} unread)` : "Account"}>
                     <IconButton
                         onClick={handleClick}
                         size="small"
@@ -49,7 +57,14 @@ function AccountMenu(props: IAccountMenuProps) {
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
                     >
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800] }} alt={user.displayName} src={user.thumbnailUrl} />
+                        <Badge
+                            badgeContent={unread}
+                            max={99}
+                            color="error"
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: grey[200], color: theme.palette.mode === "light" ? grey[500] : grey[800] }} alt={user.displayName} src={user.thumbnailUrl} />
+                        </Badge>
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -107,9 +122,31 @@ function AccountMenu(props: IAccountMenuProps) {
                     </ListItemIcon>
                     Profile
                 </MenuItem>
-                <MenuItem disabled={disableSettings} onClick={() => {
+                <MenuItem disabled={onInbox} onClick={() => {
                     handleClose();
-                    navigate(`/settings?backUrl=${encodeURIComponent(location.pathname + location.search)}`);
+                    navigate("/inbox");
+                }}>
+                    <ListItemIcon>
+                        <InboxOutlinedIcon fontSize="small" />
+                    </ListItemIcon>
+                    Inbox
+                    {unread > 0 &&
+                    <Box
+                        component="span"
+                        sx={{
+                            ml: 'auto',
+                            pl: 2,
+                            color: 'error.main',
+                            fontSize: '0.8125rem',
+                            fontWeight: 700
+                        }}>
+                        {unread > 99 ? "99+" : unread}
+                    </Box>}
+                </MenuItem>
+                <MenuItem disabled={onSettings} onClick={() => {
+                    handleClose();
+                    // window's, since nuqs changes the query params without React Router knowing
+                    navigate(`/settings?backUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`);
                 }}>
                     <ListItemIcon>
                         <Settings fontSize="small" />
@@ -117,7 +154,7 @@ function AccountMenu(props: IAccountMenuProps) {
                     Settings
                 </MenuItem>
                 {user.commentRole &&
-                <MenuItem onClick={() => {
+                <MenuItem disabled={onModeration} onClick={() => {
                     handleClose();
                     navigate("/moderation");
                 }}>

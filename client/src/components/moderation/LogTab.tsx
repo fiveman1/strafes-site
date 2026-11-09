@@ -10,11 +10,12 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CommentModerationLogEntry } from "shared";
 import { queries } from "../../api/queries";
 import DateDisplay from "../displays/DateDisplay";
-import { LoadFailed, Loading, PageControls, ModUserLink } from "./common";
+import { LoadFailed, Loading, PageControls } from "./common";
+import UserRefLink from "../displays/UserRefLink";
 import ModCommentCard from "./ModCommentCard";
 
 function describe(entry: CommentModerationLogEntry): ReactNode {
-    const target = entry.target ? <ModUserLink user={entry.target} avatarSize={18} /> : "someone";
+    const target = entry.target ? <UserRefLink user={entry.target} avatarSize={18} /> : "someone";
     switch (entry.action) {
         case "hide": return <>hid a comment by {target}</>;
         case "restore": return <>restored a comment by {target}</>;
@@ -38,7 +39,7 @@ function LogEntry(props: { entry: CommentModerationLogEntry }) {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography variant="body2" component="div" sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 0.5, rowGap: 0.25 }}>
-                        <ModUserLink user={entry.actor} avatarSize={20} />
+                        <UserRefLink user={entry.actor} avatarSize={20} />
                         {describe(entry)}
                         <Box component="span" sx={{ ml: 0.5 }}>
                             <DateDisplay date={entry.createdAt} variant="caption" color={theme.palette.text.secondary} tooltipPlacement="top" alwaysRelative />

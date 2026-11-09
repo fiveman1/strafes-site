@@ -117,25 +117,6 @@ export function useGameStyle(allowAll?: boolean) {
     return { game, setGame, style, setStyle };
 }
 
-export function useGameStyleNoParams() {
-    const context = useOutletContext() as ContextParams;
-    const [game, setGameState] = useState(context.settings.defaultGame);
-    const [style, setStyle] = useState(context.settings.defaultStyle);
-
-    const setGame = (game: Game) => {
-        setGameState(game);
-        const allowedStyles = getAllowedStyles(game);
-        let newStyle = style;
-        if (!allowedStyles.includes(style)) {
-            newStyle = allowedStyles[0];
-            setStyle(newStyle);
-        }
-        return newStyle;
-    };
-
-    return { game, setGame, style, setStyle };
-}
-
 export function useIncludeBonuses() {
     return useQueryState("bonuses",
         parseAsBoolean

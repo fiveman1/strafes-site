@@ -5,7 +5,7 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { queries } from "../api/queries";
 import { useLoginUser } from "../common/states";
 import BansTab from "./moderation/BansTab";
@@ -66,15 +66,15 @@ function TabContent(props: { tab: ModTab }) {
 function Moderation() {
     const loginUserQuery = useLoginUser();
     const role = loginUserQuery.data?.commentRole;
-    const [searchParams, setSearchParams] = useSearchParams();
-    const tabParam = searchParams.get("tab");
-    const tab: ModTab = TABS.includes(tabParam as ModTab) ? tabParam as ModTab : "queue";
+    const [tab, setTab] = useQueryState("tab",
+        parseAsStringLiteral(TABS)
+            .withDefault("queue")
+            .withOptions({ history: "replace" })
+    );
 
     useEffect(() => {
         document.title = "moderation - strafes";
     }, []);
-
-    const setTab = (value: ModTab) => setSearchParams(value === "queue" ? {} : { tab: value }, { replace: true });
 
     return (
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1, flexGrow: 1, pt: { xs: 0.5, sm: 2 } }}>

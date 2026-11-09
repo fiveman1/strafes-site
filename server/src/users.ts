@@ -1,5 +1,5 @@
 import { tryGetCached, tryGetRequest, tryPostCached, tryPostRequest } from "./requests.js";
-import { User, UserInfo } from "shared";
+import { User, UserInfo, UserRef } from "shared";
 import memCache from "memory-cache";
 import { getAllUsersToRoles } from "./roles.js";
 import { AuthClient } from "./auth.js";
@@ -9,6 +9,19 @@ const cache: memCache.CacheClass<string, string> = new memCache.Cache();
 
 // What setUserInfoForList fills in. A UserInfo, without needing the username.
 type UserInfoTarget = Pick<UserInfo, "userId" | "userRoles" | "userCountry" | "userThumb">;
+
+/** A user from a row that joined the users table, which has no username for anyone the site hasn't seen. */
+export function userRef(userId: string | number, username: string | null | undefined): UserRef {
+    return { userId: +userId, username: username ?? undefined };
+}
+
+/**
+ * Fills in thumbnails, role colors, and countries, and usernames for anyone the site hasn't saved one for (like group
+ * staff who've never used the site).
+ */
+export async function setUserRefInfo(authClient: AuthClient, users: UserRef[]) {
+    await Promise.all([setUserInfoForList(authClient, users), setMissingUsernames(users)]);
+}
 
 export async function setUserInfoForList(client: AuthClient, users: UserInfoTarget[], largeThumbs?: boolean) {
     if (users.length < 1) {

@@ -6,7 +6,7 @@ import { ContextParams, getUserRoleColor } from "../../common/common";
 import UserAvatar from "./UserAvatar";
 import CountryFlag from "./CountryFlag";
 
-interface IUserLinkProps extends LinkProps, UserInfo {
+export interface IUserLinkProps extends LinkProps, UserInfo {
     // The user's page opens on this game and style. Without them it opens on the viewer's defaults.
     game?: Game
     strafesStyle?: Style
@@ -16,10 +16,12 @@ interface IUserLinkProps extends LinkProps, UserInfo {
     hideYouIcon?: boolean
     // @username
     showAt?: boolean
+    // Looks the same but isn't a link, for inside something that already is one
+    disableLink?: boolean
 }
 
 function UserLink(props: IUserLinkProps) {
-    const { userId, username, userRoles, userCountry, userThumb, game, strafesStyle, avatarSize, hideAvatar, hideYouIcon, showAt, ...linkProps }  = props;
+    const { userId, username, userRoles, userCountry, userThumb, game, strafesStyle, avatarSize, hideAvatar, hideYouIcon, showAt, disableLink, ...linkProps }  = props;
     const theme = useTheme();
     const { loginUser } = useOutletContext() as ContextParams;
 
@@ -31,8 +33,9 @@ function UserLink(props: IUserLinkProps) {
     return (
         <Link
             {...linkProps}
-            to={{pathname: `/users/${userId}`, search: game !== undefined && strafesStyle !== undefined ? `?style=${strafesStyle}&game=${game}` : ""}}
-            component={RouterLink}
+            {...(disableLink ?
+                { component: "span", underline: "none" as const } :
+                { component: RouterLink, to: { pathname: `/users/${userId}`, search: game !== undefined && strafesStyle !== undefined ? `?style=${strafesStyle}&game=${game}` : "" } })}
             color={userRole ? getUserRoleColor(userRole, theme) : "textPrimary"}
             sx={[{
                 display: "inline-block",

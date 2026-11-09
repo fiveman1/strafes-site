@@ -12,7 +12,8 @@ import { grantCommentModerator, revokeCommentModerator } from "../../api/api";
 import { queries } from "../../api/queries";
 import { useFoundUser, useLoginUser } from "../../common/states";
 import UserSearch from "../search/UserSearch";
-import { LoadFailed, Loading, ModUserLink } from "./common";
+import { LoadFailed, Loading } from "./common";
+import UserRefLink from "../displays/UserRefLink";
 import useModFeedback from "./useModFeedback";
 
 const ROLE_LABELS: Record<CommentRole, string> = {
@@ -81,7 +82,7 @@ function ModeratorsTab() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {moderators.data.map((moderator) => (
                     <Paper key={moderator.user.userId} variant="outlined" sx={{ px: 1.5, py: 1, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
-                        <ModUserLink user={moderator.user} avatarSize={28} />
+                        <UserRefLink user={moderator.user} avatarSize={28} />
                         <Chip size="small" label={ROLE_LABELS[moderator.role]} color={moderator.role === "admin" ? "secondary" : "default"} variant="outlined" />
                         <Box sx={{ flexGrow: 1 }} />
                         {isAdmin && moderator.source === "granted" && moderator.user.userId !== loginUser?.userId &&

@@ -3,27 +3,7 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
-import { CommentHiddenBy, Game, ModUser, ReplayCommentStatus, Style } from "shared";
-import UserLink from "../displays/UserLink";
-
-export function ModUserLink(props: { user: ModUser, avatarSize?: number, game?: Game, style?: Style }) {
-    const { user, avatarSize, game, style } = props;
-    return (
-        <UserLink
-            userId={user.userId}
-            username={user.username ?? `User ${user.userId}`}
-            userRoles={user.userRoles}
-            userCountry={user.userCountry}
-            userThumb={user.userThumb}
-            game={game}
-            strafesStyle={style}
-            avatarSize={avatarSize}
-            showAt={user.username !== undefined}
-            underline="hover"
-            sx={{ fontWeight: 600, verticalAlign: "middle", minWidth: 0 }}
-        />
-    );
-}
+import { CommentHiddenBy, ReplayCommentStatus } from "shared";
 
 export function StatusChip(props: { status: ReplayCommentStatus, hiddenBy?: CommentHiddenBy }) {
     const { status, hiddenBy } = props;
