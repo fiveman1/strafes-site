@@ -47,6 +47,8 @@ export interface CommentActions {
 interface CommentItemProps {
     comment: ReplayComment
     isReply: boolean
+    // Whether the thread this is in was started on a run the runner has since beaten
+    onEarlierRun: boolean
     runnerId: number
     game: Game
     style: Style
@@ -67,7 +69,7 @@ function statusText(comment: ReplayComment, viewer: CommentViewer) {
 }
 
 function CommentItem(props: CommentItemProps) {
-    const { comment, isReply, runnerId, game, style, viewer, actions } = props;
+    const { comment, isReply, onEarlierRun, runnerId, game, style, viewer, actions } = props;
     const theme = useTheme();
     const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
@@ -89,7 +91,7 @@ function CommentItem(props: CommentItemProps) {
     const visible = comment.status === "visible";
     const isMod = viewer.role !== undefined;
     const status = statusText(comment, viewer);
-    // Only the top-level comment is marked, since a whole thread belongs to the run it started on
+    // Only the top-level comment is labeled, since a whole thread belongs to the run it started on
     const previousRun = !isReply ? comment.previousRun : undefined;
     const userLink = `/users/${comment.userId}?game=${game}&style=${style}`;
 
@@ -120,7 +122,7 @@ function CommentItem(props: CommentItemProps) {
                 display: "flex",
                 gap: 1.5,
                 alignItems: "flex-start",
-                opacity: previousRun ? 0.6 : 1,
+                opacity: onEarlierRun ? 0.6 : 1,
                 transition: "opacity .15s ease",
                 ":hover, :focus-within": { opacity: 1 }
             }}>

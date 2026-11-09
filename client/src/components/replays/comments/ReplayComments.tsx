@@ -243,7 +243,7 @@ function ReplayComments(props: ReplayCommentsProps) {
     const comments = data?.comments ?? [];
 
     const highlightColor = alpha(theme.palette.primary.main, 0.16);
-    const renderItem = (comment: ReplayComment, isReply: boolean) => (
+    const renderItem = (comment: ReplayComment, thread: ReplayComment) => (
         <Box
             key={comment.id}
             id={`comment-${comment.id}`}
@@ -256,7 +256,8 @@ function ReplayComments(props: ReplayCommentsProps) {
             }}>
             <CommentItem
                 comment={comment}
-                isReply={isReply}
+                isReply={comment !== thread}
+                onEarlierRun={thread.previousRun !== undefined}
                 runnerId={replay.userId}
                 game={replay.game}
                 style={replay.style}
@@ -324,7 +325,7 @@ function ReplayComments(props: ReplayCommentsProps) {
                     const replying = replyTarget?.threadId === comment.id && loginUser;
                     return (
                         <Box key={comment.id}>
-                            {renderItem(comment, false)}
+                            {renderItem(comment, comment)}
                             {(replyCount > 0 || replying) &&
                             <Box sx={{ pl: REPLY_INDENT, display: "flex", flexDirection: "column", gap: 1 }}>
                                 {replyCount > 0 &&
@@ -332,10 +333,17 @@ function ReplayComments(props: ReplayCommentsProps) {
                                     size="small"
                                     onClick={() => toggleExpanded(comment.id)}
                                     startIcon={isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                    sx={{ alignSelf: "flex-start", ml: -0.75 }}>
+                                    sx={{
+                                        alignSelf: "flex-start",
+                                        ml: -0.75,
+                                        // Matches the comments in a thread from an earlier run
+                                        opacity: comment.previousRun ? 0.6 : 1,
+                                        transition: "opacity .15s ease",
+                                        ":hover, :focus-visible": { opacity: 1 }
+                                    }}>
                                     {replyCount === 1 ? "1 reply" : `${replyCount} replies`}
                                 </Button>}
-                                {isExpanded && comment.replies.map((reply) => renderItem(reply, true))}
+                                {isExpanded && comment.replies.map((reply) => renderItem(reply, comment))}
                                 {replying &&
                                 <CommentComposer
                                     // A new box for each comment replied to, so a draft doesn't carry over
