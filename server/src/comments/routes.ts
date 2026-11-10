@@ -214,6 +214,8 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
 
         const comment = result.value;
         await withUserInfo([comment]);
+        // Roblox can still be rendering the headshot, but the login picture is always there
+        comment.userThumb ??= user.thumbnailUrl;
         if (comment.status === "visible") {
             broadcastComment({ ...comment, liked: false, reported: false });
         }
