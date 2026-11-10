@@ -138,17 +138,15 @@ export enum ModerationStatus {
     Hidden = 4
 }
 
-export interface UserSearchData {
-    username: string
+// A search result, or just what was typed (no userId) when it's looked up by username
+export interface UserSearchData extends Omit<UserInfo, "userId"> {
     userId?: number
     previousUsernames?: string[] | null
-    userThumb?: string
 }
 
 export interface UserSearchDataComplete extends UserSearchData {
     userId: number
     previousUsernames: string[] | null
-    userThumb?: string
 }
 
 export enum UserRole {

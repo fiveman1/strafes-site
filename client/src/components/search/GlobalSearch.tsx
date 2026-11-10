@@ -10,6 +10,7 @@ import { isTyping } from "../../common/utils";
 import { queries } from "../../api/queries";
 import MapThumb from "../displays/MapThumb";
 import UserAvatar from "../displays/UserAvatar";
+import UserLink from "../displays/UserLink";
 import ColorChip from "../displays/ColorChip";
 import { getGameColor } from "../../common/common";
 
@@ -173,15 +174,27 @@ function GlobalSearch(props: IGlobalSearchProps) {
                         <ColorChip color={getGameColor(option.map.game, theme)} label={formatGame(option.map.game)} />
                     </>
                     :
+                    option.user.userId !== undefined ?
+                    <UserLink
+                        userId={option.user.userId}
+                        username={option.user.username}
+                        userRoles={option.user.userRoles}
+                        userCountry={option.user.userCountry}
+                        userThumb={option.user.userThumb}
+                        avatarSize={28}
+                        disableLink
+                        variant="body2"
+                        sx={{ fontWeight: 500, minWidth: 0 }}
+                    />
+                    :
                     <>
                         <UserAvatar username={option.user.username} userThumb={option.user.userThumb} sx={{ width: 28, height: 28 }} />
                         <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
                             {option.user.username}
                         </Typography>
-                        {option.user.userId === undefined &&
                         <Typography variant="caption" color="textSecondary" noWrap>
                             Look up by username
-                        </Typography>}
+                        </Typography>
                     </>}
                 </Box>
             )}

@@ -4,6 +4,7 @@ import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
 import { UserSearchInfo } from "../../common/states";
 import UserAvatar from "../displays/UserAvatar";
+import UserLink from "../displays/UserLink";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
 import { ErrorWithReason } from "../displays/LoadError";
@@ -188,8 +189,22 @@ function UserSearch(props: IUserSearchProps) {
                     key={key}
                     {...props}
                 >
-                    <UserAvatar sx={{ mr: 1, flexShrink: 0 }} username={option.username} userThumb={option.userThumb} />
-                    {option.username}
+                    {option.userId !== undefined ?
+                    <UserLink
+                        userId={option.userId}
+                        username={option.username}
+                        userRoles={option.userRoles}
+                        userCountry={option.userCountry}
+                        userThumb={option.userThumb}
+                        avatarSize={40}
+                        disableLink
+                        sx={{ minWidth: 0 }}
+                    />
+                    :
+                    <>
+                        <UserAvatar sx={{ mr: 1, flexShrink: 0 }} username={option.username} userThumb={option.userThumb} />
+                        {option.username}
+                    </>}
                 </Box>
             )}
             getOptionLabel={(option) => typeof option === "string" ? option : option.username}

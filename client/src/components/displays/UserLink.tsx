@@ -1,8 +1,9 @@
 import { Box, Link, LinkProps, Typography, useTheme } from "@mui/material";
-import { Link as RouterLink, useOutletContext } from "react-router";
+import { Link as RouterLink } from "react-router";
 import { Game, Style, UserInfo } from "shared";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { ContextParams, getUserRoleColor } from "../../common/common";
+import { getUserRoleColor } from "../../common/common";
+import { useLoginUser } from "../../common/states";
 import UserAvatar from "./UserAvatar";
 import CountryFlag from "./CountryFlag";
 
@@ -23,7 +24,8 @@ export interface IUserLinkProps extends LinkProps, UserInfo {
 function UserLink(props: IUserLinkProps) {
     const { userId, username, userRoles, userCountry, userThumb, game, strafesStyle, avatarSize, hideAvatar, hideYouIcon, showAt, disableLink, ...linkProps }  = props;
     const theme = useTheme();
-    const { loginUser } = useOutletContext() as ContextParams;
+    // Not from the outlet context, so it also works outside the page (like the app bar search)
+    const loginUser = useLoginUser().data;
 
     const isCurrentUser = !hideYouIcon && loginUser && userId === loginUser.userId;
     const userRole = userRoles ? userRoles[0] : undefined;
