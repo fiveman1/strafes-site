@@ -18,6 +18,12 @@ function onRequestError(err: unknown) {
     if (IS_DEV_MODE) {
         console.log(err);
     }
+    else {
+        // Just enough to tell a rate limit (429) from Roblox or StrafesNET being down
+        const url = axios.isAxiosError(err) ? err.config?.url : undefined;
+        const reason = status ?? (err instanceof Error ? err.message : "unknown error");
+        console.error(`Request failed (${reason}): ${url ?? "unknown url"}`);
+    }
     return undefined;
 }
 

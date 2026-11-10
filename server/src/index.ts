@@ -76,7 +76,7 @@ const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-
 
 /** For when a service the site depends on didn't answer, as opposed to there being nothing to find (a 404). */
 function sendUpstreamError(res: express.Response, service: "StrafesNET" | "Roblox" = "StrafesNET") {
-    res.status(502).json({ error: `Couldn't reach ${service}, try again in a bit` });
+    res.status(503).json({ error: `Couldn't reach ${service}, try again in a bit` });
 }
 const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
