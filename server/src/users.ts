@@ -62,7 +62,8 @@ function getUserThumbKey(userId: string | number, largeThumbs: boolean) {
 
 export interface ThumbnailData {
     targetId: number
-    // Anything but "Completed" (like "Pending" while Roblox renders it) comes without a usable image
+    // "Completed" or "Blocked" (didn't pass moderation, with Roblox's placeholder image) are final. Anything else (like
+    // "Pending" while Roblox renders it) comes without a usable image.
     state: string
     imageUrl: string | null
 }
@@ -110,7 +111,7 @@ export async function setUserThumbsForList(users: { userId: number, userThumb?: 
         const data = thumbRes.data.data as ThumbnailData[];
         for (const thumbInfo of data) {
             // Not cached, so the next request tries again
-            if (thumbInfo.state !== "Completed" || !thumbInfo.imageUrl) {
+            if ((thumbInfo.state !== "Completed" && thumbInfo.state !== "Blocked") || !thumbInfo.imageUrl) {
                 continue;
             }
             idToThumb.set(thumbInfo.targetId, thumbInfo.imageUrl);
