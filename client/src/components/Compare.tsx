@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Typography, useMediaQuery } from "@mui/material";
+import { Alert, Button, Typography, useMediaQuery } from "@mui/material";
 import GameSelector from "./forms/GameSelector";
 import { Game, Style, Time, User, formatStyle, getAllowedStyles } from "shared";
 import { useOutletContext } from "react-router";
@@ -23,11 +23,14 @@ import CompareChart from "./compare/CompareChart";
 import CompareTimesGrid from "./compare/CompareTimesGrid";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import { ErrorWithReason } from "./displays/LoadError";
 
+// error is set when the request failed. Removing the entry tries again.
 interface UserToTimes {
     [key: string]: {
         loading: boolean
         times?: Time[]
+        error?: unknown
     } | undefined
 }
 
@@ -35,6 +38,7 @@ interface IdToUser {
     [userId: string]: {
         user?: User,
         loading: boolean
+        error?: unknown
     } | undefined
 }
 
@@ -53,7 +57,7 @@ function Compare() {
     const smallScreen = useMediaQuery("@media screen and (max-width: 600px)");
 
     const [idToUser, setIdToUserState] = useState<IdToUser>({});
-    const setIdToUser = (userId: string, loading: boolean, user?: User) => {
+    const setIdToUser = (userId: string, loading: boolean, user?: User, error?: unknown) => {
         setIdToUserState((prev) => {
             let info = prev[userId];
             if (!info) {
@@ -62,13 +66,14 @@ function Compare() {
                 info.loading = loading;
             }
             info.user = user;
+            info.error = error;
             prev[userId] = info;
             return { ...prev };
         });
     };
 
     const [userTimes, setUserTimesState] = useState<UserToTimes>({});
-    const setUserTimes = (userId: string, game: Game, style: Style, loading: boolean, times?: Time[]) => {
+    const setUserTimes = (userId: string, game: Game, style: Style, loading: boolean, times?: Time[], error?: unknown) => {
         setUserTimesState((prev) => {
             const key = `${userId},${game},${style}`;
             let info = prev[key];
@@ -78,6 +83,7 @@ function Compare() {
                 info.loading = loading;
             }
             info.times = times;
+            info.error = error;
             prev[key] = info;
             return { ...prev };
         });
@@ -149,17 +155,19 @@ function Compare() {
             // Fetch user profile if not cached
             if (!idToUser[userId]) {
                 setIdToUser(userId, true);
-                queryClient.fetchQuery(queries.users.fromId(userId)).then((user) => {
-                    setIdToUser(userId, false, user ?? undefined)
-                });
+                queryClient.query(queries.users.fromId(userId)).then(
+                    (user) => setIdToUser(userId, false, user ?? undefined),
+                    (error) => setIdToUser(userId, false, undefined, error)
+                );
             }
 
             // Fetch times if not cached
             if (!getUserTimesFromState(userTimes, userId, game, style)) {
                 setUserTimes(userId, game, style, true);
-                queryClient.fetchQuery(queries.users.allTimes(userId, game, style)).then((times) => {
-                    setUserTimes(userId, game, style, false, times ?? undefined);
-                });
+                queryClient.query(queries.users.allTimes(userId, game, style)).then(
+                    (times) => setUserTimes(userId, game, style, false, times),
+                    (error) => setUserTimes(userId, game, style, false, undefined, error)
+                );
             }
         }
     }, [entries, game, idToUser, queryClient, userTimes]);
@@ -240,6 +248,25 @@ function Compare() {
         return `Duplicate entries: ${descriptions.join(", ")}. Each user + style combination must be unique.`;
     }, [entries, idToUser]);
 
+    // Entries whose user or times couldn't be loaded
+    const failed = useMemo(() => {
+        const failed: { entry: CompareEntry, error: unknown }[] = [];
+        for (const entry of entries) {
+            const userError = idToUser[entry.userId]?.error;
+            const timesError = getUserTimesFromState(userTimes, entry.userId, game, entry.style)?.error;
+            if (userError !== undefined || timesError !== undefined) {
+                failed.push({ entry, error: timesError ?? userError });
+            }
+        }
+        return failed;
+    }, [entries, game, idToUser, userTimes]);
+
+    const retryFailed = () => {
+        // The fetching effect loads anything that isn't in state
+        setIdToUserState((prev) => Object.fromEntries(Object.entries(prev).filter(([, info]) => info?.error === undefined)));
+        setUserTimesState((prev) => Object.fromEntries(Object.entries(prev).filter(([, info]) => info?.error === undefined)));
+    };
+
     // Page title
     useEffect(() => {
         if (entries.length === 0) {
@@ -294,6 +321,16 @@ function Compare() {
                     onAddUser={onAddUser}
                 />
             </Box>
+            {failed.length > 0 &&
+            <Box sx={{ padding: 1 }}>
+                <Alert severity="error" action={<Button color="inherit" size="small" onClick={retryFailed}>Try again</Button>}>
+                    <ErrorWithReason
+                        issue={"Couldn't load times for "
+                            + failed.map(({ entry }) => `${idToUser[entry.userId]?.user?.username ?? entry.userId} (${formatStyle(entry.style)})`).join(", ") + "."}
+                        error={failed[0].error}
+                    />
+                </Alert>
+            </Box>}
             {/* Pie chart */}
             <Box sx={{
                 padding: 1

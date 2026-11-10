@@ -64,7 +64,8 @@ function GlobalSearch(props: IGlobalSearchProps) {
             path = `/maps/${value.map.id}`;
         }
         else {
-            const userId = await queryClient.fetchQuery(queries.users.fromSearch(value.user));
+            // A failed lookup shows the same way, there's no room here to say more
+            const userId = await queryClient.query(queries.users.fromSearch(value.user)).catch(() => null);
             if (userId === null) {
                 setNotFound(true);
                 return;

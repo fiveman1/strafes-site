@@ -76,7 +76,7 @@ function LogTab() {
     const log = useQuery({ ...queries.mod.log(page), placeholderData: keepPreviousData });
 
     if (log.isPending) return <Loading />;
-    if (!log.data) return <LoadFailed />;
+    if (!log.data) return <LoadFailed what="the log" query={log} />;
 
     const { entries, pageSize } = log.data;
     return (

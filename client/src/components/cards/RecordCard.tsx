@@ -15,6 +15,7 @@ import UserSearch from "../search/UserSearch";
 import UserLink from "../displays/UserLink";
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import { InlineLoadError } from "../displays/LoadError";
 
 interface RecordCardProps {
     mapId: number,
@@ -50,10 +51,11 @@ function RecordCard(props: RecordCardProps) {
     const userQuery = useQuery({...queries.users.fromId(userId), enabled: userId !== undefined});
     const user = userQuery.data ?? undefined;
 
-    const { data, isLoading } = useQuery({
+    const timesQuery = useQuery({
         ...queries.times.times(0, 99, TimeSortBy.DateDesc, -1, Game.all, Style.all, userId, mapId.toString(), false),
         enabled: userId !== undefined
     });
+    const { data, isLoading } = timesQuery;
 
     const record = data ? data.times.find((time) => time.course === course && time.game === game && time.style === style) : undefined;
     const selectedMap = maps[mapId];
@@ -91,6 +93,8 @@ function RecordCard(props: RecordCardProps) {
                     <Skeleton variant="circular" width={24} height={24} sx={{ mr: 1 }} />
                     <Skeleton variant="text" width={100} sx={{ fontSize: "0.875rem" }} />
                 </Box>
+                : userQuery.isError ?
+                <InlineLoadError what="the user" error={userQuery.error} onRetry={() => userQuery.refetch()} retrying={userQuery.isFetching} />
                 : null}
                 <Tooltip title="Search for another user">
                     <IconButton size="small" onClick={() => setEditing(true)} aria-label="Search for another user" sx={{ ml: 0.5 }}>
@@ -152,6 +156,9 @@ function RecordCard(props: RecordCardProps) {
                 :
                 isLoading ?
                 <Skeleton variant="text" width={smallScreen ? 160 : 280} sx={{ fontSize: "0.875rem" }} />
+                :
+                timesQuery.isError ?
+                <InlineLoadError what="the time" error={timesQuery.error} onRetry={() => timesQuery.refetch()} retrying={timesQuery.isFetching} />
                 :
                 <Typography variant="body2" color="textSecondary">
                     {`${isCurrentUser ? "You haven't" : `${user?.username ?? "This user"} hasn't`} completed ${mapText}.`}

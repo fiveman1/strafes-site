@@ -14,6 +14,7 @@ import { useGameStyle } from "../common/states";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import { useGridLoadError } from "./cards/grids/util/gridLoadError";
 import { parseAsNumberLiteral, useQueryState } from "nuqs";
 
 function makeColumns(placementWidth: number) {
@@ -97,6 +98,7 @@ function RanksCard(props: IRanksCardProps) {
     const [maxPage, setMaxPage] = useState(0);
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
+    const { clearError, gridProps, noRowsOverlayProps } = useGridLoadError(apiRef, "ranks");
 
     const [currentSortBy, setCurrentSortBy] = useQueryState("sort", 
         parseAsNumberLiteral([RankSortBy.RankAsc, RankSortBy.SkillAsc])
@@ -116,18 +118,16 @@ function RanksCard(props: IRanksCardProps) {
     }, []);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: RankSortBy) => {
-        const ranks = await queryClient.fetchQuery(queries.ranks.ranks(start, end, sortBy, game, style));
-
-        if (!ranks) {
-            return { rows: [], pageInfo: {hasNextPage: false} }
-        }
+        clearError();
+        // Throws if it fails, which the grid shows (see useGridLoadError)
+        const ranks = await queryClient.query(queries.ranks.ranks(start, end, sortBy, game, style));
 
         const hasMore = ranks.length >= (end - start);
         return {
             rows: ranks,
             pageInfo: {hasNextPage: hasMore}
         }
-    }, [game, queryClient, style]);
+    }, [clearError, game, queryClient, style]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
@@ -171,10 +171,12 @@ function RanksCard(props: IRanksCardProps) {
                     sortModel: sort,
                 }
             }}
+            {...gridProps}
             slotProps={{
                 loadingOverlay: {
                     noRowsVariant: "circular-progress"
-                }
+                },
+                noRowsOverlay: noRowsOverlayProps
             }}
             density="compact"
             disableRowSelectionOnClick

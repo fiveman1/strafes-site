@@ -1,7 +1,7 @@
 import AsyncLock from "async-lock";
-import memoize from "memoize";
 import { Replay, Time } from "shared";
 import { GlobalsClient } from "./globals.js";
+import { memoizeAsync } from "./util.js";
 import { RowDataPacket } from "mysql2";
 
 export async function convertTimeToReplay(client: GlobalsClient, time: Time, compareTimeId: string | undefined): Promise<Replay> {
@@ -26,7 +26,8 @@ interface CountSQL {
 }
 type CountRow = CountSQL & RowDataPacket;
 
-const getViewsForTimeId = memoize(getViewsForTimeIdCore, { cacheKey: (args) => args[1], maxAge: 5 * 60 * 1000 });
+// Keyed by the time, since the client is the same for every call. A failed query (it throws) isn't cached.
+const getViewsForTimeId = memoizeAsync(getViewsForTimeIdCore, { cacheKey: (args) => args[1], maxAge: 5 * 60 * 1000 });
 async function getViewsForTimeIdCore(client: GlobalsClient, timeId: string) {
     const query = `SELECT COUNT(*) as count FROM replay_views WHERE time_id = ?`;
     const [[row]] = await client.pool.execute<CountRow[]>(query, [timeId]);

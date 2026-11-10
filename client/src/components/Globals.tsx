@@ -16,6 +16,7 @@ import NumberGridPagination from "./cards/grids/NumberGridPagination";
 import MapLink from "./displays/MapLink";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
+import { useGridLoadError } from "./cards/grids/util/gridLoadError";
 
 function Globals() {
     const {game, setGame, style, setStyle} = useGameStyle(true);
@@ -142,6 +143,7 @@ function LeaderboardCard(props: IRanksCardProps) {
     const [rowCount, setRowCount] = useState(0);
     const apiRef = useGridApiRef();
     const queryClient = useQueryClient();
+    const { clearError, gridProps, noRowsOverlayProps } = useGridLoadError(apiRef, "the leaderboard");
 
     const gridCols = makeColumns(game, style);
 
@@ -150,17 +152,15 @@ function LeaderboardCard(props: IRanksCardProps) {
     }, [apiRef, game, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sort: LeaderboardSortBy) => {
-        const page = await queryClient.fetchQuery(queries.wrs.leaderboards(start, end, game, style, sort));
-
-        if (!page) {
-            return { rows: [], rowCount: 0 };
-        }
+        clearError();
+        // Throws if it fails, which the grid shows (see useGridLoadError)
+        const page = await queryClient.query(queries.wrs.leaderboards(start, end, game, style, sort));
 
         return {
             rows: page.data,
             rowCount: page.total
         };
-    }, [game, queryClient, style]);
+    }, [clearError, game, queryClient, style]);
 
     const onSortChange = () => {
         apiRef.current?.setPage(0);
@@ -212,6 +212,7 @@ function LeaderboardCard(props: IRanksCardProps) {
                 sx={{
                     "--DataGrid-overlayHeight": `${70 * 10}px`
                 }}
+                {...gridProps}
                 slotProps={{
                     basePagination: {
                         material: {
@@ -220,7 +221,8 @@ function LeaderboardCard(props: IRanksCardProps) {
                     },
                     loadingOverlay: {
                         noRowsVariant: "linear-progress"
-                    }
+                    },
+                    noRowsOverlay: noRowsOverlayProps
                 }}
             />
         </Box>

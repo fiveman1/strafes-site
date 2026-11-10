@@ -3,7 +3,7 @@ import { CommentModerationAction, CommentModerator, CommentRole, UserRole } from
 import { GlobalsClient } from "../globals.js";
 import { setMissingUsernames } from "../users.js";
 import { unixToISO } from "../util.js";
-import { getAllUsersToRoles } from "../roles.js";
+import { loadUsersToRoles, peekUsersToRoles } from "../roles.js";
 
 // Staff roles in the Roblox Bhoppers group that can moderate comments without being added on the site
 const MODERATOR_GROUP_ROLES: ReadonlySet<UserRole> = new Set([
@@ -28,12 +28,6 @@ const ROLE_WEIGHT: Record<CommentRole, number> = {
     admin: 2
 };
 
-function higherRole(a: CommentRole | undefined, b: CommentRole | undefined): CommentRole | undefined {
-    if (!a) return b;
-    if (!b) return a;
-    return ROLE_WEIGHT[a] >= ROLE_WEIGHT[b] ? a : b;
-}
-
 export function hasRole(role: CommentRole | undefined, needed: CommentRole) {
     return role !== undefined && ROLE_WEIGHT[role] >= ROLE_WEIGHT[needed];
 }
@@ -42,8 +36,8 @@ export function isConfigAdmin(userId: number) {
     return CONFIG_ADMIN_IDS.has(userId);
 }
 
-async function hasModeratorGroupRole(userId: number) {
-    const roles = await getAllUsersToRoles();
+async function hasModeratorGroupRole(userId: number, wait: boolean) {
+    const roles = wait ? await loadUsersToRoles(MODERATOR_GROUP_ROLES) : peekUsersToRoles();
     return roles.get(userId)?.some((role) => MODERATOR_GROUP_ROLES.has(role)) ?? false;
 }
 
@@ -58,14 +52,24 @@ async function getGrantedRole(client: GlobalsClient, userId: number): Promise<Co
     return row?.role;
 }
 
-/** The user's comment moderation role, from any source, or undefined if they can't moderate. */
-export async function getCommentRole(client: GlobalsClient, userId: number): Promise<CommentRole | undefined> {
+/**
+ * The user's comment moderation role, from any source, or undefined if they can't moderate.
+ *
+ * If the Roblox group roles haven't loaded since the server started, by default this waits a moment for them, then
+ * throws RolesUnavailableError rather than guess. With wait false, it goes by what's loaded, which can miss a group
+ * moderator right after a restart. That's for where it only changes what's shown, not what they can do.
+ */
+export async function getCommentRole(client: GlobalsClient, userId: number, options: { wait?: boolean } = {}): Promise<CommentRole | undefined> {
     if (isConfigAdmin(userId)) {
         return "admin";
     }
 
-    const [granted, inGroup] = await Promise.all([getGrantedRole(client, userId), hasModeratorGroupRole(userId)]);
-    return higherRole(granted, inGroup ? "moderator" : undefined);
+    const granted = await getGrantedRole(client, userId);
+    // The group only makes someone a moderator, which a granted role already covers
+    if (granted) {
+        return granted;
+    }
+    return await hasModeratorGroupRole(userId, options.wait ?? true) ? "moderator" : undefined;
 }
 
 interface ModeratorSQL {
@@ -96,7 +100,7 @@ export async function listModerators(client: GlobalsClient): Promise<CommentMode
         add({ user: { userId: userId }, role: "admin", source: "config" });
     }
 
-    const groupRoles = await getAllUsersToRoles();
+    const groupRoles = await loadUsersToRoles(MODERATOR_GROUP_ROLES);
     for (const [userId, roles] of groupRoles) {
         if (roles.some((role) => MODERATOR_GROUP_ROLES.has(role))) {
             add({ user: { userId: userId }, role: "moderator", source: "group" });

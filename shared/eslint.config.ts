@@ -16,7 +16,8 @@ export default defineConfig([
         rules: { 
             semi: "error",
             "@typescript-eslint/no-unused-vars": "warn",
-            "@typescript-eslint/no-explicit-any": "off"
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/no-deprecated": "warn"
         }
     },
 ]);

@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import Popover from "@mui/material/Popover";
+import Snackbar from "@mui/material/Snackbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { alpha, keyframes, SxProps, Theme } from "@mui/material/styles";
@@ -13,6 +14,7 @@ import { queries } from "../../api/queries";
 import { login, setReplayReaction } from "../../api/api";
 import { useReplayStream } from "../../api/replayStream";
 import { applyReaction, formatReactors, getReactionInfo, mergeReactionUpdate, REACTION_IMAGES } from "../../common/reactions";
+import { InlineLoadError } from "../displays/LoadError";
 
 // The browser draws an animating chip (see PopIn) at its exact position, then snaps it to whole pixels when the
 // animation ends, so anything on a half pixel jumps a little. These sizes keep every offset whole:
@@ -150,6 +152,7 @@ function ReplayReactions(props: ReplayReactionsProps) {
     const userId = loginUser?.userId;
 
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+    const [message, setMessage] = useState("");
     // Set when a live update was skipped because the user had a change in flight
     const missedUpdate = useRef(false);
 
@@ -182,8 +185,8 @@ function ReplayReactions(props: ReplayReactionsProps) {
         scope: { id: `reactions-${timeId}` },
         mutationFn: async (change: ReactionChange) => {
             const result = await setReplayReaction(timeId, change.reaction, change.active);
-            if (!result) throw new Error("Failed to update reaction");
-            return result;
+            if (!result.ok) throw new Error(result.error);
+            return result.data;
         },
         onMutate: async (change: ReactionChange) => {
             // Don't let a fetch that started before this change land on top of it
@@ -200,7 +203,8 @@ function ReplayReactions(props: ReplayReactionsProps) {
                 queryClient.setQueryData(queryKey, data);
             }
         },
-        onError: (_error, _change, context) => {
+        onError: (error, _change, context) => {
+            setMessage(error.message);
             if (queryClient.isMutating({ mutationKey }) === 1 && context?.previous) {
                 queryClient.setQueryData(queryKey, context.previous);
             }
@@ -305,6 +309,8 @@ function ReplayReactions(props: ReplayReactionsProps) {
                     </PopIn>
                 );
             })}
+            {reactionsQuery.isError &&
+            <InlineLoadError what="reactions" error={reactionsQuery.error} onRetry={() => reactionsQuery.refetch()} retrying={reactionsQuery.isFetching} />}
             <Tooltip placement="top" arrow disableInteractive title="Add reaction">
                 <ButtonBase
                     aria-label="Add reaction"
@@ -375,6 +381,12 @@ function ReplayReactions(props: ReplayReactionsProps) {
                     <Button variant="contained" size="small" onClick={onLogin}>Log in</Button>
                 </Box>}
             </Popover>
+            <Snackbar
+                open={message !== ""}
+                message={message}
+                autoHideDuration={4000}
+                onClose={(_event, reason) => reason !== "clickaway" && setMessage("")}
+            />
         </Box>
     );
 }

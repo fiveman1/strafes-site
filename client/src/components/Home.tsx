@@ -13,6 +13,7 @@ import MapLink from "./displays/MapLink";
 import UserLink from "./displays/UserLink";
 import TimeDisplay from "./displays/TimeDisplay";
 import DateDisplay from "./displays/DateDisplay";
+import LoadError from "./displays/LoadError";
 
 const WR_COUNT = 8;
 const RANK_COUNT = 10;
@@ -83,8 +84,10 @@ function Home() {
 
     // Filter out fly trials unless the user has it as their default game
     const filterGames = game !== Game.fly_trials ? [Game.bhop, Game.surf] : undefined;
-    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, MAIN_COURSE, Game.all, Style.all, undefined, undefined, true, filterGames));
-    const { data: ranks, isLoading: ranksLoading } = useQuery(queries.ranks.ranks(0, RANK_COUNT - 1, RankSortBy.RankAsc, game, style));
+    const wrsQuery = useQuery(queries.times.times(0, WR_COUNT - 1, TimeSortBy.DateDesc, MAIN_COURSE, Game.all, Style.all, undefined, undefined, true, filterGames));
+    const ranksQuery = useQuery(queries.ranks.ranks(0, RANK_COUNT - 1, RankSortBy.RankAsc, game, style));
+    const { data: wrs, isLoading: wrsLoading } = wrsQuery;
+    const { data: ranks, isLoading: ranksLoading } = ranksQuery;
 
     const [ now ] = useNow();
     const { newMaps, popularMaps } = useMemo(() => {
@@ -127,6 +130,8 @@ function Home() {
                 <Section title="Latest world records" href="/globals" linkLabel="All records">
                     <Paper>
                         {wrsLoading ? <SkeletonRows count={WR_COUNT} height={64} /> :
+                        wrsQuery.isError ?
+                        <LoadError block what="the latest records" error={wrsQuery.error} onRetry={() => wrsQuery.refetch()} retrying={wrsQuery.isFetching} /> :
                         !wrs?.times.length ?
                         <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
                             No records found
@@ -178,6 +183,8 @@ function Home() {
                     href={`/ranks?game=${game}&style=${style}`} linkLabel="All ranks">
                     <Paper>
                         {ranksLoading ? <SkeletonRows count={RANK_COUNT} height={48} /> :
+                        ranksQuery.isError ?
+                        <LoadError block what="ranks" error={ranksQuery.error} onRetry={() => ranksQuery.refetch()} retrying={ranksQuery.isFetching} /> :
                         !ranks?.length ?
                         <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
                             No ranks found

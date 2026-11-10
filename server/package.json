@@ -19,6 +19,7 @@
         "axios": "^1.10.0",
         "cookie-parser": "^1.4.7",
         "escape-html": "^1.0.3",
+        "expiry-map": "^2.0.0",
         "express": "^5.1.0",
         "express-rate-limit": "^7.5.1",
         "isbot": "^5.2.2",
@@ -27,6 +28,7 @@
         "mysql2": "^3.16.0",
         "obscenity": "^0.4.6",
         "openid-client": "^6.8.1",
+        "p-memoize": "^9.0.0",
         "rate-limiter-flexible": "^11.2.1",
         "shared": "^1.0.0"
     },

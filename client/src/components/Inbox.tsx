@@ -60,7 +60,7 @@ function InboxList(props: { userId: number }) {
     }, [data, seenAt, userId, queryClient]);
 
     if (inboxQuery.isPending) return <Loading />;
-    if (!data) return <LoadFailed />;
+    if (!data) return <LoadFailed what="your inbox" query={inboxQuery} />;
 
     if (data.items.length === 0) {
         return (

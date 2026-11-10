@@ -11,6 +11,7 @@ import NumberGridPagination from "./NumberGridPagination";
 import { parseAsInteger, parseAsNumberLiteral, useQueryState } from "nuqs";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../../../api/queries";
+import { useGridLoadError } from "./util/gridLoadError";
 
 function makeColumns(game: Game, style: Style, hideCourse: boolean | undefined, hideUser: boolean | undefined,
     hideMap: boolean | undefined, showPlacement: boolean | undefined, showPlacementOrdinals: boolean | undefined,
@@ -139,6 +140,7 @@ function TimesGrid(props: ITimesCardProps) {
     }
 
     const queryClient = useQueryClient();
+    const { clearError, gridProps, noRowsOverlayProps } = useGridLoadError(apiRef, "times");
 
     const under800px = useMediaQuery(`@media screen and (max-width: 800px)`);
     const under1000px = useMediaQuery(`@media screen and (max-width: 1000px)`);
@@ -246,25 +248,23 @@ function TimesGrid(props: ITimesCardProps) {
         [course, currentSortBy, game, hideMap, hideUser, isCompact, placementWidth, showPlacement, showPlacementOrdinals, style]);
 
     const updateRowData = useCallback(async (start: number, end: number, sortBy: TimeSortBy) => {
+        clearError();
         if (!allowOnlyWRs && !userId && !mapId) {
             return { rows: [], rowCount: 0 }
         }
-        
-        const timeData = await queryClient.fetchQuery(queries.times.times(start, end, sortBy, course, game, style, userId, mapId, onlyWRs));
 
-        if (onLoadTimes && timeData?.times) {
+        // Throws if it fails, which the grid shows (see useGridLoadError)
+        const timeData = await queryClient.query(queries.times.times(start, end, sortBy, course, game, style, userId, mapId, onlyWRs));
+
+        if (onLoadTimes) {
             onLoadTimes(timeData.times);
         }
 
-        if (!timeData) {
-            return { rows: [], rowCount: 0 }
-        }
-        
         return {
             rows: timeData.times,
             rowCount: timeData.pagination.totalItems
         }
-    }, [allowOnlyWRs, course, game, mapId, onLoadTimes, onlyWRs, queryClient, style, userId]);
+    }, [allowOnlyWRs, clearError, course, game, mapId, onLoadTimes, onlyWRs, queryClient, style, userId]);
 
     const dataSource: GridDataSource = useMemo(() => ({
         getRows: async (params: GridGetRowsParams): Promise<GridGetRowsResponse> => {
@@ -323,6 +323,7 @@ function TimesGrid(props: ITimesCardProps) {
             columnVisibilityModel={{
                 date: !isCompact
             }}
+            {...gridProps}
             slotProps={{
                 basePagination: {
                     material: {
@@ -331,7 +332,8 @@ function TimesGrid(props: ITimesCardProps) {
                 },
                 loadingOverlay: {
                     noRowsVariant: "linear-progress"
-                }
+                },
+                noRowsOverlay: noRowsOverlayProps
             }}
             sx={{
                 "--DataGrid-overlayHeight": `${Math.floor((rowHeight ?? 52) * 0.7) * pageSize}px`,

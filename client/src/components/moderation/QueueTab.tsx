@@ -8,7 +8,7 @@ function QueueTab() {
     const queue = useQuery({ ...queries.mod.queue, refetchInterval: 60 * 1000 });
 
     if (queue.isPending) return <Loading />;
-    if (!queue.data) return <LoadFailed />;
+    if (!queue.data) return <LoadFailed what="the queue" query={queue} />;
 
     return (
         <>

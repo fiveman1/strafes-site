@@ -14,111 +14,131 @@ function toSearchParams(params?: JsonObject) {
     return search.toString();
 }
 
-// Returns null on network errors, timeouts, and non-2xx responses
-async function tryRequest(url: string, init: RequestInit, timeout: number) {
-    try {
-        const res = await fetch("/api/" + url, { ...init, signal: AbortSignal.timeout(timeout) });
-        if (!res.ok) return null;
-        const data = await res.json();
-        return { data };
-    }
-    catch {
-        return null;
+/**
+ * A request that failed. status is unset when there was no response at all (offline, or it timed out). The message
+ * is fit to show: the server's own when it sent one.
+ */
+export class ApiError extends Error {
+    readonly status: number | undefined;
+    readonly bannedUntil: string | undefined;
+
+    constructor(message: string, status?: number, bannedUntil?: string) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+        this.bannedUntil = bannedUntil;
     }
 }
 
-async function tryGetRequest(url: string, params?: JsonObject) {
-    const query = toSearchParams(params);
-    return await tryRequest(query ? `${url}?${query}` : url, { method: "GET" }, 15000);
+/** Why a request failed, fit to show */
+export function errorMessage(error: unknown) {
+    return error instanceof ApiError ? error.message : "Something went wrong, try again";
 }
 
-// bannedUntil comes with "You're banned from commenting", unset for a permanent ban
-export type ApiResult<T> = { ok: true, data: T } | { ok: false, error: string, bannedUntil?: string };
+/** Worth trying again on its own: no response, or the server (or StrafesNET behind it) had a problem. */
+export function isTransientError(error: unknown) {
+    return error instanceof ApiError && (error.status === undefined || error.status >= 500);
+}
 
-/** Like tryRequest, but keeps the server's error message. */
-async function tryRequestWithError<T>(url: string, init: RequestInit, timeout: number): Promise<ApiResult<T>> {
+type RequestResult = { ok: true, data: unknown } | { ok: false, error: ApiError };
+
+async function sendRequest(url: string, init: RequestInit, timeout: number): Promise<RequestResult> {
     let res: Response;
     try {
         res = await fetch("/api/" + url, { ...init, signal: AbortSignal.timeout(timeout) });
     }
-    catch {
-        return { ok: false, error: "Couldn't reach the server, try again" };
+    catch (err) {
+        const timedOut = err instanceof DOMException && err.name === "TimeoutError";
+        return { ok: false, error: new ApiError(timedOut ? "The server took too long to respond, try again" : "Couldn't reach the server, check your connection") };
     }
 
     const body = await res.json().catch(() => undefined);
     if (!res.ok) {
         // Validation errors come back as a list, which isn't worth showing
-        const message = typeof body?.error === "string" ? body.error
+        const message = typeof body?.error === "string" && body.error !== "Not found" ? body.error
             : res.status === 429 ? "You're doing that too fast, wait a bit"
+            : res.status === 404 ? "Couldn't find that"
             : "Something went wrong, try again";
-        return { ok: false, error: message, bannedUntil: typeof body?.bannedUntil === "string" ? body.bannedUntil : undefined };
+        const bannedUntil = typeof body?.bannedUntil === "string" ? body.bannedUntil : undefined;
+        return { ok: false, error: new ApiError(message, res.status, bannedUntil) };
     }
-    return { ok: true, data: body as T };
+    return { ok: true, data: body };
 }
 
-async function trySendRequest<T>(method: "POST" | "DELETE", url: string, params?: JsonObject) {
-    return await tryRequestWithError<T>(url, {
+function withParams(url: string, params?: JsonObject) {
+    const query = toSearchParams(params);
+    return query ? `${url}?${query}` : url;
+}
+
+/** Throws an ApiError if the request fails, which is what react-query needs to know it failed. */
+async function getRequest<T>(url: string, params?: JsonObject): Promise<T> {
+    const res = await sendRequest(withParams(url, params), { method: "GET" }, 15000);
+    if (!res.ok) throw res.error;
+    return res.data as T;
+}
+
+/**
+ * Like getRequest, but null for a status that means there's nothing there (by default a 404), so that isn't treated
+ * as a failure.
+ */
+async function getRequestOrNull<T>(url: string, params?: JsonObject, emptyStatus = 404): Promise<T | null> {
+    const res = await sendRequest(withParams(url, params), { method: "GET" }, 15000);
+    if (!res.ok) {
+        if (res.error.status === emptyStatus) return null;
+        throw res.error;
+    }
+    return res.data as T;
+}
+
+// bannedUntil comes with "You're banned from commenting", unset for a permanent ban
+export type ApiResult<T> = { ok: true, data: T } | { ok: false, error: string, bannedUntil?: string };
+
+/** For changes. Doesn't throw, the result has the error message to show instead. */
+async function trySendRequest<T>(method: "POST" | "DELETE", url: string, params?: JsonObject): Promise<ApiResult<T>> {
+    const res = await sendRequest(url, {
         method: method,
         headers: params ? { "Content-Type": "application/json" } : undefined,
         body: params ? JSON.stringify(params) : undefined
     // Generous, since some of these wait on StrafesNET, and giving up early would report a failure for something that
     // went through
     }, 20000);
+    if (!res.ok) {
+        return { ok: false, error: res.error.message, bannedUntil: res.error.bannedUntil };
+    }
+    return { ok: true, data: res.data as T };
 }
 
-export async function tryPostRequest(url: string, params?: JsonObject) {
-    return await tryRequest(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params)
-    }, 5000);
-}
-
+/** null if there's no user with that name */
 export async function getUserIdFromName(username: string): Promise<number | null> {
     if (!username) return null;
-
-    const params = {
-        username: username
-    };
-    
-    const res = await tryGetRequest("username", params);
-    if (!res) return null;
-
-    return res.data.id;
+    const data = await getRequestOrNull<{ id: number }>("username", { username: username });
+    return data ? data.id : null;
 }
 
+/** null if there's no user with that ID */
 export async function getUserData(userId: string | undefined): Promise<User | null> {
-    if (!userId) return null
-
-    const res = await tryGetRequest("user/" + userId);
-    if (!res) return null;
-    
-    return res.data as User;
+    if (!userId) return null;
+    return await getRequestOrNull<User>("user/" + userId);
 }
 
+/** null if the user isn't ranked in that game and style */
 export async function getUserRank(userId: string, game: Game, style: Style): Promise<Rank | null> {
     if (!userId || game === Game.all || style === Style.all) return null;
 
-    const res = await tryGetRequest("user/rank/" + userId, {
+    return await getRequestOrNull<Rank>("user/rank/" + userId, {
         game: game,
         style: style
     });
-    if (!res) return null;
-
-    return res.data as Rank;
 }
 
-export async function getRanks(start: number | string, end: number | string, sortBy: RankSortBy, game: Game, style: Style): Promise<Rank[] | null>  {
-    const res = await tryGetRequest("ranks", {
+export async function getRanks(start: number | string, end: number | string, sortBy: RankSortBy, game: Game, style: Style): Promise<Rank[]>  {
+    return await getRequest<Rank[]>("ranks", {
         start: start,
         end: end,
         sort: sortBy,
         game: game,
         style: style
     });
-    if (!res) return null;
-
-    return res.data as Rank[]
 }
 
 export async function getTimeData(
@@ -132,9 +152,8 @@ export async function getTimeData(
     userId?: string, 
     mapId?: string, 
     onlyWR?: boolean
-): Promise<{ times: Time[], pagination: Pagination } | null> {
-    
-    const res = await tryGetRequest("times", {
+): Promise<{ times: Time[], pagination: Pagination }> {
+    const data = await getRequest<{ data: Time[], pagination: Pagination }>("times", {
         userId: userId,
         mapId: mapId,
         start: start,
@@ -146,52 +165,39 @@ export async function getTimeData(
         course: course,
         onlyWR: !!onlyWR
     });
-    
-    if (!res) return null;
 
     return {
-        times: res.data.data,
-        pagination: res.data.pagination
+        times: data.data,
+        pagination: data.pagination
     };
 }
 
-export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[] | null> {
-    const res = await tryGetRequest("user/times/all/" + userId, {
+export async function getAllTimesForUser(userId: string, game: Game, style: Style): Promise<Time[]> {
+    const data = await getRequest<{ data: Time[] }>("user/times/all/" + userId, {
         game: game,
         style: style
     });
-
-    if (!res) return null;
-
-    return res.data.data;
+    return data.data;
 }
 
+/** null when there's no count to show (all games or styles) */
 export async function getCompletionsForUser(userId: string, game: Game, style: Style): Promise<number | null> {
     if (!userId || game === Game.all || style === Style.all) return null;
 
-    const res = await tryGetRequest("user/times/completions/" + userId, {
+    const data = await getRequest<{ completions: number }>("user/times/completions/" + userId, {
         game: game,
         style: style,
     });
-    
-    if (!res) return null;
-
-    return res.data.completions;
+    return data.completions;
 }
 
 export async function getNumWRsForUser(userId: string, game: Game, style: Style): Promise<WRCount | null> {
     if (!userId) return null;
 
-    const res = await tryGetRequest("user/times/wrs/" + userId, {
+    return await getRequest<WRCount>("user/times/wrs/" + userId, {
         game: game,
         style: style,
     });
-    
-    if (!res) return null;
-    
-    const data = res.data as WRCount;
-
-    return data;
 }
 
 export interface Maps {
@@ -199,12 +205,10 @@ export interface Maps {
 }
 
 export async function getMaps(): Promise<Maps> {
-    const res = await tryGetRequest("maps");
-    if (!res) return {};
+    const data = await getRequest<{ data: Map[] }>("maps");
 
     const maps: Maps = {};
-    const data = res.data.data as Map[];
-    for (const map of data) {
+    for (const map of data.data) {
         maps[map.id] = map;
     }
     return maps;
@@ -215,10 +219,9 @@ export async function searchByUsername(username: string): Promise<UserSearchData
         return [];
     }
 
-    const res = await tryGetRequest("usersearch", {username: username});
-    if (!res) return [];
-
-    return res.data.usernames;
+    // A 404 is no results
+    const data = await getRequestOrNull<{ usernames: UserSearchData[] }>("usersearch", { username: username });
+    return data ? data.usernames : [];
 }
 
 export interface LeaderboardPage {
@@ -226,96 +229,66 @@ export interface LeaderboardPage {
     data: LeaderboardCount[]
 }
 export async function getLeaderboardPage(start: number | string, end: number | string, game: Game, style: Style, sort: LeaderboardSortBy) {
-    const res = await tryGetRequest("wrs/leaderboard", {
+    return await getRequest<LeaderboardPage>("wrs/leaderboard", {
         game: game,
         style: style,
         start: start,
         end: end,
         sort: sort
     });
-
-    if (!res) return null;
-
-    return res.data as LeaderboardPage;
 }
 
+/** null when logged out */
 export async function getLoggedInUser() {
-    const res = await tryGetRequest("auth/user");
-
-    if (!res) return null;
-
-    return res.data as LoginUserWithInfo;
+    return await getRequestOrNull<LoginUserWithInfo>("auth/user", undefined, 401);
 }
 
+/** The Roblox page to send the user to, or null if it couldn't be made */
 export async function login(path: string) {
-    const res = await tryGetRequest("login", {
-        path: path
-    });
-
-    if (!res) return null;
-
-    return res.data.url as string;
+    const res = await sendRequest(withParams("login", { path: path }), { method: "GET" }, 15000);
+    return res.ok ? (res.data as { url: string }).url : null;
 }
 
 export async function logout() {
-    await tryGetRequest("logout");
+    await sendRequest("logout", { method: "GET" }, 15000);
 }
 
 export async function updateSettings(settings: SettingsValues) {
-    const res = await tryPostRequest("auth/settings", {
+    return await trySendRequest<unknown>("POST", "auth/settings", {
         game: settings.defaultGame,
         style: settings.defaultStyle,
         theme: settings.theme,
         maxDaysRelative: settings.maxDaysRelativeDates,
         country: settings.country
     });
-
-    return !!res;
 }
 
+/** null when logged out */
 export async function getVotingInfo() {
-    const res = await tryGetRequest("auth/user/tiers");
-
-    if (!res) return null;
-
-    return res.data as TierVoteEligibility;
+    return await getRequestOrNull<TierVoteEligibility>("auth/user/tiers", undefined, 401);
 }
 
+/** null if the user hasn't voted on the map (or is logged out) */
 export async function getCurrentMapTierVote(mapId: number) {
-    const res = await tryGetRequest("auth/tiers", {
-        mapId: mapId
-    });
-
-    if (!res) return null;
-
-    return res.data as MapTierInfo | null;
+    return await getRequestOrNull<MapTierInfo | null>("auth/tiers", { mapId: mapId }, 401);
 }
 
-export async function voteForMapTier(mapId: number, tier: number | null) {
-    const res = await tryPostRequest("auth/tiers", {
+/** On success, the vote as saved, or null if it was removed */
+export async function voteForMapTier(mapId: number, tier: number | null): Promise<ApiResult<MapTierInfo | null>> {
+    const res = await trySendRequest<{ result?: MapTierInfo }>("POST", "auth/tiers", {
         mapId: mapId,
         tier: tier
     });
-
-    if (!res) return null;
-
-    return (res.data.result ?? null) as MapTierInfo | null;
+    return res.ok ? { ok: true, data: res.data.result ?? null } : res;
 }
 
+/** null if there's no time with that ID */
 export async function getReplayById(id: string) {
-    const res = await tryGetRequest("replays/times/" + id);
-
-    if (!res) return null;
-
-    return res.data as Replay;
+    return await getRequestOrNull<Replay>("replays/times/" + id);
 }
 
 export async function getReplayReactions(timeId: string) {
-    const res = await tryGetRequest("replays/times/" + timeId + "/reactions");
-
-    if (!res) return null;
-
-    return res.data as ReplayReactions;
+    return await getRequest<ReplayReactions>("replays/times/" + timeId + "/reactions");
 }
 
 export function getReplayStreamURL(timeId: string) {
@@ -323,23 +296,15 @@ export function getReplayStreamURL(timeId: string) {
 }
 
 export async function setReplayReaction(timeId: string, reaction: ReplayReaction, active: boolean) {
-    const res = await tryPostRequest("auth/reactions", {
+    return await trySendRequest<ReplayReactions>("POST", "auth/reactions", {
         timeId: timeId,
         reaction: reaction,
         active: active
     });
-
-    if (!res) return null;
-
-    return res.data as ReplayReactions;
 }
 
 export async function getReplayComments(timeId: string, sort: CommentSort) {
-    const res = await tryGetRequest("replays/times/" + timeId + "/comments", { sort: sort });
-
-    if (!res) return null;
-
-    return res.data as ReplayComments;
+    return await getRequest<ReplayComments>("replays/times/" + timeId + "/comments", { sort: sort });
 }
 
 export interface NewReplayComment {
@@ -380,7 +345,7 @@ export async function setReplayCommentHidden(commentId: string, hidden: boolean)
     });
 }
 
-// Moderation. Reads return null if they fail, including when the user isn't a moderator.
+// Moderation. Reads throw if they fail, including when the user isn't a moderator.
 export type ModAction = "approve" | "hide" | "dismiss";
 
 export interface ModCommentSearch {
@@ -404,13 +369,11 @@ export interface ModLogPage {
 }
 
 export async function getModQueue() {
-    const res = await tryGetRequest("mod/queue");
-    return res ? (res.data.comments as ModComment[]) : null;
+    return (await getRequest<{ comments: ModComment[] }>("mod/queue")).comments;
 }
 
 export async function searchModComments(search: ModCommentSearch) {
-    const res = await tryGetRequest("mod/comments", { ...search });
-    return res ? (res.data as ModCommentPage) : null;
+    return await getRequest<ModCommentPage>("mod/comments", { ...search });
 }
 
 export async function resolveModComment(commentId: string, action: ModAction, reason: string | undefined) {
@@ -422,13 +385,11 @@ export async function resolveModComment(commentId: string, action: ModAction, re
 }
 
 export async function getModLog(page: number) {
-    const res = await tryGetRequest("mod/log", { page: page });
-    return res ? (res.data as ModLogPage) : null;
+    return await getRequest<ModLogPage>("mod/log", { page: page });
 }
 
 export async function getCommentBans() {
-    const res = await tryGetRequest("mod/bans");
-    return res ? (res.data.bans as CommentBan[]) : null;
+    return (await getRequest<{ bans: CommentBan[] }>("mod/bans")).bans;
 }
 
 /** days unset for a permanent ban */
@@ -445,8 +406,7 @@ export async function unbanCommenter(userId: number) {
 }
 
 export async function getCommentModerators() {
-    const res = await tryGetRequest("mod/moderators");
-    return res ? (res.data.moderators as CommentModerator[]) : null;
+    return (await getRequest<{ moderators: CommentModerator[] }>("mod/moderators")).moderators;
 }
 
 export async function grantCommentModerator(userId: number, role: CommentRole) {
@@ -461,13 +421,11 @@ export async function revokeCommentModerator(userId: number) {
 }
 
 export async function getInbox() {
-    const res = await tryGetRequest("auth/inbox");
-    return res ? (res.data as Inbox) : null;
+    return await getRequest<Inbox>("auth/inbox");
 }
 
 export async function getInboxCount() {
-    const res = await tryGetRequest("auth/inbox/count");
-    return res ? (res.data as InboxCount) : null;
+    return await getRequest<InboxCount>("auth/inbox/count");
 }
 
 /** upTo is the newest item's "at", so anything that came in after the inbox loaded stays unread. */
@@ -478,27 +436,23 @@ export async function markInboxSeen(upTo: string) {
 export async function getBotFileResponse(timeId: string) {
     const url = await getBotFileURL(timeId);
 
-    if (!url) return null;
+    let fileRes: Response;
+    try {
+        fileRes = await fetch(url);
+    }
+    catch {
+        throw new ApiError("Couldn't download the bot file, check your connection");
+    }
 
-    const fileRes = await fetch(url);
-
-    if (!fileRes.ok) return null;
+    if (!fileRes.ok) throw new ApiError("Couldn't download the bot file", fileRes.status);
 
     return fileRes;
 }
 
 export async function getBotFileURL(timeId: string) {
-    const res = await tryGetRequest("replays/bots/" + timeId);
-    
-    if (!res) return null;
-
-    return res.data.url as string;
+    return (await getRequest<{ url: string }>("replays/bots/" + timeId)).url;
 }
 
 export async function getMapFileURL(mapId: number) {
-    const res = await tryGetRequest("replays/maps/" + mapId);
-    
-    if (!res) return null;
-
-    return res.data.url as string;
+    return (await getRequest<{ url: string }>("replays/maps/" + mapId)).url;
 }

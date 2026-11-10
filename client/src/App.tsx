@@ -6,7 +6,7 @@ import { Outlet, useLocation } from "react-router";
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router';
 import Link, { LinkProps } from '@mui/material/Link';
 import { ContextParams, EASE_OUT, MapCount } from "./common/common";
-import { useMediaQuery } from "@mui/material";
+import { Alert, Button, useMediaQuery } from "@mui/material";
 import { Game, Map, SettingsValues } from "shared";
 import type {} from '@mui/x-data-grid/themeAugmentation';
 import { sortMapsByName } from "./common/sort";
@@ -16,6 +16,7 @@ import DiscordIcon from "./components/icons/DiscordIcon";
 import GithubIcon from "./components/icons/GithubIcon";
 import MainAppBar from "./components/other/MainAppBar";
 import NavigationProgress from "./components/other/NavigationProgress";
+import { ErrorWithReason } from "./components/displays/LoadError";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 
 const LinkBehavior = React.forwardRef<
@@ -28,7 +29,8 @@ const LinkBehavior = React.forwardRef<
 });
 
 function App() {
-    const { data: maps } = useMaps();
+    const mapsQuery = useMaps();
+    const maps = mapsQuery.data;
 
     const loginUserQuery = useLoginUser();
     const loggedInUser = loginUserQuery.data ?? undefined;
@@ -529,6 +531,30 @@ function App() {
                     marginBottom: "auto",
                     marginX: "auto"
                 }}>
+                {/* Every page uses these, and without them it looks empty or logged out rather than broken */}
+                {(mapsQuery.isError || loginUserQuery.isError) &&
+                <Alert
+                    severity="error"
+                    sx={{ mb: 2 }}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            disabled={mapsQuery.isFetching || loginUserQuery.isFetching}
+                            onClick={() => {
+                                if (mapsQuery.isError) mapsQuery.refetch();
+                                if (loginUserQuery.isError) loginUserQuery.refetch();
+                            }}>
+                            Try again
+                        </Button>
+                    }>
+                    <ErrorWithReason
+                        issue={mapsQuery.isError && loginUserQuery.isError ? "Couldn't load maps or check if you're logged in."
+                            : mapsQuery.isError ? "Couldn't load maps, so some may be missing."
+                            : "Couldn't check if you're logged in."}
+                        error={mapsQuery.isError ? mapsQuery.error : loginUserQuery.error}
+                    />
+                </Alert>}
                 <NuqsAdapter>
                     <Outlet context={contextParams}/>
                 </NuqsAdapter>

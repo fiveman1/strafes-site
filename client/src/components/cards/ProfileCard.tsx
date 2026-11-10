@@ -8,6 +8,7 @@ import { useOutletContext } from "react-router";
 import { ContextParams, RANK_HELP_TEXT, SKILL_HELP_TEXT } from "../../common/common";
 import { useQuery } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
+import { InlineLoadError } from "../displays/LoadError";
 
 export interface IProfileCardProps {
     userId?: string
@@ -15,15 +16,22 @@ export interface IProfileCardProps {
     style: Style
     user?: User
     userLoading: boolean
+    // Set if the user couldn't be loaded. Their moderation status comes from it.
+    userError?: unknown
+    onUserRetry?: () => void
+    userRetrying?: boolean
 }
 
 function ProfileCard(props: IProfileCardProps) {
-    const { userId, game, style, user, userLoading } = props;
+    const { userId, game, style, user, userLoading, userError, onUserRetry, userRetrying } = props;
     const { mapCounts } = useOutletContext() as ContextParams;
 
-    const { data: rank, isLoading: rankLoading } = useQuery(queries.users.rank(userId ?? "", game, style));
-    const { data: comps, isLoading: compsLoading  } = useQuery(queries.users.completions(userId ?? "", game, style));
-    const { data: wrs, isLoading: wrsLoading } = useQuery(queries.users.wrCount(userId ?? "", game, style));
+    const rankQuery = useQuery(queries.users.rank(userId ?? "", game, style));
+    const compsQuery = useQuery(queries.users.completions(userId ?? "", game, style));
+    const wrsQuery = useQuery(queries.users.wrCount(userId ?? "", game, style));
+    const rank = rankQuery.data;
+    const comps = compsQuery.data;
+    const wrs = wrsQuery.data;
 
     const compsFormatted = useMemo(() => {
         let compsFormatted = "n/a";
@@ -84,19 +92,19 @@ function ProfileCard(props: IProfileCardProps) {
                 rowGap: 2,
                 width: "100%"
             }}>
-            <Stat label="Rank" help={RANK_HELP_TEXT} loading={rankLoading}>
+            <Stat label="Rank" help={RANK_HELP_TEXT} query={rankQuery}>
                 {rankFormatted}
             </Stat>
-            <Stat label="Skill" help={SKILL_HELP_TEXT} loading={rankLoading}>
+            <Stat label="Skill" help={SKILL_HELP_TEXT} query={rankQuery}>
                 {skillFormatted}
             </Stat>
-            <Stat label="Moderation status" help={tooltip} loading={userLoading}>
+            <Stat label="Moderation status" help={tooltip} query={{ isLoading: userLoading, isError: userError !== undefined, error: userError, isFetching: userRetrying, refetch: onUserRetry }}>
                 {formattedStatus}
             </Stat>
-            <Stat label="Completions" loading={compsLoading}>
+            <Stat label="Completions" query={compsQuery}>
                 {compsFormatted}
             </Stat>
-            <Stat label="World records" loading={wrsLoading}>
+            <Stat label="World records" query={wrsQuery}>
                 {!wrs ? "n/a" :
                 <Box component="span" sx={{ display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 1, whiteSpace: "nowrap" }}>
                     <span>
@@ -119,12 +127,20 @@ function ProfileCard(props: IProfileCardProps) {
 interface IStatProps {
     label: string
     help?: string
-    loading: boolean
+    // The request the value comes from
+    query: {
+        isLoading: boolean
+        isError?: boolean
+        error?: unknown
+        isFetching?: boolean
+        refetch?: () => unknown
+    }
     children: React.ReactNode
 }
 
 function Stat(props: IStatProps) {
-    const { label, help, loading, children } = props;
+    const { label, help, query, children } = props;
+    const { refetch } = query;
     return (
         <Box sx={{ minWidth: 0 }}>
             <Tooltip arrow title={help} placement="top-start">
@@ -134,7 +150,9 @@ function Stat(props: IStatProps) {
                 </Typography>
             </Tooltip>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.4 }}>
-                {loading ? <Skeleton width={72} /> : children}
+                {query.isLoading ? <Skeleton width={72} />
+                : query.isError ? <InlineLoadError error={query.error} onRetry={refetch && (() => refetch())} retrying={query.isFetching} />
+                : children}
             </Typography>
         </Box>
     );

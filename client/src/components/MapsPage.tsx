@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import { Breadcrumbs, IconButton, Link, Paper, Skeleton, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Breadcrumbs, IconButton, Link, Paper, Skeleton, Snackbar, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useOutletContext, useParams, Link as RouterLink } from "react-router";
 import { ContextParams, getAllowedGameForMap, getGameColor, MapDetailsProps, mapsToCsv } from "../common/common";
 import { Game, MAX_TIER, Map, MapTierInfo, ModerationStatus, TierVoteEligibility, TimeSortBy, formatGame, formatTier, getAllowedStyles, isEligibleForVoting } from "shared";
@@ -29,6 +29,7 @@ import MapFilterSortOptions from "./forms/MapFilterSortOptions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
 import RecordCard from "./cards/RecordCard";
+import { ErrorWithReason, InlineLoadError } from "./displays/LoadError";
 
 const longDateFormat = Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -219,32 +220,42 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
     const tierVoteQuery = useMapTierVote(loginUser, selectedMap.id);
     const voteData = tierVoteQuery.data ?? undefined;
     const voteLoading = tierVoteQuery.isLoading;
+    const [voteError, setVoteError] = useState("");
 
-    const onMutateVote = useCallback((info: { mapId: number, tier: number | null }) => {
-        const { mapId, tier } = info;
-        const fakeTier: MapTierInfo | null = tier === null ? null : {
-            userId: loginUser?.userId ?? 0,
-            mapId: mapId,
-            tier: tier,
-            weight: 0,
-            updatedAt: ""
-        };
-        queryClient.setQueryData(queries.maps.tierVote(loginUser, selectedMap.id).queryKey, fakeTier);
-        return voteForMapTier(mapId, tier);
-    }, [loginUser, queryClient, selectedMap.id]);
-
-    const onMutateVoteSuccess = useCallback((data: MapTierInfo | null) => {
-        queryClient.setQueryData(queries.maps.tierVote(loginUser, selectedMap.id).queryKey, data);
-    }, [loginUser, queryClient, selectedMap.id]);
-    
     const voteMutation = useMutation({
-        mutationFn: onMutateVote,
-        onSuccess: onMutateVoteSuccess
+        mutationFn: async (info: { mapId: number, tier: number | null }) => {
+            const result = await voteForMapTier(info.mapId, info.tier);
+            if (!result.ok) throw new Error(result.error);
+            return result.data;
+        },
+        // Shows the vote right away, and puts the old one back if it doesn't go through
+        onMutate: (info) => {
+            const queryKey = queries.maps.tierVote(loginUser, info.mapId).queryKey;
+            const previous = queryClient.getQueryData<MapTierInfo | null>(queryKey);
+            const fakeTier: MapTierInfo | null = info.tier === null ? null : {
+                userId: loginUser?.userId ?? 0,
+                mapId: info.mapId,
+                tier: info.tier,
+                weight: 0,
+                updatedAt: ""
+            };
+            queryClient.setQueryData(queryKey, fakeTier);
+            return { previous };
+        },
+        onSuccess: (data, info) => {
+            queryClient.setQueryData(queries.maps.tierVote(loginUser, info.mapId).queryKey, data);
+        },
+        onError: (error, info, context) => {
+            queryClient.setQueryData(queries.maps.tierVote(loginUser, info.mapId).queryKey, context?.previous ?? null);
+            setVoteError(error.message);
+        }
     });
 
     const isLightMode = theme.palette.mode === "light";
     const isEligible = (voteEligibility && isEligibleForVoting(voteEligibility, selectedMap.game));
-    const reason = isEligible ? getEligibleReason(voteEligibility, selectedMap.game) : getIneligibleReason(voteEligibility, selectedMap.game);
+    const reason = voteEligibilityQuery.isError ? <ErrorWithReason issue="Couldn't check if you can vote." error={voteEligibilityQuery.error} />
+        : isEligible ? getEligibleReason(voteEligibility, selectedMap.game)
+        : getIneligibleReason(voteEligibility, selectedMap.game);
 
     const onChange = useCallback((val: number) => {
         const tier = val === voteData?.tier ? null : val;
@@ -293,6 +304,8 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                 }}>
                 {voteLoading ?
                 <Skeleton height="28px" width="200px"></Skeleton>
+                : tierVoteQuery.isError ?
+                <InlineLoadError what="your vote" error={tierVoteQuery.error} onRetry={() => tierVoteQuery.refetch()} retrying={tierVoteQuery.isFetching} />
                 :
                 <MapTierListSelector 
                     selectedTiers={voteData ? [voteData.tier] : []}
@@ -353,6 +366,12 @@ function MapTierVotingSection(props: MapDetailSectionProps) {
                     Submitted {<TimeAgo date={voteData.updatedAt} title="" formatter={relativeTimeFormatter} />}
                 </Typography>
             </Tooltip>}
+            <Snackbar
+                open={voteError !== ""}
+                message={voteError}
+                autoHideDuration={5000}
+                onClose={(_event, reason) => reason !== "clickaway" && setVoteError("")}
+            />
         </Box>
     );
 }

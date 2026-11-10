@@ -4,6 +4,7 @@ import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 import { CommentHiddenBy, ReplayCommentStatus } from "shared";
+import LoadError from "../displays/LoadError";
 
 export function StatusChip(props: { status: ReplayCommentStatus, hiddenBy?: CommentHiddenBy }) {
     const { status, hiddenBy } = props;
@@ -47,10 +48,13 @@ export function Loading() {
     );
 }
 
-export function LoadFailed() {
-    return (
-        <Typography sx={{ color: "error.main", py: 4, textAlign: "center" }}>
-            Couldn't load this, try refreshing.
-        </Typography>
-    );
+interface LoadFailedProps {
+    // What couldn't be loaded, like "the queue"
+    what: string
+    query: { error: unknown, isFetching: boolean, refetch: () => unknown }
+}
+
+export function LoadFailed(props: LoadFailedProps) {
+    const { what, query } = props;
+    return <LoadError block what={what} error={query.error} onRetry={() => query.refetch()} retrying={query.isFetching} />;
 }

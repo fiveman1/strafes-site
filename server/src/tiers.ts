@@ -1,44 +1,38 @@
 import { Game, isEligibleForVoting, Map as StrafesMap, MapTierInfo, ModerationStatus, Style, TierVoteEligibility, StrafesUserRole } from "shared";
-import { getTimes, getUserInfo } from "./strafes_api/api.js";
+import { getTimes, lookupUserInfo } from "./strafes_api/api.js";
 import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
-import memoize from "memoize";
-import { getAllUsersToStrafesRoles } from "./roles.js";
+import { loadUsersToStrafesRoles } from "./roles.js";
+import { memoizeAsync } from "./util.js";
 
-export const loadTierVotingEligibility = memoize(loadTierVotingEligibilityCore, {cacheKey: JSON.stringify, maxAge: 4 * 60 * 60 * 1000});
-async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEligibility> {
-    const userInfoPromise = getUserInfo(userId);
-    const bhopTimesPromise = getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0);
-    const surfTimesPromise = getTimes(userId, undefined, 1, 1, Game.surf, Style.all, 0);
+/** undefined if StrafesNET couldn't be reached, which isn't cached so it doesn't stick for hours. */
+export const loadTierVotingEligibility = memoizeAsync(loadTierVotingEligibilityCore, { maxAge: 4 * 60 * 60 * 1000 });
+async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEligibility | undefined> {
+    const [userInfo, bhopTimes, surfTimes] = await Promise.all([
+        lookupUserInfo(userId),
+        getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0),
+        getTimes(userId, undefined, 1, 1, Game.surf, Style.all, 0)
+    ]);
 
-    let status = ModerationStatus.Default;
-    let bhopComps = 0;
-    let surfComps = 0;
-
-    const userInfo = await userInfoPromise;
-    if (userInfo) {
-        status = userInfo.state_id;
-    }
-
-    const bhopTimes = await bhopTimesPromise;
-    if (bhopTimes) {
-        bhopComps = bhopTimes.pagination.total_items;
-    }
-
-    const surfTimes = await surfTimesPromise;
-    if (surfTimes) {
-        surfComps = surfTimes.pagination.total_items;
+    // Otherwise a failed request would look like 0 completions
+    if (userInfo === undefined || !bhopTimes || !surfTimes) {
+        return undefined;
     }
 
     return {
-        moderationStatus: status,
-        bhopCompletions: bhopComps,
-        surfCompletions: surfComps
+        // null if they've never joined the game
+        moderationStatus: userInfo?.state_id ?? ModerationStatus.Default,
+        bhopCompletions: bhopTimes.pagination.total_items,
+        surfCompletions: surfTimes.pagination.total_items
     };
 }
 
-export async function canUserVoteOnMap(client: GlobalsClient, userId: number, mapId: number): Promise<boolean> {
+/** undefined if it couldn't be checked */
+export async function canUserVoteOnMap(client: GlobalsClient, userId: number, mapId: number): Promise<boolean | undefined> {
     const info = await loadTierVotingEligibilityCore(userId);
+    if (!info) {
+        return undefined;
+    }
     const map = await client.getMap(mapId);
     if (!map) {
         return false;
@@ -76,7 +70,8 @@ export async function getUserTierForMap(client: GlobalsClient, userId: number, m
 }
 
 async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
-    const strafesRoles = await getAllUsersToStrafesRoles();
+    // Waits for the roles (or throws) rather than guess, since the weight is saved with the vote
+    const strafesRoles = await loadUsersToStrafesRoles();
     const role = strafesRoles.get(userId);
     if (role === StrafesUserRole.MapAdmin || role === StrafesUserRole.MapCouncil || role === StrafesUserRole.MapAccess) {
         return 10;
@@ -95,15 +90,12 @@ async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
     return 1;
 }
 
+/** Doesn't check if they can vote on the map, the caller does (see canUserVoteOnMap). */
 export async function setUserTierForMap(client: GlobalsClient, userId: number, map: StrafesMap, tier: number | undefined): Promise<MapTierInfo | undefined> {
     if (tier === undefined) {
         const query = `DELETE FROM tier_votes WHERE user_id=? AND map_id=?;`;
         const values = [userId, map.id];
         await client.pool.execute(query, values);
-        return undefined;
-    }
-
-    if (!(await canUserVoteOnMap(client, userId, map.id))) {
         return undefined;
     }
 
@@ -208,7 +200,13 @@ export async function setMapVoteCounts(client: GlobalsClient, maps: StrafesMap[]
     }
 }
 
-export const getAllMapsWithTiers = memoize(getAllMapsWithTiersCore, { maxAge: 30 * 60 * 1000 });
+// The client is the only argument, and there's just the one. A failed load (it throws) isn't cached, and neither is an
+// empty list, which only happens before the maps are first synced from StrafesNET.
+export const getAllMapsWithTiers = memoizeAsync(getAllMapsWithTiersCore, {
+    cacheKey: () => "maps",
+    maxAge: 30 * 60 * 1000,
+    shouldCache: (maps) => maps.length > 0
+});
 async function getAllMapsWithTiersCore(client: GlobalsClient): Promise<StrafesMap[]> {
     const maps = await client.getAllMaps();
 

@@ -34,6 +34,7 @@ import {
 import { banUser, getModerationLog, getModerationQueue, listActiveBans, searchComments, unbanUser } from "./moderation.js";
 import { logEntryUsers, modCommentUsers } from "./modUsers.js";
 import { getCommentRole, grantModerator, hasRole, isConfigAdmin, listModerators, revokeModerator } from "./roles.js";
+import { RolesUnavailableError } from "../roles.js";
 
 const SEARCH_PAGE_SIZE = 50;
 const LOG_PAGE_SIZE = 100;
@@ -192,7 +193,9 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         // Not cached, since what's included depends on who's asking. The time can be the cached copy, the same one
         // the replay page gets, so comments are marked against the run the page is showing.
         const [user, time] = await Promise.all([authClient.getAuthenticatedUser(req, res), getTimeById(timeId)]);
-        const viewer = user ? { userId: user.userId, role: await getCommentRole(globalsClient, user.userId) } : undefined;
+        // Doesn't wait on the group roles, so a cold start never holds up the comments. A group moderator might briefly
+        // see them as anyone else would.
+        const viewer = user ? { userId: user.userId, role: await getCommentRole(globalsClient, user.userId, { wait: false }) } : undefined;
         const currentRun = time ? currentRunOf(time) : undefined;
         const comments = await getCommentsForReplay(globalsClient, timeId, viewer, query.sort ?? DEFAULT_COMMENT_SORT, currentRun);
         await withUserInfo(comments.comments);
@@ -263,11 +266,21 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         const user = await requireUser(req, res);
         if (!user) return;
 
-        const role = await getCommentRole(globalsClient, user.userId);
+        // A runner on their own replay doesn't need a role, so roles being unavailable only matters if this is refused
+        let rolesUnavailable = false;
+        const role = await getCommentRole(globalsClient, user.userId).catch((err) => {
+            if (!(err instanceof RolesUnavailableError)) throw err;
+            rolesUnavailable = true;
+            return undefined;
+        });
         if (role && user.username) {
             await globalsClient.upsertUser(user.userId, user.username);
         }
         const result = await setCommentHidden(globalsClient, { userId: user.userId, role: role }, input.commentId, input.hidden, input.reason);
+        if (!result.ok && result.status === 403 && rolesUnavailable) {
+            // They might be a moderator, so "only on your own replays" could be wrong
+            throw new RolesUnavailableError();
+        }
         if (!unwrap(result, res)) return;
 
         await publishChange(result.value);

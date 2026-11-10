@@ -98,11 +98,14 @@ async function readWithProgress(response: Response, key: string) {
     return file;
 }
 
-async function downloadReplayAsset(responsePromise: Promise<Response | null>, key: string) {
-    const response = await responsePromise;
-    if (!response) {
+async function downloadReplayAsset(responsePromise: Promise<Response>, key: string) {
+    let response: Response;
+    try {
+        response = await responsePromise;
+    }
+    catch (err) {
         updateProgress(key, { received: 0, total: 0, status: "error" });
-        throw new Error("Couldn't download replay asset.");
+        throw err;
     }
     return readWithProgress(response, key);
 }

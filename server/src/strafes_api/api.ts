@@ -1,10 +1,10 @@
 import { exit } from "process";
 import { Api as StrafesApi, TimePlacement, User as ApiUser } from "./generated/strafes.js";
 import { Api as MapsApi } from "./generated/maps.js";
-import memoize from "memoize";
 import memCache from "memory-cache";
+import ExpiryMap from "expiry-map";
 import { Game, RankSortBy, Style, TimeSortBy } from "shared";
-import { IS_DEV_MODE } from "../util.js";
+import { IS_DEV_MODE, memoizeAsync } from "../util.js";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -36,6 +36,11 @@ const MAPS_CLIENT = new MapsApi({
     }
 });
 
+// The generated clients throw the response itself when the status isn't OK
+function isNotFound(err: unknown) {
+    return (err as { status?: number } | undefined)?.status === 404;
+}
+
 export async function getPlacements(timeIds: string[]) {
     const placements: TimePlacement[] = [];
     const notCachedIds = new Set<string>();
@@ -66,7 +71,7 @@ export async function getPlacements(timeIds: string[]) {
     }
 }
 
-export const getTimes = memoize(getTimesCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+export const getTimes = memoizeAsync(getTimesCore, { maxAge: 5 * 60 * 1000 });
 async function getTimesCore(userId: number | undefined, mapId: number | undefined, pageSize: number, pageNum: number, game: Game | undefined, style: Style | undefined, course: number, sort?: TimeSortBy) {
     try {
         const res = await STRAFES_CLIENT.time.timeList({
@@ -90,7 +95,8 @@ async function getTimesCore(userId: number | undefined, mapId: number | undefine
     }
 }
 
-export const getUserRank = memoize(getUserRankCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+export const getUserRank = memoizeAsync(getUserRankCore, { maxAge: 5 * 60 * 1000 });
+/** null if the user isn't ranked, undefined if the request failed. */
 async function getUserRankCore(userId: number, game: Game, style: Style) {
     try {
         const res = await STRAFES_CLIENT.user.rankList(userId, {
@@ -102,6 +108,9 @@ async function getUserRankCore(userId: number, game: Game, style: Style) {
         return res.data.data;
     }
     catch (err) {
+        if (isNotFound(err)) {
+            return null;
+        }
         if (IS_DEV_MODE) {
             console.error(err);
         }
@@ -109,7 +118,7 @@ async function getUserRankCore(userId: number, game: Game, style: Style) {
     }
 }
 
-export const getRanks = memoize(getRanksCore, {cacheKey: JSON.stringify, maxAge: 5 * 60 * 1000});
+export const getRanks = memoizeAsync(getRanksCore, { maxAge: 5 * 60 * 1000 });
 async function getRanksCore(pageSize: number, pageNum: number, game: Game, style: Style, sort: RankSortBy) {
     try {
         const res = await STRAFES_CLIENT.rank.rankList({
@@ -154,8 +163,7 @@ export async function lookupUserInfo(userId: number): Promise<ApiUser | null | u
         return user;
     }
     catch (err) {
-        // The generated client throws the response itself when the status isn't OK
-        if ((err as { status?: number } | undefined)?.status === 404) {
+        if (isNotFound(err)) {
             userInfoCache.put(userId, { user: null }, MISSING_USER_CACHE_MS);
             return null;
         }
@@ -172,8 +180,9 @@ export async function getUserInfo(userId: number): Promise<ApiUser | undefined> 
 }
 
 const TIME_CACHE_MS = 5 * 60 * 1000;
-const timeCache = new Map<string, { data: ReturnType<typeof fetchTimeById>, maxAge: number }>();
-export const getTimeById = memoize(fetchTimeById, {cacheKey: JSON.stringify, cache: timeCache, maxAge: TIME_CACHE_MS});
+const timeCache = new ExpiryMap<string, Awaited<ReturnType<typeof fetchTimeById>>>(TIME_CACHE_MS);
+/** null if there's no time with that ID, undefined if the request failed. */
+export const getTimeById = memoizeAsync(fetchTimeById, { cache: timeCache });
 
 /**
  * getTimeById without the cache, for when a stale copy would be saved somewhere: a time is updated in place when its
@@ -182,7 +191,7 @@ export const getTimeById = memoize(fetchTimeById, {cacheKey: JSON.stringify, cac
 export async function fetchFreshTimeById(timeId: string) {
     const time = await fetchTimeById(timeId);
     if (time) {
-        timeCache.set(JSON.stringify([timeId]), { data: Promise.resolve(time), maxAge: Date.now() + TIME_CACHE_MS });
+        timeCache.set(JSON.stringify([timeId]), time);
     }
     return time;
 }
@@ -193,6 +202,9 @@ async function fetchTimeById(timeId: string) {
         return res.data.data;
     }
     catch (err) {
+        if (isNotFound(err)) {
+            return null;
+        }
         if (IS_DEV_MODE) {
             console.error(err);
         }
@@ -201,7 +213,7 @@ async function fetchTimeById(timeId: string) {
 }
 
 // These download URLs are signed and only live for 5 minutes, but a 2 minute cache should be okay.
-export const getBotDownloadURL = memoize(getBotDownloadURLCore, {cacheKey: JSON.stringify, maxAge: 2 * 60 * 1000});
+export const getBotDownloadURL = memoizeAsync(getBotDownloadURLCore, { maxAge: 2 * 60 * 1000 });
 async function getBotDownloadURLCore(timeId: string) {
     try {
         const res = await STRAFES_CLIENT.time.getTime(timeId, { redirect: "manual" });
@@ -216,7 +228,7 @@ async function getBotDownloadURLCore(timeId: string) {
     }
 }
 
-export const getMapDownloadURL = memoize(getMapDownloadURLCore, {cacheKey: JSON.stringify, maxAge: 2 * 60 * 1000});
+export const getMapDownloadURL = memoizeAsync(getMapDownloadURLCore, { maxAge: 2 * 60 * 1000 });
 export async function getMapDownloadURLCore(mapId: number) {
     try {
         const res = await MAPS_CLIENT.map.snfmList(mapId, { redirect: "manual" });

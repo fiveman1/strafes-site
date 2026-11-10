@@ -6,7 +6,7 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import Link from "@mui/material/Link";
 import { Link as RouterLink } from "react-router";
 import { lighten, useTheme } from "@mui/material/styles";
-import { useQueryClient } from "@tanstack/react-query";
+import { noop, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
 import { useCallback } from "react";
 
@@ -31,8 +31,9 @@ function TimeDisplay(props: ITimeDisplayProps) {
     const mapId = time.mapId;
 
     const prefetchURLs = useCallback(() => {
-        queryClient.prefetchQuery(queries.replays.botURL(timeId));
-        queryClient.prefetchQuery(queries.replays.mapURL(mapId));
+        // Just a head start, the replay page fetches them again if these fail
+        queryClient.query(queries.replays.botURL(timeId)).catch(noop);
+        queryClient.query(queries.replays.mapURL(mapId)).catch(noop);
     }, [mapId, queryClient, timeId]);
 
     if (hideDiff) {

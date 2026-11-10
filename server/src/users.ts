@@ -1,7 +1,7 @@
 import { tryGetCached, tryGetRequest, tryPostCached, tryPostRequest } from "./requests.js";
 import { User, UserInfo, UserRef } from "shared";
 import memCache from "memory-cache";
-import { getAllUsersToRoles } from "./roles.js";
+import { peekUsersToRoles } from "./roles.js";
 import { AuthClient } from "./auth.js";
 import { getUserInfo } from "./strafes_api/api.js";
 
@@ -32,7 +32,8 @@ export async function setUserInfoForList(client: AuthClient, users: UserInfoTarg
 }
 
 async function setUserRolesForList(users: UserInfoTarget[]) {
-    const roles = await getAllUsersToRoles();
+    // Just badges, so whatever has loaded is fine
+    const roles = peekUsersToRoles();
 
     for (const user of users) {
         user.userRoles = roles.get(user.userId);
@@ -166,20 +167,22 @@ export async function setMissingUsernames(users: { userId: number, username?: st
     }
 }
 
-export async function getUserId(username: string): Promise<undefined | number> {
+/** null if there's no user with that name, undefined if Roblox couldn't be reached. */
+export async function getUserId(username: string): Promise<null | undefined | number> {
     const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
         usernames: [username]
     });
     if (!res) return undefined;
 
     const data = res.data.data as ({ id: number })[];
-    if (data.length === 0) return undefined;
+    if (data.length === 0) return null;
 
     const user = data[0];
     return user.id;
 }
 
-export async function getUserData(client: AuthClient, userId: number): Promise<undefined | User> {
+/** null if there's no user with that ID, undefined if Roblox couldn't be reached. */
+export async function getUserData(client: AuthClient, userId: number): Promise<null | undefined | User> {
     const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
     const strafesUserReq = getUserInfo(userId);
 
@@ -190,7 +193,7 @@ export async function getUserData(client: AuthClient, userId: number): Promise<u
     const setUserInfoPromise = setUserInfoForList(client, [partialUser], true);
 
     const userRes = await userReq;
-    if (!userRes) return undefined;
+    if (!userRes) return userRes;
     const user = userRes.data as { name: string, displayName: string, created: string };
 
     const strafesUserData = await strafesUserReq;

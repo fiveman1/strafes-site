@@ -16,7 +16,7 @@ import { exit } from "process";
 import vine, { errors } from "@vinejs/vine";
 import * as validators from "./validators.js";
 import escapeHTML from "escape-html";
-import { getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
+import { canUserVoteOnMap, getAllMapsWithTiers, getUserTierForMap, loadTierVotingEligibility, setUserTierForMap } from "./tiers.js";
 import { convertTimeToReplay, logViewForReplay } from "./replays.js";
 import { getReactionsForReplay, setReactionForReplay } from "./reactions.js";
 import { saveReplayRun } from "./replayRuns.js";
@@ -24,6 +24,7 @@ import { broadcastReactions, openReplayStream } from "./replayStream.js";
 import { createCommentRouter } from "./comments/routes.js";
 import { createInboxRouter } from "./inbox.js";
 import { getCommentRole } from "./comments/roles.js";
+import { RolesUnavailableError, startRoleRefresh } from "./roles.js";
 import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
@@ -69,7 +70,14 @@ const PORT = process.env.PORT ?? "8080";
 const HOST = process.env.HOST ?? "127.0.0.1";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
+// Only successful responses are cached, so a failure (like StrafesNET being down) doesn't stick around for minutes
+apicache.options({ statusCodes: { include: [200] } });
 const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
+
+/** For when a service the site depends on didn't answer, as opposed to there being nothing to find (a 404). */
+function sendUpstreamError(res: express.Response, service: "StrafesNET" | "Roblox" = "StrafesNET") {
+    res.status(502).json({ error: `Couldn't reach ${service}, try again in a bit` });
+}
 const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
@@ -114,6 +122,10 @@ app.get("/api/auth/user/tiers", async (req, res) => {
     }
 
     const tierInfo = await loadTierVotingEligibility(user.userId);
+    if (!tierInfo) {
+        sendUpstreamError(res);
+        return;
+    }
     res.status(200).json(tierInfo);
 });
 
@@ -164,6 +176,19 @@ app.post("/api/auth/tiers", rateLimiterMiddleware(2), async (req, res) => {
         return;
     }
 
+    // Removing a vote is always allowed
+    if (result.tier !== undefined) {
+        const canVote = await canUserVoteOnMap(globalsClient, user.userId, map.id);
+        if (canVote === undefined) {
+            sendUpstreamError(res);
+            return;
+        }
+        if (!canVote) {
+            res.status(403).json({ error: "You can't vote on this map's tier yet" });
+            return;
+        }
+    }
+
     const tier = await setUserTierForMap(globalsClient, user.userId, map, result.tier);
 
     res.status(200).json({ result: tier });
@@ -182,7 +207,11 @@ app.get("/api/username", rateLimiterMiddleware(1), cache("5 minutes"), async (re
     const username = result.username;
 
     const userId = await getUserId(username);
-    if (!userId) {
+    if (userId === undefined) {
+        sendUpstreamError(res, "Roblox");
+        return;
+    }
+    if (userId === null) {
         res.status(404).json({ error: "Not found" });
         return;
     }
@@ -206,6 +235,10 @@ app.get("/api/usersearch", rateLimiterMiddleware(1), cache("5 minutes"), async (
         sessionId: searchGUID
     });
 
+    if (searchRes === undefined) {
+        sendUpstreamError(res, "Roblox");
+        return;
+    }
     if (!searchRes || searchRes.data.searchResults.length === 0) {
         res.status(404).json({ error: "Not found" });
         return;
@@ -234,7 +267,11 @@ app.get("/api/user/:id", rateLimiterMiddleware(4), cache("5 minutes"), async (re
     const userId = result.id;
 
     const user = await getUserData(authClient, userId);
-    if (!user) {
+    if (user === undefined) {
+        sendUpstreamError(res, "Roblox");
+        return;
+    }
+    if (user === null) {
         res.status(404).json({ error: "Not found" });
         return;
     }
@@ -266,6 +303,11 @@ app.get("/api/user/rank/:id", rateLimiterMiddleware(4), cache("15 minutes"), asy
 
     const data = await getUserRank(userId, game, style);
 
+    if (data === undefined) {
+        sendUpstreamError(res);
+        return;
+    }
+    // Unranked
     if (!data) {
         res.status(404).json({ error: "Not found" });
         return;
@@ -389,7 +431,7 @@ app.get("/api/ranks", rateLimiterMiddleware(1), cache("15 minutes"), async (req,
     const ranksData = await getRanks(100, page, game, style, sort);
 
     if (!ranksData) {
-        res.status(404).json({ error: "Not found" });
+        sendUpstreamError(res);
         return;
     }
 
@@ -483,7 +525,7 @@ app.get("/api/times", rateLimiterMiddleware(1), cache("5 minutes"), async (req, 
     const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId }, filterGames);
 
     if (!timeData) {
-        res.status(404).json({ error: "Not found" });
+        sendUpstreamError(res);
         return;
     }
 
@@ -548,7 +590,7 @@ app.get("/api/user/times/completions/:id", rateLimiterMiddleware(4), cache("5 mi
     const timeData = await getTimes(userId, undefined, 1, 1, game, style, 0);
 
     if (!timeData) {
-        res.status(404).json({ error: "Not found" });
+        sendUpstreamError(res);
         return;
     }
 
@@ -628,7 +670,8 @@ app.get("/api/user/times/all/:id", rateLimiterMiddleware(6), cache("5 minutes"),
     const firstTimeData = await getTimes(userId, undefined, 100, 1, game, style, 0, TimeSortBy.DateDesc);
 
     if (!firstTimeData) {
-        return undefined;
+        sendUpstreamError(res);
+        return;
     }
 
     const pageInfo = firstTimeData.pagination;
@@ -647,7 +690,7 @@ app.get("/api/user/times/all/:id", rateLimiterMiddleware(6), cache("5 minutes"),
     const allTimes = [firstTimeData];
     for (const timeData of resolved) {
         if (!timeData) {
-            res.status(404).json({ error: "Not found" });
+            sendUpstreamError(res);
             return;
         }
         allTimes.push(timeData);
@@ -925,8 +968,9 @@ function apiTimeToTime(time: ApiTime): Time {
 app.get("/api/maps", rateLimiterMiddleware(1), cache("30 minutes"), async (req, res) => {
     const maps = await getAllMapsWithTiers(globalsClient);
 
+    // The list is synced from StrafesNET, so it's never really empty
     if (maps.length === 0) {
-        res.status(404).json({ error: "Not found" });
+        res.status(503).json({ error: "Maps aren't available right now, try again in a bit" });
         return;
     }
 
@@ -1011,6 +1055,10 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
 
     const id = req.params.id as string; // Don't want to convert to number
     const apiTime = await getTimeById(id);
+    if (apiTime === undefined) {
+        sendUpstreamError(res);
+        return;
+    }
     if (!apiTime) {
         res.status(404).send({ error: "Invalid time" });
         return;
@@ -1118,6 +1166,10 @@ app.post("/api/auth/reactions", rateLimiterMiddleware(0.5), async (req, res) => 
     // Only check when adding, so a reaction can still be removed if the replay goes away later
     if (result.active) {
         const time = await getTimeById(result.timeId);
+        if (time === undefined) {
+            sendUpstreamError(res);
+            return;
+        }
         if (!time) {
             res.status(404).json({ error: "Invalid time" });
             return;
@@ -1266,7 +1318,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                         };
                         promises.push(promise());
                     }
-                    const entryInfo = (await Promise.all(promises)).filter((entry) => entry.user !== undefined);
+                    const entryInfo = (await Promise.all(promises)).filter((entry) => entry.user);
                     if (entryInfo.length > 1) {
                         const versusString = entryInfo.map((entry) => `@${entry.user!.username} (${formatStyleShort(entry.style)})`).join(" vs ");
                         title = `${versusString} - compare`;
@@ -1328,7 +1380,17 @@ app.get("*splat", async (req, res): Promise<any> => {
     }
 });
 
+// Errors thrown from routes. The rest go to Express, which logs them and sends a 500.
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof RolesUnavailableError && !res.headersSent) {
+        res.status(503).json({ error: err.message });
+        return;
+    }
+    next(err);
+});
 
 app.listen(+PORT, HOST, () => {
     console.log(`Strafes site on ${HOST}:${PORT}`);
+    // Loads the group roles now, so they're ready by the time anything needs them
+    startRoleRefresh();
 });

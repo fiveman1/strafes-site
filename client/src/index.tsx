@@ -5,6 +5,7 @@ import App from './App';
 import Home from './components/Home';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotFoundPage, RouteErrorPage } from './components/ErrorPage';
+import { isTransientError } from './api/api';
 
 // Routes other than the home page are split into their own chunks, so heavy dependencies
 // like the data grid, charts, and replay player only download when a page needs them.
@@ -51,7 +52,10 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             staleTime: 10 * 60 * 1000, // Queries persist in memory for 10 minutes at a time by default
-            refetchOnWindowFocus: false
+            refetchOnWindowFocus: false,
+            // Once more for a blip (no response, or StrafesNET not answering), so the error only shows if it sticks.
+            // Not for anything else, like a 404 or being rate limited, which would just fail again.
+            retry: (failureCount, error) => failureCount < 1 && isTransientError(error)
         }
     }
 });

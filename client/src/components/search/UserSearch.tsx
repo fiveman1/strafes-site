@@ -1,11 +1,12 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Autocomplete, Box, InputAdornment, TextField } from "@mui/material";
+import { ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { Autocomplete, AutocompleteInputChangeReason, Box, InputAdornment, TextField } from "@mui/material";
 import { UserSearchData } from "shared";
 import SearchIcon from '@mui/icons-material/Search';
 import { UserSearchInfo } from "../../common/states";
 import UserAvatar from "../displays/UserAvatar";
 import { useQueryClient } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
+import { ErrorWithReason } from "../displays/LoadError";
 
 interface IUserSearchProps {
     setUserId: (id: string | undefined) => void
@@ -29,14 +30,18 @@ function UserSearch(props: IUserSearchProps) {
     const queryClient = useQueryClient();
     const { userText, setUserText, selectedUser, setSelectedUser, options, loadingOptions } = userSearch
 
-    const [ hasError, setHasError ] = useState(false);
+    // Why the last search didn't find anyone
+    const [ searchError, setSearchError ] = useState<ReactNode>("");
     const inputRef = useRef<HTMLInputElement>(null);
     // The input blurs on select before the user lookup finishes, so don't count that blur as being done
     const searchPending = useRef(false);
 
-    const onInputChange = useCallback((val: string) => {
+    const onInputChange = useCallback((val: string, reason: AutocompleteInputChangeReason) => {
         setUserText(val);
-        setHasError(false);
+        // Only once they change what they typed. The value changing also resets the text, which isn't them.
+        if (reason === "input" || reason === "clear") {
+            setSearchError("");
+        }
     }, [setUserText]);
 
     const onSearch = useCallback(async (search: string | UserSearchData) => {
@@ -49,7 +54,16 @@ function UserSearch(props: IUserSearchProps) {
 
         const newSelectedUser = typeof search === "string" ? {username: search} : search;
         searchPending.current = true;
-        const userId = await queryClient.fetchQuery(queries.users.fromSearch(newSelectedUser));
+        let userId: number | null;
+        try {
+            userId = await queryClient.query(queries.users.fromSearch(newSelectedUser));
+        }
+        catch (err) {
+            searchPending.current = false;
+            setSearchError(<ErrorWithReason issue="Couldn't search." error={err} />);
+            inputRef.current?.focus();
+            return;
+        }
         searchPending.current = false;
 
         if (userId !== null) {
@@ -58,8 +72,9 @@ function UserSearch(props: IUserSearchProps) {
             onDone?.();
         }
         else {
-            setHasError(true);
-            setSelectedUser({username: ""});
+            setSearchError("Invalid username.");
+            // Keeps what they typed in the input (the input resets to the value's name), so they can fix it
+            setSelectedUser(newSelectedUser);
             // Refocus so the user can fix the name (and so clicking away still counts as done)
             inputRef.current?.focus();
         }
@@ -113,7 +128,7 @@ function UserSearch(props: IUserSearchProps) {
             inputMode="search"
             inputValue={userText}
             value={selectedUser}
-            onInputChange={(e, v) => onInputChange(v)}
+            onInputChange={(e, v, reason) => onInputChange(v, reason)}
             onChange={(e, v) => onSearch(v)}
             onBlur={onBlur}
             isOptionEqualToValue={(opt, val) => {
@@ -134,8 +149,8 @@ function UserSearch(props: IUserSearchProps) {
             disabled={disabled}
             renderInput={(params) => 
                 <TextField {...params} 
-                    error={hasError} 
-                    helperText={hasError ? "Invalid username." : ""}
+                    error={searchError !== ""} 
+                    helperText={searchError}
                     fullWidth 
                     label="" 
                     placeholder="Search by username"

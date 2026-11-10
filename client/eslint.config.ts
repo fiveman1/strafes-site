@@ -24,7 +24,8 @@ export default defineConfig([
             "react-hooks/set-state-in-effect": "off",
             "react-refresh/only-export-components": "warn",
             "react-hooks/set-state-in-render": "off",
-            "react-hooks/preserve-manual-memoization": "off"
+            "react-hooks/preserve-manual-memoization": "off",
+            "@typescript-eslint/no-deprecated": "warn"
         }
 	},
 ]);

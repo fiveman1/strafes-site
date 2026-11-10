@@ -1,4 +1,4 @@
-import { Box, Button, Link, PaletteMode, Paper, Typography } from "@mui/material";
+import { Alert, Box, Button, Link, PaletteMode, Paper, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Game, getAllowedStyles, SettingsValues, Style } from "shared";
 import GameSelector from "./forms/GameSelector";
@@ -15,6 +15,7 @@ import CountrySelector from "./forms/CountrySelector";
 import { dateFormat, relativeTimeFormat } from "../common/datetime";
 import { useLoginUser, useNow } from "../common/states";
 import UserAvatar from "./displays/UserAvatar";
+import { ErrorWithReason } from "./displays/LoadError";
 
 function areSettingsEquals(settings: SettingsValues, other: SettingsValues) {
     return settings.defaultGame === other.defaultGame &&
@@ -29,6 +30,7 @@ function Settings() {
 
     const [ mockSettings, setMockSettings ] = useState({...settings});
     const [ isSaving, setIsSaving ] = useState(false);
+    const [ saveError, setSaveError ] = useState("");
     const [ now ] = useNow();
     const navigate = useNavigate();
     // Where to go when leaving, set by the account menu
@@ -91,9 +93,11 @@ function Settings() {
 
     const onSave = useCallback(async () => {
         setIsSaving(true);
-        const success = await updateSettings(mockSettings);
+        setSaveError("");
+        const result = await updateSettings(mockSettings);
         setIsSaving(false);
-        if (!success) {
+        if (!result.ok) {
+            setSaveError(result.error);
             return;
         }
         setSettings({...mockSettings});
@@ -263,6 +267,10 @@ function Settings() {
                         onValueChange={setMaxDays}
                     />
                 </Box>
+                {saveError !== "" &&
+                <Alert severity="error" sx={{ mx: 2, mt: 2 }}>
+                    <ErrorWithReason issue="Couldn't save your settings." error={saveError} />
+                </Alert>}
                 <Box
                     sx={{
                         display: "flex",

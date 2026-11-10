@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -34,7 +34,7 @@ function ModeratorsTab() {
     const [error, setError] = useState("");
     const [busyId, setBusyId] = useState<number | undefined>(undefined);
 
-    const add = async (event: FormEvent) => {
+    const add = async (event: SubmitEvent) => {
         event.preventDefault();
         if (newUserId === undefined) return;
         setError("");
@@ -77,7 +77,7 @@ function ModeratorsTab() {
             </>}
 
             {moderators.isPending ? <Loading />
-            : !moderators.data ? <LoadFailed />
+            : !moderators.data ? <LoadFailed what="moderators" query={moderators} />
             :
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {moderators.data.map((moderator) => (

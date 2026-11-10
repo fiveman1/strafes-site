@@ -40,7 +40,7 @@ function BansTab() {
             </Box>
 
             {bans.isPending ? <Loading />
-            : !bans.data ? <LoadFailed />
+            : !bans.data ? <LoadFailed what="bans" query={bans} />
             : bans.data.length === 0 ?
             <Typography sx={{ color: "text.secondary", py: 4, textAlign: "center" }}>
                 Nobody is banned

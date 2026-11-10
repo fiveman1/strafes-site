@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -48,7 +48,7 @@ function CommentsTab() {
         setSearch((old) => ({ ...old, status: value === "" ? undefined : value, page: 1 }));
     };
 
-    const submit = (event: FormEvent) => {
+    const submit = (event: SubmitEvent) => {
         event.preventDefault();
         setError("");
         const id = timeId.trim();
@@ -88,7 +88,7 @@ function CommentsTab() {
             <Typography variant="body2" role="alert" sx={{ color: "error.main", mb: 1 }}>{error}</Typography>}
 
             {results.isPending ? <Loading />
-            : !data ? <LoadFailed />
+            : !data ? <LoadFailed what="comments" query={results} />
             :
             <Box sx={{ opacity: results.isPlaceholderData ? 0.6 : 1, transition: "opacity .15s ease" }}>
                 <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5 }}>

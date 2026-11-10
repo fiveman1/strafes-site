@@ -17,6 +17,8 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+import { ErrorWithReason } from "./displays/LoadError";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
@@ -418,7 +420,7 @@ function Replays() {
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ loadStep, setLoadStep ] = useState<LoadStep>("replay");
-    const [ error, setErrorState ] = useState("");
+    const [ error, setErrorState ] = useState<React.ReactNode>(null);
     const [ diffReady, setDiffReady ] = useState(false);
     // known once graphics are set up
     const [ graphicsReady, setGraphicsReady ] = useState(false);
@@ -481,7 +483,7 @@ function Replays() {
         indoorShadingRef.current = indoorShading;
     }, [graphicsLevel, pixelRatio, thumbEnabled, indoorShading]);
 
-    const setError = useCallback((error: string) => {
+    const setError = useCallback((error: React.ReactNode) => {
         setErrorState(error);
         setLoading(false);
     }, []);
@@ -497,9 +499,14 @@ function Replays() {
     }, [replay]);
 
     useEffect(() => {
-        if (replayQuery.isSuccess || replayQuery.isError) {
+        // A failed refetch keeps the replay it had, which can keep playing
+        if (replayQuery.isError && !replay) {
+            setError(<ErrorWithReason issue="Couldn't load the replay." error={replayQuery.error} />);
+            return;
+        }
+        if (replayQuery.isSuccess) {
             if (!replay) {
-                setError("Something went wrong trying to load the replay.");
+                setError("There's no time with this ID.");
                 return;
             }
             if (!replay.hasBot) {
@@ -513,7 +520,7 @@ function Replays() {
         }
 
         if (replay.compareTimeId) {
-            queryClient.prefetchQuery(replayAssetQueries.bot(replay.compareTimeId));
+            queryClient.query(replayAssetQueries.bot(replay.compareTimeId)).catch(noop);
         }
 
         let isCanceled = false;
@@ -546,9 +553,12 @@ function Replays() {
                 setDebugInfo(graphics.debug_info());
 
                 const mapPromise = async () => {
-                    const url = await queryClient.fetchQuery(queries.replays.mapURL(replay.mapId));
-                    if (!url) {
-                        setError("Couldn't load map file.");
+                    let url: string;
+                    try {
+                        url = await queryClient.query(queries.replays.mapURL(replay.mapId));
+                    }
+                    catch (err) {
+                        setError(<ErrorWithReason issue="Couldn't load map file." error={err} />);
                         return null;
                     }
                     const mapDownloader = new MapDownloader(url);
@@ -565,9 +575,12 @@ function Replays() {
                 };
 
                 const botPromise = async () => {
-                    const url = await queryClient.fetchQuery(queries.replays.botURL(replay.id));
-                    if (!url) {
-                        setError("Couldn't load bot file.");
+                    let url: string;
+                    try {
+                        url = await queryClient.query(queries.replays.botURL(replay.id));
+                    }
+                    catch (err) {
+                        setError(<ErrorWithReason issue="Couldn't load bot file." error={err} />);
                         return null;
                     }
                     const botDownloader = new BotDownloader(url);
@@ -633,7 +646,7 @@ function Replays() {
                 const diffBotPromise = async () => {
                     if (replay.compareTimeId) {
                         try {
-                            const diffBotFile = await queryClient.fetchQuery(replayAssetQueries.bot(replay.compareTimeId!));
+                            const diffBotFile = await queryClient.query(replayAssetQueries.bot(replay.compareTimeId!));
                             if (!diffBotFile || isCanceled) return;
                             
                             const diffBot = new CompleteBot(diffBotFile);
@@ -736,7 +749,7 @@ function Replays() {
             pumpRef.current = noop;
             releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
-    }, [id, playbackTime, downloadStats, queryClient, replay, replayQuery.isError, replayQuery.isSuccess, setError]);
+    }, [id, playbackTime, downloadStats, queryClient, replay, replayQuery.error, replayQuery.isError, replayQuery.isSuccess, setError]);
 
     // Resizing a canvas clears it, and ResizeObserver runs after this frame's render, so resizing there would show
     // a black frame. Instead the render loop resizes right before it draws.
@@ -1122,8 +1135,18 @@ function Replays() {
                 alignItems: "center",
                 justifyContent: "center"
             }}>
-            {error !== "" &&
-            <Alert severity="error" sx={{ mb: 1 }}>
+            {error !== null &&
+            <Alert
+                severity="error"
+                sx={{ mb: 1 }}
+                action={replayQuery.isError &&
+                    <Button color="inherit" size="small" disabled={replayQuery.isFetching} onClick={() => {
+                        setErrorState(null);
+                        setLoading(true);
+                        replayQuery.refetch();
+                    }}>
+                        Try again
+                    </Button>}>
                 {error}
             </Alert>}
             <Box

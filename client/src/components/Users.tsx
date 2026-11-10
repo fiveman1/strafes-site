@@ -119,7 +119,14 @@ function Users() {
                             gap: 2,
                             padding: smallScreen ? 2 : 2.5
                         }}>
-                        <UserCard user={user} loading={userLoading} />
+                        <UserCard
+                            user={user}
+                            loading={userLoading}
+                            notFound={userQuery.isSuccess && userQuery.data === null && userId !== undefined}
+                            error={userQuery.isError ? userQuery.error : undefined}
+                            onRetry={() => userQuery.refetch()}
+                            retrying={userQuery.isFetching}
+                        />
                         <Button
                             variant="outlined"
                             color="inherit"
@@ -138,7 +145,16 @@ function Users() {
                             borderTop: 1,
                             borderColor: "divider"
                         }}>
-                        <ProfileCard userId={userId} user={user} userLoading={userLoading} game={game} style={style} />
+                        <ProfileCard
+                            userId={userId}
+                            user={user}
+                            userLoading={userLoading}
+                            userError={userQuery.isError ? userQuery.error : undefined}
+                            onUserRetry={() => userQuery.refetch()}
+                            userRetrying={userQuery.isFetching}
+                            game={game}
+                            style={style}
+                        />
                     </Box>
                 </Paper>
             </Box>

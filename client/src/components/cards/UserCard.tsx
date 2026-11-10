@@ -9,6 +9,7 @@ import { dateTimeFormat, relativeTimeFormatter } from "../../common/datetime";
 import UserAvatar from "../displays/UserAvatar";
 import ColorChip from "../displays/ColorChip";
 import CountryFlag from "../displays/CountryFlag";
+import LoadError from "../displays/LoadError";
 
 interface IUserDisplayProps {
     user: User
@@ -17,6 +18,12 @@ interface IUserDisplayProps {
 interface IUserCardProps {
     loading?: boolean
     user?: User
+    // There's no user with the ID that was looked up
+    notFound?: boolean
+    // Set if the user couldn't be loaded
+    error?: unknown
+    onRetry?: () => void
+    retrying?: boolean
 }
 
 function UserCardAvatar(props: IUserDisplayProps) {
@@ -102,10 +109,14 @@ function UserDisplay(props: IUserDisplayProps) {
 }
 
 function UserCard(props: IUserCardProps) {
-    const { loading, user } = props;
+    const { loading, user, notFound, error, onRetry, retrying } = props;
 
     if (user && !loading) {
         return <UserDisplay user={user} />;
+    }
+
+    if (error !== undefined && !loading) {
+        return <LoadError what="this user" error={error} onRetry={onRetry} retrying={retrying} sx={{ minHeight: 72 }} />;
     }
 
     return (
@@ -122,7 +133,7 @@ function UserCard(props: IUserCardProps) {
             <>
                 <PermIdentityIcon sx={{ fontSize: 40 }} />
                 <Typography variant="body2">
-                    Search for a user to see their profile
+                    {notFound ? "There's no Roblox user with that ID" : "Search for a user to see their profile"}
                 </Typography>
             </>}
         </Box>
