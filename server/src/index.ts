@@ -8,6 +8,7 @@ import { Game, Pagination, Rank, TimeSortBy, Style, Time, LeaderboardCount, Lead
 import { calcRank, IS_DEV_MODE } from "./util.js";
 import { GlobalsClient, GlobalCountSQL } from "./globals.js";
 import { tryGetCached } from "./requests.js";
+import { sendUpstreamError, unlessFailed, UpstreamFailure } from "./upstream.js";
 import { AuthClient } from "./auth.js";
 import { getUserData, getUserId, setUserInfoForList, setUserThumbsForList } from "./users.js";
 import { getBotDownloadURL, getMapDownloadURL, getPlacements, getRanks, getTimeById, getTimes, getUserRank } from "./strafes_api/api.js";
@@ -74,10 +75,6 @@ const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 apicache.options({ statusCodes: { include: [200] } });
 const cache = (IS_DEV_MODE ? apicache.options({ headers: { "cache-control": "no-cache" } }).middleware : apicache.middleware) as (duration?: string | number) => any;
 
-/** For when a service the site depends on didn't answer, as opposed to there being nothing to find (a 404). */
-function sendUpstreamError(res: express.Response, service: "StrafesNET" | "Roblox" = "StrafesNET") {
-    res.status(503).json({ error: `Couldn't reach ${service}, try again in a bit` });
-}
 const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, validate: { xForwardedForHeader: !IS_DEV_MODE } });
 
 const dirName = path.dirname(fileURLToPath(import.meta.url));
@@ -122,8 +119,8 @@ app.get("/api/auth/user/tiers", async (req, res) => {
     }
 
     const tierInfo = await loadTierVotingEligibility(user.userId);
-    if (!tierInfo) {
-        sendUpstreamError(res);
+    if (tierInfo instanceof UpstreamFailure) {
+        sendUpstreamError(res, tierInfo);
         return;
     }
     res.status(200).json(tierInfo);
@@ -179,8 +176,8 @@ app.post("/api/auth/tiers", rateLimiterMiddleware(2), async (req, res) => {
     // Removing a vote is always allowed
     if (result.tier !== undefined) {
         const canVote = await canUserVoteOnMap(globalsClient, user.userId, map.id);
-        if (canVote === undefined) {
-            sendUpstreamError(res);
+        if (canVote instanceof UpstreamFailure) {
+            sendUpstreamError(res, canVote);
             return;
         }
         if (!canVote) {
@@ -207,8 +204,8 @@ app.get("/api/username", rateLimiterMiddleware(1), cache("5 minutes"), async (re
     const username = result.username;
 
     const userId = await getUserId(username);
-    if (userId === undefined) {
-        sendUpstreamError(res, "Roblox");
+    if (userId instanceof UpstreamFailure) {
+        sendUpstreamError(res, userId);
         return;
     }
     if (userId === null) {
@@ -235,8 +232,8 @@ app.get("/api/usersearch", rateLimiterMiddleware(1), cache("5 minutes"), async (
         sessionId: searchGUID
     });
 
-    if (searchRes === undefined) {
-        sendUpstreamError(res, "Roblox");
+    if (searchRes instanceof UpstreamFailure) {
+        sendUpstreamError(res, searchRes);
         return;
     }
     if (!searchRes || searchRes.data.searchResults.length === 0) {
@@ -267,8 +264,8 @@ app.get("/api/user/:id", rateLimiterMiddleware(4), cache("5 minutes"), async (re
     const userId = result.id;
 
     const user = await getUserData(authClient, userId);
-    if (user === undefined) {
-        sendUpstreamError(res, "Roblox");
+    if (user instanceof UpstreamFailure) {
+        sendUpstreamError(res, user);
         return;
     }
     if (user === null) {
@@ -303,8 +300,8 @@ app.get("/api/user/rank/:id", rateLimiterMiddleware(4), cache("15 minutes"), asy
 
     const data = await getUserRank(userId, game, style);
 
-    if (data === undefined) {
-        sendUpstreamError(res);
+    if (data instanceof UpstreamFailure) {
+        sendUpstreamError(res, data);
         return;
     }
     // Unranked
@@ -430,8 +427,8 @@ app.get("/api/ranks", rateLimiterMiddleware(1), cache("15 minutes"), async (req,
     const page = Math.floor(start / 100) + 1;
     const ranksData = await getRanks(100, page, game, style, sort);
 
-    if (!ranksData) {
-        sendUpstreamError(res);
+    if (ranksData instanceof UpstreamFailure) {
+        sendUpstreamError(res, ranksData);
         return;
     }
 
@@ -524,8 +521,8 @@ app.get("/api/times", rateLimiterMiddleware(1), cache("5 minutes"), async (req, 
 
     const timeData = await getTimesPaged(start, end, sort, course, onlyWR, game, style, { userId: userId, mapId: mapId }, filterGames);
 
-    if (!timeData) {
-        sendUpstreamError(res);
+    if (timeData instanceof UpstreamFailure) {
+        sendUpstreamError(res, timeData);
         return;
     }
 
@@ -589,8 +586,8 @@ app.get("/api/user/times/completions/:id", rateLimiterMiddleware(4), cache("5 mi
 
     const timeData = await getTimes(userId, undefined, 1, 1, game, style, 0);
 
-    if (!timeData) {
-        sendUpstreamError(res);
+    if (timeData instanceof UpstreamFailure) {
+        sendUpstreamError(res, timeData);
         return;
     }
 
@@ -669,8 +666,8 @@ app.get("/api/user/times/all/:id", rateLimiterMiddleware(6), cache("5 minutes"),
 
     const firstTimeData = await getTimes(userId, undefined, 100, 1, game, style, 0, TimeSortBy.DateDesc);
 
-    if (!firstTimeData) {
-        sendUpstreamError(res);
+    if (firstTimeData instanceof UpstreamFailure) {
+        sendUpstreamError(res, firstTimeData);
         return;
     }
 
@@ -682,15 +679,15 @@ app.get("/api/user/times/all/:id", rateLimiterMiddleware(6), cache("5 minutes"),
         totalPages: pageInfo.total_pages
     };
 
-    const promises: Promise<PagedTotalResponseTime | undefined>[] = [];
+    const promises: Promise<PagedTotalResponseTime | UpstreamFailure>[] = [];
     for (let i = 2; i <= pagination.totalPages; ++i) {
         promises.push(getTimes(userId, undefined, 100, i, game, style, 0, TimeSortBy.DateDesc));
     }
     const resolved = await Promise.all(promises);
     const allTimes = [firstTimeData];
     for (const timeData of resolved) {
-        if (!timeData) {
-            sendUpstreamError(res);
+        if (timeData instanceof UpstreamFailure) {
+            sendUpstreamError(res, timeData);
             return;
         }
         allTimes.push(timeData);
@@ -792,8 +789,8 @@ app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
 
     const timeInfo = await getTimesPaged(start, end, TimeSortBy.DateDesc, course ?? -1, true, game ?? Game.all, style ?? Style.all, { userId: userId, mapId: mapId });
 
-    if (!timeInfo) {
-        res.status(404).json({ error: "Not found" });
+    if (timeInfo instanceof UpstreamFailure) {
+        sendUpstreamError(res, timeInfo);
         return;
     }
 
@@ -850,9 +847,6 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 
     if (onlyWR) {
         const { total, wrs } = await globalsClient.getWRList(start, end, game, style, sort, course, userId, mapId, filterGames);
-
-        if (!wrs) return undefined;
-
         times = wrs;
         pagination = {
             page: -1,
@@ -872,13 +866,16 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             promises.push(getTimes(userId, mapId, 100, page + 1, game, style, course, sort));
         }
 
-        const pages = await Promise.all(promises);
+        const pages: PagedTotalResponseTime[] = [];
+        for (const page of await Promise.all(promises)) {
+            if (page instanceof UpstreamFailure) {
+                return page;
+            }
+            pages.push(page);
+        }
 
         const resTimes: ApiTime[] = [];
         for (const page of pages) {
-            if (page === undefined) {
-                return undefined;
-            }
             resTimes.push(...page.data);
         }
 
@@ -905,8 +902,8 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
 
             const resolved = await Promise.all(placementPromises);
             for (const result of resolved) {
-                if (!result) continue;
-                for (const placement of result) {
+                // Best effort, those times just go without a placement
+                for (const placement of unlessFailed(result) ?? []) {
                     idToPlacement.set(placement.id, placement.placement);
                 }
             }
@@ -924,7 +921,7 @@ async function getTimesPaged(start: number, end: number, sort: TimeSortBy, cours
             times.push(apiTimeToTime(time));
         }
 
-        const pageInfo = pages[0]!.pagination;
+        const pageInfo = pages[0].pagination;
         pagination = {
             page: pageInfo.page,
             pageSize: pageInfo.page_size,
@@ -989,6 +986,10 @@ app.get("/api/replays/bots/:id", rateLimiterMiddleware(4), cache("2 minutes"), a
     const id = req.params.id as string; // Don't want to convert to number
 
     const url = await getBotDownloadURL(id);
+    if (url instanceof UpstreamFailure) {
+        sendUpstreamError(res, url);
+        return;
+    }
     if (!url) {
         res.status(404).send({ error: "Bot not found" });
         return;
@@ -1038,6 +1039,10 @@ app.get("/api/replays/maps/:id", rateLimiterMiddleware(4), async (req, res) => {
     }
 
     const url = await getMapDownloadURL(id);
+    if (url instanceof UpstreamFailure) {
+        sendUpstreamError(res, url);
+        return;
+    }
     if (!url) {
         res.status(400).json({ error: "Map not found" });
         return;
@@ -1055,8 +1060,8 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
 
     const id = req.params.id as string; // Don't want to convert to number
     const apiTime = await getTimeById(id);
-    if (apiTime === undefined) {
-        sendUpstreamError(res);
+    if (apiTime instanceof UpstreamFailure) {
+        sendUpstreamError(res, apiTime);
         return;
     }
     if (!apiTime) {
@@ -1071,7 +1076,8 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
         saveReplayRun(globalsClient, apiTime);
     }
 
-    const placements = await getPlacements([id]);
+    // Best effort, like the wr diff below
+    const placements = unlessFailed(await getPlacements([id]));
     if (placements && placements.length > 0) {
         time.placement = placements[0].placement;
     }
@@ -1082,7 +1088,7 @@ app.get("/api/replays/times/:id", rateLimiterMiddleware(2), async (req, res) => 
     if (time.placement === 1) {
         const promise = async () => {
             // Uses same parameters that the maps page would use, more likely to hit cache that way
-            const times = await getTimes(undefined, time.mapId, 100, 1, time.game, time.style, time.course, TimeSortBy.TimeAsc);
+            const times = unlessFailed(await getTimes(undefined, time.mapId, 100, 1, time.game, time.style, time.course, TimeSortBy.TimeAsc));
             if (times && times.data.length > 1) {
                 const second = times.data[1];
                 time.wrDiff = time.time - second.time;
@@ -1166,8 +1172,8 @@ app.post("/api/auth/reactions", rateLimiterMiddleware(0.5), async (req, res) => 
     // Only check when adding, so a reaction can still be removed if the replay goes away later
     if (result.active) {
         const time = await getTimeById(result.timeId);
-        if (time === undefined) {
-            sendUpstreamError(res);
+        if (time instanceof UpstreamFailure) {
+            sendUpstreamError(res, time);
             return;
         }
         if (!time) {
@@ -1263,7 +1269,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                 if (url.length > 1) {
                     const userId = url[1];
                     if (!isNaN(+userId)) {
-                        const user = await getUserData(authClient, +userId);
+                        const user = unlessFailed(await getUserData(authClient, +userId));
                         if (user) {
                             title = `@${user.username} - users`;
                             description = `View @${user.username}'s profile and times (game: ${game}, style: ${style})`;
@@ -1314,7 +1320,7 @@ app.get("*splat", async (req, res): Promise<any> => {
                         .slice(0, 4);
                     for (const entry of entries) {
                         const promise = async () => {
-                            return {user: await getUserData(authClient, entry.userId), style: entry.style};
+                            return {user: unlessFailed(await getUserData(authClient, entry.userId)), style: entry.style};
                         };
                         promises.push(promise());
                     }
@@ -1332,13 +1338,13 @@ app.get("*splat", async (req, res): Promise<any> => {
                 if (url.length > 1) {
                     const timeId = url[1];
                     if (!isNaN(+timeId)) {
-                        const time = await getTimeById(timeId);
+                        const time = unlessFailed(await getTimeById(timeId));
                         if (time && time.has_bot) {
                             let mapFormatted = time.map.display_name;
                             if (time.mode_id !== MAIN_COURSE) {
                                 mapFormatted += ` (${formatCourse(time.mode_id, true)})`;
                             }
-                            const placements = await getPlacements([time.id]);
+                            const placements = unlessFailed(await getPlacements([time.id]));
                             if (placements && placements.length > 0) {
                                 const placement = placements[0].placement;
                                 const placementText = placement === 1 ? "WR" : `${formatPlacement(placement)} place`;

@@ -4,6 +4,7 @@ import memCache from "memory-cache";
 import { peekUsersToRoles } from "./roles.js";
 import { AuthClient } from "./auth.js";
 import { getUserInfo } from "./strafes_api/api.js";
+import { UpstreamFailure } from "./upstream.js";
 
 const cache: memCache.CacheClass<string, string> = new memCache.Cache();
 
@@ -104,7 +105,8 @@ export async function setUserThumbsForList(users: { userId: number, userThumb?: 
 
     const idToThumb = new Map<number, string>();
     for (const thumbRes of responses) {
-        if (!thumbRes) {
+        // Best effort, a failed batch just goes without
+        if (!thumbRes || thumbRes instanceof UpstreamFailure) {
             continue;
         }
 
@@ -159,7 +161,10 @@ export async function setMissingUsernames(users: { userId: number, username?: st
                 userIds: ids.slice(i, i + USERNAME_BATCH_SIZE),
                 excludeBannedUsers: false
             });
-            for (const user of (res?.data.data ?? []) as { id: number, name: string }[]) {
+            if (!res || res instanceof UpstreamFailure) {
+                return;
+            }
+            for (const user of res.data.data as { id: number, name: string }[]) {
                 idToName.set(user.id, user.name);
                 cache.put(getUsernameKey(user.id), user.name, USERNAME_CACHE_MS);
             }
@@ -174,12 +179,13 @@ export async function setMissingUsernames(users: { userId: number, username?: st
     }
 }
 
-/** null if there's no user with that name, undefined if Roblox couldn't be reached. */
-export async function getUserId(username: string): Promise<null | undefined | number> {
+/** null if there's no user with that name. */
+export async function getUserId(username: string): Promise<null | UpstreamFailure | number> {
     const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
         usernames: [username]
     });
-    if (!res) return undefined;
+    if (!res) return null;
+    if (res instanceof UpstreamFailure) return res;
 
     const data = res.data.data as ({ id: number })[];
     if (data.length === 0) return null;
@@ -188,8 +194,8 @@ export async function getUserId(username: string): Promise<null | undefined | nu
     return user.id;
 }
 
-/** null if there's no user with that ID, undefined if Roblox couldn't be reached. */
-export async function getUserData(client: AuthClient, userId: number): Promise<null | undefined | User> {
+/** null if there's no user with that ID. */
+export async function getUserData(client: AuthClient, userId: number): Promise<null | UpstreamFailure | User> {
     const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
     const strafesUserReq = getUserInfo(userId);
 
@@ -200,7 +206,7 @@ export async function getUserData(client: AuthClient, userId: number): Promise<n
     const setUserInfoPromise = setUserInfoForList(client, [partialUser], true);
 
     const userRes = await userReq;
-    if (!userRes) return userRes;
+    if (!userRes || userRes instanceof UpstreamFailure) return userRes;
     const user = userRes.data as { name: string, displayName: string, created: string };
 
     const strafesUserData = await strafesUserReq;

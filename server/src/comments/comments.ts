@@ -18,6 +18,7 @@ import {
 import { GlobalsClient } from "../globals.js";
 import { unixToISO } from "../util.js";
 import { fetchFreshTimeById, lookupUserInfo } from "../strafes_api/api.js";
+import { UpstreamFailure, upstreamErrorResponse } from "../upstream.js";
 import { currentRunOf, saveReplayRun } from "../replayRuns.js";
 import { prepareCommentBody } from "./filter.js";
 import { getActiveBan } from "./moderation.js";
@@ -276,8 +277,9 @@ type RecentCommentsRow = RecentCommentsSQL & RowDataPacket;
 /** Whether the user can post, like and report: they've played StrafesNET and aren't banned. */
 async function checkCanComment(client: GlobalsClient, userId: number): Promise<CommentFailure | undefined> {
     const [strafesUser, ban] = await Promise.all([lookupUserInfo(userId), getActiveBan(client, userId)]);
-    if (strafesUser === undefined) {
-        return fail(503, "Couldn't check your StrafesNET account, try again in a bit");
+    if (strafesUser instanceof UpstreamFailure) {
+        const { status, error } = upstreamErrorResponse(strafesUser);
+        return fail(status, error);
     }
     if (strafesUser === null) {
         return fail(403, "You need to play StrafesNET before you can comment");
@@ -307,6 +309,10 @@ export async function postComment(client: GlobalsClient, user: LoginUser, input:
 
     if (cantComment) {
         return cantComment;
+    }
+    if (time instanceof UpstreamFailure) {
+        const { status, error } = upstreamErrorResponse(time);
+        return fail(status, error);
     }
     if (!time) {
         return fail(404, "Invalid time");

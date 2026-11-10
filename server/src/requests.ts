@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { IS_DEV_MODE, memoizeAsync } from "./util.js";
+import { UpstreamFailure } from "./upstream.js";
 
 const DISABLE_ROPROXY = process.env.DISABLE_ROPROXY === "true";
 
@@ -8,10 +9,11 @@ export const tryPostCached = memoizeAsync(tryPostRequest, { maxAge: 5 * 60 * 100
 
 /**
  * null when the response is a 404 or 400 (it's not there, or the service won't take what was asked for, so trying again
- * won't help), undefined when the request failed some other way.
+ * won't help), an UpstreamFailure when the request failed some other way. These are only used for Roblox's APIs.
  */
-function onRequestError(err: unknown) {
-    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+function onRequestError(err: unknown): null | UpstreamFailure {
+    const response = axios.isAxiosError(err) ? err.response : undefined;
+    const status = response?.status;
     if (status === 404 || status === 400) {
         return null;
     }
@@ -24,15 +26,15 @@ function onRequestError(err: unknown) {
         const reason = status ?? (err instanceof Error ? err.message : "unknown error");
         console.error(`Request failed (${reason}): ${url ?? "unknown url"}`);
     }
-    return undefined;
+    return new UpstreamFailure("Roblox", status, response ? getRetryAfterMs(response.headers) : undefined);
 }
 
 function resolveUrl(url: string) {
     return DISABLE_ROPROXY ? url.replace("roproxy.com", "roblox.com") : url;
 }
 
-/** null when there's nothing there (see onRequestError), undefined when the request failed. */
-export async function tryGetRequest(url: string, params?: any, headers?: any): Promise<AxiosResponse | null | undefined> {
+/** null when there's nothing there (see onRequestError), an UpstreamFailure when the request failed. */
+export async function tryGetRequest(url: string, params?: any, headers?: any): Promise<AxiosResponse | null | UpstreamFailure> {
     url = resolveUrl(url);
     try {
         return await axios.get(url, {params: params, headers: headers, timeout: 10000});
@@ -42,8 +44,8 @@ export async function tryGetRequest(url: string, params?: any, headers?: any): P
     }
 }
 
-/** null when there's nothing there (see onRequestError), undefined when the request failed. */
-export async function tryPostRequest(url: string, params?: any): Promise<AxiosResponse | null | undefined> {
+/** null when there's nothing there (see onRequestError), an UpstreamFailure when the request failed. */
+export async function tryPostRequest(url: string, params?: any): Promise<AxiosResponse | null | UpstreamFailure> {
     try {
         return await axios.post(url, params, {timeout: 5000});
     }
@@ -69,7 +71,7 @@ export async function getWithStatus(url: string, params?: any): Promise<RequestR
     }
 }
 
-function getRetryAfterMs(headers: Record<string, unknown>) {
+export function getRetryAfterMs(headers: Record<string, unknown>) {
     // Both in seconds. Roblox sends when its rate limit window resets too, which can be later than retry-after.
     const seconds = [headers["retry-after"], headers["x-ratelimit-reset"]]
         .map(Number)

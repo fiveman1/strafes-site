@@ -15,6 +15,7 @@ import { GlobalsClient } from "../globals.js";
 import { rateLimiterMiddleware } from "../middleware.js";
 import { broadcastComment, broadcastCommentLikes, broadcastCommentRemoved } from "../replayStream.js";
 import { getTimeById } from "../strafes_api/api.js";
+import { unlessFailed } from "../upstream.js";
 import { currentRunOf } from "../replayRuns.js";
 import { setUserInfoForList, setUserRefInfo } from "../users.js";
 import * as validators from "../validators.js";
@@ -172,7 +173,7 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         }
         else if (!wasVisible && isVisible) {
             // Could be an old comment being approved or unhidden, so it still needs marking
-            const time = await getTimeById(change.timeId);
+            const time = unlessFailed(await getTimeById(change.timeId));
             const comment = await getPublicComment(globalsClient, change.commentId, time ? currentRunOf(time) : undefined);
             if (comment) {
                 await withUserInfo([comment]);
@@ -192,7 +193,9 @@ export function createCommentRouter(globalsClient: GlobalsClient, authClient: Au
         const timeId = req.params.id as string;
         // Not cached, since what's included depends on who's asking. The time can be the cached copy, the same one
         // the replay page gets, so comments are marked against the run the page is showing.
-        const [user, time] = await Promise.all([authClient.getAuthenticatedUser(req, res), getTimeById(timeId)]);
+        const [user, timeResult] = await Promise.all([authClient.getAuthenticatedUser(req, res), getTimeById(timeId)]);
+        // Without it the comments just aren't marked against the run
+        const time = unlessFailed(timeResult);
         // Doesn't wait on the group roles, so a cold start never holds up the comments. A group moderator might briefly
         // see them as anyone else would.
         const viewer = user ? { userId: user.userId, role: await getCommentRole(globalsClient, user.userId, { wait: false }) } : undefined;

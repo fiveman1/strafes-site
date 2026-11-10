@@ -5,6 +5,8 @@ import memCache from "memory-cache";
 import ExpiryMap from "expiry-map";
 import { Game, RankSortBy, Style, TimeSortBy } from "shared";
 import { IS_DEV_MODE, memoizeAsync } from "../util.js";
+import { getRetryAfterMs } from "../requests.js";
+import { unlessFailed, UpstreamFailure } from "../upstream.js";
 
 const STRAFES_KEY = process.env.STRAFES_KEY;
 if (!STRAFES_KEY) {
@@ -41,6 +43,19 @@ function isNotFound(err: unknown) {
     return (err as { status?: number } | undefined)?.status === 404;
 }
 
+/** Logs a failed request (just the status and path outside dev), and says why it failed. */
+function onApiError(err: unknown) {
+    const response = err instanceof Response ? err : undefined;
+    if (IS_DEV_MODE) {
+        console.error(err);
+    }
+    else {
+        const reason = response?.status ?? (err instanceof Error ? err.message : "unknown error");
+        console.error(`StrafesNET request failed (${reason}): ${response ? new URL(response.url).pathname : "unknown url"}`);
+    }
+    return new UpstreamFailure("StrafesNET", response?.status, response ? getRetryAfterMs(Object.fromEntries(response.headers)) : undefined);
+}
+
 export async function getPlacements(timeIds: string[]) {
     const placements: TimePlacement[] = [];
     const notCachedIds = new Set<string>();
@@ -64,10 +79,7 @@ export async function getPlacements(timeIds: string[]) {
         return placements;
     }
     catch (err) {
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
@@ -88,15 +100,12 @@ async function getTimesCore(userId: number | undefined, mapId: number | undefine
         return res.data;
     }
     catch (err) {
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
 export const getUserRank = memoizeAsync(getUserRankCore, { maxAge: 5 * 60 * 1000 });
-/** null if the user isn't ranked, undefined if the request failed. */
+/** null if the user isn't ranked. */
 async function getUserRankCore(userId: number, game: Game, style: Style) {
     try {
         const res = await STRAFES_CLIENT.user.rankList(userId, {
@@ -111,10 +120,7 @@ async function getUserRankCore(userId: number, game: Game, style: Style) {
         if (isNotFound(err)) {
             return null;
         }
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
@@ -133,10 +139,7 @@ async function getRanksCore(pageSize: number, pageNum: number, game: Game, style
         return res.data;
     }
     catch (err) {
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
@@ -147,10 +150,10 @@ const MISSING_USER_CACHE_MS = 60 * 1000;
 const userInfoCache: memCache.CacheClass<number, { user: ApiUser | null }> = new memCache.Cache();
 
 /**
- * The user's StrafesNET details, null if they've never joined the game, or undefined if the request failed.
- * Failures aren't cached, so a blip in the API doesn't stick around.
+ * The user's StrafesNET details, or null if they've never joined the game. Failures aren't cached, so a blip in the API
+ * doesn't stick around.
  */
-export async function lookupUserInfo(userId: number): Promise<ApiUser | null | undefined> {
+export async function lookupUserInfo(userId: number): Promise<ApiUser | null | UpstreamFailure> {
     const cached = userInfoCache.get(userId);
     if (cached) {
         return cached.user;
@@ -167,21 +170,18 @@ export async function lookupUserInfo(userId: number): Promise<ApiUser | null | u
             userInfoCache.put(userId, { user: null }, MISSING_USER_CACHE_MS);
             return null;
         }
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
 /** Like lookupUserInfo, for callers that treat "never joined" and "request failed" the same. */
 export async function getUserInfo(userId: number): Promise<ApiUser | undefined> {
-    return (await lookupUserInfo(userId)) ?? undefined;
+    return unlessFailed(await lookupUserInfo(userId)) ?? undefined;
 }
 
 const TIME_CACHE_MS = 5 * 60 * 1000;
 const timeCache = new ExpiryMap<string, Awaited<ReturnType<typeof fetchTimeById>>>(TIME_CACHE_MS);
-/** null if there's no time with that ID, undefined if the request failed. */
+/** null if there's no time with that ID. */
 export const getTimeById = memoizeAsync(fetchTimeById, { cache: timeCache });
 
 /**
@@ -190,7 +190,7 @@ export const getTimeById = memoizeAsync(fetchTimeById, { cache: timeCache });
  */
 export async function fetchFreshTimeById(timeId: string) {
     const time = await fetchTimeById(timeId);
-    if (time) {
+    if (time && !(time instanceof UpstreamFailure)) {
         timeCache.set(JSON.stringify([timeId]), time);
     }
     return time;
@@ -205,26 +205,23 @@ async function fetchTimeById(timeId: string) {
         if (isNotFound(err)) {
             return null;
         }
-        if (IS_DEV_MODE) {
-            console.error(err);
-        }
-        return undefined;
+        return onApiError(err);
     }
 }
 
-// These download URLs are signed and only live for 5 minutes, but a 2 minute cache should be okay.
+// These download URLs are signed and only live for 5 minutes, but a 2 minute cache should be okay. null if there's no
+// file to download.
 export const getBotDownloadURL = memoizeAsync(getBotDownloadURLCore, { maxAge: 2 * 60 * 1000 });
 async function getBotDownloadURLCore(timeId: string) {
     try {
         const res = await STRAFES_CLIENT.time.getTime(timeId, { redirect: "manual" });
-        const url = res.headers.get("location");
-        return url ?? undefined;
+        return res.headers.get("location") ?? null;
     }
     catch (err) {
-        if (IS_DEV_MODE) {
-            console.error(err);
+        if (isNotFound(err)) {
+            return null;
         }
-        return undefined;
+        return onApiError(err);
     }
 }
 
@@ -232,13 +229,12 @@ export const getMapDownloadURL = memoizeAsync(getMapDownloadURLCore, { maxAge: 2
 export async function getMapDownloadURLCore(mapId: number) {
     try {
         const res = await MAPS_CLIENT.map.snfmList(mapId, { redirect: "manual" });
-        const url = res.headers.get("location");
-        return url ?? undefined;
+        return res.headers.get("location") ?? null;
     }
     catch (err) {
-        if (IS_DEV_MODE) {
-            console.error(err);
+        if (isNotFound(err)) {
+            return null;
         }
-        return undefined;
+        return onApiError(err);
     }
 }

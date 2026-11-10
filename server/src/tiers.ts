@@ -4,10 +4,11 @@ import { GlobalsClient } from "./globals.js";
 import { RowDataPacket } from "mysql2";
 import { loadUsersToStrafesRoles } from "./roles.js";
 import { memoizeAsync } from "./util.js";
+import { UpstreamFailure } from "./upstream.js";
 
-/** undefined if StrafesNET couldn't be reached, which isn't cached so it doesn't stick for hours. */
+/** A failure isn't cached, so it doesn't stick for hours. */
 export const loadTierVotingEligibility = memoizeAsync(loadTierVotingEligibilityCore, { maxAge: 4 * 60 * 60 * 1000 });
-async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEligibility | undefined> {
+async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEligibility | UpstreamFailure> {
     const [userInfo, bhopTimes, surfTimes] = await Promise.all([
         lookupUserInfo(userId),
         getTimes(userId, undefined, 1, 1, Game.bhop, Style.all, 0),
@@ -15,9 +16,9 @@ async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEl
     ]);
 
     // Otherwise a failed request would look like 0 completions
-    if (userInfo === undefined || !bhopTimes || !surfTimes) {
-        return undefined;
-    }
+    if (userInfo instanceof UpstreamFailure) return userInfo;
+    if (bhopTimes instanceof UpstreamFailure) return bhopTimes;
+    if (surfTimes instanceof UpstreamFailure) return surfTimes;
 
     return {
         // null if they've never joined the game
@@ -27,11 +28,10 @@ async function loadTierVotingEligibilityCore(userId: number): Promise<TierVoteEl
     };
 }
 
-/** undefined if it couldn't be checked */
-export async function canUserVoteOnMap(client: GlobalsClient, userId: number, mapId: number): Promise<boolean | undefined> {
+export async function canUserVoteOnMap(client: GlobalsClient, userId: number, mapId: number): Promise<boolean | UpstreamFailure> {
     const info = await loadTierVotingEligibilityCore(userId);
-    if (!info) {
-        return undefined;
+    if (info instanceof UpstreamFailure) {
+        return info;
     }
     const map = await client.getMap(mapId);
     if (!map) {
@@ -78,7 +78,8 @@ async function getVoteWeight(userId: number, map: StrafesMap): Promise<number> {
     }
 
     const times = await getTimes(userId, map.id, 20, 1, map.game, Style.all, 0);
-    if (times) {
+    // Without them it's the default weight
+    if (!(times instanceof UpstreamFailure)) {
         // Not faste or low gravity
         const allowedStyles = new Set([Style.autohop, Style.scroll, Style.sideways, Style.hsw, Style.wonly, Style.aonly, Style.backwards]);
         for (const time of times.data) {
