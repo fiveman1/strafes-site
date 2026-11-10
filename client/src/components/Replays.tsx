@@ -11,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
 import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_MAX_ASPECT_RATIO, PLAYER_MAX_FULLSCREEN_ASPECT_RATIO, PLAYER_MIN_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
-import UserAvatar from "./displays/UserAvatar";
+import UserLink from "./displays/UserLink";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
@@ -21,11 +21,9 @@ import Button from "@mui/material/Button";
 import { ErrorWithReason } from "./displays/LoadError";
 import DateDisplay from "./displays/DateDisplay";
 import { getMapTierColor } from "../common/colors";
-import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { clamp } from "../common/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queries } from "../api/queries";
-import CountryFlag from "./displays/CountryFlag";
 import ColorChip from "./displays/ColorChip";
 import ReplayReactions from "./replays/ReplayReactions";
 import ReplayComments from "./replays/comments/ReplayComments";
@@ -1123,7 +1121,6 @@ function Replays() {
     const mapLink = replay ? `/maps/${replay.mapId}?game=${replay.game}&style=${replay.style}&course=${replay.course}` : "";
     const mapInfo = replay ? maps[replay.mapId] : undefined;
     const tierColor = getMapTierColor(mapInfo?.tier);
-    const isCurrentUser = loginUser && replay?.userId === loginUser.userId;
     const allowDiff = Boolean(replay?.compareTimeId && diffReady);
 
     return (
@@ -1417,41 +1414,19 @@ function Replays() {
                                     display: "inline-flex",
                                     alignItems: "center"
                                 }}>
-                                <Link
-                                    underline="none"
-                                    component={RouterLink}
-                                    color="textPrimary"
-                                    to={`/users/${replay.userId}?game=${replay.game}&style=${replay.style}`}
-                                    sx={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        textDecoration: "none",
-
-                                        ":hover": {
-                                            "p": {
-                                                textDecoration: "underline"
-                                            }
-                                        }
-                                    }}>
-                                    <UserAvatar username={replay.username} userThumb={replay.userThumb} sx={{width: "24px", height: "24px"}} />
-                                    <Typography
-                                        variant="body1"
-                                        sx={{
-                                            ml: 0.75,
-                                            display: "inline-block"
-                                        }}>
-                                        @{replay.username}
-                                    </Typography>
-
-                                </Link>
-                                {replay.userCountry &&
-                                <CountryFlag countryCode={replay.userCountry} marginLeft={6} />}
-                                {isCurrentUser &&
-                                <Box title="You" sx={{
-                                    display: "flex"
-                                }}>
-                                    <AccountBoxIcon sx={{marginLeft: 0.75, fontSize: 20}} htmlColor={theme.palette.secondary.main} />
-                                </Box>}
+                                <UserLink
+                                    userId={replay.userId}
+                                    username={replay.username}
+                                    userRoles={replay.userRoles}
+                                    userCountry={replay.userCountry}
+                                    userThumb={replay.userThumb}
+                                    game={replay.game}
+                                    strafesStyle={replay.style}
+                                    showAt
+                                    underline="hover"
+                                    variant="body1"
+                                    sx={{ minWidth: 0 }}
+                                />
                             </Box>
                             <Box
                                 sx={{
