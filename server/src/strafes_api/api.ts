@@ -16,8 +16,41 @@ if (!STRAFES_KEY) {
 
 const placementCache: memCache.CacheClass<string, number> = new memCache.Cache();
 
+const REQUEST_TIMEOUT_MS = 10000;
+
+/** A request that got no response. fetch's own errors don't say where the request was going. */
+class NoResponseError extends Error {
+    constructor(readonly url: string, cause: unknown) {
+        super("no response", { cause });
+    }
+}
+
+/** fetch, but gives up after REQUEST_TIMEOUT_MS (by itself it waits minutes for a response) */
+async function fetchWithTimeout(...[input, init]: Parameters<typeof fetch>) {
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    try {
+        return await fetch(input, { ...init, signal: init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout });
+    }
+    catch (err) {
+        throw new NoResponseError(input instanceof Request ? input.url : input.toString(), err);
+    }
+}
+
+/** Why a request got no response, e.g. "timed out" or "ECONNRESET" */
+function noResponseReason(err: NoResponseError) {
+    const cause = err.cause;
+    if (cause instanceof Error && cause.name === "TimeoutError") {
+        return `timed out after ${REQUEST_TIMEOUT_MS / 1000}s`;
+    }
+    // fetch throws "fetch failed" for anything network related, the actual reason is in its cause
+    const inner = cause instanceof Error ? cause.cause : undefined;
+    const code = (inner as { code?: string } | undefined)?.code;
+    return code ?? (inner instanceof Error ? inner.message : undefined) ?? (cause instanceof Error ? cause.message : "unknown error");
+}
+
 const STRAFES_CLIENT = new StrafesApi({
     baseUrl: "https://api.strafes.net/api/v1",
+    customFetch: fetchWithTimeout,
     securityWorker: () => {
         return {
             headers: {
@@ -29,6 +62,7 @@ const STRAFES_CLIENT = new StrafesApi({
 
 const MAPS_CLIENT = new MapsApi({
     baseUrl: "https://maps.strafes.net/public-api/v1",
+    customFetch: fetchWithTimeout,
     securityWorker: () => {
         return {
             headers: {
@@ -50,8 +84,11 @@ function onApiError(err: unknown) {
         console.error(err);
     }
     else {
-        const reason = response?.status ?? (err instanceof Error ? err.message : "unknown error");
-        console.error(`StrafesNET request failed (${reason}): ${response ? new URL(response.url).pathname : "unknown url"}`);
+        const reason = response?.status
+            ?? (err instanceof NoResponseError ? noResponseReason(err) : undefined)
+            ?? (err instanceof Error ? err.message : "unknown error");
+        const url = response?.url ?? (err instanceof NoResponseError ? err.url : undefined);
+        console.error(`StrafesNET request failed (${reason}): ${url ? new URL(url).pathname : "unknown url"}`);
     }
     return new UpstreamFailure("StrafesNET", response?.status, response ? getRetryAfterMs(Object.fromEntries(response.headers)) : undefined);
 }
