@@ -102,6 +102,8 @@ export interface Map {
     date: string
     smallThumb?: string
     largeThumb?: string
+    /** Base64 ThumbHash of the thumbnail, decoded client-side into a blurry placeholder */
+    thumbHash?: string
     modes: number
     loadCount: number
     tier?: number

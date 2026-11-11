@@ -41,6 +41,7 @@ interface MapSQL {
     submitter: string
     small_thumb: string | null
     large_thumb: string | null
+    thumb_hash: string | null
     asset_version: string
     load_count: number
     modes: number
@@ -391,6 +392,7 @@ export class GlobalsClient {
             loadCount: row.load_count,
             smallThumb: row.small_thumb ?? undefined,
             largeThumb: row.large_thumb ?? undefined,
+            thumbHash: row.thumb_hash ?? undefined,
             votes: {
                 unweighted: Array(MAX_TIER).fill(0),
                 weighted: Array(MAX_TIER).fill(0)
