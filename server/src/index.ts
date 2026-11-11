@@ -226,7 +226,7 @@ app.get("/api/usersearch", rateLimiterMiddleware(1), cache("5 minutes"), async (
     const username = result.username;
 
     const usernames: UserSearchDataComplete[] = [];
-    const searchRes = await tryGetCached("https://apis.roblox.com/search-api/omni-search", {
+    const searchRes = await tryGetCached("Roblox", "https://apis.roproxy.com/search-api/omni-search", {
         verticalType: "user",
         searchQuery: username,
         sessionId: searchGUID

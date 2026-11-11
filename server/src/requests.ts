@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { IS_DEV_MODE, memoizeAsync } from "./util.js";
-import { UpstreamFailure } from "./upstream.js";
+import { Service, UpstreamFailure } from "./upstream.js";
 
 const DISABLE_ROPROXY = process.env.DISABLE_ROPROXY === "true";
 
@@ -9,9 +9,9 @@ export const tryPostCached = memoizeAsync(tryPostRequest, { maxAge: 5 * 60 * 100
 
 /**
  * null when the response is a 404 or 400 (it's not there, or the service won't take what was asked for, so trying again
- * won't help), an UpstreamFailure when the request failed some other way. These are only used for Roblox's APIs.
+ * won't help), an UpstreamFailure from service when the request failed some other way.
  */
-function onRequestError(err: unknown): null | UpstreamFailure {
+function onRequestError(service: Service, err: unknown): null | UpstreamFailure {
     const response = axios.isAxiosError(err) ? err.response : undefined;
     const status = response?.status;
     if (status === 404 || status === 400) {
@@ -21,36 +21,39 @@ function onRequestError(err: unknown): null | UpstreamFailure {
         console.log(err);
     }
     else {
-        // Just enough to tell a rate limit (429) from Roblox or StrafesNET being down
+        // Just enough to tell a rate limit (429) from the service being down
         const url = axios.isAxiosError(err) ? err.config?.url : undefined;
         const reason = status ?? (err instanceof Error ? err.message : "unknown error");
-        console.error(`Request failed (${reason}): ${url ?? "unknown url"}`);
+        console.error(`${service} request failed (${reason}): ${url ?? "unknown url"}`);
     }
-    return new UpstreamFailure("Roblox", status, response ? getRetryAfterMs(response.headers) : undefined);
+    return new UpstreamFailure(service, status, response ? getRetryAfterMs(response.headers) : undefined);
 }
 
 function resolveUrl(url: string) {
     return DISABLE_ROPROXY ? url.replace("roproxy.com", "roblox.com") : url;
 }
 
-/** null when there's nothing there (see onRequestError), an UpstreamFailure when the request failed. */
-export async function tryGetRequest(url: string, params?: any, headers?: any): Promise<AxiosResponse | null | UpstreamFailure> {
+/**
+ * null when there's nothing there (see onRequestError), an UpstreamFailure when the request failed. service is who's
+ * being asked, so failures can say who didn't answer.
+ */
+export async function tryGetRequest(service: Service, url: string, params?: any, headers?: any): Promise<AxiosResponse | null | UpstreamFailure> {
     url = resolveUrl(url);
     try {
         return await axios.get(url, {params: params, headers: headers, timeout: 10000});
     }
     catch (err) {
-        return onRequestError(err);
+        return onRequestError(service, err);
     }
 }
 
-/** null when there's nothing there (see onRequestError), an UpstreamFailure when the request failed. */
-export async function tryPostRequest(url: string, params?: any): Promise<AxiosResponse | null | UpstreamFailure> {
+/** Like tryGetRequest, but a POST. */
+export async function tryPostRequest(service: Service, url: string, params?: any): Promise<AxiosResponse | null | UpstreamFailure> {
     try {
         return await axios.post(url, params, {timeout: 5000});
     }
     catch (err) {
-        return onRequestError(err);
+        return onRequestError(service, err);
     }
 }
 

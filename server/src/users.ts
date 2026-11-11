@@ -96,7 +96,7 @@ export async function setUserThumbsForList(users: { userId: number, userThumb?: 
         batches.push(ids.slice(i, i + THUMBNAIL_BATCH_SIZE));
     }
 
-    const responses = await Promise.all(batches.map((batch) => tryGetRequest("https://thumbnails.roblox.com/v1/users/avatar-headshot", {
+    const responses = await Promise.all(batches.map((batch) => tryGetRequest("Roblox", "https://thumbnails.roblox.com/v1/users/avatar-headshot", {
         userIds: batch,
         size: largeThumbs ? "180x180" : "75x75",
         format: "Webp",
@@ -157,7 +157,7 @@ export async function setMissingUsernames(users: { userId: number, username?: st
     const batches: Promise<void>[] = [];
     for (let i = 0; i < ids.length; i += USERNAME_BATCH_SIZE) {
         batches.push((async () => {
-            const res = await tryPostRequest("https://users.roblox.com/v1/users", {
+            const res = await tryPostRequest("Roblox", "https://users.roblox.com/v1/users", {
                 userIds: ids.slice(i, i + USERNAME_BATCH_SIZE),
                 excludeBannedUsers: false
             });
@@ -181,7 +181,7 @@ export async function setMissingUsernames(users: { userId: number, username?: st
 
 /** null if there's no user with that name. */
 export async function getUserId(username: string): Promise<null | UpstreamFailure | number> {
-    const res = await tryPostCached("https://users.roblox.com/v1/usernames/users", {
+    const res = await tryPostCached("Roblox", "https://users.roblox.com/v1/usernames/users", {
         usernames: [username]
     });
     if (!res) return null;
@@ -196,7 +196,7 @@ export async function getUserId(username: string): Promise<null | UpstreamFailur
 
 /** null if there's no user with that ID. */
 export async function getUserData(client: AuthClient, userId: number): Promise<null | UpstreamFailure | User> {
-    const userReq = tryGetCached("https://users.roblox.com/v1/users/" + userId);
+    const userReq = tryGetCached("Roblox", "https://users.roblox.com/v1/users/" + userId);
     const strafesUserReq = getUserInfo(userId);
 
     const partialUser: UserInfo = {
