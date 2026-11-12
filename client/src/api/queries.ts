@@ -1,5 +1,5 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getReplayComments, getReplayReactions, getModQueue, searchModComments, getInbox, getInboxCount, getModLog, getCommentBans, getCommentModerators, ModCommentSearch, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername } from "./api";
+import { getAllTimesForUser, getBotFileURL, getCompletionsForUser, getCurrentMapTierVote, getLeaderboardPage, getLoggedInUser, getMapFileURL, getMaps, getNumWRsForUser, getRanks, getReplayById, getReplayComments, getReplayReactions, getModQueue, searchModComments, getInbox, getInboxCount, getModLog, getCommentBans, getCommentModerators, ModCommentSearch, getTimeData, getUserData, getUserIdFromName, getUserRank, getVotingInfo, searchByUsername, getLinkRequest } from "./api";
 import { CommentSort, Game, LeaderboardSortBy, LoginUser, RankSortBy, Style, TimeSortBy, UserSearchData } from "shared";
 
 async function queryByUserSearch(search: UserSearchData) {
@@ -126,6 +126,15 @@ export const queries = createQueryKeyStore({
             queryKey: [mapId],
             queryFn: () => getMapFileURL(mapId),
             staleTime: 60 * 1000
+        })
+    },
+    link: {
+        request: (token: string) => ({
+            queryKey: [token],
+            queryFn: () => getLinkRequest(token),
+            // Whether it can still be used changes, so always ask again
+            staleTime: 0,
+            gcTime: 0
         })
     },
     // userId is in the keys so another account's inbox never shows after switching

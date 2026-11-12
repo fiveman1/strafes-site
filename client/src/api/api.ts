@@ -1,4 +1,4 @@
-import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions, CommentReportReason, CommentSort, ReplayComment, ReplayComments, ModComment, ReplayCommentStatus, CommentBan, CommentModerator, CommentModerationLogEntry, CommentRole, Inbox, InboxCount } from "shared";
+import { Game, Map, Pagination, Rank, TimeSortBy, Style, Time, User, RankSortBy, UserSearchData, LeaderboardCount, LeaderboardSortBy, SettingsValues, WRCount, LoginUserWithInfo, TierVoteEligibility, MapTierInfo, Replay, ReplayReaction, ReplayReactions, CommentReportReason, CommentSort, ReplayComment, ReplayComments, ModComment, ReplayCommentStatus, CommentBan, CommentModerator, CommentModerationLogEntry, CommentRole, Inbox, InboxCount, LinkPageInfo, LinkConfirmResult } from "shared";
 import { JsonObject } from "../common/utils";
 
 // Mirrors what axios did: skip null/undefined params and repeat the key for each array item (a=1&a=2)
@@ -251,6 +251,15 @@ export async function login(path: string) {
 
 export async function logout() {
     await sendRequest("logout", { method: "GET" }, 15000);
+}
+
+/** null when the link expired, was used, or was replaced by a newer one */
+export async function getLinkRequest(token: string) {
+    return await getRequestOrNull<LinkPageInfo>("link/" + encodeURIComponent(token));
+}
+
+export async function confirmLink(token: string) {
+    return await trySendRequest<LinkConfirmResult>("POST", "link/confirm", { token: token });
 }
 
 export async function updateSettings(settings: SettingsValues) {

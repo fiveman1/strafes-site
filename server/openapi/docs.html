@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>strafes public API</title>
+    <meta name="description" content="Docs for the strafes.fiveman1.net public API: Discord to Roblox account links and StrafesNET world records.">
+    <link rel="icon" href="/favicon.ico">
+    <style>body { margin: 0; background: #0b0b0c; }</style>
+</head>
+<body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.75.1"></script>
+    <script>
+        Scalar.createApiReference("#app", {
+            url: "/public-api/openapi.yaml",
+            theme: "default",
+            darkMode: true,
+            hideDownloadButton: false,
+            metaData: { title: "strafes public API" }
+        });
+    </script>
+</body>
+</html>

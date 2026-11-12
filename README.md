@@ -54,6 +54,29 @@ STRAFES_DB_USER=<your MySQL user>
 STRAFES_DB_PASSWORD=<your MySQL password>
 ```
 
+### Setup account links (optional)
+
+The Discord <-> Roblox account links and the public API (`/public-api/v1`, docs at `/public-api/docs`) use a `strafes_links` database. Create it with `server/sql/links.sql`.
+
+It's accessed with the auth DB's user unless you add these to your `.env`:
+
+```sh
+LINKS_DB_USER=<your MySQL user>
+LINKS_DB_PASSWORD=<your MySQL password>
+```
+
+API keys are managed with a script (after `yarn build`; `keys:dev` runs it from source):
+
+```sh
+yarn workspace server run keys list
+yarn workspace server run keys create --name "strafes bot" --owner <discord id> --permissions lookup,link --webhook http://127.0.0.1:8090/link-events
+yarn workspace server run keys permissions <id> lookup,link
+yarn workspace server run keys webhook <id> <url | none>
+yarn workspace server run keys revoke <id>
+```
+
+`server/sql/links_import.sql` imports the data from the old rbhopdog-verify API, and `server/openapi/` has the API's docs. The old API's routes are served at `/public-api/legacy/v1/*`, for nginx to send `api.fiveman1.net/v1/*` to.
+
 ## How to build/run/dev
 
 ### Run dev server

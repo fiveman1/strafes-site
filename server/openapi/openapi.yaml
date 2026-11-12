@@ -1,0 +1,413 @@
+openapi: 3.1.0
+info:
+  title: strafes public API
+  version: "1.0"
+  description: |
+    The public API for [strafes.fiveman1.net](https://strafes.fiveman1.net): Discord ↔ Roblox account links, and
+    world records from the StrafesNET bhop and surf games.
+
+    ## Account links
+
+    A Discord account can be linked to one Roblox account. A Roblox account can have any number of Discord
+    accounts linked to it.
+
+    Anyone can look up which Roblox account a Discord account is linked to. Looking up the other way, and linking or
+    unlinking accounts, needs an API key with the right permission.
+
+    ### How linking works
+
+    1. Your bot creates a **link request** for the Discord user (`POST /link-requests`) and gets back a `url`.
+    2. Your bot sends the `url` to that user, and only them: reply to their slash command with an *ephemeral*
+       message. Anyone who opens the link can link their Roblox account to that Discord account.
+    3. The user opens the link, logs in with Roblox, and confirms the link on the site.
+    4. The site sends a `link.completed` event to your key's webhook, if it has one. You can also check on the
+       request with `GET /link-requests/{id}`.
+
+    A link works for 15 minutes, once. Creating a new request for the same Discord account cancels the last one.
+    Linking a Discord account that's already linked replaces the old link (the user is told before they confirm).
+
+    ## Authentication
+
+    Send your key as `Authorization: Bearer <key>`. Keys are given out by the site's admin, with permissions:
+
+    | Permission | Allows |
+    |---|---|
+    | `lookup` | `GET /links/roblox/{robloxId}` |
+    | `link` | Link requests, and `DELETE /links/discord/{discordId}` |
+
+    A key that doesn't work (wrong, or revoked) is a `401`, even on endpoints that don't need one.
+
+    ## Discord IDs
+
+    Discord IDs are **strings**, in requests and responses. They're bigger than a JavaScript number can hold exactly.
+
+    ## Rate limits
+
+    Without a key: 300 requests an hour and 3000 a day, per IP. With a key: 600 a minute, per key. The `RateLimit`
+    and `RateLimit-Policy` headers say where you're at. Going over is a `429`.
+
+    `GET /wrs` has its own limit of 20 requests a minute per IP.
+
+    ## Errors
+
+    Errors (other than on `/wrs`) look like:
+
+    ```json
+    { "error": { "code": "not_found", "message": "That Discord account isn't linked." } }
+    ```
+
+    `code` is one of `bad_request`, `unauthorized`, `forbidden`, `not_found`, `rate_limited`, `server_error`.
+
+    ## Webhooks
+
+    Give the admin a URL when your key is made, and you'll get a secret for it. The site `POST`s events to it:
+
+    ```http
+    POST /your/webhook
+    Content-Type: application/json
+    X-Strafes-Event: link.completed
+    X-Strafes-Delivery: 2f1d...
+    X-Strafes-Signature: t=1762905600,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+
+    { "id": "2f1d...", "type": "link.completed", "createdAt": "...", "data": { ...a LinkRequest... } }
+    ```
+
+    Check the signature before trusting the body: `v1` is the hex HMAC-SHA256 of `<t>.<raw body>`, keyed with your
+    webhook secret. Compare it in constant time, and turn away anything where `t` is more than 5 minutes off.
+
+    Answer with a `2xx` quickly. Network errors, `429`s and `5xx`s are tried again a few times over a couple of
+    minutes, so the same event (same `id`) can come more than once. Deliveries aren't guaranteed: don't rely on them
+    alone where it matters, look the link up instead.
+
+    ## Legacy API
+
+    The old rbhopdog-verify API at `https://api.fiveman1.net/v1/...` still answers its lookups
+    (`GET /v1/users/{discordId}` and `GET /v1/users/from_roblox/{robloxId}`) in its old response format, with the same
+    keys. Linking through it (`/v1/verify/...`) is gone and answers `410`. New code should use this API.
+servers:
+  - url: https://strafes.fiveman1.net/public-api/v1
+tags:
+  - name: Links
+    description: Which Discord and Roblox accounts are linked
+  - name: Link requests
+    description: Linking a Discord account to a Roblox account
+  - name: Records
+    description: World records from StrafesNET
+paths:
+  /links/discord/{discordId}:
+    parameters:
+      - $ref: "#/components/parameters/DiscordId"
+    get:
+      tags: [Links]
+      summary: Get the Roblox account a Discord account is linked to
+      operationId: getDiscordLink
+      security: [{}, { apiKey: [] }]
+      responses:
+        "200":
+          description: The link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscordLink"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404":
+          description: The Discord account isn't linked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    delete:
+      tags: [Links]
+      summary: Unlink a Discord account
+      operationId: deleteDiscordLink
+      description: Needs the `link` permission.
+      security: [{ apiKey: [] }]
+      responses:
+        "200":
+          description: Unlinked. Says what it was linked to.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [discordId, robloxId]
+                properties:
+                  discordId: { $ref: "#/components/schemas/DiscordIdValue" }
+                  robloxId: { $ref: "#/components/schemas/RobloxIdValue" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: The Discord account wasn't linked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /links/roblox/{robloxId}:
+    parameters:
+      - name: robloxId
+        in: path
+        required: true
+        description: A Roblox user ID
+        schema: { type: integer, format: int64, example: 20005988 }
+    get:
+      tags: [Links]
+      summary: Get the Discord accounts linked to a Roblox account
+      operationId: getRobloxLinks
+      description: Needs the `lookup` permission. Oldest link first.
+      security: [{ apiKey: [] }]
+      responses:
+        "200":
+          description: The linked Discord accounts. Empty if there aren't any.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [robloxId, discordIds]
+                properties:
+                  robloxId: { $ref: "#/components/schemas/RobloxIdValue" }
+                  discordIds:
+                    type: array
+                    items: { $ref: "#/components/schemas/DiscordIdValue" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /link-requests:
+    post:
+      tags: [Link requests]
+      summary: Create a link request
+      operationId: createLinkRequest
+      description: |
+        Needs the `link` permission. Send the `url` in the response to the Discord user, and only them. It works for
+        15 minutes. Any pending request your key made for the same Discord account is cancelled.
+
+        `discordUsername` and `discordAvatarUrl` are shown on the link page, so the user can tell which Discord
+        account they're linking. Send them if you have them.
+      security: [{ apiKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [discordId]
+              properties:
+                discordId: { $ref: "#/components/schemas/DiscordIdValue" }
+                discordUsername:
+                  type: string
+                  maxLength: 64
+                  example: fiveman1
+                discordAvatarUrl:
+                  type: string
+                  format: uri
+                  maxLength: 255
+                  description: Must be on `cdn.discordapp.com` or `media.discordapp.net`
+                  example: https://cdn.discordapp.com/avatars/161981786354745340/a_1234.png
+      responses:
+        "201":
+          description: The request, with the link for the user
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LinkRequest"
+                  - type: object
+                    required: [url]
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        description: The link for the user. It's only given here, so hold on to it if you need it again.
+                        example: https://strafes.fiveman1.net/link/Yc3k1Jb0bqTqV9mX0Qx3o2xkzv0Gm8yH1t7cP2bQwEo
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /link-requests/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Link requests]
+      summary: Get a link request
+      operationId: getLinkRequest
+      description: Needs the `link` permission. Only requests your key made. Requests are kept for 30 days.
+      security: [{ apiKey: [] }]
+      responses:
+        "200":
+          description: The request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No request with that ID was made by this key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /wrs:
+    get:
+      tags: [Records]
+      summary: List world records
+      operationId: listWorldRecords
+      description: Newest first, 100 a page. Rate limited to 20 requests a minute per IP.
+      security: [{}]
+      parameters:
+        - { name: page, in: query, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: game, in: query, description: "1 = bhop, 2 = surf, 5 = fly trials", schema: { type: integer } }
+        - { name: style, in: query, description: A StrafesNET style ID, schema: { type: integer } }
+        - { name: course, in: query, description: "0 is the main course, 1 and up are bonuses", schema: { type: integer, minimum: 0 } }
+        - { name: userId, in: query, description: Only this Roblox user's records, schema: { type: integer } }
+        - { name: mapId, in: query, description: Only this map's records, schema: { type: integer } }
+      responses:
+        "200":
+          description: A page of world records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/WorldRecord" }
+                  pagination:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      pageSize: { type: integer }
+                      totalItems: { type: integer }
+                      totalPages: { type: integer }
+        "400":
+          description: Invalid query parameters
+        "429":
+          description: Rate limited
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: An API key from the site's admin
+  parameters:
+    DiscordId:
+      name: discordId
+      in: path
+      required: true
+      description: A Discord user ID
+      schema: { $ref: "#/components/schemas/DiscordIdValue" }
+  schemas:
+    DiscordIdValue:
+      type: string
+      pattern: "^[0-9]{1,20}$"
+      description: A Discord user ID (snowflake), as a string
+      example: "161981786354745340"
+    RobloxIdValue:
+      type: integer
+      format: int64
+      description: A Roblox user ID
+      example: 20005988
+    DiscordLink:
+      type: object
+      required: [discordId, robloxId, linkedAt]
+      properties:
+        discordId: { $ref: "#/components/schemas/DiscordIdValue" }
+        robloxId: { $ref: "#/components/schemas/RobloxIdValue" }
+        linkedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When it was linked. `null` for links made with the old API, which didn't record it.
+    LinkRequest:
+      type: object
+      required: [id, status, discordId, createdAt, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, completed, cancelled, expired]
+          description: |
+            - `pending`: waiting for the user
+            - `completed`: linked
+            - `cancelled`: a newer request for the same Discord account replaced it
+            - `expired`: the user didn't link in time
+        discordId: { $ref: "#/components/schemas/DiscordIdValue" }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        completedAt:
+          type: string
+          format: date-time
+          description: Once completed
+        robloxId:
+          allOf: [{ $ref: "#/components/schemas/RobloxIdValue" }]
+          description: Once completed, the Roblox account it was linked to
+        robloxUsername:
+          type: string
+          description: Once completed. The username when it was linked, which can change.
+        previousRobloxId:
+          allOf: [{ $ref: "#/components/schemas/RobloxIdValue" }]
+          description: Once completed, what the Discord account was linked to before, if anything
+    WorldRecord:
+      type: object
+      properties:
+        id: { type: string, description: The time's ID }
+        game_id: { type: integer }
+        style_id: { type: integer }
+        course: { type: integer }
+        time: { type: integer, description: Milliseconds }
+        date: { type: string, format: date-time }
+        has_bot: { type: boolean, description: Whether it has a replay }
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            thumbnail: { type: [string, "null"] }
+            country: { type: [string, "null"] }
+            role: { type: ["array", "null"], items: { type: integer } }
+        map:
+          type: object
+          properties:
+            id: { type: integer }
+            display_name: { type: string }
+            creator: { type: [string, "null"] }
+            released_on: { type: [string, "null"], format: date-time }
+            thumbnail: { type: [string, "null"] }
+            game_id: { type: [integer, "null"] }
+            courses: { type: [integer, "null"] }
+            tier: { type: [integer, "null"] }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [bad_request, unauthorized, forbidden, not_found, rate_limited, server_error]
+            message: { type: string }
+  responses:
+    BadRequest:
+      description: Something in the request isn't valid
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: No API key, or one that doesn't work
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: The API key doesn't have permission
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Over the rate limit
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

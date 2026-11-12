@@ -7,7 +7,9 @@
     "scripts": {
         "dev": "tsx watch --clear-screen=false --env-file ../.env src/index.ts",
         "start": "node --env-file ../.env dist/index.js",
-        "build": "rm -rf dist && npx tsc"
+        "build": "rm -rf dist && npx tsc",
+        "keys": "node --env-file ../.env dist/scripts/apiKeys.js",
+        "keys:dev": "tsx --env-file ../.env src/scripts/apiKeys.ts"
     },
     "keywords": [],
     "author": "fiveman1",

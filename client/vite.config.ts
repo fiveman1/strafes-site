@@ -51,13 +51,11 @@ export default defineConfig(({ mode }) => {
 			port: 3000,
 			host: "localhost",
 			open: true,
-			proxy: {
-				"/api": {
-					target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://127.0.0.1:8080",
-					changeOrigin: true,
-					secure: false
-				}
-			},
+			proxy: Object.fromEntries(["/api", "/public-api"].map((prefix) => [prefix, {
+				target: env.VITE_USE_PROXY === "true" ? "https://strafes.fiveman1.net/" : "http://127.0.0.1:8080",
+				changeOrigin: true,
+				secure: false
+			}])),
 			watch: {
 				ignored: ["!**/node_modules/shared/**"]
 			}

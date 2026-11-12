@@ -44,7 +44,8 @@ export class AuthClient {
     }
 
     protected readonly pathValidator = vine.create({
-        path: vine.string()
+        // Relative to the site. A leading slash (or backslash) would make the redirect after login "//somewhere.else".
+        path: vine.string().regex(/^(?![/\\])/)
     });
 
     // Entrypoints

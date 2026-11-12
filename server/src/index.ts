@@ -30,6 +30,10 @@ import { readdir, readFile, stat } from "fs/promises";
 import { IMMUTABLE_CACHE_CONTROL, precompressedMiddleware, rateLimiterMiddleware, staticCacheHeaders } from "./middleware.js";
 import { isBot } from "isbot";
 import memoize from "memoize";
+import { LinksClient } from "./links/db.js";
+import { createLinkPageRouter, createLinksApiRouter } from "./links/routes.js";
+import { createLegacyRouter } from "./links/legacy.js";
+import { apiErrorHandler } from "./links/middleware.js";
 
 // Log instead of crashing the whole server when a stray promise rejects
 process.on("unhandledRejection", (reason) => {
@@ -59,6 +63,9 @@ if (!CLIENT_ID || !CLIENT_SECRET || !AUTH_DB_USER || !AUTH_DB_PASSWORD) {
 
 const authClient = await AuthClient.Create(CLIENT_ID, CLIENT_SECRET, AUTH_DB_USER, AUTH_DB_PASSWORD, BASE_URL);
 
+// Discord <-> Roblox links (strafes_links). Uses the auth DB's user unless it has its own.
+const linksClient = new LinksClient(process.env.LINKS_DB_USER ?? AUTH_DB_USER, process.env.LINKS_DB_PASSWORD ?? AUTH_DB_PASSWORD);
+
 const app = express();
 
 const TRUST_PROXY = process.env.TRUST_PROXY;
@@ -80,6 +87,7 @@ const publicApiRateLimitSettings = rateLimit({ windowMs: 60 * 1000, limit: 20, v
 const dirName = path.dirname(fileURLToPath(import.meta.url));
 const buildDir = path.join(dirName, "../../client/build/");
 const mapDir = path.join(dirName, "../maps/");
+const openapiDir = path.join(dirName, "../openapi/");
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 app.use(cookieParser(COOKIE_SECRET));
@@ -770,7 +778,7 @@ const publicWrsValidator = vine.create({
     page: vine.number().withoutDecimals().positive()
 });
 
-app.get("/public-api/wrs", publicApiRateLimitSettings, async (req, res) => {
+app.get(["/public-api/wrs", "/public-api/v1/wrs"], publicApiRateLimitSettings, async (req, res) => {
     const [error, result] = await publicWrsValidator.tryValidate(req.query);
     if (error) {
         res.status(400).json({ error: error instanceof errors.E_VALIDATION_ERROR ? error.messages : "Invalid input" });
@@ -1147,6 +1155,21 @@ app.get("/api/replays/times/:id/stream", rateLimiterMiddleware(0.5), async (req,
 });
 
 app.use(createCommentRouter(globalsClient, authClient));
+app.use(createLinkPageRouter(linksClient, authClient));
+
+// The documented public API. Internal endpoints (under /api) can change whenever the site needs them to.
+app.get("/public-api/docs", (req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.sendFile(path.join(openapiDir, "docs.html"));
+});
+app.get("/public-api/openapi.yaml", (req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.type("application/yaml").sendFile(path.join(openapiDir, "openapi.yaml"));
+});
+app.use("/public-api/v1", createLinksApiRouter(linksClient, BASE_URL), apiErrorHandler("v1"));
+// rbhopdog-verify's API, which api.fiveman1.net is sent to
+app.use("/public-api/legacy", createLegacyRouter(linksClient), apiErrorHandler("legacy"));
 app.use(createInboxRouter(globalsClient, authClient));
 
 const setReactionValidator = vine.create({
