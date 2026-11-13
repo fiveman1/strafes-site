@@ -167,12 +167,12 @@ export function makeTimeAndDateColumn(sortBy: TimeSortBy): GridColDef {
                             alignItems: "center",
                             ml: "5px"
                         }}>
-                        <Typography variant="inherit" color={!isTimeSort ? "textSecondary" : undefined} sx={{
+                        <Typography variant="inherit" color={!isTimeSort ? "textSecondary" : "textPrimary"} sx={{
                             fontWeight: 500
                         }}>
                             Time
                         </Typography>
-                        <Typography variant="inherit" color={isTimeSort ? "textSecondary" : undefined} sx={{
+                        <Typography variant="inherit" color={isTimeSort ? "textSecondary" : "textPrimary"} sx={{
                             fontWeight: 500
                         }}>
                             Date

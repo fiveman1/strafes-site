@@ -131,6 +131,8 @@ function App() {
             borderRadius: 10,
             boxShadow: popShadow
         };
+        const textPrimary = isLight ? "#17171a" : "#ededee";
+        const textSecondary = isLight ? "#66666f" : "#9a9aa2";
 
         return createTheme({
             palette: {
@@ -147,8 +149,8 @@ function App() {
                     paper: surface
                 },
                 text: {
-                    primary: isLight ? "#17171a" : "#ededee",
-                    secondary: isLight ? "#66666f" : "#9a9aa2"
+                    primary: textPrimary,
+                    secondary: textSecondary
                 },
                 divider: border,
                 action: {
@@ -393,7 +395,7 @@ function App() {
                 MuiBreadcrumbs: {
                     styleOverrides: {
                         root: {
-                            color: isLight ? "#66666f" : "#9a9aa2",
+                            color: textSecondary,
                             fontSize: "0.875rem",
                             "& .MuiTypography-root": {
                                 fontSize: "inherit"
@@ -423,7 +425,7 @@ function App() {
                             }
                         },
                         columnHeader: {
-                            color: isLight ? "#66666f" : "#9a9aa2",
+                            color: textSecondary,
                             fontSize: "0.8125rem"
                         },
                         columnHeaderTitle: {
