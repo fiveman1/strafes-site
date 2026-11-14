@@ -128,7 +128,7 @@ export async function calcMapTiers(client: GlobalsClient): Promise<Map<number, n
     const mapIdToTier = new Map<number, number>();
 
     // Calculates the weighted average for every map
-    // Ignores outliers (more than 1 standard deviation)
+    // Ignores outliers (more than 1.5 standard deviations)
     const query = `
         SELECT
             tier_votes.map_id,

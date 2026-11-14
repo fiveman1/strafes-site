@@ -36,8 +36,8 @@ interface MapSQL {
     creator: string
     game: Game
     date: Date
-    created_at: string
-    updated_at: string
+    created_at: Date
+    updated_at: Date
     submitter: string
     small_thumb: string | null
     large_thumb: string | null
@@ -387,7 +387,8 @@ export class GlobalsClient {
             name: row.name,
             creator: row.creator,
             game: row.game,
-            date: row.date.toISOString(), // ISO strings for consistency
+            date: row.date.toISOString(),
+            createdOn: row.created_at.toISOString(),
             modes: row.modes,
             loadCount: row.load_count,
             smallThumb: row.small_thumb ?? undefined,

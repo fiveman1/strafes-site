@@ -99,7 +99,10 @@ export interface Map {
     name: string
     creator: string
     game: Game
+    /** Date the map was released */
     date: string
+    /** Date the map was created */
+    createdOn: string
     smallThumb?: string
     largeThumb?: string
     /** Base64 ThumbHash of the thumbnail, decoded client-side into a blurry placeholder */
