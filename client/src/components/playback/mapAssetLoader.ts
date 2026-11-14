@@ -33,6 +33,7 @@ export type TranscodeResponse = {
     height: number;
     mipLevelCount: number;
     format: number;
+    coverageAlpha: boolean;
     data: Uint8Array;
 } | {
     id: number;
@@ -185,7 +186,7 @@ class MapAssetLoader {
             this.fallbackTextures.push(job);
             return;
         }
-        const texture = new TranscodedTexture(job.textureId, response.width, response.height, response.mipLevelCount, response.format, response.data);
+        const texture = new TranscodedTexture(job.textureId, response.width, response.height, response.mipLevelCount, response.format, response.coverageAlpha, response.data);
         this.ready.push({ map: job.map, texture });
     }
 

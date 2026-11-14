@@ -138,6 +138,11 @@ export class Graphics {
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
+     * Whether see-through textures like leaves are drawn as anti-aliased coverage instead of blended, on presets
+     * with anti-aliasing. On by default.
+     */
+    set_alpha_to_coverage(alpha_to_coverage: boolean): void;
+    /**
      * How much of the map's baked bounce light surfaces get, 1 as baked, 0 for none.
      * set_graphics_quality resets it to 1.
      */
@@ -519,11 +524,15 @@ export class TranscodedTexture {
     /**
      * Rebuild from the fields of a TranscodedTexture sent from a web worker.
      */
-    constructor(texture_id: number, width: number, height: number, mip_level_count: number, format: number, data: Uint8Array);
+    constructor(texture_id: number, width: number, height: number, mip_level_count: number, format: number, coverage_alpha: boolean, data: Uint8Array);
     /**
      * Every mip level, largest first. Moves the data out, so it can only be taken once.
      */
     take_data(): Uint8Array;
+    /**
+     * Whether its alpha is mostly fully clear or fully solid, see Texture::coverage_alpha.
+     */
+    readonly coverage_alpha: boolean;
     readonly format: number;
     readonly height: number;
     readonly mip_level_count: number;
@@ -696,6 +705,7 @@ export interface InitOutput {
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly graphics_set_alpha_to_coverage: (a: number, b: number) => void;
     readonly graphics_set_bounce_light: (a: number, b: number) => void;
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
     readonly graphics_set_light_distance: (a: number, b: number) => void;
@@ -765,20 +775,21 @@ export interface InitOutput {
     readonly texturejob_take_data: (a: number, b: number) => void;
     readonly texturejob_texture_id: (a: number) => number;
     readonly transcode_texture: (a: number, b: number, c: number, d: number) => number;
+    readonly transcodedtexture_coverage_alpha: (a: number) => number;
     readonly transcodedtexture_format: (a: number) => number;
     readonly transcodedtexture_height: (a: number) => number;
     readonly transcodedtexture_mip_level_count: (a: number) => number;
-    readonly transcodedtexture_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+    readonly transcodedtexture_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1722: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1722_172: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1722_173: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3040: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3055: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1726: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1726_171: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1727: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1727_174: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1727_175: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3045: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3060: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1731: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1731_173: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -41,6 +41,7 @@ addEventListener("message", async (event: MessageEvent<WorkerInit | TranscodeReq
             height: texture.height,
             mipLevelCount: texture.mip_level_count,
             format: texture.format,
+            coverageAlpha: texture.coverage_alpha,
             data: transcoded
         };
         texture.free();
