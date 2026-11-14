@@ -42,6 +42,8 @@ export type TranscodeResponse = {
 
 interface PendingTexture {
     map: StreamableMap;
+    // The worker transcoding it, if one is
+    worker?: AssetWorker;
     textureId: number;
     // Kept so the texture can still be transcoded here if the worker fails
     data: Uint8Array;
@@ -50,6 +52,8 @@ interface PendingTexture {
 
 interface PendingLightmapChunk {
     map: StreamableMap;
+    // The worker inflating it, if one is
+    worker?: AssetWorker;
     regionId: number;
     // Kept for the map, which inflates it again if it has to, and so the chunk can still be added if the worker fails
     deflated: Uint8Array;
@@ -60,12 +64,26 @@ type ReadyJob = { map: StreamableMap, texture: TranscodedTexture } | { map: Stre
 // Time per frame spent uploading finished textures and adding lightmap chunks. At least one is done each frame.
 const UPLOAD_BUDGET_MS = 2;
 
-// Loads the slow parts of a map in a web worker: transcoding textures is most of the time spent loading a map (about
+// How many workers transcode at once: one core is left for the page, and phones get fewer since each worker holds
+// its own copy of the module's memory.
+function workerCount(): number {
+    const cores = navigator.hardwareConcurrency || 2;
+    const max = matchMedia("(pointer: coarse)").matches ? 2 : 4;
+    return Math.max(1, Math.min(max, cores - 1));
+}
+
+interface AssetWorker {
+    worker: Worker;
+    // Bytes of jobs sent to it and not answered yet, so new jobs go to the least busy worker
+    queuedBytes: number;
+}
+
+// Loads the slow parts of a map in web workers: transcoding textures is most of the time spent loading a map (about
 // 16 ms per 512 KB group), and a big lightmap chunk takes up to 60 ms to inflate. The results are added from the frame
-// loop. If the worker can't be used, textures are transcoded here one per frame instead, and the map inflates lightmap
+// loop. If no worker can be used, textures are transcoded here one per frame instead, and the map inflates lightmap
 // chunks a little each frame.
 class MapAssetLoader {
-    private worker: Worker | null;
+    private workers: AssetWorker[] = [];
     private nextId = 0;
     private pendingTextures = new Map<number, PendingTexture>();
     private pendingLightmapChunks = new Map<number, PendingLightmapChunk>();
@@ -74,26 +92,31 @@ class MapAssetLoader {
     private fallbackTextures: PendingTexture[] = [];
 
     constructor() {
-        try {
-            const worker = new Worker(new URL("./mapAssetWorker.ts", import.meta.url), { type: "module" });
-            this.worker = worker;
-            worker.addEventListener("message", (event: MessageEvent<TranscodeResponse | LightmapResponse>) => {
-                if (this.pendingLightmapChunks.has(event.data.id)) this.onLightmapResponse(event.data as LightmapResponse);
-                else this.onTextureResponse(event.data as TranscodeResponse);
-            });
-            worker.addEventListener("error", (event) => {
-                console.error("Map asset worker failed, loading on the main thread instead", event);
-                this.stopWorker();
-            });
-            compiledWasm().then(module => {
-                const init: WorkerInit = { module };
-                worker.postMessage(init);
-            }, () => this.stopWorker());
+        const module = compiledWasm();
+        for (let i = 0; i < workerCount(); i++) {
+            try {
+                const assetWorker: AssetWorker = { worker: new Worker(new URL("./mapAssetWorker.ts", import.meta.url), { type: "module" }), queuedBytes: 0 };
+                const worker = assetWorker.worker;
+                this.workers.push(assetWorker);
+                worker.addEventListener("message", (event: MessageEvent<TranscodeResponse | LightmapResponse>) => {
+                    if (this.pendingLightmapChunks.has(event.data.id)) this.onLightmapResponse(event.data as LightmapResponse);
+                    else this.onTextureResponse(event.data as TranscodeResponse);
+                });
+                worker.addEventListener("error", (event) => {
+                    console.error("Map asset worker failed, loading its jobs on the main thread instead", event);
+                    this.stopWorker(assetWorker);
+                });
+                module.then(module => {
+                    const init: WorkerInit = { module };
+                    worker.postMessage(init);
+                }, () => this.stopWorker(assetWorker));
+            }
+            catch (err) {
+                console.error("Couldn't start a map asset worker", err);
+                break;
+            }
         }
-        catch (err) {
-            console.error("Couldn't start the map asset worker, loading on the main thread instead", err);
-            this.worker = null;
-        }
+        if (this.workers.length === 0) console.error("No map asset workers, loading on the main thread instead");
     }
 
     // Number of textures and lightmap chunks waiting to be transcoded, inflated or uploaded
@@ -108,28 +131,34 @@ class MapAssetLoader {
         const lightmapJobs = deferred.take_lightmap_chunks();
         deferred.free();
         for (const job of lightmapJobs) {
-            const chunk = { map, regionId: job.region_id, deflated: job.take_deflated() };
+            const chunk: PendingLightmapChunk = { map, regionId: job.region_id, deflated: job.take_deflated() };
             job.free();
-            if (this.worker) {
+            const worker = this.leastBusyWorker();
+            if (worker) {
                 const id = this.nextId++;
+                chunk.worker = worker;
+                worker.queuedBytes += chunk.deflated.length;
                 this.pendingLightmapChunks.set(id, chunk);
                 // Not transferred, so the chunk is still here to add to the map
                 const request: LightmapRequest = { id, deflated: chunk.deflated };
-                this.worker.postMessage(request);
+                worker.worker.postMessage(request);
             }
             else {
                 map.insert_lightmap_chunk(chunk.regionId, chunk.deflated, undefined);
             }
         }
         for (const job of jobs) {
-            const pendingJob = { map, textureId: job.texture_id, data: job.take_data(), support };
+            const pendingJob: PendingTexture = { map, textureId: job.texture_id, data: job.take_data(), support };
             job.free();
-            if (this.worker) {
+            const worker = this.leastBusyWorker();
+            if (worker) {
                 const id = this.nextId++;
+                pendingJob.worker = worker;
+                worker.queuedBytes += pendingJob.data.length;
                 this.pendingTextures.set(id, pendingJob);
                 // Not transferred, so the data is still here for the fallback
                 const request: TranscodeRequest = { id, textureId: pendingJob.textureId, data: pendingJob.data, support };
-                this.worker.postMessage(request);
+                worker.worker.postMessage(request);
             }
             else {
                 this.fallbackTextures.push(pendingJob);
@@ -168,6 +197,7 @@ class MapAssetLoader {
         const chunk = this.pendingLightmapChunks.get(response.id);
         if (!chunk) return;
         this.pendingLightmapChunks.delete(response.id);
+        if (chunk.worker) chunk.worker.queuedBytes -= chunk.deflated.length;
         if ("error" in response) {
             console.error("Couldn't prepare lightmap chunk in the worker", response.error);
             // the map inflates it instead
@@ -181,6 +211,7 @@ class MapAssetLoader {
         const job = this.pendingTextures.get(response.id);
         if (!job) return;
         this.pendingTextures.delete(response.id);
+        if (job.worker) job.worker.queuedBytes -= job.data.length;
         if ("error" in response) {
             console.error("Couldn't transcode texture in the worker", response.error);
             this.fallbackTextures.push(job);
@@ -190,22 +221,35 @@ class MapAssetLoader {
         this.ready.push({ map: job.map, texture });
     }
 
-    private stopWorker() {
-        this.worker?.terminate();
-        this.worker = null;
-        this.fallbackTextures.push(...this.pendingTextures.values());
-        this.pendingTextures.clear();
-        for (const chunk of this.pendingLightmapChunks.values()) {
-            // the map inflates them instead
+    private leastBusyWorker(): AssetWorker | undefined {
+        let best: AssetWorker | undefined;
+        for (const worker of this.workers) {
+            if (!best || worker.queuedBytes < best.queuedBytes) best = worker;
+        }
+        return best;
+    }
+
+    // Its jobs are done here instead
+    private stopWorker(assetWorker: AssetWorker) {
+        assetWorker.worker.terminate();
+        this.workers = this.workers.filter(worker => worker !== assetWorker);
+        for (const [id, job] of this.pendingTextures) {
+            if (job.worker !== assetWorker) continue;
+            this.pendingTextures.delete(id);
+            this.fallbackTextures.push(job);
+        }
+        for (const [id, chunk] of this.pendingLightmapChunks) {
+            if (chunk.worker !== assetWorker) continue;
+            this.pendingLightmapChunks.delete(id);
+            // the map inflates it instead
             this.ready.push({ map: chunk.map, lightmapChunk: chunk });
         }
-        this.pendingLightmapChunks.clear();
     }
 }
 
 let sharedLoader: MapAssetLoader | null = null;
 
-// One worker for the whole tab, shared by every replay viewed.
+// One set of workers for the whole tab, shared by every replay viewed.
 export function getMapAssetLoader(): MapAssetLoader {
     sharedLoader ??= new MapAssetLoader();
     return sharedLoader;
