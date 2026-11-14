@@ -38,24 +38,19 @@ interface ProgressSliderProps {
     onMarkerClick?: (seconds: number) => void
 }
 
-interface HoveredMarker {
-    marker: CommentMarker
-    // Where the marker is on the screen
-    x: number
-    y: number
-}
-
 /** Drawn over the 30% white track, so downloaded parts read as a lighter gray */
 const BUFFERED_COLOR = "rgba(255, 255, 255, 0.35)";
 
 function ProgressSlider(props: ProgressSliderProps) {
     const { min, max, time, downloadStats, onDragPlayback, onSetPlayback, isDragging, setIsDragging, canvasRef, setThumbTime, displayThumb, thumbEnabled, setShowingThumb, markers, onMarkerClick } = props;
-    const [hoveredMarker, setHoveredMarker] = useState<HoveredMarker | undefined>(undefined);
+    // By time, since the marker shown there can change
+    const [hoveredSeconds, setHoveredSeconds] = useState<number | undefined>(undefined);
     const theme = useTheme();
     const [isHovering, setIsHovering] = useState(false);
     const [showThumb, setShowThumb] = useState(false);
     const [thumbTime, setThumbTimeFormatted] = useState("");
-    const [coords, setCoords] = useState({ x: 0, y: 0 });
+    // Relative to the bar, so the thumbnail moves with it however the page scrolls or shifts
+    const [thumbX, setThumbX] = useState(0);
     const ref = useRef<HTMLSpanElement>(null);
     const fillRef = useRef<HTMLSpanElement>(null);
     const bufferedRef = useRef<HTMLSpanElement>(null);
@@ -90,8 +85,8 @@ function ProgressSlider(props: ProgressSliderProps) {
     }, []);
     const shownMarkers = useMemo(() => markers && mergeCloseMarkers(markers, min, max, barWidth, MARKER_SIZE), [markers, min, max, barWidth]);
     // A hovered marker can merge into another or go away (a new or removed comment, a resize) without a pointerleave
-    const hoveredNow = hoveredMarker && shownMarkers?.find((marker) => marker.seconds === hoveredMarker.marker.seconds);
-    const shownHover = hoveredMarker && hoveredNow ? { ...hoveredMarker, marker: hoveredNow } : undefined;
+    const shownHover = hoveredSeconds === undefined ? undefined : shownMarkers?.find((marker) => marker.seconds === hoveredSeconds);
+    const markerLeft = (seconds: number) => `${clamp((seconds - min) / (max - min) * 100, 0, 100)}%`;
 
     // Progress is written directly instead of rendered, see playbackTime.ts
     useLayoutEffect(() => {
@@ -200,13 +195,15 @@ function ProgressSlider(props: ProgressSliderProps) {
         onDragPlayback(newPlayback);
     }, [max, min, onDragPlayback, setIsDragging]);
 
-    const onPointerEnter = useCallback((e: React.PointerEvent) => {
-        setIsHovering(true);
-        if (e.pointerType === "mouse") {
-            setShowThumb(true);
-            setShowingThumb(true);
-        }
-    }, [setShowingThumb]);
+    const onMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!ref.current) return;
+        const rect = ref.current.getBoundingClientRect();
+        setThumbX(e.clientX - rect.left);
+        const x = clamp(e.clientX, rect.left, rect.right);
+        const time = normalize(x, rect.left, rect.right, min,max);
+        setThumbTime(time);
+        setThumbTimeFormatted(formatTime(Math.round(Math.max(0, time * 1000)), true));
+    }, [max, min, setThumbTime]);
 
     const onPointerLeave = useCallback((e: React.PointerEvent) => {
         setIsHovering(false);
@@ -216,102 +213,19 @@ function ProgressSlider(props: ProgressSliderProps) {
         }
     }, [setShowingThumb]);
 
-    const onMouseMove = useCallback((e: React.MouseEvent) => {
-        if (!ref.current) return;
-        const rect = ref.current.getBoundingClientRect();
-        setCoords({
-            x: e.clientX,
-            y: rect.y
-        });
-        const x = clamp(e.clientX, rect.left, rect.right);
-        const time = normalize(x, rect.left, rect.right, min,max);
-        setThumbTime(time);
-        setThumbTimeFormatted(formatTime(Math.round(Math.max(0, time * 1000)), true))
-    }, [max, min, setThumbTime]);
+    const onPointerEnter = useCallback((e: React.PointerEvent) => {
+        setIsHovering(true);
+        if (e.pointerType === "mouse") {
+            setShowThumb(true);
+            setShowingThumb(true);
+            onMouseMove(e);
+        }
+    }, [onMouseMove, setShowingThumb]);
 
     const thumbHeight = PLAYER_THUMB_HEIGHT;
     const thumbWidth = PLAYER_THUMB_HEIGHT * PLAYER_ASPECT_RATIO;
     return (
         <>
-            {displayThumb && <Box
-                sx={{
-                    position: "fixed",
-                    width: `${thumbWidth}px`,
-                    height: `${thumbHeight}px`,
-                    // A marker's comments show in its place
-                    display: showThumb && thumbEnabled && !shownHover ? "block" : "none",
-                    // If it were ever under the cursor, the bar would lose the hover and it would flicker
-                    pointerEvents: "none",
-                    borderRadius: "4px",
-                    border: "1px solid #ffffff49",
-                    background: "rgba(255, 255, 255, 0.3)",
-                    backdropFilter: "blur(6px)"
-                }}
-                style={{
-                    left: `${coords.x - (thumbWidth / 2)}px`,
-                    top: `${coords.y - thumbHeight - 28}px`,
-                }}
-            >
-                <canvas 
-                    ref={canvasRef}
-                    style={{
-                        borderRadius: "4px",
-                        width: "100%",
-                        height: "100%"
-                    }}
-                />
-            </Box>}
-            <Box
-                sx={{
-                    position: "fixed",
-                    width: `${thumbWidth}px`,
-                    display: showThumb && !shownHover ? "flex" : "none",
-                    justifyContent: "center",
-                    pointerEvents: "none"
-                }}
-                style={{
-                    left: `${coords.x - (thumbWidth / 2)}px`,
-                    top: `${coords.y - 24}px`,
-                }}
-            >
-                <Typography
-                    variant="subtitle2"
-                    sx={{
-                        display: "inline-flex",
-                        bgcolor: "#00000080",
-                        color: "white",
-                        fontFamily: '"Geist Mono", monospace',
-                        borderRadius: "4px",
-                        whiteSpace: "nowrap",
-                        px: 0.75
-                    }}
-                >
-                    {thumbTime}
-                </Typography>
-            </Box>
-            {shownHover &&
-            <Box
-                sx={{
-                    position: "fixed",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.5,
-                    transform: "translate(-50%, -100%)",
-                    pointerEvents: "none",
-                    zIndex: 1
-                }}
-                style={{
-                    left: shownHover.x,
-                    top: shownHover.y - 8
-                }}>
-                {shownHover.marker.comments.slice(0, MARKER_PREVIEW_COUNT).map((item) => (
-                    <CommentPreview key={item.comment.id} {...item} showTimestamp sx={{ width: 260, maxWidth: "80vw" }} />
-                ))}
-                {shownHover.marker.comments.length > MARKER_PREVIEW_COUNT &&
-                <Typography variant="caption" sx={{ alignSelf: "center", px: 0.75, borderRadius: "4px", bgcolor: "#000000b0", color: "white" }}>
-                    +{shownHover.marker.comments.length - MARKER_PREVIEW_COUNT} more
-                </Typography>}
-            </Box>}
             <Box
                 component="span"
                 ref={ref}
@@ -325,6 +239,62 @@ function ProgressSlider(props: ProgressSliderProps) {
                     height: "40px",
                     cursor: "pointer"
                 }}>
+                {displayThumb && <Box
+                    sx={{
+                        position: "absolute",
+                        width: `${thumbWidth}px`,
+                        height: `${thumbHeight}px`,
+                        // A marker's comments show in its place
+                        display: showThumb && thumbEnabled && !shownHover ? "block" : "none",
+                        // If it were ever under the cursor, the bar would lose the hover and it would flicker
+                        pointerEvents: "none",
+                        borderRadius: "4px",
+                        border: "1px solid #ffffff49",
+                        background: "rgba(255, 255, 255, 0.3)",
+                        backdropFilter: "blur(6px)"
+                    }}
+                    style={{
+                        left: `${thumbX - (thumbWidth / 2)}px`,
+                        top: `${-thumbHeight - 28}px`,
+                    }}
+                >
+                    <canvas 
+                        ref={canvasRef}
+                        style={{
+                            borderRadius: "4px",
+                            width: "100%",
+                            height: "100%"
+                        }}
+                    />
+                </Box>}
+                <Box
+                    sx={{
+                        position: "absolute",
+                        width: `${thumbWidth}px`,
+                        display: showThumb && !shownHover ? "flex" : "none",
+                        justifyContent: "center",
+                        pointerEvents: "none"
+                    }}
+                    style={{
+                        left: `${thumbX - (thumbWidth / 2)}px`,
+                        top: "-24px",
+                    }}
+                >
+                    <Typography
+                        variant="subtitle2"
+                        sx={{
+                            display: "inline-flex",
+                            bgcolor: "#00000080",
+                            color: "white",
+                            fontFamily: '"Geist Mono", monospace',
+                            borderRadius: "4px",
+                            whiteSpace: "nowrap",
+                            px: 0.75
+                        }}
+                    >
+                        {thumbTime}
+                    </Typography>
+                </Box>
                 <Box
                     component="span"
                     sx={{
@@ -381,7 +351,7 @@ function ProgressSlider(props: ProgressSliderProps) {
                     const count = marker.comments.length;
                     const label = `${count === 1 ? `Comment by @${first.username}` : `${count} comments`} at ${formatTime(marker.seconds * 1000, true)}`;
                     // Only if it's this one, since clicking another marker blurs this one
-                    const unhover = () => setHoveredMarker((old) => old?.marker.seconds === marker.seconds ? undefined : old);
+                    const unhover = () => setHoveredSeconds((old) => old === marker.seconds ? undefined : old);
                     return (
                         <Box
                             key={marker.seconds}
@@ -402,18 +372,16 @@ function ProgressSlider(props: ProgressSliderProps) {
                             }}
                             onPointerEnter={(event: React.PointerEvent<HTMLElement>) => {
                                 if (event.pointerType !== "mouse") return;
-                                const rect = event.currentTarget.getBoundingClientRect();
-                                setHoveredMarker({ marker: marker, x: rect.left + rect.width / 2, y: rect.top });
+                                setHoveredSeconds(marker.seconds);
                             }}
                             onPointerLeave={unhover}
                             onFocus={(event: React.FocusEvent<HTMLElement>) => {
                                 // Keyboard focus only; hovering covers the mouse
                                 if (!event.currentTarget.matches(":focus-visible")) return;
-                                const rect = event.currentTarget.getBoundingClientRect();
-                                setHoveredMarker({ marker: marker, x: rect.left + rect.width / 2, y: rect.top });
+                                setHoveredSeconds(marker.seconds);
                             }}
                             onBlur={unhover}
-                            style={{ left: `${clamp((marker.seconds - min) / (max - min) * 100, 0, 100)}%` }}
+                            style={{ left: markerLeft(marker.seconds) }}
                             sx={{
                                 // doubled class so this beats the player's round button style
                                 "&&": {
@@ -439,6 +407,29 @@ function ProgressSlider(props: ProgressSliderProps) {
                         </Box>
                     );
                 })}
+                {shownHover &&
+                <Box
+                    sx={{
+                        position: "absolute",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                        transform: "translate(-50%, -100%)",
+                        pointerEvents: "none",
+                        zIndex: 1
+                    }}
+                    style={{
+                        left: markerLeft(shownHover.seconds),
+                        top: -8
+                    }}>
+                    {shownHover.comments.slice(0, MARKER_PREVIEW_COUNT).map((item) => (
+                        <CommentPreview key={item.comment.id} {...item} showTimestamp sx={{ width: 260, maxWidth: "80vw" }} />
+                    ))}
+                    {shownHover.comments.length > MARKER_PREVIEW_COUNT &&
+                    <Typography variant="caption" sx={{ alignSelf: "center", px: 0.75, borderRadius: "4px", bgcolor: "#000000b0", color: "white" }}>
+                        +{shownHover.comments.length - MARKER_PREVIEW_COUNT} more
+                    </Typography>}
+                </Box>}
             </Box>
         </>);
 }
