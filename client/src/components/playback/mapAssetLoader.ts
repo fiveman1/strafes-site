@@ -1,5 +1,5 @@
 import { compiledWasm } from "./wasmModule";
-import { DeferredJobs, Graphics, StreamableMap, TranscodedTexture, transcode_texture } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
+import { DeferredJobs, Graphics, ModelPreparer, StreamableMap, TranscodedTexture, transcode_texture } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 
 // First message to the worker: the module compiled here, so the worker doesn't fetch it again
 export interface WorkerInit {
@@ -26,6 +26,28 @@ export type LightmapResponse = {
     id: number;
     error: string;
 };
+
+// A group's geometry for the map's ModelPreparer in the worker. The first request for a map carries what the preparer
+// is made with.
+export interface GeometryRequest {
+    id: number;
+    mapKey: number;
+    context?: Uint8Array;
+    geometry: Uint8Array;
+}
+
+export type GeometryResponse = {
+    id: number;
+    prepared: Uint8Array;
+} | {
+    id: number;
+    error: string;
+};
+
+// Drops a map's ModelPreparer in the worker
+export interface GeometryRelease {
+    release: number;
+}
 
 export type TranscodeResponse = {
     id: number;
@@ -59,10 +81,32 @@ interface PendingLightmapChunk {
     deflated: Uint8Array;
 }
 
-type ReadyJob = { map: StreamableMap, texture: TranscodedTexture } | { map: StreamableMap, lightmapChunk: PendingLightmapChunk, prepared?: Uint8Array };
+// A map's geometry is prepared by one ModelPreparer, which keeps every mesh, so it stays on one worker.
+interface MapGeometry {
+    key: number;
+    // The worker preparing it, until it fails
+    worker?: AssetWorker;
+    // Prepares it here when no worker can
+    preparer?: ModelPreparer;
+    contextSent: boolean;
+}
 
-// Time per frame spent uploading finished textures and adding lightmap chunks. At least one is done each frame.
+interface PendingGeometry {
+    map: StreamableMap;
+    mapGeometry: MapGeometry;
+    worker: AssetWorker;
+    // Added to the worker's queuedBytes
+    cost: number;
+}
+
+type ReadyJob = { map: StreamableMap, texture: TranscodedTexture } | { map: StreamableMap, lightmapChunk: PendingLightmapChunk, prepared?: Uint8Array } | { map: StreamableMap, regions: Uint8Array };
+
+// Time per frame spent uploading finished textures and adding lightmap chunks and prepared regions. At least one is done
+// each frame.
 const UPLOAD_BUDGET_MS = 2;
+
+// Preparing a byte of geometry takes about an eighth of the time transcoding a byte of texture does
+const GEOMETRY_COST_PER_BYTE = 1 / 8;
 
 // How many workers transcode at once: one core is left for the page, and phones get fewer since each worker holds
 // its own copy of the module's memory.
@@ -79,14 +123,17 @@ interface AssetWorker {
 }
 
 // Loads the slow parts of a map in web workers: transcoding textures is most of the time spent loading a map (about
-// 16 ms per 512 KB group), and a big lightmap chunk takes up to 60 ms to inflate. The results are added from the frame
-// loop. If no worker can be used, textures are transcoded here one per frame instead, and the map inflates lightmap
-// chunks a little each frame.
+// 16 ms per 512 KB group), a big lightmap chunk takes up to 60 ms to inflate, and preparing a region's meshes up to
+// 100 ms. The results are added from the frame loop. If no worker can be used, textures are transcoded here one per
+// frame instead, the map inflates lightmap chunks a little each frame, and geometry is prepared here as it arrives.
 class MapAssetLoader {
     private workers: AssetWorker[] = [];
     private nextId = 0;
     private pendingTextures = new Map<number, PendingTexture>();
     private pendingLightmapChunks = new Map<number, PendingLightmapChunk>();
+    private pendingGeometry = new Map<number, PendingGeometry>();
+    private mapGeometry = new Map<StreamableMap, MapGeometry>();
+    private nextMapKey = 0;
     private ready: ReadyJob[] = [];
     // Textures to transcode on the main thread after the worker failed
     private fallbackTextures: PendingTexture[] = [];
@@ -98,8 +145,9 @@ class MapAssetLoader {
                 const assetWorker: AssetWorker = { worker: new Worker(new URL("./mapAssetWorker.ts", import.meta.url), { type: "module" }), queuedBytes: 0 };
                 const worker = assetWorker.worker;
                 this.workers.push(assetWorker);
-                worker.addEventListener("message", (event: MessageEvent<TranscodeResponse | LightmapResponse>) => {
-                    if (this.pendingLightmapChunks.has(event.data.id)) this.onLightmapResponse(event.data as LightmapResponse);
+                worker.addEventListener("message", (event: MessageEvent<TranscodeResponse | LightmapResponse | GeometryResponse>) => {
+                    if (this.pendingGeometry.has(event.data.id)) this.onGeometryResponse(event.data as GeometryResponse);
+                    else if (this.pendingLightmapChunks.has(event.data.id)) this.onLightmapResponse(event.data as LightmapResponse);
                     else this.onTextureResponse(event.data as TranscodeResponse);
                 });
                 worker.addEventListener("error", (event) => {
@@ -119,9 +167,9 @@ class MapAssetLoader {
         if (this.workers.length === 0) console.error("No map asset workers, loading on the main thread instead");
     }
 
-    // Number of textures and lightmap chunks waiting to be transcoded, inflated or uploaded
+    // Number of textures, lightmap chunks and groups of geometry waiting to be transcoded, inflated, prepared or added
     get queued(): number {
-        return this.pendingTextures.size + this.pendingLightmapChunks.size + this.fallbackTextures.length + this.ready.length;
+        return this.pendingTextures.size + this.pendingLightmapChunks.size + this.pendingGeometry.size + this.fallbackTextures.length + this.ready.length;
     }
 
     // Takes ownership of the jobs.
@@ -129,7 +177,10 @@ class MapAssetLoader {
         const support = graphics.texture_support();
         const jobs = deferred.take_textures();
         const lightmapJobs = deferred.take_lightmap_chunks();
+        const geometry = deferred.take_geometry();
         deferred.free();
+        // first, since which textures a region needs is only known once it's prepared
+        if (geometry.length > 0) this.submitGeometry(map, geometry);
         for (const job of lightmapJobs) {
             const chunk: PendingLightmapChunk = { map, regionId: job.region_id, deflated: job.take_deflated() };
             job.free();
@@ -166,6 +217,74 @@ class MapAssetLoader {
         }
     }
 
+    // Call when a map is done with, so its worker drops its meshes.
+    releaseMap(map: StreamableMap) {
+        const mapGeometry = this.mapGeometry.get(map);
+        if (!mapGeometry) return;
+        this.mapGeometry.delete(map);
+        mapGeometry.preparer?.free();
+        if (mapGeometry.worker && mapGeometry.contextSent) {
+            const release: GeometryRelease = { release: mapGeometry.key };
+            mapGeometry.worker.worker.postMessage(release);
+        }
+    }
+
+    private submitGeometry(map: StreamableMap, geometry: Uint8Array) {
+        let mapGeometry = this.mapGeometry.get(map);
+        if (!mapGeometry) {
+            mapGeometry = { key: this.nextMapKey++, worker: this.leastBusyWorker(), contextSent: false };
+            this.mapGeometry.set(map, mapGeometry);
+        }
+        const worker = mapGeometry.worker;
+        if (!worker) {
+            this.prepareHere(map, mapGeometry, geometry);
+            return;
+        }
+        const id = this.nextId++;
+        const cost = geometry.length * GEOMETRY_COST_PER_BYTE;
+        worker.queuedBytes += cost;
+        this.pendingGeometry.set(id, { map, mapGeometry, worker, cost });
+        const request: GeometryRequest = { id, mapKey: mapGeometry.key, geometry };
+        if (!mapGeometry.contextSent) {
+            request.context = map.preparer_context();
+            mapGeometry.contextSent = true;
+        }
+        worker.worker.postMessage(request, [geometry.buffer as ArrayBuffer]);
+    }
+
+    private prepareHere(map: StreamableMap, mapGeometry: MapGeometry, geometry: Uint8Array) {
+        try {
+            mapGeometry.preparer ??= new ModelPreparer(map.preparer_context());
+            this.ready.push({ map, regions: mapGeometry.preparer.prepare(geometry) });
+        }
+        catch (err) {
+            console.error("Couldn't prepare map geometry", err);
+            map.abandon_prepared_regions();
+        }
+    }
+
+    // The worker preparing a map's geometry failed, and its meshes with it: the map stops waiting for the regions it
+    // was preparing, and later geometry is prepared here.
+    private loseGeometryWorker(map: StreamableMap, mapGeometry: MapGeometry) {
+        if (!mapGeometry.worker) return;
+        mapGeometry.worker = undefined;
+        // unless the map was released
+        if (this.mapGeometry.get(map) === mapGeometry) map.abandon_prepared_regions();
+    }
+
+    private onGeometryResponse(response: GeometryResponse) {
+        const pending = this.pendingGeometry.get(response.id);
+        if (!pending) return;
+        this.pendingGeometry.delete(response.id);
+        pending.worker.queuedBytes -= pending.cost;
+        if ("error" in response) {
+            console.error("Couldn't prepare map geometry in the worker", response.error);
+            this.loseGeometryWorker(pending.map, pending.mapGeometry);
+            return;
+        }
+        this.ready.push({ map: pending.map, regions: response.prepared });
+    }
+
     // Uploads finished textures for the current map. Call it every frame before promote_ready_assets.
     // Textures for any other map (a replay that was closed) are dropped.
     uploadReady(map: StreamableMap, graphics: Graphics) {
@@ -184,6 +303,11 @@ class MapAssetLoader {
                 }
                 else {
                     job.texture.free();
+                }
+            }
+            else if ("regions" in job) {
+                if (job.map === map && !map.insert_prepared_regions(job.regions)) {
+                    console.error("Couldn't add prepared map regions: the worker is from another build");
                 }
             }
             else if (job.map === map) {
@@ -243,6 +367,12 @@ class MapAssetLoader {
             this.pendingLightmapChunks.delete(id);
             // the map inflates it instead
             this.ready.push({ map: chunk.map, lightmapChunk: chunk });
+        }
+        for (const [id, pending] of this.pendingGeometry) {
+            if (pending.worker === assetWorker) this.pendingGeometry.delete(id);
+        }
+        for (const [map, mapGeometry] of this.mapGeometry) {
+            if (mapGeometry.worker === assetWorker) this.loseGeometryWorker(map, mapGeometry);
         }
     }
 }

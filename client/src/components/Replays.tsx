@@ -562,6 +562,8 @@ function Replays() {
                     const mapDownloader = new MapDownloader(url);
                     try {
                         const map = await new_streamable_map(mapDownloader, graphics, 512000);
+                        // the blocks downloaded with the header are loaded like any other group
+                        getMapAssetLoader().submit(map, graphics, map.take_runoff_jobs());
                         mapDownloaderRef.current = mapDownloader;
                         return map;
                     }
@@ -599,7 +601,10 @@ function Replays() {
 
                 const mapDownloader = mapDownloaderRef.current;
                 const botDownloader = botDownloaderRef.current;
-                if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) return;
+                if (isCanceled || !map || !bot || !mapDownloader || !botDownloader) {
+                    if (map) getMapAssetLoader().releaseMap(map);
+                    return;
+                }
                 
                 const playback = new StreamableSession(bot, 0);
                 
@@ -745,6 +750,7 @@ function Replays() {
             clearInterval(pumpInterval);
             document.removeEventListener("visibilitychange", pumpRef.current);
             pumpRef.current = noop;
+            if (mapRef.current) getMapAssetLoader().releaseMap(mapRef.current);
             releaseRefs([playbackRef, thumbPlaybackRef, graphicsRef, surfaceRef, thumbSurfaceRef, botRef, mapRef, botDownloaderRef, mapDownloaderRef, diffPlaybackRef, diffBvhRef, diffBotRef]);
         };
     }, [id, playbackTime, downloadStats, queryClient, replay, replayQuery.error, replayQuery.isError, replayQuery.isSuccess, setError]);
