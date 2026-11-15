@@ -343,6 +343,24 @@ export class DeferredJobs {
         wasm.__wbg_deferredjobs_free(ptr, 0);
     }
     /**
+     * The group's mesh and region blocks in one buffer, empty without any. Pass them to ModelPreparer.prepare, in the
+     * order the groups were ingested. Moves the data out, so it can only be taken once.
+     * @returns {Uint8Array}
+     */
+    take_geometry() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.deferredjobs_take_geometry(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export5(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Moves the jobs out, so they can only be taken once.
      * @returns {LightmapChunkJob[]}
      */
@@ -622,7 +640,8 @@ export class Graphics {
     /**
      * Use a preset's settings, replacing any set one by one like the light distance. The default is Medium.
      * Only High uses 4x anti-aliasing and darkens corners with ambient occlusion. Low also skips sky reflections,
-     * lighting pixels by local lights one by one and see-through shadows, and blurs the glow more coarsely.
+     * material normal maps, lighting pixels by local lights one by one and see-through shadows, softens shadow edges
+     * and slanted textures less, and blurs the glow more coarsely.
      * Render scale is up to the page: size the canvas smaller and let the browser stretch it.
      * @param {GraphicsQuality} quality
      */
@@ -988,6 +1007,73 @@ export class MapDownloader {
     }
 }
 if (Symbol.dispose) MapDownloader.prototype[Symbol.dispose] = MapDownloader.prototype.free;
+
+/**
+ * Makes a streamed map's regions ready to draw from the geometry in DeferredJobs, which is most of the time spent
+ * adding them. It needs no Graphics, so it can run in a web worker.
+ */
+export class ModelPreparer {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ModelPreparerFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_modelpreparer_free(ptr, 0);
+    }
+    /**
+     * With StreamableMap.preparer_context.
+     * @param {Uint8Array} context
+     */
+    constructor(context) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            const ptr0 = passArray8ToWasm0(context, wasm.__wbindgen_export);
+            const len0 = WASM_VECTOR_LEN;
+            wasm.modelpreparer_new(retptr, ptr0, len0);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            if (r2) {
+                throw takeObject(r1);
+            }
+            this.__wbg_ptr = r0;
+            ModelPreparerFinalization.register(this, this.__wbg_ptr, this);
+            return this;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * Add a group's geometry from DeferredJobs.take_geometry, and prepare the regions which have all their meshes now,
+     * for StreamableMap.insert_prepared_regions.
+     * @param {Uint8Array} geometry
+     * @returns {Uint8Array}
+     */
+    prepare(geometry) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            const ptr0 = passArray8ToWasm0(geometry, wasm.__wbindgen_export);
+            const len0 = WASM_VECTOR_LEN;
+            wasm.modelpreparer_prepare(retptr, this.__wbg_ptr, ptr0, len0);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+            if (r3) {
+                throw takeObject(r2);
+            }
+            var v2 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export5(r0, r1 * 1, 1);
+            return v2;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+}
+if (Symbol.dispose) ModelPreparer.prototype[Symbol.dispose] = ModelPreparer.prototype.free;
 
 export class Range {
     static __wrap(ptr) {
@@ -1418,6 +1504,13 @@ export class StreamableMap {
         wasm.__wbg_streamablemap_free(ptr, 0);
     }
     /**
+     * Stop waiting for regions from ModelPreparer.prepare, for when the worker preparing them failed, so playback
+     * doesn't buffer forever. The regions it hadn't prepared are never drawn.
+     */
+    abandon_prepared_regions() {
+        wasm.streamablemap_abandon_prepared_regions(this.__wbg_ptr);
+    }
+    /**
      * @param {MapBlockRange} arg0
      */
     cancel(arg0) {
@@ -1443,10 +1536,12 @@ export class StreamableMap {
         wasm.streamablemap_ingest(this.__wbg_ptr, graphics.__wbg_ptr, ptr0);
     }
     /**
-     * Like ingest, but returns the group's texture files and lightmap chunks instead of loading them, which takes most
-     * of the time. Transcode each texture with transcode_texture (in a web worker) and pass the result to
+     * Like ingest, but returns the group's texture files, lightmap chunks and geometry instead of loading them, which
+     * takes most of the time. Transcode each texture with transcode_texture (in a web worker) and pass the result to
      * upload_texture; playback buffers at a spot until its textures are uploaded. Prepare each lightmap chunk with
-     * prepare_lightmap_chunk (in a web worker) and pass it to insert_lightmap_chunk.
+     * prepare_lightmap_chunk (in a web worker) and pass it to insert_lightmap_chunk. Prepare the geometry with a
+     * ModelPreparer (in a web worker) and pass the result to insert_prepared_regions; playback buffers at a spot until
+     * then. Call take_runoff_jobs first and use only this, not ingest.
      * @param {MapBlockData} arg0
      * @returns {DeferredJobs}
      */
@@ -1470,6 +1565,18 @@ export class StreamableMap {
         var ptr1 = isLikeNone(prepared) ? 0 : passArray8ToWasm0(prepared, wasm.__wbindgen_export);
         var len1 = WASM_VECTOR_LEN;
         wasm.streamablemap_insert_lightmap_chunk(this.__wbg_ptr, region_id, ptr0, len0, ptr1, len1);
+    }
+    /**
+     * Add regions from ModelPreparer.prepare. Do this before promote_ready_assets. False if any were from a mismatched
+     * worker build, and those regions are never drawn.
+     * @param {Uint8Array} prepared
+     * @returns {boolean}
+     */
+    insert_prepared_regions(prepared) {
+        const ptr0 = passArray8ToWasm0(prepared, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.streamablemap_insert_prepared_regions(this.__wbg_ptr, ptr0, len0);
+        return ret !== 0;
     }
     /**
      * @param {StreamableBot} bot
@@ -1501,6 +1608,23 @@ export class StreamableMap {
         return ret === 0 ? undefined : MapBlockRange.__wrap(ret);
     }
     /**
+     * What a ModelPreparer for this map is made with.
+     * @returns {Uint8Array}
+     */
+    preparer_context() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.streamablemap_preparer_context(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export5(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Call this before rendering to promote streaming assets which are ready
      * to render onto the render queue.
      * @param {Graphics} graphics
@@ -1516,6 +1640,14 @@ export class StreamableMap {
     stats() {
         const ret = wasm.streamablemap_stats(this.__wbg_ptr);
         return StreamableMapStats.__wrap(ret);
+    }
+    /**
+     * What ingest_deferred returns for the blocks downloaded with the map's header. Call it once, before anything else.
+     * @returns {DeferredJobs}
+     */
+    take_runoff_jobs() {
+        const ret = wasm.streamablemap_take_runoff_jobs(this.__wbg_ptr);
+        return DeferredJobs.__wrap(ret);
     }
     /**
      * Upload a texture from transcode_texture. Do this before promote_ready_assets.
@@ -2727,7 +2859,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_3060(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3107(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -2822,6 +2954,9 @@ function __wbg_get_imports() {
         },
         __wbg_setPipeline_b6f981027e02cd16: function(arg0, arg1) {
             getObject(arg0).setPipeline(getObject(arg1));
+        },
+        __wbg_setScissorRect_889235eeb784732b: function(arg0, arg1, arg2, arg3, arg4) {
+            getObject(arg0).setScissorRect(arg1 >>> 0, arg2 >>> 0, arg3 >>> 0, arg4 >>> 0);
         },
         __wbg_setVertexBuffer_6db3b60e99280744: function(arg0, arg1, arg2, arg3) {
             getObject(arg0).setVertexBuffer(arg1 >>> 0, getObject(arg2), arg3);
@@ -3493,33 +3628,33 @@ function __wbg_get_imports() {
             getObject(arg0).writeTexture(getObject(arg1), getArrayU8FromWasm0(arg2, arg3), getObject(arg4), getObject(arg5));
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 347, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3045);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 312, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3092);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 256, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1773);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 295, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1731);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 260, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1777);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000004: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 295, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1731_173);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 260, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1777_180);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000005: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727_174);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 256, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1773_181);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000006: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 291, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1727_175);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 256, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1773_182);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000007: function(arg0) {
@@ -3551,22 +3686,22 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1731(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1731(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1777(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1777(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1731_173(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1731_173(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1777_180(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1777_180(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_3060(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_3060(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3107(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3107(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
-function __wasm_bindgen_func_elem_3045(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3092(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_3045(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3092(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3577,10 +3712,10 @@ function __wasm_bindgen_func_elem_3045(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1727(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1773(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1727(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1773(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3591,10 +3726,10 @@ function __wasm_bindgen_func_elem_1727(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1727_174(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1773_181(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1727_174(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1773_181(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3605,10 +3740,10 @@ function __wasm_bindgen_func_elem_1727_174(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1727_175(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1773_182(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1727_175(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1773_182(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3756,6 +3891,9 @@ const MapBlockRangeFinalization = (typeof FinalizationRegistry === 'undefined')
 const MapDownloaderFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_mapdownloader_free(ptr, 1));
+const ModelPreparerFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_modelpreparer_free(ptr, 1));
 const RangeFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_range_free(ptr, 1));
