@@ -164,8 +164,7 @@ export class Graphics {
      * leave out hzb and shadows), sharedargs (indirect draws read a copy of the culls' draw counts, in a buffer only
      * they use), onesubmit (the camera's cull is submitted on its own before the frame; leaves out hzb and shadows),
      * drawcounts (no cull pass, and indirect draws of no vertices, so no opaque models), shadows, timestamps (GPU timing, so
-     * gpu_stats stays undefined), depthtimer (the main pass timed from its color part, with no timestamp in the
-     * depth-only pass), glow (the blur), its parts glowdownsample (picking the bright part of the frame, so no glow)
+     * gpu_stats stays undefined), glow (the blur), its parts glowdownsample (picking the bright part of the frame, so no glow)
      * and glowblur (the two blur passes, so the glow is unblurred), transparent and lightmap. Without cullpass or
      * indirect there are no shadows or hzb either. Call once, before rendering; parts left out stay out until the page
      * reloads.
