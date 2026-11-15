@@ -316,13 +316,46 @@ function noop() {}
 // a graphics object while another one was being used could cause the page to go unresponsive.
 let sharedGraphics: Promise<Graphics> | null = null;
 
+/**
+ * Parts of the frame to leave out, from the page's ?gpuoff= (e.g. ?gpuoff=hzb,shadows), see Graphics.set_diagnostics.
+ * For finding which part a device's GPU driver fails on.
+ */
+const GPU_OFF = new URLSearchParams(window.location.search).get("gpuoff") ?? "";
+
+/** The GPU's vendor and architecture as the browser reports them, for device lost reports. */
+let gpuName = "unknown";
+
+async function readGpuName() {
+    try {
+        const adapter = await navigator.gpu?.requestAdapter();
+        if (adapter) {
+            const info = adapter.info;
+            gpuName = [info.vendor, info.architecture, info.device, info.description].filter(s => s).join(" ") || "unknown";
+        }
+    }
+    catch {
+        // only for reports
+    }
+}
+
+/** Graphics whose device was lost: they can't draw again, so the render loop skips them. */
+const lostGraphics = new WeakSet<Graphics>();
+
 async function getGraphicsAndSurface(canvas: HTMLCanvasElement): Promise<{ graphics: Graphics, surface: Surface }> {
     if (sharedGraphics) {
         const graphics = await sharedGraphics;
         return { graphics, surface: graphics.new_surface(canvas) };
     }
     const promise = setup_graphics(canvas);
-    const graphicsPromise = promise.then(gs => gs.graphics()!);
+    // after setup, so it doesn't race the player's own adapter request
+    void promise.then(readGpuName, noop);
+    const graphicsPromise = promise.then(gs => {
+        const graphics = gs.graphics()!;
+        if (GPU_OFF) {
+            graphics.set_diagnostics(GPU_OFF);
+        }
+        return graphics;
+    });
     sharedGraphics = graphicsPromise;
     try {
         const gs = await promise;
@@ -335,15 +368,20 @@ async function getGraphicsAndSurface(canvas: HTMLCanvasElement): Promise<{ graph
     }
 }
 
-/** Shows GPU errors, which WebGPU reports without throwing. */
-function reportGraphicsErrors(graphics: Graphics, setError: (error: string) => void) {
+/**
+ * Shows GPU errors, which WebGPU reports without throwing. `context` describes the player's state for device lost
+ * reports, which users send as screenshots.
+ */
+function reportGraphicsErrors(graphics: Graphics, setError: (error: string) => void, context: () => string) {
     const errors = graphics.take_errors();
     if (errors.length === 0) {
         return;
     }
     // A lost device can't render anything again, so the next replay gets a new one.
     if (errors.some(e => e.startsWith("GPU device lost"))) {
+        lostGraphics.add(graphics);
         discardSharedGraphics(graphics);
+        errors.push(context());
     }
     setError(errors.join("\n"));
 }
@@ -779,6 +817,8 @@ function Replays() {
         let appliedGraphics: Graphics | undefined;
         let appliedLevel: GraphicsLevel | undefined;
         let appliedPixelRatio = pixelRatioRef.current;
+        // when this replay's first frame was drawn, for device lost reports
+        let firstRenderMs: number | undefined;
 
         if (replay?.course === undefined) {
             return;
@@ -844,7 +884,7 @@ function Replays() {
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && bot && map && graphics && surface && speedText && input) {
+            if (playback && bot && map && graphics && surface && speedText && input && !lostGraphics.has(graphics)) {
                 const newSessionTime = sessionTimer.current + time - animTimer.current;
                 try {
                     if (graphics !== appliedGraphics || graphicsLevelRef.current !== appliedLevel) {
@@ -867,12 +907,18 @@ function Replays() {
                     map.promote_ready_assets(graphics);
                     const renderStart = performance.now();
                     graphics.render_session(surface, map, bot, playback);
+                    firstRenderMs ??= timeMs;
                     stats.addRender(renderStart - promoteStart, performance.now() - renderStart);
                     stats.report(frameStatsTextRef.current, graphics);
                     stepAutoGraphics(timeMs, graphics, playback);
 
                     setLoading(playback.is_buffering());
-                    reportGraphicsErrors(graphics, setError);
+                    reportGraphicsErrors(graphics, setError, () => {
+                        const canvas = canvasRef.current;
+                        const seconds = ((timeMs - (firstRenderMs ?? timeMs)) / 1000).toFixed(1);
+                        return `GPU: ${gpuName}, preset ${graphicsLevelRef.current}${tunerRef.current ? " (auto measuring)" : ""}, `
+                            + `${canvas?.width}x${canvas?.height}, ${seconds} s after the first frame, gpuoff=${GPU_OFF || "none"}`;
+                    });
 
                     const speed = playback.get_speed(bot);
                     updateHud(playback, bot, speed, speedText, input);
