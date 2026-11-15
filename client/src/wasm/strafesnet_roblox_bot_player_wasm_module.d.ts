@@ -156,7 +156,9 @@ export class Graphics {
      * Leaves parts of the frame out, to find which one a device's GPU driver fails on: a comma-separated list of hzb
      * (occlusion culling's depth-only pass, depth pyramid and second cull), cullpass (the compute pass culling
      * opaque models: every model in view drawn at full detail), indirect (indirect draws: plain draws instead, while any
-     * cull pass still runs), cull (both), shadows, timestamps (GPU timing, so
+     * cull pass still runs), cull (both), cullwork (the cull pass's threads return at once), atomics (the cull pass stores
+     * whether each cluster is in view instead of listing it with atomic adds), argcopy (the cull's draw counts start over
+     * from a queue write instead of a copy; these three also leave out indirect), shadows, timestamps (GPU timing, so
      * gpu_stats stays undefined), glow (the blur), transparent and lightmap. Without cullpass or indirect there are no
      * shadows or hzb either. Call once, before rendering; parts left
      * out stay out until the page reloads.
