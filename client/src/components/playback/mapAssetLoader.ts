@@ -13,10 +13,10 @@ export interface TranscodeRequest {
     support: number;
 }
 
-// A lightmap chunk to inflate and lay out for the GPU, see prepare_lightmap_chunk
+// A lightmap chunk to decompress and lay out for the GPU, see prepare_lightmap_chunk
 export interface LightmapRequest {
     id: number;
-    deflated: Uint8Array;
+    compressed: Uint8Array;
 }
 
 export type LightmapResponse = {
@@ -74,11 +74,11 @@ interface PendingTexture {
 
 interface PendingLightmapChunk {
     map: StreamableMap;
-    // The worker inflating it, if one is
+    // The worker decompressing it, if one is
     worker?: AssetWorker;
     regionId: number;
-    // Kept for the map, which inflates it again if it has to, and so the chunk can still be added if the worker fails
-    deflated: Uint8Array;
+    // Kept for the map, which decompresses it again if it has to, and so the chunk can still be added if the worker fails
+    compressed: Uint8Array;
 }
 
 // A map's geometry is prepared by one ModelPreparer, which keeps every mesh, so it stays on one worker.
@@ -123,9 +123,9 @@ interface AssetWorker {
 }
 
 // Loads the slow parts of a map in web workers: transcoding textures is most of the time spent loading a map (about
-// 16 ms per 512 KB group), a big lightmap chunk takes up to 60 ms to inflate, and preparing a region's meshes up to
+// 16 ms per 512 KB group), a big lightmap chunk takes up to 60 ms to decompress, and preparing a region's meshes up to
 // 100 ms. The results are added from the frame loop. If no worker can be used, textures are transcoded here one per
-// frame instead, the map inflates lightmap chunks a little each frame, and geometry is prepared here as it arrives.
+// frame instead, the map decompresses lightmap chunks a little each frame, and geometry is prepared here as it arrives.
 class MapAssetLoader {
     private workers: AssetWorker[] = [];
     private nextId = 0;
@@ -167,7 +167,7 @@ class MapAssetLoader {
         if (this.workers.length === 0) console.error("No map asset workers, loading on the main thread instead");
     }
 
-    // Number of textures, lightmap chunks and groups of geometry waiting to be transcoded, inflated, prepared or added
+    // Number of textures, lightmap chunks and groups of geometry waiting to be transcoded, decompressed, prepared or added
     get queued(): number {
         return this.pendingTextures.size + this.pendingLightmapChunks.size + this.pendingGeometry.size + this.fallbackTextures.length + this.ready.length;
     }
@@ -182,20 +182,20 @@ class MapAssetLoader {
         // first, since which textures a region needs is only known once it's prepared
         if (geometry.length > 0) this.submitGeometry(map, geometry);
         for (const job of lightmapJobs) {
-            const chunk: PendingLightmapChunk = { map, regionId: job.region_id, deflated: job.take_deflated() };
+            const chunk: PendingLightmapChunk = { map, regionId: job.region_id, compressed: job.take_compressed() };
             job.free();
             const worker = this.leastBusyWorker();
             if (worker) {
                 const id = this.nextId++;
                 chunk.worker = worker;
-                worker.queuedBytes += chunk.deflated.length;
+                worker.queuedBytes += chunk.compressed.length;
                 this.pendingLightmapChunks.set(id, chunk);
                 // Not transferred, so the chunk is still here to add to the map
-                const request: LightmapRequest = { id, deflated: chunk.deflated };
+                const request: LightmapRequest = { id, compressed: chunk.compressed };
                 worker.worker.postMessage(request);
             }
             else {
-                map.insert_lightmap_chunk(chunk.regionId, chunk.deflated, undefined);
+                map.insert_lightmap_chunk(chunk.regionId, chunk.compressed, undefined);
             }
         }
         for (const job of jobs) {
@@ -311,7 +311,7 @@ class MapAssetLoader {
                 }
             }
             else if (job.map === map) {
-                map.insert_lightmap_chunk(job.lightmapChunk.regionId, job.lightmapChunk.deflated, job.prepared);
+                map.insert_lightmap_chunk(job.lightmapChunk.regionId, job.lightmapChunk.compressed, job.prepared);
             }
             if (performance.now() - start >= UPLOAD_BUDGET_MS) break;
         }
@@ -321,10 +321,10 @@ class MapAssetLoader {
         const chunk = this.pendingLightmapChunks.get(response.id);
         if (!chunk) return;
         this.pendingLightmapChunks.delete(response.id);
-        if (chunk.worker) chunk.worker.queuedBytes -= chunk.deflated.length;
+        if (chunk.worker) chunk.worker.queuedBytes -= chunk.compressed.length;
         if ("error" in response) {
             console.error("Couldn't prepare lightmap chunk in the worker", response.error);
-            // the map inflates it instead
+            // the map decompresses it instead
             this.ready.push({ map: chunk.map, lightmapChunk: chunk });
             return;
         }
@@ -365,7 +365,7 @@ class MapAssetLoader {
         for (const [id, chunk] of this.pendingLightmapChunks) {
             if (chunk.worker !== assetWorker) continue;
             this.pendingLightmapChunks.delete(id);
-            // the map inflates it instead
+            // the map decompresses it instead
             this.ready.push({ map: chunk.map, lightmapChunk: chunk });
         }
         for (const [id, pending] of this.pendingGeometry) {

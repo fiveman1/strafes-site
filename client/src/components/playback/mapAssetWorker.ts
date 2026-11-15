@@ -1,4 +1,4 @@
-// Transcodes map textures, inflates lightmap chunks and prepares map geometry off the main thread. See mapAssetLoader.ts.
+// Transcodes map textures, decompresses lightmap chunks and prepares map geometry off the main thread. See mapAssetLoader.ts.
 import init, { ModelPreparer, prepare_lightmap_chunk, transcode_texture } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import type { GeometryRelease, GeometryRequest, GeometryResponse, LightmapRequest, LightmapResponse, TranscodeRequest, TranscodeResponse, WorkerInit } from "./mapAssetLoader";
 
@@ -42,13 +42,13 @@ addEventListener("message", async (event: MessageEvent<WorkerInit | TranscodeReq
         postMessage(response, { transfer });
         return;
     }
-    if ("deflated" in event.data) {
-        const { id, deflated } = event.data;
+    if ("compressed" in event.data) {
+        const { id, compressed } = event.data;
         let response: LightmapResponse;
         let transfer: Transferable[] = [];
         try {
             await ready;
-            const prepared = prepare_lightmap_chunk(deflated);
+            const prepared = prepare_lightmap_chunk(compressed);
             response = { id, prepared };
             // copied out of wasm memory into its own buffer, so it can be moved
             transfer = [prepared.buffer as ArrayBuffer];

@@ -270,7 +270,7 @@ export class LightmapChunkJob {
     /**
      * The chunk as maps store it. Moves the data out, so it can only be taken once.
      */
-    take_deflated(): Uint8Array;
+    take_compressed(): Uint8Array;
     readonly region_id: number;
 }
 
@@ -440,10 +440,10 @@ export class StreamableMap {
     ingest_deferred(arg0: MapBlockData): DeferredJobs;
     /**
      * Add a lightmap chunk from a LightmapChunkJob with what prepare_lightmap_chunk made of it. Without that (the worker
-     * failed), or if it doesn't hold a chunk (a mismatched worker build), the chunk is inflated here instead, a little
+     * failed), or if it doesn't hold a chunk (a mismatched worker build), the chunk is decompressed here instead, a little
      * each frame.
      */
-    insert_lightmap_chunk(region_id: number, deflated: Uint8Array, prepared?: Uint8Array | null): void;
+    insert_lightmap_chunk(region_id: number, compressed: Uint8Array, prepared?: Uint8Array | null): void;
     /**
      * Add regions from ModelPreparer.prepare. Do this before promote_ready_assets. False if any were from a mismatched
      * worker build, and those regions are never drawn.
@@ -607,11 +607,11 @@ export function new_streamable_bot(downloader: BotDownloader, run_duration: numb
 export function new_streamable_map(downloader: MapDownloader, graphics: Graphics, group_split_size: number): Promise<StreamableMap>;
 
 /**
- * Inflate a lightmap chunk from a LightmapChunkJob and lay it out as it goes on the GPU, as bytes for
+ * Decompress a lightmap chunk from a LightmapChunkJob and lay it out as it goes on the GPU, as bytes for
  * StreamableMap.insert_lightmap_chunk. This is the slow part of a lightmap chunk, and it needs no Graphics, so it can
  * run in a web worker.
  */
-export function prepare_lightmap_chunk(deflated: Uint8Array): Uint8Array;
+export function prepare_lightmap_chunk(compressed: Uint8Array): Uint8Array;
 
 /**
  * Set up the graphics.  Returns an object that contains both graphics and surface.
@@ -762,7 +762,7 @@ export interface InitOutput {
     readonly graphicsandsurface_graphics: (a: number) => number;
     readonly graphicsandsurface_surface: (a: number) => number;
     readonly lightmapchunkjob_region_id: (a: number) => number;
-    readonly lightmapchunkjob_take_deflated: (a: number, b: number) => void;
+    readonly lightmapchunkjob_take_compressed: (a: number, b: number) => void;
     readonly mapblockrange_range: (a: number) => number;
     readonly mapdownloader_download_map_block_range: (a: number, b: number) => number;
     readonly mapdownloader_new: (a: number, b: number) => number;
@@ -835,13 +835,13 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1773: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1773_181: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1773_182: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3092: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3107: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1777: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1777_180: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1777: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1777_181: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1777_182: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3096: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3111: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1781: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1781_180: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
