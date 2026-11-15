@@ -157,8 +157,9 @@ export class Graphics {
      * (occlusion culling's depth-only pass, depth pyramid and second cull), cullpass (the compute pass culling
      * opaque models: every model in view drawn at full detail), indirect (indirect draws: plain draws instead, while any
      * cull pass still runs), cull (both), cullwork (the cull pass's threads return at once), atomics (the cull pass stores
-     * whether each cluster is in view instead of listing it with atomic adds), argcopy (the cull's draw counts start over
-     * from a queue write instead of a copy; these three also leave out indirect), shadows, timestamps (GPU timing, so
+     * whether each cluster is in view instead of listing it with atomic adds; with indirect draws these two draw no
+     * opaque models), argcopy (the cull's draw counts start over from a queue write instead of a copy; these three also
+     * leave out hzb and shadows), shadows, timestamps (GPU timing, so
      * gpu_stats stays undefined), glow (the blur), transparent and lightmap. Without cullpass or indirect there are no
      * shadows or hzb either. Call once, before rendering; parts left
      * out stay out until the page reloads.
