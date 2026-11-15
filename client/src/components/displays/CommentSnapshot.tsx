@@ -112,17 +112,16 @@ interface CommentReplayLineProps {
     // Makes the map open the replay (at this comment, if given) and the runner open their profile. Leave off inside
     // something that's already a link.
     links?: boolean
-    commentId?: string
 }
 
 /** The replay: map, game and style, time, and runner, like the replay page lays them out. Wraps when it's narrow. */
 export function CommentReplayLine(props: CommentReplayLineProps) {
-    const { replay, links, commentId } = props;
+    const { replay, links } = props;
     const theme = useTheme();
     const { maps, loginUser } = useOutletContext() as ContextParams;
     const map = maps[replay.mapId];
     const mapName = (replay.mapName ?? map?.name ?? `Map ${replay.mapId}`) + (replay.course !== 0 ? ` (${formatCourse(replay.course, true)})` : "");
-    const replayLink = `/replays/${replay.timeId}` + (commentId !== undefined ? `?comment=${commentId}` : "");
+    const replayLink = `/replays/${replay.timeId}`;
     const runner = replay.runner;
 
     return (
@@ -180,7 +179,7 @@ function CommentSnapshot(props: CommentSnapshotProps) {
                 to={lineProps.links ? `/replays/${lineProps.replay.timeId}?comment=${comment.id}` : undefined}
             />
             {repliedTo && <RepliedTo comment={repliedTo} links={lineProps.links} />}
-            <CommentReplayLine {...lineProps} commentId={comment.id} />
+            <CommentReplayLine {...lineProps} />
         </Box>
     );
 }
