@@ -164,10 +164,11 @@ export class Graphics {
      * leave out hzb and shadows), sharedargs (indirect draws read a copy of the culls' draw counts, in a buffer only
      * they use), onesubmit (the camera's cull is submitted on its own before the frame; leaves out hzb and shadows),
      * drawcounts (no cull pass, and indirect draws of no vertices, so no opaque models), shadows, timestamps (GPU timing, so
-     * gpu_stats stays undefined), glow (the blur), its parts glowdownsample (picking the bright part of the frame, so no glow)
-     * and glowblur (the two blur passes, so the glow is unblurred), transparent and lightmap. Without cullpass or
-     * indirect there are no shadows or hzb either. Call once, before rendering; parts left out stay out until the page
-     * reloads.
+     * gpu_stats stays undefined), glow (the blur), its parts glowdownsample (picking the bright part of the frame, so no
+     * glow) and glowblur (the two blur passes, so the glow is unblurred), glowformat (the glow blurred in 8-bit targets
+     * instead of half floats), glowfull (the glow blurred at full resolution instead of a quarter), transparent and
+     * lightmap. Without cullpass or indirect there are no shadows or hzb either. Call once, before rendering; parts left
+     * out stay out until the page reloads.
      */
     set_diagnostics(without: string): void;
     /**
@@ -854,14 +855,14 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1814: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1814_181: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1814_183: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1814_184: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3154: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3169: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1818: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1818_182: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1820: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1820_181: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1820_183: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1820_184: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3160: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3175: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1824: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1824_182: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
