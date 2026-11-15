@@ -154,7 +154,9 @@ export class Graphics {
     set_bounce_light(bounce_light: number): void;
     /**
      * Leaves parts of the frame out, to find which one a device's GPU driver fails on: a comma-separated list of hzb
-     * (occlusion culling's depth-only pass, depth pyramid and second cull), cullpass (the compute pass culling
+     * (occlusion culling's depth-only pass, depth pyramid and second cull), its parts depthpass (the depth-only pass's
+     * draws), hzbbuild (building the depth pyramid), occlusiontest (the second cull reading it) and seethrough (hiding
+     * see-through models behind it), which each leave nothing hidden by it, cullpass (the compute pass culling
      * opaque models: every model in view drawn at full detail), indirect (indirect draws: plain draws instead, while any
      * cull pass still runs), cull (both), cullwork (the cull pass's threads return at once), atomics (the cull pass stores
      * whether each cluster is in view instead of listing it with atomic adds; with indirect draws these two draw no
@@ -162,7 +164,8 @@ export class Graphics {
      * leave out hzb and shadows), sharedargs (indirect draws read a copy of the culls' draw counts, in a buffer only
      * they use), onesubmit (the camera's cull is submitted on its own before the frame; leaves out hzb and shadows),
      * drawcounts (no cull pass, and indirect draws of no vertices, so no opaque models), shadows, timestamps (GPU timing, so
-     * gpu_stats stays undefined), glow (the blur), transparent and lightmap. Without cullpass or indirect there are no
+     * gpu_stats stays undefined), depthtimer (the main pass timed from its color part, with no timestamp in the
+     * depth-only pass), glow (the blur), transparent and lightmap. Without cullpass or indirect there are no
      * shadows or hzb either. Call once, before rendering; parts left
      * out stay out until the page reloads.
      */
