@@ -154,7 +154,8 @@ export class Graphics {
     set_bounce_light(bounce_light: number): void;
     /**
      * Leaves parts of the frame out, to find which one a device's GPU driver fails on: a comma-separated list of hzb
-     * (occlusion culling's depth-only pass, depth pyramid and second cull), shadows, timestamps (GPU timing, so
+     * (occlusion culling's depth-only pass, depth pyramid and second cull), cull (GPU culling and indirect draws: every
+     * model in view drawn at full detail, which also leaves out hzb and shadows), shadows, timestamps (GPU timing, so
      * gpu_stats stays undefined), glow (the blur), transparent and lightmap. Call once, before rendering; parts left
      * out stay out until the page reloads.
      */

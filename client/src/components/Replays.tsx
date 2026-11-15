@@ -330,11 +330,25 @@ async function readGpuName() {
         const adapter = await navigator.gpu?.requestAdapter();
         if (adapter) {
             const info = adapter.info;
-            gpuName = [info.vendor, info.architecture, info.device, info.description].filter(s => s).join(" ") || "unknown";
+            gpuName = [info.vendor, info.architecture, info.device, info.description].filter(s => s).join(" ") || gpuName;
         }
     }
     catch {
         // only for reports
+    }
+    // Chrome on Android leaves WebGPU's adapter info empty, but WebGL names the GPU
+    if (gpuName === "unknown") {
+        try {
+            const gl = document.createElement("canvas").getContext("webgl");
+            const debugInfo = gl?.getExtension("WEBGL_debug_renderer_info");
+            if (gl && debugInfo) {
+                gpuName = `${gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)} (WebGL)`;
+            }
+            gl?.getExtension("WEBGL_lose_context")?.loseContext();
+        }
+        catch {
+            // only for reports
+        }
     }
 }
 
