@@ -16,7 +16,7 @@ import { CompleteBot, Graphics, StreamableBot, StreamableMap } from "../../wasm/
 import { formatBytes } from "./downloadStats";
 import { GRAPHICS_LEVELS, GraphicsLevel } from "./graphicsSettings";
 import { DIFF_BAD_COLOR, DIFF_GOOD_COLOR } from "./videoHud";
-import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, endHold, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
+import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, endHold, RecordedVideo, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
 
 const SETTINGS_KEY = "player_videoSettings";
 /** Width of the settings' labels, so their options line up */
@@ -100,6 +100,9 @@ function readSettings(): VideoSettings {
     }
 }
 
+/** How long a saved file is kept for the download to copy it, in milliseconds */
+const DOWNLOAD_KEEP_MS = 60_000;
+
 /** Saves a file the page made. */
 function downloadBlob(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
@@ -108,7 +111,7 @@ function downloadBlob(blob: Blob, filename: string) {
     link.download = filename;
     link.click();
     // the download has its own copy once started
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_KEEP_MS);
 }
 
 function formatDuration(seconds: number) {
@@ -237,6 +240,13 @@ function VideoPanel(props: VideoPanelProps) {
     }, []);
     const [ phase, setPhase ] = useState<Phase>({ kind: "setup" });
     const abortRef = useRef<AbortController | null>(null);
+    // the last finished video, deleted when the next starts or the panel closes
+    const recordedRef = useRef<RecordedVideo | null>(null);
+    const discardRecorded = useCallback(() => {
+        const recorded = recordedRef.current;
+        recordedRef.current = null;
+        if (recorded) setTimeout(recorded.discard, DOWNLOAD_KEEP_MS);
+    }, []);
     const previewRef = useRef<HTMLCanvasElement>(null);
     // when encoding started, see Phase
     const encodeStartRef = useRef<number | undefined>(undefined);
@@ -256,7 +266,10 @@ function VideoPanel(props: VideoPanelProps) {
     }, [settings]);
 
     // a recording belongs to the replay it started on
-    useEffect(() => () => abortRef.current?.abort(), []);
+    useEffect(() => () => {
+        abortRef.current?.abort();
+        discardRecorded();
+    }, [discardRecorded]);
 
     const onPreview = useCallback((frame: HTMLCanvasElement) => {
         previewRef.current?.getContext("2d")?.drawImage(frame, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
@@ -277,6 +290,7 @@ function VideoPanel(props: VideoPanelProps) {
             setPhase({ kind: "failed", error: "the replay is still loading, try again in a moment." });
             return;
         }
+        discardRecorded();
         const controller = new AbortController();
         abortRef.current = controller;
         encodeStartRef.current = undefined;
@@ -285,12 +299,14 @@ function VideoPanel(props: VideoPanelProps) {
         setPhase({ kind: "running", progress: { step: "loading", fraction: 0 }, encodeSeconds: 0 });
         onRecordingChange(true);
         try {
-            const video = await recordVideo({ ...sources, settings, signal: controller.signal, onProgress, onPreview });
-            if (video) {
-                downloadBlob(video, filename);
-                setPhase({ kind: "done", video });
+            const recorded = await recordVideo({ ...sources, settings, signal: controller.signal, onProgress, onPreview });
+            if (recorded && !controller.signal.aborted) {
+                recordedRef.current = recorded;
+                downloadBlob(recorded.video, filename);
+                setPhase({ kind: "done", video: recorded.video });
             }
             else {
+                await recorded?.discard();
                 setPhase({ kind: "setup" });
             }
         }
@@ -302,7 +318,7 @@ function VideoPanel(props: VideoPanelProps) {
             abortRef.current = null;
             onRecordingChange(false);
         }
-    }, [getSources, settings, filename, onProgress, onPreview, onRecordingChange]);
+    }, [getSources, settings, filename, onProgress, onPreview, onRecordingChange, discardRecorded]);
 
     const onCancel = useCallback(() => abortRef.current?.abort(), []);
 

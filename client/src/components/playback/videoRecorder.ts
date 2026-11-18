@@ -1,7 +1,8 @@
-import { BufferTarget, CanvasSource, canEncodeVideo, Mp4OutputFormat, Output, Quality } from "mediabunny";
+import { BufferTarget, CanvasSource, canEncodeVideo, Mp4OutputFormat, Output, Quality, StreamTarget } from "mediabunny";
 import { Checkpoint, CompleteBot, Graphics, StreamableBot, StreamableMap, StreamableSession } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import { getMapAssetLoader } from "./mapAssetLoader";
 import { avcConfigWithColor } from "./avcColor";
+import { createVideoFile } from "./videoFile";
 import { GraphicsLevel, toGraphicsQuality } from "./graphicsSettings";
 import { CheckpointDiff, DIFF_SHOWN_AFTER, VideoHud, VideoHudSettings } from "./videoHud";
 
@@ -81,6 +82,12 @@ export type RecordingProgress =
     /** `bytes` is the size of the video so far */
     | { step: "recording", frame: number, frameCount: number, bytes: number }
     | { step: "saving" };
+
+export interface RecordedVideo {
+    video: Blob
+    /** Frees the space the video takes, once it's saved */
+    discard: () => Promise<void>
+}
 
 /** H.264 High profile at level 4.2, enough for 1080p60, for the color range test. Encoders write their own level. */
 const TEST_CODEC = "avc1.64002a";
@@ -249,7 +256,7 @@ export interface RecordVideoOptions {
  * The page's own render loop must not draw while this runs: both share the graphics' shadow maps.
  * Returns undefined if aborted.
  */
-export async function recordVideo(options: RecordVideoOptions): Promise<Blob | undefined> {
+export async function recordVideo(options: RecordVideoOptions): Promise<RecordedVideo | undefined> {
     const { graphics, map, bot, compareBot, settings, pump, signal, onProgress, onPreview } = options;
     const encoder = encoderOptions(settings);
     const fps = settings.fps;
@@ -291,9 +298,14 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
     const session = new StreamableSession(bot, 0);
     const samples = settings.motionBlur ? settings.blurSamples : 1;
     const blend = samples > 1 ? graphics.new_frame_blend(surface) : undefined;
+    // the session would loop a second after the end, so the time stops there and the last frame stays
+    const duration = bot.duration();
+    const frameCount = Math.floor((duration + endHold(settings, compareBot !== undefined)) * fps);
+    const file = await createVideoFile();
     const output = new Output({
-        format: new Mp4OutputFormat({ fastStart: "in-memory" }),
-        target: new BufferTarget()
+        // the frame count is known, so the index can go at the start without keeping the video in memory until the end
+        format: new Mp4OutputFormat({ fastStart: "reserve" }),
+        target: file ? new StreamTarget(file.writable, { chunked: true }) : new BufferTarget()
     });
     let finished = false;
     let bytes = 0;
@@ -319,7 +331,7 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
                 }
             }
         });
-        output.addVideoTrack(source, { frameRate: fps });
+        output.addVideoTrack(source, { frameRate: fps, maximumPacketCount: frameCount });
         await output.start();
 
         for (let i = 0; i < WARM_UP_FRAMES; ++i) {
@@ -327,9 +339,6 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
             await yieldToBrowser();
         }
 
-        // the session would loop a second after the end, so the time stops there and the last frame stays
-        const duration = bot.duration();
-        const frameCount = Math.floor((duration + endHold(settings, compareBot !== undefined)) * fps);
         // each frame's blur covers the time after it, like a camera's shutter opening at the frame
         let lastPreview = -Infinity;
         let lastYield = performance.now();
@@ -372,12 +381,18 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
         onProgress({ step: "saving" });
         await output.finalize();
         finished = true;
-        const buffer = output.target.buffer;
-        return buffer ? new Blob([buffer], { type: "video/mp4" }) : undefined;
+        if (file) {
+            return { video: await file.read(), discard: file.discard };
+        }
+        const buffer = output.target instanceof BufferTarget ? output.target.buffer : null;
+        return buffer ? { video: new Blob([buffer], { type: "video/mp4" }), discard: async () => {} } : undefined;
     }
     finally {
-        if (!finished && output.state === "started") {
-            await output.cancel().catch(err => console.error("Couldn't cancel the video", err));
+        if (!finished) {
+            if (output.state === "started") {
+                await output.cancel().catch(err => console.error("Couldn't cancel the video", err));
+            }
+            await file?.discard();
         }
         blend?.free();
         session.free();
