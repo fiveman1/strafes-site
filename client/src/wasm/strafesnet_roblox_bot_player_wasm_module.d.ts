@@ -143,6 +143,12 @@ export class Graphics {
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
+     * Like render_session, for recording a video once the whole map is loaded (StreamableMap.is_loaded): the baked
+     * occlusion lists the view needs all go on the GPU this frame instead of a little each frame, so nothing pops in.
+     * The debug stats keep the last render_session's camera.
+     */
+    render_video_frame(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
+    /**
      * Whether see-through textures like leaves are drawn as anti-aliased coverage instead of blended, on presets
      * with anti-aliasing. On by default.
      */
@@ -449,6 +455,13 @@ export class StreamableMap {
      * worker build, and those regions are never drawn.
      */
     insert_prepared_regions(prepared: Uint8Array): boolean;
+    /**
+     * Whether the whole map is downloaded and in the scene: nothing left to download or in flight, no texture
+     * transcoding and nothing waiting to be added by promote_ready_assets. Work handed to web workers through
+     * ingest_deferred isn't known here until it comes back, so check that the caller's workers are done too.
+     * Lightmap chunks still go on the GPU over the next frames rendered.
+     */
+    is_loaded(): boolean;
     next_block_head_throttled(bot: StreamableBot, head: StreamableHead, surface: Surface): MapBlockRange | undefined;
     /**
      * Returns the next block to download in a reasonable order based on the
@@ -751,6 +764,7 @@ export interface InitOutput {
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly graphics_render_video_frame: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_set_alpha_to_coverage: (a: number, b: number) => void;
     readonly graphics_set_bounce_light: (a: number, b: number) => void;
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
@@ -799,6 +813,7 @@ export interface InitOutput {
     readonly streamablemap_ingest_deferred: (a: number, b: number) => number;
     readonly streamablemap_insert_lightmap_chunk: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly streamablemap_insert_prepared_regions: (a: number, b: number, c: number) => number;
+    readonly streamablemap_is_loaded: (a: number) => number;
     readonly streamablemap_next_block_head_throttled: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_next_block_session: (a: number, b: number, c: number, d: number) => number;
     readonly streamablemap_preparer_context: (a: number, b: number) => void;
@@ -835,14 +850,14 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1815: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1815_180: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1815_182: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1815_183: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3158: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3173: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1819: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1819_181: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1821: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1821_182: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1821_184: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1821_185: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3164: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3179: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1825: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1825_183: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

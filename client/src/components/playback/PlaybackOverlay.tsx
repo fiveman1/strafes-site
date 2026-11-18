@@ -13,6 +13,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import SettingsIcon from '@mui/icons-material/Settings';
+import VideocamIcon from '@mui/icons-material/Videocam';
 import Slider from "@mui/material/Slider";
 import Popper from "@mui/material/Popper";
 import type { Instance as PopperInstance } from "@popperjs/core";
@@ -84,6 +85,8 @@ interface PlaybackOverlayProps {
     graphicsLevel: GraphicsLevel
     /** For the seek bar and pop-ups. Unset where the player has no comments. */
     commentMarkers?: CommentMarker[]
+    /** Opens the video recording panel. Unset where videos can't be recorded. */
+    onOpenVideo?: () => void
 }
 
 /** Gap between the settings menu and the top of the player, in pixels. */
@@ -102,7 +105,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerWidth, playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
-        graphicsSettings, graphicsLevel, commentMarkers } = props;
+        graphicsSettings, graphicsLevel, commentMarkers, onOpenVideo } = props;
 
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
@@ -941,6 +944,18 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     markers={commentMarkers}
                     onMarkerClick={onSetPlaybackHandler}
                 />
+                {onOpenVideo &&
+                <IconButton
+                    aria-label="Record video"
+                    title="Record video"
+                    size="small"
+                    onClick={onOpenVideo}
+                    sx={{
+                        ml: 1.5
+                    }}
+                >
+                    <VideocamIcon />
+                </IconButton>}
                 <Box ref={settingsButtonRef}>
                     <IconButton
                         aria-describedby={curSettingsMenuId}
@@ -948,7 +963,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                         size="small"
                         onPointerUp={onClickSettings}
                         sx={{
-                            ml: 1.5
+                            ml: onOpenVideo ? 0.5 : 1.5
                         }}
                     >
                         <SettingsIcon />

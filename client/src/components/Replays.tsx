@@ -12,7 +12,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MapThumb from "./displays/MapThumb";
 import { ContextParams, getGameColor, getStyleColor, InputState, PLAYER_ASPECT_RATIO, PLAYER_MAX_ASPECT_RATIO, PLAYER_MAX_FULLSCREEN_ASPECT_RATIO, PLAYER_MIN_ASPECT_RATIO, PLAYER_THUMB_HEIGHT } from "../common/common";
 import UserLink from "./displays/UserLink";
-import { useTheme } from "@mui/material/styles";
+import { ThemeProvider, useTheme } from "@mui/material/styles";
+import { createSiteTheme } from "../common/theme";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DiffDisplay from "./displays/DiffDisplay";
 import Link from "@mui/material/Link";
@@ -32,6 +33,8 @@ import { getMapAssetLoader } from "./playback/mapAssetLoader";
 import { compiledWasm } from "./playback/wasmModule";
 import { mapIngestStats, PlaybackStats } from "./playback/playbackStats";
 import { AutoGraphicsTuner, canvasPixelRatio, GraphicsLevel, guessGraphicsLevel, toGraphicsQuality, useGraphicsSettings } from "./playback/graphicsSettings";
+import { canRecordVideo } from "./playback/videoRecorder";
+import VideoPanel, { RecordingSources } from "./playback/VideoPanel";
 
 /** The largest player that fits in width x height, with its aspect ratio kept within the allowed range */
 function getPlayerSize(width: number, height: number, fullscreen: boolean) {
@@ -311,6 +314,18 @@ async function ingestMapBlock(block: MapBlockRange, downloader: MapDownloader, m
 
 function noop() {}
 
+/** The page title without the site's part, e.g. "Map in 01:23.456 by name (WR)" */
+function getReplayTitle(replay: Replay, timeText = formatTime(replay.time)) {
+    const placementText = replay.placement === 1 ? "WR" : `${formatPlacement(replay.placement)} place`;
+    return `${getMapTitle(replay)} in ${timeText} by ${replay.username} (${placementText})`;
+}
+
+/** The replay's title with the time as 01-23-456, without the characters file names can't have */
+function videoFilename(replay: Replay) {
+    const timeText = formatTime(replay.time).replace(/[:.]/g, "-");
+    return getReplayTitle(replay, timeText).replace(/[\\/:*?"<>|]/g, "-") + ".mp4";
+}
+
 // One WebGPU device for the whole tab, shared by every replay viewed.
 // This is primarily to avoid what seems to be a Chrome issue with WebGPU where garbage collecting
 // a graphics object while another one was being used could cause the page to go unresponsive.
@@ -432,6 +447,9 @@ function Replays() {
     const { maps, loginUser } = useOutletContext() as ContextParams;
 
     const theme = useTheme();
+    // The player's controls, menus and panels sit on the dark video in either site theme, so they take the dark theme's
+    // colors (the light theme's primary and success colors are too dark there).
+    const playerTheme = useMemo(() => createSiteTheme("dark"), []);
     const smallScreen = useMediaQuery("(max-width: 600px)");
     const queryClient = useQueryClient();
 
@@ -490,6 +508,9 @@ function Replays() {
     // Requests more blocks to be downloaded; call after anything that changes which blocks are needed
     const pumpRef = useRef<() => void>(noop);
     const isShowingThumb = useRef(false);
+    const [ videoOpen, setVideoOpen ] = useState(false);
+    // while recording a video the render loop doesn't draw, see recordVideo
+    const recordingRef = useRef(false);
 
     // graphics presets: one picked by the player, or auto, which measures this device once and remembers the result
     const applyIndoorShading = useCallback((enabled: boolean) => {
@@ -525,8 +546,7 @@ function Replays() {
 
     useEffect(() => {
         if (replay) {
-            const placementText = replay.placement === 1 ? "WR" : `${formatPlacement(replay.placement)} place`;
-            document.title = `${getMapTitle(replay)} in ${formatTime(replay.time)} by ${replay.username} (${placementText}) - replays - strafes`;
+            document.title = `${getReplayTitle(replay)} - replays - strafes`;
         }
         else {
             document.title = `replays - strafes`;
@@ -883,7 +903,7 @@ function Replays() {
             const speedText = speedTextRef.current;
             const input = inputContainerRef.current;
 
-            if (playback && bot && map && graphics && surface && speedText && input && !lostGraphics.has(graphics)) {
+            if (playback && bot && map && graphics && surface && speedText && input && !lostGraphics.has(graphics) && !recordingRef.current) {
                 const newSessionTime = sessionTimer.current + time - animTimer.current;
                 try {
                     if (graphics !== appliedGraphics || graphicsLevelRef.current !== appliedLevel) {
@@ -1118,6 +1138,23 @@ function Replays() {
         }
     }, []);
 
+    const getRecordingSources = useCallback((): RecordingSources | undefined => {
+        const graphics = graphicsRef.current;
+        const map = mapRef.current;
+        const bot = botRef.current;
+        if (!graphics || !map || !bot) return undefined;
+        return { graphics, map, bot, pump: () => pumpRef.current() };
+    }, []);
+
+    const onRecordingChange = useCallback((recording: boolean) => {
+        recordingRef.current = recording;
+        // the recording draws with its own preset
+        if (!recording) graphicsRef.current?.set_graphics_quality(toGraphicsQuality(graphicsLevelRef.current));
+    }, []);
+
+    const onOpenVideo = useCallback(() => setVideoOpen(true), []);
+    const onCloseVideo = useCallback(() => setVideoOpen(false), []);
+
     // Also scrolls back up to the player
     const onCommentSeek = useCallback((seconds: number) => {
         onSetPlayback(seconds);
@@ -1216,120 +1253,134 @@ function Replays() {
                         alignItems: "center",
                         justifyContent: "center"
                     }}>
-                    <Box
-                        style={{
-                            width: playerWidth,
-                            height: playerHeight
-                        }}
-                        sx={{
-                            position: "relative",
-                            // sized exactly, like the info below
-                            flexShrink: 0,
-                            bgcolor: "black"
-                        }}>
-                        <canvas
-                            ref={setCanvasElement}
-                            style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: playerWidth,
-                                height: playerHeight
-                            }}
-                        />
+                    <ThemeProvider theme={playerTheme}>
                         <Box
                             style={{
                                 width: playerWidth,
                                 height: playerHeight
                             }}
                             sx={{
-                                position: "absolute",
-                                top: 0
+                                position: "relative",
+                                // sized exactly, like the info below
+                                flexShrink: 0,
+                                bgcolor: "black",
+                                // drawn over the video whatever the site's theme, see playerTheme
+                                colorScheme: "dark"
                             }}>
-                            <PlaybackOverlay
-                                time={playbackTime}
-                                downloadStats={downloadStats}
-                                duration={duration}
-                                paused={paused}
-                                offset={botOffset}
-                                fullscreen={fullscreen}
-                                speed={playbackSpeed}
-                                onDragPlayback={onDragPlayback}
-                                onSetPlayback={onSetPlayback}
-                                onSetPause={onSetPause}
-                                onFullscreen={onFullscreen}
-                                onSeek={onSeek}
-                                onReset={onReset}
-                                onSetSpeed={onChangePlaybackSpeed}
-                                speedTextRef={speedTextRef}
-                                jhudRef={jhudRef}
-                                playerWidth={playerWidth}
-                                playerHeight={playerHeight}
-                                inputContainerRef={inputContainerRef}
-                                loading={loading}
-                                errorReplay={!!error}
-                                diffSpeedTextRef={diffSpeedTextRef}
-                                diffTimeTextRef={diffTimeTextRef}
-                                allowDiff={allowDiff}
-                                thumbCanvasRef={thumbCanvasRef}
-                                setThumbTime={setThumbTime}
-                                showThumb={graphicsReady}
-                                thumbEnabled={thumbEnabled}
-                                debugInfo={debugInfo}
-                                fpsTextRef={fpsTextRef}
-                                frameStatsTextRef={frameStatsTextRef}
-                                setShowingThumb={setShowingThumb}
-                                graphicsSettings={graphicsSettings}
-                                graphicsLevel={graphicsLevel}
-                                commentMarkers={commentMarkers}
+                            <canvas
+                                ref={setCanvasElement}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: playerWidth,
+                                    height: playerHeight
+                                }}
                             />
-                        </Box>
-                        {(loading && !error) &&
-                        <Box
-                            sx={{
-                                position: "absolute",
-                                top: "50%",
-                                left: "50%",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                transform: "translate(-50%, -50%)",
-                                userSelect: "none"
-                            }}>
-                            <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
+                            <Box
+                                style={{
+                                    width: playerWidth,
+                                    height: playerHeight
+                                }}
+                                sx={{
+                                    position: "absolute",
+                                    top: 0
+                                }}>
+                                <PlaybackOverlay
+                                    time={playbackTime}
+                                    downloadStats={downloadStats}
+                                    duration={duration}
+                                    paused={paused}
+                                    offset={botOffset}
+                                    fullscreen={fullscreen}
+                                    speed={playbackSpeed}
+                                    onDragPlayback={onDragPlayback}
+                                    onSetPlayback={onSetPlayback}
+                                    onSetPause={onSetPause}
+                                    onFullscreen={onFullscreen}
+                                    onSeek={onSeek}
+                                    onReset={onReset}
+                                    onSetSpeed={onChangePlaybackSpeed}
+                                    speedTextRef={speedTextRef}
+                                    jhudRef={jhudRef}
+                                    playerWidth={playerWidth}
+                                    playerHeight={playerHeight}
+                                    inputContainerRef={inputContainerRef}
+                                    loading={loading}
+                                    errorReplay={!!error}
+                                    diffSpeedTextRef={diffSpeedTextRef}
+                                    diffTimeTextRef={diffTimeTextRef}
+                                    allowDiff={allowDiff}
+                                    thumbCanvasRef={thumbCanvasRef}
+                                    setThumbTime={setThumbTime}
+                                    showThumb={graphicsReady}
+                                    thumbEnabled={thumbEnabled}
+                                    debugInfo={debugInfo}
+                                    fpsTextRef={fpsTextRef}
+                                    frameStatsTextRef={frameStatsTextRef}
+                                    setShowingThumb={setShowingThumb}
+                                    graphicsSettings={graphicsSettings}
+                                    graphicsLevel={graphicsLevel}
+                                    commentMarkers={commentMarkers}
+                                    onOpenVideo={graphicsReady && !error && canRecordVideo() ? onOpenVideo : undefined}
+                                />
+                            </Box>
+                            {(loading && !error && !videoOpen) &&
                             <Box
                                 sx={{
-                                    mt: 1.5,
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
                                     display: "flex",
                                     flexDirection: "column",
                                     alignItems: "center",
-                                    gap: 0.75,
-                                    px: 1.25,
-                                    py: 0.75,
-                                    borderRadius: 1,
-                                    bgcolor: "rgba(0, 0, 0, 0.5)",
-                                    color: "common.white"
+                                    justifyContent: "center",
+                                    transform: "translate(-50%, -50%)",
+                                    userSelect: "none"
                                 }}>
-                                <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-                                    {LOAD_STEPS[loadStep]}
-                                </Typography>
-                                <Box sx={{ display: "flex", gap: 0.75 }} aria-hidden>
-                                    {LOAD_STEP_ORDER.map((step, index) => (
-                                        <Box
-                                            key={step}
-                                            sx={{
-                                                width: 6,
-                                                height: 6,
-                                                borderRadius: "50%",
-                                                bgcolor: index <= LOAD_STEP_ORDER.indexOf(loadStep) ? "primary.main" : "rgba(255, 255, 255, 0.3)",
-                                                transition: "background-color 0.2s"
-                                            }} />
-                                    ))}
+                                <CircularProgress size={Math.max(40, Math.round(playerHeight / 10))} />
+                                <Box
+                                    sx={{
+                                        mt: 1.5,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        py: 0.75,
+                                        borderRadius: 1,
+                                        bgcolor: "rgba(0, 0, 0, 0.5)",
+                                        color: "common.white"
+                                    }}>
+                                    <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                                        {LOAD_STEPS[loadStep]}
+                                    </Typography>
+                                    <Box sx={{ display: "flex", gap: 0.75 }} aria-hidden>
+                                        {LOAD_STEP_ORDER.map((step, index) => (
+                                            <Box
+                                                key={step}
+                                                sx={{
+                                                    width: 6,
+                                                    height: 6,
+                                                    borderRadius: "50%",
+                                                    bgcolor: index <= LOAD_STEP_ORDER.indexOf(loadStep) ? "primary.main" : "rgba(255, 255, 255, 0.3)",
+                                                    transition: "background-color 0.2s"
+                                                }} />
+                                        ))}
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </Box>}
-                    </Box>
+                            </Box>}
+                            {videoOpen && replay &&
+                            <VideoPanel
+                                // a recording belongs to the replay it started on
+                                key={replay.id}
+                                getSources={getRecordingSources}
+                                filename={videoFilename(replay)}
+                                replaySeconds={duration + botOffset}
+                                onRecordingChange={onRecordingChange}
+                                onClose={onCloseVideo} />}
+                        </Box>
+                    </ThemeProvider>
                     <Box
                         ref={setFooterElement}
                         style={{ width: playerWidth }}
