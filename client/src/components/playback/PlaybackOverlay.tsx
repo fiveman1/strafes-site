@@ -950,6 +950,7 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
                     title="Record video"
                     size="small"
                     onClick={onOpenVideo}
+                    onTouchEnd={onOpenVideo}
                     sx={{
                         ml: 1.5
                     }}
