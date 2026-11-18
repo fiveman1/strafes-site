@@ -111,10 +111,24 @@ export class DownloadMapBlockRangeError {
     request(): MapBlockRange | undefined;
 }
 
+/**
+ * Frames averaged into one for motion blur, see Graphics.add_video_sample.
+ */
+export class FrameBlend {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+}
+
 export class Graphics {
     private constructor();
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * Like render_video_frame, but adds the frame into the blend at this weight instead of showing it, for motion
+     * blur: a video frame is several of these a moment apart, then show_blended_frame. `first` starts a new one.
+     */
+    add_video_sample(surface: Surface, blend: FrameBlend, map: StreamableMap, bot: StreamableBot, session: StreamableSession, weight: number, first: boolean): void;
     /**
      * The last render_session's camera as a render-snfm view, as one line, or undefined before one.
      */
@@ -139,13 +153,16 @@ export class Graphics {
      * 0 lights everything from the lightmap, Infinity never uses it.
      */
     light_distance(): number;
+    /**
+     * A FrameBlend the size of this surface, for add_video_sample.
+     */
+    new_frame_blend(surface: Surface): FrameBlend;
     new_surface(canvas: HTMLCanvasElement): Surface;
     render_head(surface: Surface, map: StreamableMap, bot: StreamableBot, head: StreamableHead): void;
     render_session(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
-     * Like render_session, for recording a video once the whole map is loaded (StreamableMap.is_loaded): the baked
-     * occlusion lists the view needs all go on the GPU this frame instead of a little each frame, so nothing pops in.
-     * The debug stats keep the last render_session's camera.
+     * Like render_session, for recording a video once the whole map is loaded (StreamableMap.is_loaded), see
+     * with_video_settings. The debug stats keep the last render_session's camera.
      */
     render_video_frame(surface: Surface, map: StreamableMap, bot: StreamableBot, session: StreamableSession): void;
     /**
@@ -172,6 +189,10 @@ export class Graphics {
      * every surface as though open to the sky.
      */
     set_sky_occlusion(sky_occlusion: number): void;
+    /**
+     * Shows the frames added to the blend on the surface's canvas.
+     */
+    show_blended_frame(surface: Surface, blend: FrameBlend): void;
     /**
      * GPU errors since the last call, oldest first.
      * WebGPU reports validation errors (like a shader the browser can't compile) and device loss
@@ -653,6 +674,7 @@ export interface InitOutput {
     readonly __wbg_deferredjobs_free: (a: number, b: number) => void;
     readonly __wbg_downloadbotblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
+    readonly __wbg_frameblend_free: (a: number, b: number) => void;
     readonly __wbg_get_jumpstats_efficiency: (a: number) => number;
     readonly __wbg_get_jumpstats_gain: (a: number) => number;
     readonly __wbg_get_jumpstats_number: (a: number) => number;
@@ -756,11 +778,13 @@ export interface InitOutput {
     readonly downloadbotblockrangeerror_request: (a: number) => number;
     readonly downloadmapblockrangeerror_error: (a: number) => number;
     readonly downloadmapblockrangeerror_request: (a: number) => number;
+    readonly graphics_add_video_sample: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => void;
     readonly graphics_camera_stats: (a: number, b: number) => void;
     readonly graphics_debug_info: (a: number, b: number) => void;
     readonly graphics_frame_stats: (a: number, b: number) => void;
     readonly graphics_gpu_stats: (a: number, b: number) => void;
     readonly graphics_light_distance: (a: number) => number;
+    readonly graphics_new_frame_blend: (a: number, b: number) => number;
     readonly graphics_new_surface: (a: number, b: number, c: number) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
@@ -770,6 +794,7 @@ export interface InitOutput {
     readonly graphics_set_graphics_quality: (a: number, b: number) => void;
     readonly graphics_set_light_distance: (a: number, b: number) => void;
     readonly graphics_set_sky_occlusion: (a: number, b: number) => void;
+    readonly graphics_show_blended_frame: (a: number, b: number, c: number) => void;
     readonly graphics_take_errors: (a: number, b: number) => void;
     readonly graphics_take_gpu_frame_ms: (a: number, b: number) => void;
     readonly graphics_texture_support: (a: number) => number;
@@ -850,14 +875,14 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1821: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1821_182: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1821_184: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1821_185: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3164: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3179: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1825: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1825_183: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1838: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1838_185: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1838_187: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1838_188: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3183: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3198: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1842: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1842_186: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

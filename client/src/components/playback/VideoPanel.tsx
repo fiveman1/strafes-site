@@ -3,6 +3,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
+import Slider from "@mui/material/Slider";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VideocamIcon from "@mui/icons-material/Videocam";
@@ -12,7 +13,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Graphics, StreamableBot, StreamableMap } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import { formatBytes } from "./downloadStats";
 import { GRAPHICS_LEVELS, GraphicsLevel } from "./graphicsSettings";
-import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, END_HOLD, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
+import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, END_HOLD, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
 
 const SETTINGS_KEY = "player_videoSettings";
 /** Size the preview is drawn at, scaled to fit the panel */
@@ -23,6 +24,7 @@ const RESOLUTION_LABELS: [VideoResolution, string][] = [["720p", "720p"], ["1080
 const FPS_LABELS: [VideoFrameRate, string][] = [[30, "30"], [60, "60"]];
 const QUALITY_LABELS: [VideoQuality, string][] = [["medium", "Medium"], ["high", "High"], ["very-high", "Very high"]];
 const GRAPHICS_LABELS: Record<GraphicsLevel, string> = { low: "Low", medium: "Medium", high: "High" };
+const BLUR_LABELS: [string, string][] = [["off", "Off"], ["on", "On"]];
 
 /** What a recording is made from, once the replay is ready. */
 export interface RecordingSources {
@@ -48,6 +50,10 @@ function readSettings(): VideoSettings {
             fps: FPS_LABELS.some(([fps]) => fps === stored.fps) ? stored.fps : DEFAULT_VIDEO_SETTINGS.fps,
             quality: QUALITY_LABELS.some(([quality]) => quality === stored.quality) ? stored.quality : DEFAULT_VIDEO_SETTINGS.quality,
             graphics: GRAPHICS_LEVELS.includes(stored.graphics) ? stored.graphics : DEFAULT_VIDEO_SETTINGS.graphics,
+            motionBlur: typeof stored.motionBlur === "boolean" ? stored.motionBlur : DEFAULT_VIDEO_SETTINGS.motionBlur,
+            blurSamples: Number.isInteger(stored.blurSamples) && stored.blurSamples >= MIN_BLUR_SAMPLES && stored.blurSamples <= MAX_BLUR_SAMPLES
+                ? stored.blurSamples
+                : DEFAULT_VIDEO_SETTINGS.blurSamples,
         };
     }
     catch {
@@ -365,6 +371,28 @@ function VideoPanel(props: VideoPanelProps) {
                         options={GRAPHICS_LEVELS.map(level => [level, GRAPHICS_LABELS[level]])}
                         value={settings.graphics}
                         onChange={graphics => setSettings({ graphics })} />
+                    <Box sx={{ display: "flex", alignItems: "center", columnGap: 1.5 }}>
+                        <ChoiceRow
+                            label="Motion blur"
+                            options={BLUR_LABELS}
+                            value={settings.motionBlur ? "on" : "off"}
+                            onChange={value => setSettings({ motionBlur: value === "on" })} />
+                        {settings.motionBlur &&
+                        <>
+                            <Slider
+                                size="small"
+                                aria-label="Motion blur frame samples"
+                                min={MIN_BLUR_SAMPLES}
+                                max={MAX_BLUR_SAMPLES}
+                                step={1}
+                                value={settings.blurSamples}
+                                onChange={(_, value) => setSettings({ blurSamples: value })}
+                                sx={{ flex: 1, minWidth: "80px" }} />
+                            <Typography variant="body2" sx={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                                {settings.blurSamples} <Box component="span" sx={{ opacity: 0.7 }}>frame samples</Box>
+                            </Typography>
+                        </>}
+                    </Box>
                     <Box
                         sx={{
                             display: "grid",
@@ -378,6 +406,7 @@ function VideoPanel(props: VideoPanelProps) {
                         <Typography variant="body2">{formatDuration(videoSeconds)}</Typography>
                         <Typography variant="body2">File</Typography>
                         <Typography variant="body2">{filename}</Typography>
+
                     </Box>
                     {unsupported.has(settings.resolution) &&
                     <Typography variant="caption" color="error.light">

@@ -17,10 +17,26 @@ export interface VideoSettings {
     fps: VideoFrameRate
     quality: VideoQuality
     graphics: GraphicsLevel
+    motionBlur: boolean
+    /** How many frames each video frame averages with motion blur, BLUR_SAMPLE_SECONDS apart */
+    blurSamples: number
 }
 
 // fast camera turns and fine textures need more than the default
-export const DEFAULT_VIDEO_SETTINGS: VideoSettings = { resolution: "1080p", fps: 60, quality: "very-high", graphics: "high" };
+export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
+    resolution: "1080p",
+    fps: 60,
+    quality: "very-high",
+    graphics: "high",
+    motionBlur: false,
+    blurSamples: 8
+};
+
+export const MIN_BLUR_SAMPLES = 2;
+/** At 60 fps, as many as fit between two frames */
+export const MAX_BLUR_SAMPLES = 16;
+/** Time between motion blur's samples, so more samples make longer streaks */
+const BLUR_SAMPLE_SECONDS = 1 / 960;
 
 /**
  * A quality level rather than a bitrate: H.264 encodes it at a fixed quantizer, as many bits as each frame needs, so
@@ -45,6 +61,8 @@ const TV_RANGE_ALPHA = 219 / 255;
 const TV_RANGE_GRAY = "rgb(113, 113, 113)";
 /** How often the preview is updated while recording, in milliseconds */
 const PREVIEW_INTERVAL_MS = 500;
+/** How long recording runs before letting the page update, in milliseconds */
+const YIELD_INTERVAL_MS = 100;
 
 export type RecordingProgress =
     | { step: "loading", fraction: number }
@@ -222,6 +240,8 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
     const tvRange = await encodesFullRange(videoCanvas, encoder) === true;
     const surface = graphics.new_surface(gpuCanvas);
     const session = new StreamableSession(bot, 0);
+    const samples = settings.motionBlur ? settings.blurSamples : 1;
+    const blend = samples > 1 ? graphics.new_frame_blend(surface) : undefined;
     const output = new Output({
         format: new Mp4OutputFormat({ fastStart: "in-memory" }),
         target: new BufferTarget()
@@ -259,15 +279,26 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
         }
 
         const frameCount = Math.floor((bot.duration() + END_HOLD) * fps);
+        // each frame's blur covers the time after it, like a camera's shutter opening at the frame
         let lastPreview = -Infinity;
+        let lastYield = performance.now();
         for (let frame = 0; frame < frameCount; ++frame) {
             if (signal.aborted) return undefined;
             const time = frame / fps;
-            session.advance_time(bot, map, time);
-            graphics.render_video_frame(surface, map, bot, session);
+            if (blend) {
+                for (let sample = 0; sample < samples; ++sample) {
+                    session.advance_time(bot, map, time + (sample + 0.5) * BLUR_SAMPLE_SECONDS);
+                    graphics.add_video_sample(surface, blend, map, bot, session, 1 / samples, sample === 0);
+                }
+                graphics.show_blended_frame(surface, blend);
+            }
+            else {
+                session.advance_time(bot, map, time);
+                graphics.render_video_frame(surface, map, bot, session);
+            }
             // in the same task as the render, while the GPU canvas still holds it
             copyFrame(context, gpuCanvas, tvRange);
-            const now = performance.now();
+            let now = performance.now();
             if (now - lastPreview >= PREVIEW_INTERVAL_MS) {
                 lastPreview = now;
                 // the GPU canvas, since the encoded one is squeezed into TV range
@@ -275,9 +306,11 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
             }
             await source.add(time, 1 / fps);
             throwGraphicsErrors(graphics);
-            if (frame % 30 === 0) {
+            now = performance.now();
+            if (frame === 0 || now - lastYield >= YIELD_INTERVAL_MS) {
                 onProgress({ step: "recording", frame, frameCount, bytes });
                 await yieldToBrowser();
+                lastYield = performance.now();
             }
         }
 
@@ -291,6 +324,7 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
         if (!finished && output.state === "started") {
             await output.cancel().catch(err => console.error("Couldn't cancel the video", err));
         }
+        blend?.free();
         session.free();
         surface.free();
     }
