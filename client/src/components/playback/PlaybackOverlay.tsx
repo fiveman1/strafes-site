@@ -39,6 +39,8 @@ const DEBUG_HUD_FULL_SIZE_HEIGHT = 650;
 // and the download panel the widest debug text at about 320px.
 const DEFAULT_HUD_FULL_SIZE_WIDTH = 700;
 const DEBUG_HUD_FULL_SIZE_WIDTH = 450;
+// Narrower players leave the seek bar the room the video button would take, e.g. phones held upright
+const VIDEO_BUTTON_MIN_PLAYER_WIDTH = 480;
 
 function getHudScale(playerWidth: number, playerHeight: number, fullSizeWidth: number, fullSizeHeight: number) {
     // kept above 0 so elements can divide their size by it
@@ -105,7 +107,8 @@ function PlaybackOverlay(props: PlaybackOverlayProps) {
         onSetPlayback, onSetPause, onFullscreen, onSeek, onReset, onSetSpeed, speedTextRef, jhudRef,
         playerWidth, playerHeight, inputContainerRef, loading, errorReplay, diffTimeTextRef, diffSpeedTextRef, allowDiff,
         thumbCanvasRef, setThumbTime, showThumb, thumbEnabled, debugInfo, fpsTextRef, frameStatsTextRef, setShowingThumb,
-        graphicsSettings, graphicsLevel, commentMarkers, onOpenVideo } = props;
+        graphicsSettings, graphicsLevel, commentMarkers } = props;
+    const onOpenVideo = playerWidth >= VIDEO_BUTTON_MIN_PLAYER_WIDTH ? props.onOpenVideo : undefined;
 
     const [ isHovering, setIsHovering ] = useState(false);
     const [ isBottomHovering, setIsBottomHovering ] = useState(false);
