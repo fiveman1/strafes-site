@@ -7,17 +7,20 @@ import Slider from "@mui/material/Slider";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VideocamIcon from "@mui/icons-material/Videocam";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import Tooltip from "@mui/material/Tooltip";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Graphics, StreamableBot, StreamableMap } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
+import { CompleteBot, Graphics, StreamableBot, StreamableMap } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import { formatBytes } from "./downloadStats";
 import { GRAPHICS_LEVELS, GraphicsLevel } from "./graphicsSettings";
-import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, END_HOLD, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
+import { DIFF_BAD_COLOR, DIFF_GOOD_COLOR } from "./videoHud";
+import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, endHold, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
 
 const SETTINGS_KEY = "player_videoSettings";
+/** Width of the settings' labels, so their options line up */
+const LABEL_WIDTH = "128px";
 /** Size the preview is drawn at, scaled to fit the panel */
 const PREVIEW_WIDTH = 640;
 const PREVIEW_HEIGHT = 360;
@@ -26,13 +29,44 @@ const RESOLUTION_LABELS: [VideoResolution, string][] = [["720p", "720p"], ["1080
 const FPS_LABELS: [VideoFrameRate, string][] = [[30, "30"], [60, "60"]];
 const QUALITY_LABELS: [VideoQuality, string][] = [["medium", "Medium"], ["high", "High"], ["very-high", "Very high"]];
 const GRAPHICS_LABELS: Record<GraphicsLevel, string> = { low: "Low", medium: "Medium", high: "High" };
-const BLUR_LABELS: [string, string][] = [["off", "Off"], ["on", "On"]];
+const OFF_ON_LABELS: [string, string][] = [["off", "Off"], ["on", "On"]];
+type DiffChoice = "off" | "time" | "speed";
+
+/** Example diff lines as the video draws them, for the Diff buttons: text, and whether it's better than the compared run */
+function DiffPreview(props: { lines: [string, boolean][] }) {
+    return (
+        <Box
+            component="span"
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                fontFamily: '"Geist Mono", monospace',
+                fontWeight: "bold",
+                fontSize: "13px",
+                lineHeight: 1.25,
+                textShadow: "0 0 3px rgba(0, 0, 0, 0.8)"
+            }}>
+            {props.lines.map(([text, good]) =>
+                <span key={text} style={{ color: good ? DIFF_GOOD_COLOR : DIFF_BAD_COLOR }}>{text}</span>
+            )}
+        </Box>
+    );
+}
+
+const DIFF_LABELS: [DiffChoice, React.ReactNode][] = [
+    ["off", "Off"],
+    ["time", <DiffPreview lines={[["-0.123s", true]]} />],
+    ["speed", <DiffPreview lines={[["+4.56 u/s", true], ["+0.789s", false]]} />],
+];
 
 /** What a recording is made from, once the replay is ready. */
 export interface RecordingSources {
     graphics: Graphics
     map: StreamableMap
     bot: StreamableBot
+    /** The run the checkpoint diffs compare with, if there is one */
+    compareBot?: CompleteBot
     /** Starts the downloads the replay and map still need */
     pump: () => void
 }
@@ -56,9 +90,9 @@ function readSettings(): VideoSettings {
             blurSamples: Number.isInteger(stored.blurSamples) && stored.blurSamples >= MIN_BLUR_SAMPLES && stored.blurSamples <= MAX_BLUR_SAMPLES
                 ? stored.blurSamples
                 : DEFAULT_VIDEO_SETTINGS.blurSamples,
-            hud: {
-                speed: typeof stored.hud?.speed === "boolean" ? stored.hud.speed : DEFAULT_VIDEO_SETTINGS.hud.speed
-            }
+            hud: Object.fromEntries(Object.entries(DEFAULT_VIDEO_SETTINGS.hud).map(([key, value]) =>
+                [key, typeof stored.hud?.[key] === "boolean" ? stored.hud[key] : value]
+            )) as VideoSettings["hud"]
         };
     }
     catch {
@@ -84,7 +118,9 @@ function formatDuration(seconds: number) {
 
 interface ChoiceRowProps<T> {
     label: string
-    options: [T, string][]
+    /** Explains the setting in a tooltip on an info icon after the label */
+    info?: string
+    options: [T, React.ReactNode][]
     value: T
     onChange: (value: T) => void
     isDisabled?: (value: T) => boolean
@@ -92,17 +128,26 @@ interface ChoiceRowProps<T> {
 
 interface ButtonRowProps {
     label: string
+    info?: string
     children: React.ReactNode
 }
 
 /** A labeled row of buttons, highlighted with the "active" class, like the graphics presets in the settings menu. */
 function ButtonRow(props: ButtonRowProps) {
-    const { label, children } = props;
+    const { label, info, children } = props;
     const theme = useTheme();
     return (
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
-            <Typography variant="subtitle2" sx={{ width: "88px" }}>
+            <Typography variant="subtitle2" sx={{ width: LABEL_WIDTH, display: "flex", alignItems: "center" }}>
                 {label}
+                {info &&
+                <Tooltip
+                    title={info}
+                    enterTouchDelay={0}
+                    // inside the player, which may be fullscreen
+                    slotProps={{ popper: { disablePortal: true } }}>
+                    <InfoOutlinedIcon aria-label={info} tabIndex={0} sx={{ fontSize: "16px", ml: 0.5, opacity: 0.7 }} />
+                </Tooltip>}
             </Typography>
             <Box
                 sx={{
@@ -146,9 +191,9 @@ function ButtonRow(props: ButtonRowProps) {
 
 /** A row of buttons picking one option. */
 function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
-    const { label, options, value, onChange, isDisabled } = props;
+    const { label, info, options, value, onChange, isDisabled } = props;
     return (
-        <ButtonRow label={label}>
+        <ButtonRow label={label} info={info}>
             {options.map(([option, optionLabel]) =>
                 <Typography
                     key={option}
@@ -165,30 +210,14 @@ function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
     );
 }
 
-interface HudToggleProps {
-    label: string
-    active: boolean
-    onClick: () => void
-}
-
-/** An on/off button for a ButtonRow, with an eye like the player's HUD toggles. */
-function HudToggle(props: HudToggleProps) {
-    const { label, active, onClick } = props;
-    const Icon = active ? VisibilityIcon : VisibilityOffIcon;
-    return (
-        <Typography variant="subtitle2" component="button" className={active ? "active" : undefined} onClick={onClick}>
-            <Icon fontSize="small" sx={{ mr: 0.5 }} />
-            {label}
-        </Typography>
-    );
-}
-
 interface VideoPanelProps {
     /** What to record from, or undefined while the replay isn't ready */
     getSources: () => RecordingSources | undefined
     filename: string
     /** Seconds of replay, from its start to its end */
     replaySeconds: number
+    /** Whether there's a run to compare with for the diffs */
+    canCompare: boolean
     /** The page's render loop doesn't draw while recording, since both share the graphics */
     onRecordingChange: (recording: boolean) => void
     onClose: () => void
@@ -196,7 +225,7 @@ interface VideoPanelProps {
 
 /** Records the replay to a video file: settings, then progress with a preview, then saving it. Covers the player. */
 function VideoPanel(props: VideoPanelProps) {
-    const { getSources, filename, replaySeconds, onRecordingChange, onClose } = props;
+    const { getSources, filename, replaySeconds, canCompare, onRecordingChange, onClose } = props;
 
     const [ settings, setSettingsState ] = useState(readSettings);
     const setSettings = useCallback((change: Partial<VideoSettings>) => {
@@ -277,7 +306,12 @@ function VideoPanel(props: VideoPanelProps) {
 
     const onCancel = useCallback(() => abortRef.current?.abort(), []);
 
-    const videoSeconds = replaySeconds + END_HOLD;
+    const videoSeconds = replaySeconds + endHold(settings, canCompare);
+    const hud = settings.hud;
+    const diff: DiffChoice = !canCompare || !hud.checkpoints ? "off" : hud.checkpointSpeed ? "speed" : "time";
+    const onChangeDiff = (choice: DiffChoice) => setSettings({
+        hud: { ...hud, checkpoints: choice !== "off", checkpointSpeed: choice === "off" ? hud.checkpointSpeed : choice === "speed" }
+    });
     const running = phase.kind === "running";
 
     let status: React.ReactNode = null;
@@ -414,7 +448,7 @@ function VideoPanel(props: VideoPanelProps) {
                     <Box sx={{ display: "flex", alignItems: "center", columnGap: 1.5 }}>
                         <ChoiceRow
                             label="Motion blur"
-                            options={BLUR_LABELS}
+                            options={OFF_ON_LABELS}
                             value={settings.motionBlur ? "on" : "off"}
                             onChange={value => setSettings({ motionBlur: value === "on" })} />
                         {settings.motionBlur &&
@@ -435,16 +469,32 @@ function VideoPanel(props: VideoPanelProps) {
                             </Typography>
                         </>}
                     </Box>
-                    <ButtonRow label="HUD">
-                        <HudToggle
-                            label="Speed"
-                            active={settings.hud.speed}
-                            onClick={() => setSettings({ hud: { ...settings.hud, speed: !settings.hud.speed } })} />
-                    </ButtonRow>
+                    <Typography variant="caption" sx={{ mb: -0.75, opacity: 0.7, fontWeight: "bold", letterSpacing: "0.08em" }}>
+                        HUD
+                    </Typography>
+                    <ChoiceRow
+                        label="Speed"
+                        options={OFF_ON_LABELS}
+                        value={hud.speed ? "on" : "off"}
+                        onChange={value => setSettings({ hud: { ...hud, speed: value === "on" } })} />
+                    <ChoiceRow
+                        label="Diff"
+                        info={canCompare ? "The current diff is shown briefly after each teleport in the replay" : "There's no other run to compare with"}
+                        options={DIFF_LABELS}
+                        value={diff}
+                        onChange={onChangeDiff}
+                        isDisabled={() => !canCompare} />
+                    <ChoiceRow
+                        label="Include finish?"
+                        info="Include the map's finish zone as a checkpoint in the diff display"
+                        options={OFF_ON_LABELS}
+                        value={diff !== "off" && hud.finish ? "on" : "off"}
+                        onChange={value => setSettings({ hud: { ...hud, finish: value === "on" } })}
+                        isDisabled={() => diff === "off"} />
                     <Box
                         sx={{
                             display: "grid",
-                            gridTemplateColumns: "88px 1fr",
+                            gridTemplateColumns: `${LABEL_WIDTH} 1fr`,
                             columnGap: 0.75,
                             rowGap: 0.25,
                             "& > :nth-of-type(odd)": { opacity: 0.7 },

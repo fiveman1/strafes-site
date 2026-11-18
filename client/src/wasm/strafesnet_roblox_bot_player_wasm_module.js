@@ -139,6 +139,89 @@ export class Bvh {
 }
 if (Symbol.dispose) Bvh.prototype[Symbol.dispose] = Bvh.prototype.free;
 
+/**
+ * When a run first reached a stage by touching a Teleport part, or finished.
+ */
+export class Checkpoint {
+    static __wrap(ptr) {
+        const obj = Object.create(Checkpoint.prototype);
+        obj.__wbg_ptr = ptr;
+        CheckpointFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        CheckpointFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_checkpoint_free(ptr, 0);
+    }
+    /**
+     * The run timer, in seconds
+     * @returns {number}
+     */
+    get run_time() {
+        const ret = wasm.__wbg_get_checkpoint_run_time(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Horizontal speed when it touched the Teleport or finished
+     * @returns {number}
+     */
+    get speed() {
+        const ret = wasm.__wbg_get_checkpoint_speed(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Undefined for the finish
+     * @returns {number | undefined}
+     */
+    get stage() {
+        const ret = wasm.__wbg_get_checkpoint_stage(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * Seconds since the replay's start
+     * @returns {number}
+     */
+    get time() {
+        const ret = wasm.__wbg_get_checkpoint_time(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * The run timer, in seconds
+     * @param {number} arg0
+     */
+    set run_time(arg0) {
+        wasm.__wbg_set_checkpoint_run_time(this.__wbg_ptr, arg0);
+    }
+    /**
+     * Horizontal speed when it touched the Teleport or finished
+     * @param {number} arg0
+     */
+    set speed(arg0) {
+        wasm.__wbg_set_checkpoint_speed(this.__wbg_ptr, arg0);
+    }
+    /**
+     * Undefined for the finish
+     * @param {number | null} [arg0]
+     */
+    set stage(arg0) {
+        wasm.__wbg_set_checkpoint_stage(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+    /**
+     * Seconds since the replay's start
+     * @param {number} arg0
+     */
+    set time(arg0) {
+        wasm.__wbg_set_checkpoint_time(this.__wbg_ptr, arg0);
+    }
+}
+if (Symbol.dispose) Checkpoint.prototype[Symbol.dispose] = Checkpoint.prototype.free;
+
 export class CompleteBot {
     static __wrap(ptr) {
         const obj = Object.create(CompleteBot.prototype);
@@ -157,11 +240,38 @@ export class CompleteBot {
         wasm.__wbg_completebot_free(ptr, 0);
     }
     /**
+     * The run's checkpoints at the map's Teleports. Needs the map's regions with Teleports.
+     * @param {StreamableMap} map
+     * @returns {Checkpoint[]}
+     */
+    checkpoints(map) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            _assertClass(map, StreamableMap);
+            wasm.completebot_checkpoints(retptr, this.__wbg_ptr, map.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayJsValueFromWasm0(r0, r1);
+            wasm.__wbindgen_export5(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * @returns {number}
      */
     duration() {
         const ret = wasm.completebot_duration(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * When the run finished: its Finish event, or the replay's end without one.
+     * @returns {Checkpoint | undefined}
+     */
+    finish() {
+        const ret = wasm.completebot_finish(this.__wbg_ptr);
+        return ret === 0 ? undefined : Checkpoint.__wrap(ret);
     }
     /**
      * @param {Uint8Array} data
@@ -1224,6 +1334,30 @@ export class StreamableBot {
         wasm.streamablebot_cancel(this.__wbg_ptr, ptr0);
     }
     /**
+     * The run's checkpoints at the map's Teleports. Needs the whole replay, and the map's regions with Teleports.
+     * @param {StreamableMap} map
+     * @returns {Checkpoint[]}
+     */
+    checkpoints(map) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            _assertClass(map, StreamableMap);
+            wasm.streamablebot_checkpoints(retptr, this.__wbg_ptr, map.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+            if (r3) {
+                throw takeObject(r2);
+            }
+            var v1 = getArrayJsValueFromWasm0(r0, r1);
+            wasm.__wbindgen_export5(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Clear all blocks marked as "currently downloading".
      * This may cause blocks to be downloaded multiple times.
      */
@@ -1236,6 +1370,25 @@ export class StreamableBot {
     duration() {
         const ret = wasm.streamablebot_duration(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * When the run finished: its Finish event, or the replay's end without one. Needs the whole replay.
+     * @returns {Checkpoint | undefined}
+     */
+    finish() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.streamablebot_finish(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return r0 === 0 ? undefined : Checkpoint.__wrap(r0);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
      * @param {BotBlockData} arg0
@@ -2515,6 +2668,10 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
         }, arguments); },
+        __wbg_checkpoint_new: function(arg0) {
+            const ret = Checkpoint.__wrap(arg0);
+            return addHeapObject(ret);
+        },
         __wbg_completebot_new: function(arg0) {
             const ret = CompleteBot.__wrap(arg0);
             return addHeapObject(ret);
@@ -2986,7 +3143,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_3198(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3232(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -3770,37 +3927,37 @@ function __wbg_get_imports() {
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 307, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3183);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3217);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDevice")], shim_idx: 249, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1838);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1872);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUDeviceLostInfo")], shim_idx: 253, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1842);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1876);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000004: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPURenderPipeline")], shim_idx: 249, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1838_185);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1872_197);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000005: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("GPUUncapturedErrorEvent")], shim_idx: 253, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1842_186);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1876_198);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000006: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("any")], shim_idx: 249, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1838_187);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1872_199);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000007: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 249, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1838_188);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1872_200);
             return addHeapObject(ret);
         },
         __wbindgen_generic_0000000000000008: function(arg0) {
@@ -3832,22 +3989,22 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1842(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1842(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1876(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1876(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1842_186(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1842_186(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1876_198(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1876_198(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_3198(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_3198(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3232(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3232(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
-function __wasm_bindgen_func_elem_3183(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3217(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_3183(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3217(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3858,10 +4015,10 @@ function __wasm_bindgen_func_elem_3183(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1838(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1872(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1838(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1872(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3872,10 +4029,10 @@ function __wasm_bindgen_func_elem_1838(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1838_185(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1872_197(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1838_185(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1872_197(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3886,10 +4043,10 @@ function __wasm_bindgen_func_elem_1838_185(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1838_187(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1872_199(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1838_187(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1872_199(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -3900,10 +4057,10 @@ function __wasm_bindgen_func_elem_1838_187(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_1838_188(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1872_200(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1838_188(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1872_200(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -4018,6 +4175,9 @@ const BotDownloaderFinalization = (typeof FinalizationRegistry === 'undefined')
 const BvhFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_bvh_free(ptr, 1));
+const CheckpointFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_checkpoint_free(ptr, 1));
 const CompleteBotFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_completebot_free(ptr, 1));

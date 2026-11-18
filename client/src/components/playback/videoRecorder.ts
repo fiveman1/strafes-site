@@ -1,9 +1,9 @@
 import { BufferTarget, CanvasSource, canEncodeVideo, Mp4OutputFormat, Output, Quality } from "mediabunny";
-import { Graphics, StreamableBot, StreamableMap, StreamableSession } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
+import { Checkpoint, CompleteBot, Graphics, StreamableBot, StreamableMap, StreamableSession } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import { getMapAssetLoader } from "./mapAssetLoader";
 import { avcConfigWithColor } from "./avcColor";
 import { GraphicsLevel, toGraphicsQuality } from "./graphicsSettings";
-import { VideoHud, VideoHudSettings } from "./videoHud";
+import { CheckpointDiff, DIFF_SHOWN_AFTER, VideoHud, VideoHudSettings } from "./videoHud";
 
 export const VIDEO_RESOLUTIONS = {
     "720p": [1280, 720],
@@ -32,7 +32,7 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
     graphics: "high",
     motionBlur: false,
     blurSamples: 8,
-    hud: { speed: true }
+    hud: { speed: true, checkpoints: true, checkpointSpeed: true, finish: false }
 };
 
 export const MIN_BLUR_SAMPLES = 2;
@@ -50,8 +50,17 @@ function videoQuality(settings: VideoSettings) {
 }
 /** Frames drawn before the first one encoded, so shadowed lights (two new ones a frame) and lightmap chunks are all on the GPU */
 const WARM_UP_FRAMES = 30;
-/** Seconds the last frame stays at the end, like the player waiting before it loops (the session holds it) */
-export const END_HOLD = 1;
+/** Seconds the last frame stays at the end, like the player waiting before it loops */
+const END_HOLD = 1;
+
+/**
+ * Seconds the last frame stays at the end: like the player waiting before it loops, or until the finish's diff has
+ * faded out if it's shown. `canCompare` is whether there's a run to compare with.
+ */
+export function endHold(settings: VideoSettings, canCompare: boolean) {
+    const finishShown = canCompare && settings.hud.checkpoints && settings.hud.finish;
+    return finishShown ? Math.max(END_HOLD, DIFF_SHOWN_AFTER) : END_HOLD;
+}
 /**
  * Recordings are TV range (16 to 235, also called limited range): the standard for video, which players, phones, TVs and
  * video sites all expect, so a recording looks right wherever it's watched or uploaded. Full range only looks right where
@@ -182,10 +191,49 @@ function isBotLoaded(bot: StreamableBot) {
     return loaded;
 }
 
+/** Copies a checkpoint out of wasm memory. */
+function readCheckpoint(checkpoint: Checkpoint) {
+    const { time, stage, run_time, speed } = checkpoint;
+    checkpoint.free();
+    return { time, stage, runTime: run_time, speed };
+}
+
+type CheckpointCopy = ReturnType<typeof readCheckpoint>;
+
+function compare(checkpoint: CheckpointCopy, other: CheckpointCopy): CheckpointDiff {
+    return { time: checkpoint.time, timeDiff: checkpoint.runTime - other.runTime, speedDiff: checkpoint.speed - other.speed };
+}
+
+/**
+ * The run's checkpoints compared with the same stages in the comparison run, then the finish if `finish`, in time
+ * order. Needs the whole map and replay.
+ */
+function checkpointDiffs(bot: StreamableBot, compareBot: CompleteBot, map: StreamableMap, finish: boolean): CheckpointDiff[] {
+    const compared = new Map(compareBot.checkpoints(map).map(readCheckpoint).map(checkpoint => [checkpoint.stage, checkpoint]));
+    const diffs = bot.checkpoints(map).map(readCheckpoint).flatMap(checkpoint => {
+        const other = compared.get(checkpoint.stage);
+        return other ? [compare(checkpoint, other)] : [];
+    });
+    if (finish) {
+        const ours = bot.finish();
+        const theirs = compareBot.finish();
+        if (ours && theirs) {
+            diffs.push(compare(readCheckpoint(ours), readCheckpoint(theirs)));
+        }
+        else {
+            ours?.free();
+            theirs?.free();
+        }
+    }
+    return diffs;
+}
+
 export interface RecordVideoOptions {
     graphics: Graphics
     map: StreamableMap
     bot: StreamableBot
+    /** The run the checkpoint diffs compare with, if there is one */
+    compareBot?: CompleteBot
     settings: VideoSettings
     /** Starts the downloads the replay and map still need, see the player's pump */
     pump: () => void
@@ -202,7 +250,7 @@ export interface RecordVideoOptions {
  * Returns undefined if aborted.
  */
 export async function recordVideo(options: RecordVideoOptions): Promise<Blob | undefined> {
-    const { graphics, map, bot, settings, pump, signal, onProgress, onPreview } = options;
+    const { graphics, map, bot, compareBot, settings, pump, signal, onProgress, onPreview } = options;
     const encoder = encoderOptions(settings);
     const fps = settings.fps;
 
@@ -237,7 +285,8 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
     }
     // without an answer, keep full range and label it so
     const tvRange = await encodesFullRange(videoCanvas, encoder) === true;
-    const hud = await VideoHud.create(context, settings.hud, width, height);
+    const checkpoints = settings.hud.checkpoints && compareBot ? checkpointDiffs(bot, compareBot, map, settings.hud.finish) : [];
+    const hud = await VideoHud.create(context, settings.hud, checkpoints, width, height);
     const surface = graphics.new_surface(gpuCanvas);
     const session = new StreamableSession(bot, 0);
     const samples = settings.motionBlur ? settings.blurSamples : 1;
@@ -278,7 +327,9 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
             await yieldToBrowser();
         }
 
-        const frameCount = Math.floor((bot.duration() + END_HOLD) * fps);
+        // the session would loop a second after the end, so the time stops there and the last frame stays
+        const duration = bot.duration();
+        const frameCount = Math.floor((duration + endHold(settings, compareBot !== undefined)) * fps);
         // each frame's blur covers the time after it, like a camera's shutter opening at the frame
         let lastPreview = -Infinity;
         let lastYield = performance.now();
@@ -287,18 +338,18 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
             const time = frame / fps;
             if (blend) {
                 for (let sample = 0; sample < samples; ++sample) {
-                    session.advance_time(bot, map, time + (sample + 0.5) * BLUR_SAMPLE_SECONDS);
+                    session.advance_time(bot, map, Math.min(time + (sample + 0.5) * BLUR_SAMPLE_SECONDS, duration));
                     graphics.add_video_sample(surface, blend, map, bot, session, 1 / samples, sample === 0);
                 }
                 graphics.show_blended_frame(surface, blend);
             }
             else {
-                session.advance_time(bot, map, time);
+                session.advance_time(bot, map, Math.min(time, duration));
                 graphics.render_video_frame(surface, map, bot, session);
             }
             // in the same task as the render, while the GPU canvas still holds it
             context.drawImage(gpuCanvas, 0, 0);
-            hud.draw(context, { speed: session.get_speed(bot) });
+            hud.draw(context, { time, speed: session.get_speed(bot) });
             let now = performance.now();
             if (now - lastPreview >= PREVIEW_INTERVAL_MS) {
                 lastPreview = now;

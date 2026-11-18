@@ -36,10 +36,47 @@ export class Bvh {
     constructor(bot: CompleteBot);
 }
 
+/**
+ * When a run first reached a stage by touching a Teleport part, or finished.
+ */
+export class Checkpoint {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * The run timer, in seconds
+     */
+    run_time: number;
+    /**
+     * Horizontal speed when it touched the Teleport or finished
+     */
+    speed: number;
+    /**
+     * Undefined for the finish
+     */
+    get stage(): number | undefined;
+    /**
+     * Undefined for the finish
+     */
+    set stage(value: number | null | undefined);
+    /**
+     * Seconds since the replay's start
+     */
+    time: number;
+}
+
 export class CompleteBot {
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * The run's checkpoints at the map's Teleports. Needs the map's regions with Teleports.
+     */
+    checkpoints(map: StreamableMap): Checkpoint[];
     duration(): number;
+    /**
+     * When the run finished: its Finish event, or the replay's end without one.
+     */
+    finish(): Checkpoint | undefined;
     constructor(data: Uint8Array);
     run_duration(mode_id: number): number;
 }
@@ -360,11 +397,19 @@ export class StreamableBot {
     [Symbol.dispose](): void;
     cancel(arg0: BotBlockRange): void;
     /**
+     * The run's checkpoints at the map's Teleports. Needs the whole replay, and the map's regions with Teleports.
+     */
+    checkpoints(map: StreamableMap): Checkpoint[];
+    /**
      * Clear all blocks marked as "currently downloading".
      * This may cause blocks to be downloaded multiple times.
      */
     clear_downloading(): void;
     duration(): number;
+    /**
+     * When the run finished: its Finish event, or the replay's end without one. Needs the whole replay.
+     */
+    finish(): Checkpoint | undefined;
     ingest(arg0: BotBlockData): void;
     /**
      * Returns the next block that will be needed to construct a StreamableHead
@@ -669,12 +714,17 @@ export interface InitOutput {
     readonly __wbg_botblockrange_free: (a: number, b: number) => void;
     readonly __wbg_botdownloader_free: (a: number, b: number) => void;
     readonly __wbg_bvh_free: (a: number, b: number) => void;
+    readonly __wbg_checkpoint_free: (a: number, b: number) => void;
     readonly __wbg_completebot_free: (a: number, b: number) => void;
     readonly __wbg_completehead_free: (a: number, b: number) => void;
     readonly __wbg_deferredjobs_free: (a: number, b: number) => void;
     readonly __wbg_downloadbotblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_downloadmapblockrangeerror_free: (a: number, b: number) => void;
     readonly __wbg_frameblend_free: (a: number, b: number) => void;
+    readonly __wbg_get_checkpoint_run_time: (a: number) => number;
+    readonly __wbg_get_checkpoint_speed: (a: number) => number;
+    readonly __wbg_get_checkpoint_stage: (a: number) => number;
+    readonly __wbg_get_checkpoint_time: (a: number) => number;
     readonly __wbg_get_jumpstats_efficiency: (a: number) => number;
     readonly __wbg_get_jumpstats_gain: (a: number) => number;
     readonly __wbg_get_jumpstats_number: (a: number) => number;
@@ -713,6 +763,10 @@ export interface InitOutput {
     readonly __wbg_mapdownloader_free: (a: number, b: number) => void;
     readonly __wbg_modelpreparer_free: (a: number, b: number) => void;
     readonly __wbg_range_free: (a: number, b: number) => void;
+    readonly __wbg_set_checkpoint_run_time: (a: number, b: number) => void;
+    readonly __wbg_set_checkpoint_speed: (a: number, b: number) => void;
+    readonly __wbg_set_checkpoint_stage: (a: number, b: number) => void;
+    readonly __wbg_set_checkpoint_time: (a: number, b: number) => void;
     readonly __wbg_set_jumpstats_efficiency: (a: number, b: number) => void;
     readonly __wbg_set_jumpstats_gain: (a: number, b: number) => void;
     readonly __wbg_set_jumpstats_number: (a: number, b: number) => void;
@@ -758,7 +812,9 @@ export interface InitOutput {
     readonly botdownloader_new: (a: number, b: number) => number;
     readonly bvh_closest_time_to_point: (a: number, b: number, c: number, d: number) => void;
     readonly bvh_new: (a: number) => number;
+    readonly completebot_checkpoints: (a: number, b: number, c: number) => void;
     readonly completebot_duration: (a: number) => number;
+    readonly completebot_finish: (a: number) => number;
     readonly completebot_new: (a: number, b: number, c: number) => void;
     readonly completebot_run_duration: (a: number, b: number, c: number) => void;
     readonly completehead_get_angles_yaw_delta: (a: number) => number;
@@ -812,8 +868,10 @@ export interface InitOutput {
     readonly prepare_lightmap_chunk: (a: number, b: number, c: number) => void;
     readonly setup_graphics: (a: number) => number;
     readonly streamablebot_cancel: (a: number, b: number) => void;
+    readonly streamablebot_checkpoints: (a: number, b: number, c: number) => void;
     readonly streamablebot_clear_downloading: (a: number) => void;
     readonly streamablebot_duration: (a: number) => number;
+    readonly streamablebot_finish: (a: number, b: number) => void;
     readonly streamablebot_ingest: (a: number, b: number, c: number) => void;
     readonly streamablebot_next_block_at_time: (a: number, b: number) => number;
     readonly streamablebot_next_block_eager: (a: number, b: number, c: number) => number;
@@ -875,14 +933,14 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1838: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1838_185: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1838_187: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1838_188: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3183: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3198: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1842: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1842_186: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1872: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1872_197: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1872_199: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1872_200: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3217: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3232: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1876: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1876_198: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

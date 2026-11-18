@@ -1143,7 +1143,7 @@ function Replays() {
         const map = mapRef.current;
         const bot = botRef.current;
         if (!graphics || !map || !bot) return undefined;
-        return { graphics, map, bot, pump: () => pumpRef.current() };
+        return { graphics, map, bot, compareBot: diffBotRef.current ?? undefined, pump: () => pumpRef.current() };
     }, []);
 
     const onRecordingChange = useCallback((recording: boolean) => {
@@ -1377,6 +1377,7 @@ function Replays() {
                                 getSources={getRecordingSources}
                                 filename={videoFilename(replay)}
                                 replaySeconds={duration + botOffset}
+                                canCompare={allowDiff}
                                 onRecordingChange={onRecordingChange}
                                 onClose={onCloseVideo} />}
                         </Box>
