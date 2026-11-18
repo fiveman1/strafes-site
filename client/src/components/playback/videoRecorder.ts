@@ -3,6 +3,7 @@ import { Graphics, StreamableBot, StreamableMap, StreamableSession } from "../..
 import { getMapAssetLoader } from "./mapAssetLoader";
 import { avcConfigWithColor } from "./avcColor";
 import { GraphicsLevel, toGraphicsQuality } from "./graphicsSettings";
+import { VideoHud, VideoHudSettings } from "./videoHud";
 
 export const VIDEO_RESOLUTIONS = {
     "720p": [1280, 720],
@@ -20,6 +21,7 @@ export interface VideoSettings {
     motionBlur: boolean
     /** How many frames each video frame averages with motion blur, BLUR_SAMPLE_SECONDS apart */
     blurSamples: number
+    hud: VideoHudSettings
 }
 
 // fast camera turns and fine textures need more than the default
@@ -29,7 +31,8 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
     quality: "very-high",
     graphics: "high",
     motionBlur: false,
-    blurSamples: 8
+    blurSamples: 8,
+    hud: { speed: true }
 };
 
 export const MIN_BLUR_SAMPLES = 2;
@@ -54,9 +57,9 @@ export const END_HOLD = 1;
  * video sites all expect, so a recording looks right wherever it's watched or uploaded. Full range only looks right where
  * the player reads its label, and some don't.
  * Browsers' encoders turn canvas frames into full range, so each frame is squeezed into 16 + x * 219/255 first, by
- * blending it at this alpha over gray (2D canvases blend the sRGB values), and the video is labeled TV range.
+ * blending gray over it at this alpha (2D canvases blend the sRGB values), and the video is labeled TV range.
  */
-const TV_RANGE_ALPHA = 219 / 255;
+const TV_RANGE_ALPHA = 36 / 255;
 /** 113 * 36/255 = 15.95, the 16 under black */
 const TV_RANGE_GRAY = "rgb(113, 113, 113)";
 /** How often the preview is updated while recording, in milliseconds */
@@ -146,15 +149,11 @@ async function encodesFullRange(canvas: HTMLCanvasElement, options: ReturnType<t
     return fullRange;
 }
 
-/** Copies the rendered frame into the canvas that is encoded, squeezed into TV range if `tvRange`, see TV_RANGE_ALPHA. */
-function copyFrame(context: CanvasRenderingContext2D, frame: HTMLCanvasElement, tvRange: boolean) {
-    if (tvRange) {
-        context.globalAlpha = 1;
-        context.fillStyle = TV_RANGE_GRAY;
-        context.fillRect(0, 0, frame.width, frame.height);
-        context.globalAlpha = TV_RANGE_ALPHA;
-    }
-    context.drawImage(frame, 0, 0);
+/** Squeezes the finished frame into TV range, see TV_RANGE_ALPHA. */
+function squeezeToTvRange(context: CanvasRenderingContext2D) {
+    context.globalAlpha = TV_RANGE_ALPHA;
+    context.fillStyle = TV_RANGE_GRAY;
+    context.fillRect(0, 0, context.canvas.width, context.canvas.height);
     context.globalAlpha = 1;
 }
 
@@ -238,6 +237,7 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
     }
     // without an answer, keep full range and label it so
     const tvRange = await encodesFullRange(videoCanvas, encoder) === true;
+    const hud = await VideoHud.create(context, settings.hud, width, height);
     const surface = graphics.new_surface(gpuCanvas);
     const session = new StreamableSession(bot, 0);
     const samples = settings.motionBlur ? settings.blurSamples : 1;
@@ -297,12 +297,16 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Blob | u
                 graphics.render_video_frame(surface, map, bot, session);
             }
             // in the same task as the render, while the GPU canvas still holds it
-            copyFrame(context, gpuCanvas, tvRange);
+            context.drawImage(gpuCanvas, 0, 0);
+            hud.draw(context, { speed: session.get_speed(bot) });
             let now = performance.now();
             if (now - lastPreview >= PREVIEW_INTERVAL_MS) {
                 lastPreview = now;
-                // the GPU canvas, since the encoded one is squeezed into TV range
-                onPreview(gpuCanvas);
+                // before it's squeezed into TV range
+                onPreview(videoCanvas);
+            }
+            if (tvRange) {
+                squeezeToTvRange(context);
             }
             await source.add(time, 1 / fps);
             throwGraphicsErrors(graphics);

@@ -7,6 +7,8 @@ import Slider from "@mui/material/Slider";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VideocamIcon from "@mui/icons-material/Videocam";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { alpha, lighten } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -54,6 +56,9 @@ function readSettings(): VideoSettings {
             blurSamples: Number.isInteger(stored.blurSamples) && stored.blurSamples >= MIN_BLUR_SAMPLES && stored.blurSamples <= MAX_BLUR_SAMPLES
                 ? stored.blurSamples
                 : DEFAULT_VIDEO_SETTINGS.blurSamples,
+            hud: {
+                speed: typeof stored.hud?.speed === "boolean" ? stored.hud.speed : DEFAULT_VIDEO_SETTINGS.hud.speed
+            }
         };
     }
     catch {
@@ -85,9 +90,14 @@ interface ChoiceRowProps<T> {
     isDisabled?: (value: T) => boolean
 }
 
-/** A row of buttons picking one option, like the graphics presets in the settings menu. */
-function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
-    const { label, options, value, onChange, isDisabled } = props;
+interface ButtonRowProps {
+    label: string
+    children: React.ReactNode
+}
+
+/** A labeled row of buttons, highlighted with the "active" class, like the graphics presets in the settings menu. */
+function ButtonRow(props: ButtonRowProps) {
+    const { label, children } = props;
     const theme = useTheme();
     return (
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
@@ -101,6 +111,8 @@ function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
                     gap: 0.75,
 
                     "button": {
+                        display: "flex",
+                        alignItems: "center",
                         py: 0.25,
                         px: 0.75,
                         borderRadius: "8px",
@@ -126,20 +138,48 @@ function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
                         }
                     }
                 }}>
-                {options.map(([option, optionLabel]) =>
-                    <Typography
-                        key={option}
-                        variant="subtitle2"
-                        component="button"
-                        className={value === option ? "active" : undefined}
-                        disabled={isDisabled?.(option)}
-                        onClick={() => onChange(option)}
-                    >
-                        {optionLabel}
-                    </Typography>
-                )}
+                {children}
             </Box>
         </Box>
+    );
+}
+
+/** A row of buttons picking one option. */
+function ChoiceRow<T extends string | number>(props: ChoiceRowProps<T>) {
+    const { label, options, value, onChange, isDisabled } = props;
+    return (
+        <ButtonRow label={label}>
+            {options.map(([option, optionLabel]) =>
+                <Typography
+                    key={option}
+                    variant="subtitle2"
+                    component="button"
+                    className={value === option ? "active" : undefined}
+                    disabled={isDisabled?.(option)}
+                    onClick={() => onChange(option)}
+                >
+                    {optionLabel}
+                </Typography>
+            )}
+        </ButtonRow>
+    );
+}
+
+interface HudToggleProps {
+    label: string
+    active: boolean
+    onClick: () => void
+}
+
+/** An on/off button for a ButtonRow, with an eye like the player's HUD toggles. */
+function HudToggle(props: HudToggleProps) {
+    const { label, active, onClick } = props;
+    const Icon = active ? VisibilityIcon : VisibilityOffIcon;
+    return (
+        <Typography variant="subtitle2" component="button" className={active ? "active" : undefined} onClick={onClick}>
+            <Icon fontSize="small" sx={{ mr: 0.5 }} />
+            {label}
+        </Typography>
     );
 }
 
@@ -379,20 +419,28 @@ function VideoPanel(props: VideoPanelProps) {
                             onChange={value => setSettings({ motionBlur: value === "on" })} />
                         {settings.motionBlur &&
                         <>
-                            <Slider
-                                size="small"
-                                aria-label="Motion blur frame samples"
-                                min={MIN_BLUR_SAMPLES}
-                                max={MAX_BLUR_SAMPLES}
-                                step={1}
-                                value={settings.blurSamples}
-                                onChange={(_, value) => setSettings({ blurSamples: value })}
-                                sx={{ flex: 1, minWidth: "80px" }} />
+                            {/* no height of its own, so turning blur on doesn't make the row taller than its buttons */}
+                            <Box sx={{ flex: 1, minWidth: "80px", height: 0, display: "flex", alignItems: "center" }}>
+                                <Slider
+                                    size="small"
+                                    aria-label="Motion blur frame samples"
+                                    min={MIN_BLUR_SAMPLES}
+                                    max={MAX_BLUR_SAMPLES}
+                                    step={1}
+                                    value={settings.blurSamples}
+                                    onChange={(_, value) => setSettings({ blurSamples: value })} />
+                            </Box>
                             <Typography variant="body2" sx={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                                 {settings.blurSamples} <Box component="span" sx={{ opacity: 0.7 }}>frame samples</Box>
                             </Typography>
                         </>}
                     </Box>
+                    <ButtonRow label="HUD">
+                        <HudToggle
+                            label="Speed"
+                            active={settings.hud.speed}
+                            onClick={() => setSettings({ hud: { ...settings.hud, speed: !settings.hud.speed } })} />
+                    </ButtonRow>
                     <Box
                         sx={{
                             display: "grid",
