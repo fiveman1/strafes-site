@@ -40,8 +40,7 @@ function DownloadRow(props: { label: string, stats: FileDownloadStats }) {
                     style={{ width: `${fraction * 100}%` }}
                     sx={{
                         height: "100%",
-                        bgcolor: theme.palette.primary.main,
-                        transition: "width .25s linear"
+                        bgcolor: theme.palette.primary.main
                     }} />
             </Box>
             <span style={{ width: "4ch", textAlign: "right" }}>{Math.floor(fraction * 100)}%</span>
