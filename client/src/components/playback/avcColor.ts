@@ -1,7 +1,7 @@
 // Writes an H.264 stream's color space into its sequence parameter set (SPS).
-// Browsers' encoders put it only in the MP4's colr box, but many players read only the stream and guess without it.
-// They guess TV range, so this matters most for full range video, which recordings fall back to when the encoder's
-// range can't be tested (see TV_RANGE_ALPHA in videoRecorder.ts).
+// Some encoders put it only in the MP4's colr box, but many players read only the stream and guess without it. Others
+// write their own, which can say full range when the frames were squeezed into TV range (see TV_RANGE_ALPHA in
+// videoRecorder.ts), so an existing one is rewritten too.
 
 /** H.264 VUI code points, as in the MP4 colr box. 2 is unspecified. */
 const PRIMARIES: Record<string, number> = { "bt709": 1, "bt470bg": 5, "smpte170m": 6 };
@@ -145,30 +145,65 @@ function findVuiFlag(rbsp: Uint8Array) {
     return reader.position;
 }
 
-/** The SPS NAL with a VUI holding only the color space, or undefined if it has a VUI already. */
-function withColorVui(sps: Uint8Array, colorSpace: VideoColorSpaceInit) {
-    const rbsp = unescapeRbsp(sps.subarray(1));
-    const vuiFlag = findVuiFlag(rbsp);
-    const reader = new BitReader(rbsp);
-    const writer = new BitWriter();
-    for (let i = 0; i < vuiFlag; ++i) writer.bit(reader.bit());
-    if (reader.bit()) return undefined;
-    writer.bit(1); // vui_parameters_present_flag
-    writer.bit(0); // aspect_ratio_info_present_flag
-    writer.bit(0); // overscan_info_present_flag
+/** Where the RBSP's stop bit (the last one bit) is, in bits. */
+function stopBitPosition(rbsp: Uint8Array) {
+    let last = rbsp.length - 1;
+    while (last >= 0 && rbsp[last] === 0) --last;
+    if (last < 0) throw new Error("SPS has no stop bit");
+    let bit = 7;
+    while (((rbsp[last] >> (7 - bit)) & 1) === 0) --bit;
+    return last * 8 + bit;
+}
+
+/** video_signal_type: the range, then the color description. */
+function writeSignalType(writer: BitWriter, videoFormat: number, colorSpace: VideoColorSpaceInit) {
     writer.bit(1); // video_signal_type_present_flag
-    writer.bits(5, 3); // video_format: unspecified
+    writer.bits(videoFormat, 3);
     writer.bit(colorSpace.fullRange ? 1 : 0);
     writer.bit(1); // colour_description_present_flag
     writer.bits(PRIMARIES[colorSpace.primaries ?? ""] ?? UNSPECIFIED, 8);
     writer.bits(TRANSFER[colorSpace.transfer ?? ""] ?? UNSPECIFIED, 8);
     writer.bits(MATRIX[colorSpace.matrix ?? ""] ?? UNSPECIFIED, 8);
-    writer.bit(0); // chroma_loc_info_present_flag
-    writer.bit(0); // timing_info_present_flag
-    writer.bit(0); // nal_hrd_parameters_present_flag
-    writer.bit(0); // vcl_hrd_parameters_present_flag
-    writer.bit(0); // pic_struct_present_flag
-    writer.bit(0); // bitstream_restriction_flag
+}
+
+/** The SPS NAL with the color space in its VUI, adding a VUI if it has none. */
+function withColorVui(sps: Uint8Array, colorSpace: VideoColorSpaceInit) {
+    const rbsp = unescapeRbsp(sps.subarray(1));
+    const vuiFlag = findVuiFlag(rbsp);
+    const end = stopBitPosition(rbsp);
+    const reader = new BitReader(rbsp);
+    const writer = new BitWriter();
+    const copy = (count: number) => {
+        const value = reader.bits(count);
+        writer.bits(value, count);
+        return value;
+    };
+    for (let i = 0; i < vuiFlag; ++i) writer.bit(reader.bit());
+    writer.bit(1); // vui_parameters_present_flag
+    if (reader.bit()) {
+        if (copy(1) && copy(8) === 255) copy(32); // aspect ratio, 255 = width and height follow
+        if (copy(1)) copy(1); // overscan
+        let videoFormat = 5; // unspecified
+        if (reader.bit()) {
+            videoFormat = reader.bits(3);
+            reader.bit(); // video_full_range_flag
+            if (reader.bit()) reader.bits(24); // primaries, transfer, matrix
+        }
+        writeSignalType(writer, videoFormat, colorSpace);
+        // chroma location, timing, HRD and the rest, unchanged
+        while (reader.position < end) writer.bit(reader.bit());
+    }
+    else {
+        writer.bit(0); // aspect_ratio_info_present_flag
+        writer.bit(0); // overscan_info_present_flag
+        writeSignalType(writer, 5, colorSpace);
+        writer.bit(0); // chroma_loc_info_present_flag
+        writer.bit(0); // timing_info_present_flag
+        writer.bit(0); // nal_hrd_parameters_present_flag
+        writer.bit(0); // vcl_hrd_parameters_present_flag
+        writer.bit(0); // pic_struct_present_flag
+        writer.bit(0); // bitstream_restriction_flag
+    }
     return new Uint8Array([sps[0], ...escapeRbsp(writer.finish())]);
 }
 
@@ -179,8 +214,7 @@ function toBytes(source: AllowSharedBufferSource) {
 }
 
 /**
- * An avcC (AVCDecoderConfigurationRecord) whose SPSs carry the color space, or undefined if it can't be done (an SPS
- * already has a VUI, or the record doesn't parse).
+ * An avcC (AVCDecoderConfigurationRecord) whose SPSs carry the color space, or undefined if the record doesn't parse.
  */
 export function avcConfigWithColor(description: AllowSharedBufferSource, colorSpace: VideoColorSpaceInit) {
     try {
@@ -192,7 +226,6 @@ export function avcConfigWithColor(description: AllowSharedBufferSource, colorSp
         for (let i = 0; i < spsCount; ++i) {
             const length = (config[pos] << 8) | config[pos + 1];
             const sps = withColorVui(config.subarray(pos + 2, pos + 2 + length), colorSpace);
-            if (!sps) return undefined;
             out.push(sps.length >> 8, sps.length & 0xff, ...sps);
             pos += 2 + length;
         }
