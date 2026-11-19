@@ -2,6 +2,7 @@ import { BufferTarget, CanvasSource, canEncodeVideo, Mp4OutputFormat, Output, Qu
 import { Checkpoint, CompleteBot, Graphics, StreamableBot, StreamableMap, StreamableSession } from "../../wasm/strafesnet_roblox_bot_player_wasm_module";
 import { getMapAssetLoader } from "./mapAssetLoader";
 import { avcConfigWithColor } from "./avcColor";
+import { readAv1Range, setAv1Range } from "./av1Color";
 import { createVideoFile } from "./videoFile";
 import { GraphicsLevel, toGraphicsQuality } from "./graphicsSettings";
 import { CheckpointDiff, DIFF_SHOWN_AFTER, VideoHud, VideoHudSettings } from "./videoHud";
@@ -13,11 +14,13 @@ export const VIDEO_RESOLUTIONS = {
 export type VideoResolution = keyof typeof VIDEO_RESOLUTIONS;
 export type VideoFrameRate = 30 | 60;
 export type VideoQuality = "medium" | "high" | "very-high";
+export type VideoCodec = "avc" | "av1";
 
 export interface VideoSettings {
     resolution: VideoResolution
     fps: VideoFrameRate
     quality: VideoQuality
+    codec: VideoCodec
     graphics: GraphicsLevel
     motionBlur: boolean
     /** How many frames each video frame averages with motion blur, BLUR_SAMPLE_SECONDS apart */
@@ -30,6 +33,7 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
     resolution: "1080p",
     fps: 60,
     quality: "very-high",
+    codec: "avc",
     graphics: "high",
     motionBlur: false,
     blurSamples: 8,
@@ -43,8 +47,8 @@ export const MAX_BLUR_SAMPLES = 16;
 const BLUR_SAMPLE_SECONDS = 1 / 960;
 
 /**
- * A quality level rather than a bitrate: H.264 encodes it at a fixed quantizer, as many bits as each frame needs, so
- * fast camera turns stay sharp. Very high (QP 16) came to about 75 Mbps on a surf map at 1080p60.
+ * A quality level rather than a bitrate: it's encoded at a fixed quantizer, as many bits as each frame needs, so fast
+ * camera turns stay sharp. Very high (H.264 QP 16) came to about 75 Mbps on a surf map at 1080p60.
  */
 function videoQuality(settings: VideoSettings) {
     return new Quality(settings.quality);
@@ -89,8 +93,16 @@ export interface RecordedVideo {
     discard: () => Promise<void>
 }
 
-/** H.264 High profile at level 4.2, enough for 1080p60, for the color range test. Encoders write their own level. */
-const TEST_CODEC = "avc1.64002a";
+/**
+ * Codec strings at a level enough for 1080p60 (H.264 High 4.2, AV1 Main 4.1), for the support and color range tests.
+ * Encoders write their own level.
+ */
+const TEST_CODECS: Record<VideoCodec, string> = {
+    avc: "avc1.64002a",
+    av1: "av01.0.09M.08"
+};
+
+export const CODEC_NAMES: Record<VideoCodec, string> = { avc: "H.264", av1: "AV1" };
 
 /**
  * The encoder settings shared by the support check, the color range test and the recording. Only the GPU's encoder:
@@ -99,6 +111,7 @@ const TEST_CODEC = "avc1.64002a";
 function encoderOptions(settings: VideoSettings) {
     const [width, height] = VIDEO_RESOLUTIONS[settings.resolution];
     return {
+        codec: settings.codec,
         width,
         height,
         frameRate: settings.fps,
@@ -107,9 +120,29 @@ function encoderOptions(settings: VideoSettings) {
     } as const;
 }
 
-/** Whether this browser can encode videos of these settings. */
-export function canEncodeSettings(settings: VideoSettings) {
-    return canEncodeVideo("avc", encoderOptions(settings));
+/** The WebCodecs config of the tests, with a fixed quantizer like the recording. */
+function testEncoderConfig(options: ReturnType<typeof encoderOptions>): VideoEncoderConfig {
+    return {
+        codec: TEST_CODECS[options.codec],
+        width: options.width,
+        height: options.height,
+        framerate: options.frameRate,
+        hardwareAcceleration: options.hardwareAcceleration,
+        bitrateMode: "quantizer",
+        ...(options.codec === "avc" ? { avc: { format: "avc" } } : {})
+    };
+}
+
+/**
+ * Whether this browser can encode videos of these settings, at a fixed quantizer: without one, the encoder would get a
+ * bitrate guessed from the size.
+ */
+export async function canEncodeSettings(settings: VideoSettings) {
+    const options = encoderOptions(settings);
+    const { codec, ...mediabunnyOptions } = options;
+    if (!await canEncodeVideo(codec, mediabunnyOptions)) return false;
+    const support = await VideoEncoder.isConfigSupported(testEncoderConfig(options));
+    return support.supported === true;
 }
 
 /** Whether this browser can record videos at all, before checking the codec. */
@@ -131,26 +164,26 @@ function waitFrame() {
 }
 
 /**
- * Whether the browser's encoder turns this canvas into full range video (WebCodecs has no setting for it), from the
- * color space it reports after encoding one frame. Undefined if it doesn't say or the test fails.
+ * Whether the browser's encoder turns this canvas into full range video (WebCodecs has no setting for it), from what
+ * the stream says for AV1, or else the color space the encoder reports, after encoding one frame. Undefined if
+ * neither says or the test fails.
  */
 async function encodesFullRange(canvas: HTMLCanvasElement, options: ReturnType<typeof encoderOptions>): Promise<boolean | undefined> {
     let fullRange: boolean | undefined = undefined;
+    const codec = options.codec;
     const encoder = new VideoEncoder({
-        output: (_chunk: EncodedVideoChunk, meta: EncodedVideoChunkMetadata | undefined) => {
+        output: (chunk: EncodedVideoChunk, meta: EncodedVideoChunkMetadata | undefined) => {
+            if (fullRange === undefined && codec === "av1") {
+                const data = new Uint8Array(chunk.byteLength);
+                chunk.copyTo(data);
+                fullRange = readAv1Range(data);
+            }
             fullRange ??= meta?.decoderConfig?.colorSpace?.fullRange ?? undefined;
         },
         error: (err: DOMException) => console.error("Couldn't test the video encoder", err)
     });
     try {
-        encoder.configure({
-            codec: TEST_CODEC,
-            width: options.width,
-            height: options.height,
-            framerate: options.frameRate,
-            hardwareAcceleration: options.hardwareAcceleration,
-            avc: { format: "avc" }
-        });
+        encoder.configure(testEncoderConfig(options));
         const frame = new VideoFrame(canvas, { timestamp: 0 });
         encoder.encode(frame, { keyFrame: true });
         frame.close();
@@ -262,7 +295,7 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Recorded
     const fps = settings.fps;
 
     if (!await canEncodeSettings(settings)) {
-        throw new Error("This browser can't encode H.264 video at this size.");
+        throw new Error(`This browser can't encode ${CODEC_NAMES[settings.codec]} video at this size.`);
     }
     const { width, height } = encoder;
 
@@ -314,20 +347,30 @@ export async function recordVideo(options: RecordVideoOptions): Promise<Recorded
         session.advance_time(bot, map, 0);
         session.set_bot_time(bot, map, 0, 0);
 
+        const codec = encoder.codec;
         const source = new CanvasSource(videoCanvas, {
-            codec: "avc",
+            codec,
             quality: encoder.quality,
             hardwareAcceleration: encoder.hardwareAcceleration,
-            // Called with the same metadata right before it's muxed, so the color space and SPS can be changed here.
-            // The encoder only puts the color space in the MP4's colr box, which some players ignore.
+            // Called with the same packet and metadata right before they're muxed, so the color space, the SPS and the
+            // packet itself can be changed here.
             onEncodedPacket: (packet, meta) => {
                 bytes += packet.byteLength;
                 const config = meta?.decoderConfig;
-                if (config?.description && config.colorSpace) {
-                    if (tvRange) {
+                if (codec === "avc") {
+                    // the encoder only puts the color space in the MP4's colr box, which some players ignore
+                    if (config?.description && config.colorSpace) {
+                        if (tvRange) {
+                            config.colorSpace = { ...config.colorSpace, fullRange: false };
+                        }
+                        config.description = avcConfigWithColor(config.description, config.colorSpace) ?? config.description;
+                    }
+                }
+                else if (tvRange) {
+                    setAv1Range(packet.data, false);
+                    if (config?.colorSpace) {
                         config.colorSpace = { ...config.colorSpace, fullRange: false };
                     }
-                    config.description = avcConfigWithColor(config.description, config.colorSpace) ?? config.description;
                 }
             }
         });

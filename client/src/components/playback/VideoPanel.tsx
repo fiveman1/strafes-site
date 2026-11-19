@@ -16,7 +16,7 @@ import { CompleteBot, Graphics, StreamableBot, StreamableMap } from "../../wasm/
 import { formatBytes } from "./downloadStats";
 import { GRAPHICS_LEVELS, GraphicsLevel } from "./graphicsSettings";
 import { DIFF_BAD_COLOR, DIFF_GOOD_COLOR } from "./videoHud";
-import { canEncodeSettings, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, endHold, RecordedVideo, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
+import { canEncodeSettings, CODEC_NAMES, DEFAULT_VIDEO_SETTINGS, MAX_BLUR_SAMPLES, MIN_BLUR_SAMPLES, endHold, RecordedVideo, recordVideo, RecordingProgress, VIDEO_RESOLUTIONS, VideoCodec, VideoFrameRate, VideoQuality, VideoResolution, VideoSettings } from "./videoRecorder";
 
 const SETTINGS_KEY = "player_videoSettings";
 /** Width of the settings' labels, so their options line up */
@@ -28,6 +28,7 @@ const PREVIEW_HEIGHT = 360;
 const RESOLUTION_LABELS: [VideoResolution, string][] = [["720p", "720p"], ["1080p", "1080p"]];
 const FPS_LABELS: [VideoFrameRate, string][] = [[30, "30"], [60, "60"]];
 const QUALITY_LABELS: [VideoQuality, string][] = [["medium", "Medium"], ["high", "High"], ["very-high", "Very high"]];
+const CODEC_LABELS: [VideoCodec, string][] = Object.entries(CODEC_NAMES) as [VideoCodec, string][];
 const GRAPHICS_LABELS: Record<GraphicsLevel, string> = { low: "Low", medium: "Medium", high: "High" };
 const OFF_ON_LABELS: [string, string][] = [["off", "Off"], ["on", "On"]];
 type DiffChoice = "off" | "time" | "speed";
@@ -85,6 +86,7 @@ function readSettings(): VideoSettings {
             resolution: stored.resolution in VIDEO_RESOLUTIONS ? stored.resolution : DEFAULT_VIDEO_SETTINGS.resolution,
             fps: FPS_LABELS.some(([fps]) => fps === stored.fps) ? stored.fps : DEFAULT_VIDEO_SETTINGS.fps,
             quality: QUALITY_LABELS.some(([quality]) => quality === stored.quality) ? stored.quality : DEFAULT_VIDEO_SETTINGS.quality,
+            codec: stored.codec in CODEC_NAMES ? stored.codec : DEFAULT_VIDEO_SETTINGS.codec,
             graphics: GRAPHICS_LEVELS.includes(stored.graphics) ? stored.graphics : DEFAULT_VIDEO_SETTINGS.graphics,
             motionBlur: typeof stored.motionBlur === "boolean" ? stored.motionBlur : DEFAULT_VIDEO_SETTINGS.motionBlur,
             blurSamples: Number.isInteger(stored.blurSamples) && stored.blurSamples >= MIN_BLUR_SAMPLES && stored.blurSamples <= MAX_BLUR_SAMPLES
@@ -251,15 +253,19 @@ function VideoPanel(props: VideoPanelProps) {
     // when encoding started, see Phase
     const encodeStartRef = useRef<number | undefined>(undefined);
 
-    // which resolutions the browser can encode at this frame rate and quality
+    // which resolutions and codecs the browser can encode with the other settings as they are
     const [ unsupported, setUnsupported ] = useState<Set<VideoResolution>>(new Set());
+    const [ unsupportedCodecs, setUnsupportedCodecs ] = useState<Set<VideoCodec>>(new Set());
     useEffect(() => {
         let canceled = false;
-        const resolutions = RESOLUTION_LABELS.map(([resolution]) => resolution);
-        Promise.all(resolutions.map(resolution => canEncodeSettings({ ...settings, resolution }).catch(() => false)))
-            .then(supported => {
-                if (!canceled) setUnsupported(new Set(resolutions.filter((_, i) => !supported[i])));
-            });
+        function check<T>(options: T[], change: (option: T) => Partial<VideoSettings>, set: (unsupported: Set<T>) => void) {
+            Promise.all(options.map(option => canEncodeSettings({ ...settings, ...change(option) }).catch(() => false)))
+                .then(supported => {
+                    if (!canceled) set(new Set(options.filter((_, i) => !supported[i])));
+                });
+        }
+        check(RESOLUTION_LABELS.map(([resolution]) => resolution), resolution => ({ resolution }), setUnsupported);
+        check(CODEC_LABELS.map(([codec]) => codec), codec => ({ codec }), setUnsupportedCodecs);
         return () => {
             canceled = true;
         };
@@ -457,6 +463,12 @@ function VideoPanel(props: VideoPanelProps) {
                     <ChoiceRow label="Frame rate" options={FPS_LABELS} value={settings.fps} onChange={fps => setSettings({ fps })} />
                     <ChoiceRow label="Quality" options={QUALITY_LABELS} value={settings.quality} onChange={quality => setSettings({ quality })} />
                     <ChoiceRow
+                        label="Codec"
+                        options={CODEC_LABELS}
+                        value={settings.codec}
+                        onChange={codec => setSettings({ codec })}
+                        isDisabled={codec => unsupportedCodecs.has(codec)} />
+                    <ChoiceRow
                         label="Graphics"
                         options={GRAPHICS_LEVELS.map(level => [level, GRAPHICS_LABELS[level]])}
                         value={settings.graphics}
@@ -524,7 +536,7 @@ function VideoPanel(props: VideoPanelProps) {
                     </Box>
                     {unsupported.has(settings.resolution) &&
                     <Typography variant="caption" color="error.light">
-                        This browser can't encode video at {settings.resolution}.
+                        This browser can't encode {CODEC_NAMES[settings.codec]} video at {settings.resolution}.
                     </Typography>}
                     <Button
                         variant="contained"

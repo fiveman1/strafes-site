@@ -3,6 +3,8 @@
 // write their own, which can say full range when the frames were squeezed into TV range (see TV_RANGE_ALPHA in
 // videoRecorder.ts), so an existing one is rewritten too.
 
+import { BitReader } from "./bitReader";
+
 /** H.264 VUI code points, as in the MP4 colr box. 2 is unspecified. */
 const PRIMARIES: Record<string, number> = { "bt709": 1, "bt470bg": 5, "smpte170m": 6 };
 const TRANSFER: Record<string, number> = { "bt709": 1, "smpte170m": 6, "linear": 8, "iec61966-2-1": 13 };
@@ -11,34 +13,6 @@ const UNSPECIFIED = 2;
 
 /** Profiles whose SPS carries chroma format, bit depths and scaling lists. */
 const HIGH_PROFILES = new Set([100, 110, 122, 244, 44, 83, 86, 118, 128, 138, 139, 134, 135]);
-
-class BitReader {
-    private pos = 0;
-    constructor(private bytes: Uint8Array) {}
-    get position() {
-        return this.pos;
-    }
-    bit() {
-        if (this.pos >= this.bytes.length * 8) throw new Error("SPS ended early");
-        const bit = (this.bytes[this.pos >> 3] >> (7 - (this.pos & 7))) & 1;
-        ++this.pos;
-        return bit;
-    }
-    bits(count: number) {
-        let value = 0;
-        for (let i = 0; i < count; ++i) value = value * 2 + this.bit();
-        return value;
-    }
-    ue() {
-        let zeros = 0;
-        while (this.bit() === 0) ++zeros;
-        return 2 ** zeros - 1 + this.bits(zeros);
-    }
-    se() {
-        const k = this.ue();
-        return k & 1 ? (k + 1) / 2 : -k / 2;
-    }
-}
 
 class BitWriter {
     private out: number[] = [];
