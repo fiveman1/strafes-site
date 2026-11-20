@@ -3,8 +3,8 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { useQuery } from "@tanstack/react-query";
 import { queries } from "../../api/queries";
-import { formatCourse, formatPlacement, formatStyle, formatTime, Game, MAIN_COURSE, Style, TimeSortBy } from "shared";
-import DiffDisplay from "../displays/DiffDisplay";
+import { formatCourse, formatPlacement, formatStyle, Game, MAIN_COURSE, Style, TimeSortBy } from "shared";
+import TimeDisplay from "../displays/TimeDisplay";
 import DateDisplay from "../displays/DateDisplay";
 import { IconButton, Skeleton, Stack, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import { useOutletContext } from "react-router";
@@ -130,25 +130,9 @@ function RecordCard(props: RecordCardProps) {
                         }}>
                         {formatPlacement(record.placement)}
                     </Typography>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            gap: 0.75
-                        }}>
-                        <Typography 
-                            variant="body2"
-                            color="textPrimary"
-                            sx={{
-                                display: "inline-block",
-                                fontFamily: '"Geist Mono", monospace'
-                            }}
-                        >
-                            {formatTime(record.time)}
-                        </Typography>
-                        <Typography variant="body2">
-                            <DiffDisplay ms={record.time} diff={record.wrDiff} />
-                        </Typography>
-                    </Box>
+                    <Typography variant="body2" component="div" color="textPrimary" sx={{ display: "flex" }}>
+                        <TimeDisplay time={record} alignDiff={false} fontSize="inherit" />
+                    </Typography>
                     {!smallScreen && <DateDisplay date={record.date} useDateTime color={theme.palette.text.secondary} variant="body2" />}
                 </Stack>
                 {smallScreen && <DateDisplay date={record.date} useDateTime color={theme.palette.text.secondary} variant="body2" />}
