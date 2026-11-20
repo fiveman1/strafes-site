@@ -32,6 +32,9 @@ import ReportDialog from "./ReportDialog";
 const REPLY_INDENT = "44px";
 // How long a comment opened from a link (?comment=) stays highlighted
 const LINKED_HIGHLIGHT_MS = 2500;
+// And the whole section, from a link to the comments (?comments, like the Discord bot's WR posts). Shorter, since it's
+// most of the page.
+const SECTION_HIGHLIGHT_MS = 1200;
 
 interface ReplyTarget {
     // The top-level comment the reply goes under
@@ -58,6 +61,9 @@ function ReplayComments(props: ReplayCommentsProps) {
     const theme = useTheme();
     // Set by links to a comment, like the inbox's
     const [linkedCommentId] = useQueryState("comment", parseAsString);
+    // A link to the comments rather than one of them. Only read when the page opens: the bare ?comments has no value
+    // to keep in state, and it's only ever used from outside the site.
+    const [linkedToSection] = useState(() => new URLSearchParams(window.location.search).has("comments"));
 
     const [sort, setSort] = useState<CommentSort>(DEFAULT_COMMENT_SORT);
     const commentsQuery = useQuery({
@@ -77,6 +83,8 @@ function ReplayComments(props: ReplayCommentsProps) {
     const [loginAnchor, setLoginAnchor] = useState<HTMLElement | null>(null);
     const [message, setMessage] = useState("");
     const [highlighted, setHighlighted] = useState<string | undefined>(undefined);
+    const [sectionHighlighted, setSectionHighlighted] = useState(false);
+    const sectionRef = useRef<HTMLElement>(null);
 
     // Comments with a like request in flight, whose counts from the live stream would be out of order
     const pendingLikes = useRef(new Set<string>());
@@ -84,6 +92,7 @@ function ReplayComments(props: ReplayCommentsProps) {
     const streamOpened = useRef(false);
     // The linked comment that's been opened, so it only happens once per link and not on every refetch
     const linkHandled = useRef<string | undefined>(undefined);
+    const sectionLinkHandled = useRef(false);
 
     // Every sort's copy for this replay and viewer. The player's seek bar reads one that may not be the list's sort.
     const allSortsKey = [...queries.replays.comments._def, timeId, userId];
@@ -170,6 +179,21 @@ function ReplayComments(props: ReplayCommentsProps) {
         const timeout = setTimeout(() => setHighlighted(undefined), LINKED_HIGHLIGHT_MS);
         return () => clearTimeout(timeout);
     }, [highlighted]);
+
+    // A link to the comments scrolls to them and flashes the section. Once they've loaded (or failed to), so the
+    // section is the size it'll be. A link to one comment wins, since it scrolls too.
+    useEffect(() => {
+        if (!linkedToSection || linkedCommentId || sectionLinkHandled.current || commentsQuery.isPending) return;
+        sectionLinkHandled.current = true;
+        sectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+        setSectionHighlighted(true);
+    }, [linkedToSection, linkedCommentId, commentsQuery.isPending]);
+
+    useEffect(() => {
+        if (!sectionHighlighted) return;
+        const timeout = setTimeout(() => setSectionHighlighted(false), SECTION_HIGHLIGHT_MS);
+        return () => clearTimeout(timeout);
+    }, [sectionHighlighted]);
 
     const onPosted = (comment: ReplayComment) => {
         updateData((current) => upsertComment(current, comment));
@@ -268,7 +292,23 @@ function ReplayComments(props: ReplayCommentsProps) {
     );
 
     return (
-        <Box component="section" aria-labelledby="comments-heading" sx={{ display: "flex", flexDirection: "column", gap: 2, ...sx }}>
+        <Box
+            component="section"
+            ref={sectionRef}
+            aria-labelledby="comments-heading"
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                // Clear of the sticky app bar, and the highlight's edge, when scrolled to
+                scrollMarginTop: "88px",
+                // Like a linked comment's highlight
+                borderRadius: "8px",
+                bgcolor: sectionHighlighted ? highlightColor : "transparent",
+                boxShadow: sectionHighlighted ? `0 0 0 12px ${highlightColor}` : "0 0 0 12px transparent",
+                transition: "background-color 600ms ease, box-shadow 600ms ease",
+                ...sx
+            }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Typography id="comments-heading" variant="h6" component="h2">
                     {data ? (count === 1 ? "1 comment" : `${count} comments`) : "Comments"}

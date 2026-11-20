@@ -127,7 +127,7 @@ function formatTimeHelper(time: number, digits: number) {
 export function formatTime(time: number, short?: boolean) {
     const isNegative = time < 0;
     time = Math.abs(time);
-    if (time > 86400000) {
+    if (time >= 86400000) {
         const days = Math.floor(time / 86400000);
         if (days > 999) {
             return ">999 days";
@@ -196,21 +196,16 @@ export function formatPlacement(placement?: number) {
 
 export function formatDiff(diffMs: number) {
     const diff = diffMs / 1000;
-    if (diff >= 3600) {
-        const hours = Math.floor(diff / 3600);
-        const minutes = Math.round((diff / 60) % 60);
-        return `${hours}h ${minutes}m`;
+    if (diff < 60) {
+        return `${diff.toFixed(3)}s`;
     }
-    else if (diff >= 60) {
-        let minutes = Math.floor(diff / 60);
-        let seconds = Math.round(diff % 60);
-        if (seconds === 60) {
-            minutes += 1;
-            seconds = 0;
-        }
-        return `${minutes}m ${seconds}s`;
+    // Rounded before it's split up, so 59m 59.6s is 1h 0m rather than 60m 0s
+    const seconds = Math.round(diff);
+    if (seconds < 3600) {
+        return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
     }
-    return `${diff.toFixed(3)}s`;
+    const minutes = Math.round(diff / 60);
+    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
 export const MAIN_COURSE = 0;
