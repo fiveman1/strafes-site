@@ -15,10 +15,14 @@ const MONO = '"Geist Mono", monospace';
 interface ITimeDisplayProps {
     time: Time
     hideDiff?: boolean
+    /** Reserve a fixed width for the time so diffs line up across rows (e.g. in a grid). Defaults to true. */
+    alignDiff?: boolean
+    /** Font size of the time text. Defaults to 0.8125rem. */
+    fontSize?: string
 }
 
 function TimeDisplay(props: ITimeDisplayProps) {
-    const { time, hideDiff } = props;
+    const { time, hideDiff, alignDiff = true, fontSize = "0.8125rem" } = props;
     const theme = useTheme();
     const queryClient = useQueryClient();
 
@@ -29,6 +33,7 @@ function TimeDisplay(props: ITimeDisplayProps) {
     const hasBot = time.hasBot;
     const timeId = time.id;
     const mapId = time.mapId;
+    const showDiff = !hideDiff && diff !== undefined;
 
     const prefetchURLs = useCallback(() => {
         // Just a head start, the replay page fetches them again if these fail
@@ -36,97 +41,58 @@ function TimeDisplay(props: ITimeDisplayProps) {
         queryClient.query(queries.replays.mapURL(mapId)).catch(noop);
     }, [mapId, queryClient, timeId]);
 
-    if (hideDiff) {
-        if (hasBot) {
-            return (
-                <Link
-                    component={RouterLink}
-                    to={`/replays/${time.id}`}
-                    onClick={prefetchURLs}
-                    underline="none"
-                    sx={{
-                        textDecoration: "none",
-                        ":hover": {
-                            ".timeValue": { textDecoration: "underline", color: isLight ? theme.palette.primary.main : lighten(theme.palette.primary.main, 0.1) },
-                            ".videoIcon": { color: theme.palette.primary.main }
-                        }
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "inline-flex",
-                            flexDirection: "row",
-                            alignItems: "center"
-                        }}>
-                        <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{ fontFamily: MONO, fontSize: "0.8125rem" }}>
-                            {formatTime(ms)}
-                        </Typography>
-                        <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />
-                    </Box>
-                </Link>
-            );
-        }
+    const timeText = (
+        <Typography
+            variant="inherit"
+            color={hasBot ? "textPrimary" : undefined}
+            className="timeValue"
+            sx={{
+                fontFamily: MONO,
+                fontSize: fontSize,
+                minWidth: showDiff && alignDiff ? "9ch" : undefined,
+                mr: showDiff ? (alignDiff ? 1.25 : 0.75) : undefined
+            }}>
+            {formatTime(ms)}
+        </Typography>
+    );
 
-        return (
-            <Typography variant="inherit" sx={{ fontFamily: MONO, fontSize: "0.8125rem" }}>
-                {formatTime(ms)}
-            </Typography>
-        );
+    if (!showDiff && !hasBot) {
+        return timeText;
     }
 
-    if (hasBot) {
-        return (
-            <Link
-                component={RouterLink} 
-                to={`/replays/${time.id}`}
-                onClick={prefetchURLs}
-                underline="none"
-                sx={{
-                    textDecoration: "none",
-                    ":hover": {
-                        ".timeValue": { textDecoration: "underline", color: theme.palette.mode === "dark" ? lighten(theme.palette.primary.main, 0.1) : theme.palette.primary.main },
-                        ".videoIcon": { color: theme.palette.primary.main }
-                    }
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "inline-flex",
-                        flexDirection: "row",
-                        alignItems: "center"
-                    }}>
-                    <Typography variant="inherit" color="textPrimary" className="timeValue" sx={{
-                        fontFamily: MONO,
-                        fontSize: "0.8125rem",
-                        minWidth: diff !== undefined ? "9ch" : undefined,
-                        mr: diff !== undefined ? 1.25 : undefined
-                    }}>
-                        {formatTime(ms)}
-                    </Typography>
-                    <DiffDisplay ms={ms} diff={diff} />
-                    <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />
-                </Box>
-            </Link>
-        );
-    }
-
-    return (
+    const content = (
         <Box
             sx={{
-                display: "flex",
+                display: "inline-flex",
                 flexDirection: "row",
                 alignItems: "center"
             }}>
-            <Typography variant="inherit" sx={{
-                fontFamily: MONO,
-                fontSize: "0.8125rem",
-                minWidth: "9ch",
-                mr: 1.25
-            }}>
-                {formatTime(ms)}
-            </Typography>
-            <DiffDisplay ms={ms} diff={diff} />
+            {timeText}
+            {showDiff && <DiffDisplay ms={ms} diff={diff} />}
+            {hasBot && <SmartDisplayIcon className="videoIcon" sx={{ ml: 0.75, color: "text.secondary", transition: "color .15s ease", fontSize: "16px" }} />}
         </Box>
+    );
+
+    if (!hasBot) {
+        return content;
+    }
+
+    return (
+        <Link
+            component={RouterLink}
+            to={`/replays/${timeId}`}
+            onClick={prefetchURLs}
+            underline="none"
+            sx={{
+                textDecoration: "none",
+                ":hover": {
+                    ".timeValue": { textDecoration: "underline", color: isLight ? theme.palette.primary.main : lighten(theme.palette.primary.main, 0.1) },
+                    ".videoIcon": { color: theme.palette.primary.main }
+                }
+            }}
+        >
+            {content}
+        </Link>
     );
 }
 
