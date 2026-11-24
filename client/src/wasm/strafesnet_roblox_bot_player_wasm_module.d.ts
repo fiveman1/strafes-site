@@ -77,7 +77,7 @@ export class CompleteBot {
      * When the run finished: its Finish event, or the replay's end without one.
      */
     finish(): Checkpoint | undefined;
-    constructor(data: Uint8Array);
+    constructor(data: Uint8Array | number[]);
     run_duration(mode_id: number): number;
 }
 
@@ -375,12 +375,12 @@ export class ModelPreparer {
     /**
      * With StreamableMap.preparer_context.
      */
-    constructor(context: Uint8Array);
+    constructor(context: Uint8Array | number[]);
     /**
      * Add a group's geometry from DeferredJobs.take_geometry, and prepare the regions which have all their meshes now,
      * for StreamableMap.insert_prepared_regions.
      */
-    prepare(geometry: Uint8Array): Uint8Array;
+    prepare(geometry: Uint8Array | number[]): Uint8Array;
 }
 
 export class Range {
@@ -515,12 +515,12 @@ export class StreamableMap {
      * failed), or if it doesn't hold a chunk (a mismatched worker build), the chunk is decompressed here instead, a little
      * each frame.
      */
-    insert_lightmap_chunk(region_id: number, compressed: Uint8Array, prepared?: Uint8Array | null): void;
+    insert_lightmap_chunk(region_id: number, compressed: Uint8Array | number[], prepared?: Uint8Array | number[] | null): void;
     /**
      * Add regions from ModelPreparer.prepare. Do this before promote_ready_assets. False if any were from a mismatched
      * worker build, and those regions are never drawn.
      */
-    insert_prepared_regions(prepared: Uint8Array): boolean;
+    insert_prepared_regions(prepared: Uint8Array | number[]): boolean;
     /**
      * Whether the whole map is downloaded and in the scene: nothing left to download or in flight, no texture
      * transcoding and nothing waiting to be added by promote_ready_assets. Work handed to web workers through
@@ -647,7 +647,7 @@ export class TranscodedTexture {
     /**
      * Rebuild from the fields of a TranscodedTexture sent from a web worker.
      */
-    constructor(texture_id: number, width: number, height: number, mip_level_count: number, format: number, coverage_alpha: boolean, data: Uint8Array);
+    constructor(texture_id: number, width: number, height: number, mip_level_count: number, format: number, coverage_alpha: boolean, data: Uint8Array | number[]);
     /**
      * Every mip level, largest first. Moves the data out, so it can only be taken once.
      */
@@ -690,7 +690,7 @@ export function new_streamable_map(downloader: MapDownloader, graphics: Graphics
  * StreamableMap.insert_lightmap_chunk. This is the slow part of a lightmap chunk, and it needs no Graphics, so it can
  * run in a web worker.
  */
-export function prepare_lightmap_chunk(compressed: Uint8Array): Uint8Array;
+export function prepare_lightmap_chunk(compressed: Uint8Array | number[]): Uint8Array;
 
 /**
  * Set up the graphics.  Returns an object that contains both graphics and surface.
@@ -704,7 +704,7 @@ export function setup_graphics(canvas: HTMLCanvasElement): Promise<GraphicsAndSu
  * and it needs no Graphics, so it can run in a web worker.
  * A file which fails to load becomes the missing texture checkerboard.
  */
-export function transcode_texture(texture_id: number, data: Uint8Array, texture_support: number): TranscodedTexture;
+export function transcode_texture(texture_id: number, data: Uint8Array | number[], texture_support: number): TranscodedTexture;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -807,8 +807,8 @@ export interface InitOutput {
     readonly __wbg_transcodedtexture_free: (a: number, b: number) => void;
     readonly __wbg_vector3_free: (a: number, b: number) => void;
     readonly botblockrange_range: (a: number) => number;
-    readonly botdownloader_download_bot_block_range: (a: number, b: number) => number;
-    readonly botdownloader_get_complete_bot: (a: number) => number;
+    readonly botdownloader_download_bot_block_range: (a: number, b: number) => any;
+    readonly botdownloader_get_complete_bot: (a: number) => any;
     readonly botdownloader_new: (a: number, b: number) => number;
     readonly bvh_closest_time_to_point: (a: number, b: number, c: number, d: number) => void;
     readonly bvh_new: (a: number) => number;
@@ -830,9 +830,9 @@ export interface InitOutput {
     readonly deferredjobs_take_geometry: (a: number, b: number) => void;
     readonly deferredjobs_take_lightmap_chunks: (a: number, b: number) => void;
     readonly deferredjobs_take_textures: (a: number, b: number) => void;
-    readonly downloadbotblockrangeerror_error: (a: number) => number;
+    readonly downloadbotblockrangeerror_error: (a: number) => any;
     readonly downloadbotblockrangeerror_request: (a: number) => number;
-    readonly downloadmapblockrangeerror_error: (a: number) => number;
+    readonly downloadmapblockrangeerror_error: (a: number) => any;
     readonly downloadmapblockrangeerror_request: (a: number) => number;
     readonly graphics_add_video_sample: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => void;
     readonly graphics_camera_stats: (a: number, b: number) => void;
@@ -841,7 +841,7 @@ export interface InitOutput {
     readonly graphics_gpu_stats: (a: number, b: number) => void;
     readonly graphics_light_distance: (a: number) => number;
     readonly graphics_new_frame_blend: (a: number, b: number) => number;
-    readonly graphics_new_surface: (a: number, b: number, c: number) => void;
+    readonly graphics_new_surface: (a: number, b: number, c: any) => void;
     readonly graphics_render_head: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_session: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly graphics_render_video_frame: (a: number, b: number, c: number, d: number, e: number) => void;
@@ -859,14 +859,14 @@ export interface InitOutput {
     readonly lightmapchunkjob_region_id: (a: number) => number;
     readonly lightmapchunkjob_take_compressed: (a: number, b: number) => void;
     readonly mapblockrange_range: (a: number) => number;
-    readonly mapdownloader_download_map_block_range: (a: number, b: number) => number;
+    readonly mapdownloader_download_map_block_range: (a: number, b: number) => any;
     readonly mapdownloader_new: (a: number, b: number) => number;
     readonly modelpreparer_new: (a: number, b: number, c: number) => void;
     readonly modelpreparer_prepare: (a: number, b: number, c: number, d: number) => void;
-    readonly new_streamable_bot: (a: number, b: number, c: number) => number;
-    readonly new_streamable_map: (a: number, b: number, c: number) => number;
+    readonly new_streamable_bot: (a: number, b: number, c: number) => any;
+    readonly new_streamable_map: (a: number, b: number, c: number) => any;
     readonly prepare_lightmap_chunk: (a: number, b: number, c: number) => void;
-    readonly setup_graphics: (a: number) => number;
+    readonly setup_graphics: (a: any) => any;
     readonly streamablebot_cancel: (a: number, b: number) => void;
     readonly streamablebot_checkpoints: (a: number, b: number, c: number) => void;
     readonly streamablebot_clear_downloading: (a: number) => void;
@@ -933,20 +933,25 @@ export interface InitOutput {
     readonly transcodedtexture_take_data: (a: number, b: number) => void;
     readonly transcodedtexture_texture_id: (a: number) => number;
     readonly transcodedtexture_width: (a: number) => number;
-    readonly __wasm_bindgen_func_elem_1977: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1977_197: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1977_199: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1977_200: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3328: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3343: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1981: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1981_198: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2011: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_2011_197: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_2011_199: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_2011_200: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_3367: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_3384: (a: number, b: number, c: any, d: any) => void;
+    readonly __wasm_bindgen_func_elem_2016: (a: number, b: number, c: any) => void;
+    readonly __wasm_bindgen_func_elem_2016_198: (a: number, b: number, c: any) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
-    readonly __wbindgen_export3: (a: number) => void;
-    readonly __wbindgen_export4: (a: number, b: number) => void;
+    readonly __wbindgen_export3: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_export4: (a: number) => void;
+    readonly __wbindgen_export5: () => number;
+    readonly __wbindgen_externrefs: WebAssembly.Table;
+    readonly __wbindgen_export6: (a: number, b: number) => void;
     readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-    readonly __wbindgen_export5: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_export7: (a: number, b: number) => void;
+    readonly __wbindgen_export8: (a: number) => void;
+    readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;
