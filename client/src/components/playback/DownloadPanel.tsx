@@ -55,7 +55,7 @@ function DownloadDetails(props: { stats: DownloadStats }) {
         <>
             <span>replay blocks {bot.blocksDownloaded}/{bot.blocksTotal}, {bot.requestsInFlight} in flight</span>
             <span>map regions {map.regionsDownloaded}/{map.regionsTotal}, meshes {map.meshesDownloaded}/{map.meshesTotal}, textures {map.texturesDownloaded}/{map.texturesTotal}</span>
-            <span>{map.bakedChunksTotal > 0 && `AO ${map.bakedChunksDownloaded}/${map.bakedChunksTotal}, `}{map.lightmapChunksTotal > 0 && `lightmap ${map.lightmapChunksDownloaded}/${map.lightmapChunksTotal}, `}{map.requestsInFlight} in flight</span>
+            <span>{map.bakedChunksTotal > 0 && `AO ${map.bakedChunksDownloaded}/${map.bakedChunksTotal}, `}{map.lightmapChunksTotal > 0 && `lightmap ${map.lightmapChunksDownloaded}/${map.lightmapChunksTotal}, `}{map.reflectionProbesTotal > 0 && `reflections ${map.reflectionProbesDownloaded}/${map.reflectionProbesTotal}, `}{map.requestsInFlight} in flight</span>
         </>
     );
 }

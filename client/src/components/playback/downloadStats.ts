@@ -24,6 +24,9 @@ export interface DownloadStats {
         /** Chunks of the lightmap, 0 total on maps without one */
         lightmapChunksDownloaded: number
         lightmapChunksTotal: number
+        /** Reflection probes for water, 0 total on maps without them */
+        reflectionProbesDownloaded: number
+        reflectionProbesTotal: number
     }
     /** Downloaded replay as pairs [start0, end0, start1, end1, ...] in seek bar time */
     ranges: number[]
@@ -84,7 +87,9 @@ export function readDownloadStats(bot: StreamableBot, map: StreamableMap, offset
             bakedChunksDownloaded: mapStats.baked_chunks_downloaded,
             bakedChunksTotal: mapStats.baked_chunks_total,
             lightmapChunksDownloaded: mapStats.lightmap_chunks_downloaded,
-            lightmapChunksTotal: mapStats.lightmap_chunks_total
+            lightmapChunksTotal: mapStats.lightmap_chunks_total,
+            reflectionProbesDownloaded: mapStats.reflection_probes_downloaded,
+            reflectionProbesTotal: mapStats.reflection_probes_total
         },
         ranges: Array.from(bot.ranges(), time => time - offset)
     };
